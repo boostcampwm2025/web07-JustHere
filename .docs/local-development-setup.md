@@ -39,7 +39,7 @@ docker-compose up -d
 
 - MySQL 8.0 이미지를 다운로드 (최초 실행 시)
 - `just_here` 데이터베이스 생성
-- 포트 3306에서 MySQL 서비스 시작
+- 포트 3307에서 MySQL 서비스 시작 (로컬 MySQL과의 충돌 방지)
 - 컨테이너를 백그라운드에서 실행 (`-d` 옵션)
 
 ### 2. 컨테이너 상태 확인
@@ -92,7 +92,7 @@ docker-compose down -v
 
 ```env
 DB_HOST=localhost
-DB_PORT=3306
+DB_PORT=3307
 DB_USERNAME=justhere
 DB_PASSWORD=justherepassword
 DB_DATABASE=just_here
@@ -108,7 +108,7 @@ PORT=3000
 | 변수명        | 설명              | 기본값             |
 | ------------- | ----------------- | ------------------ |
 | `DB_HOST`     | MySQL 호스트 주소 | `localhost`        |
-| `DB_PORT`     | MySQL 포트        | `3306`             |
+| `DB_PORT`     | MySQL 포트        | `3307`             |
 | `DB_USERNAME` | MySQL 사용자명    | `justhere`         |
 | `DB_PASSWORD` | MySQL 비밀번호    | `justherepassword` |
 | `DB_DATABASE` | 데이터베이스 이름 | `just_here`        |
@@ -135,7 +135,7 @@ docker-compose exec mysql mysql -u root -prootpassword
 로컬에 MySQL 클라이언트가 설치되어 있다면:
 
 ```bash
-mysql -h localhost -P 3306 -u justhere -pjustherepassword just_here
+mysql -h localhost -P 3307 -u justhere -pjustherepassword just_here
 ```
 
 ### 3. Backend 서버 실행 및 연결 확인
