@@ -36,6 +36,7 @@ export function ResultPage() {
   const [places, setPlaces] = useState<MeetingPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const directionsRenderersRef = useRef<google.maps.DirectionsRenderer[]>([]);
   const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
 
   // 경로 정보 상태
@@ -184,54 +185,75 @@ export function ResultPage() {
 
   // 경로 계산 함수
   const calculateRoutes = async (place: MeetingPlace) => {
-    if (!window.google || !participants.length) return;
+    if (!window.google || !participants.length || !map) return;
 
     setCalculatingRoutes(true);
-    const service = new google.maps.DistanceMatrixService();
+    const service = new google.maps.DirectionsService();
     const newRoutes: Record<string, { distance: string; duration: string }> = {};
 
+    // 기존 경로 제거
+    directionsRenderersRef.current.forEach((renderer) => renderer.setMap(null));
+    directionsRenderersRef.current = [];
+
     try {
-      const promises = participants.map((p) => {
-        return new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
-          service.getDistanceMatrix(
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend({ lat: place.lat, lng: place.lng });
+      participants.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+
+      const promises = participants.map((p, index) => {
+        return new Promise<void>((resolve) => {
+          service.route(
             {
-              origins: [{ lat: p.lat, lng: p.lng }],
-              destinations: [{ lat: place.lat, lng: place.lng }],
+              origin: { lat: p.lat, lng: p.lng },
+              destination: { lat: place.lat, lng: place.lng },
               travelMode:
                 p.transport === 'driving'
                   ? google.maps.TravelMode.DRIVING
                   : google.maps.TravelMode.TRANSIT,
             },
-            (response, status) => {
-              if (status === 'OK' && response) {
-                resolve(response);
-              } else {
-                reject(status);
+            (result, status) => {
+              if (status === 'OK' && result) {
+                const leg = result.routes[0].legs[0];
+                newRoutes[p.id] = {
+                  distance: leg.distance?.text || '',
+                  duration: leg.duration?.text || '',
+                };
+
+                const renderer = new google.maps.DirectionsRenderer({
+                  map,
+                  directions: result,
+                  suppressMarkers: true,
+                  preserveViewport: true,
+                  polylineOptions: {
+                    strokeColor: ['#2563EB', '#DC2626', '#059669', '#D97706', '#7C3AED'][index % 5],
+                    strokeWeight: 5,
+                    strokeOpacity: 0.6,
+                  },
+                });
+                directionsRenderersRef.current.push(renderer);
               }
+              resolve();
             }
           );
         });
       });
 
-      const results = await Promise.all(promises);
-
-      results.forEach((response, index) => {
-        const element = response.rows[0].elements[0];
-        if (element.status === 'OK') {
-          newRoutes[participants[index].id] = {
-            distance: element.distance.text,
-            duration: element.duration.text,
-          };
-        }
-      });
-
+      await Promise.all(promises);
       setRoutes(newRoutes);
+      map.fitBounds(bounds);
     } catch (error) {
       console.error('Error calculating routes:', error);
     } finally {
       setCalculatingRoutes(false);
     }
   };
+
+  // 중간 지점까지의 경로 계산 (최초 1회 또는 centerPlace 변경 시)
+  useEffect(() => {
+    if (centerPlace && map) {
+      void calculateRoutes(centerPlace);
+    }
+  }, [centerPlace, map]);
 
   const handlePlaceClick = (place: MeetingPlace) => {
     setSelectedPlace(place);
@@ -243,9 +265,6 @@ export function ResultPage() {
     if (marker) {
       google.maps.event.trigger(marker, 'click');
     }
-
-    // 경로 계산 시작
-    void calculateRoutes(place);
   };
 
   return (
@@ -344,6 +363,29 @@ export function ResultPage() {
                   ← 지역 다시 선택 ({centerPlace?.name})
                 </button>
               </div>
+
+              {/* 중간 지점 요약 카드 */}
+              {centerPlace && (
+                <div className='mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100'>
+                  <div className='flex justify-between items-start mb-2'>
+                    <div>
+                      <h3 className='font-bold text-lg text-gray-900'>{centerPlace.name}</h3>
+                      <p className='text-sm text-gray-600'>선택된 중간 지점</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedPlace(centerPlace)}
+                      className='text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors'
+                    >
+                      이동 정보 보기
+                    </button>
+                  </div>
+                  <div className='flex gap-2 text-xs text-gray-500'>
+                    <span>참여자 {participants.length}명</span>
+                    <span>•</span>
+                    <span>평균 소요시간 계산 중...</span>
+                  </div>
+                </div>
+              )}
 
               {/* 카테고리 토글 */}
               <div className='flex gap-2 overflow-x-auto pb-2 scrollbar-hide'>
