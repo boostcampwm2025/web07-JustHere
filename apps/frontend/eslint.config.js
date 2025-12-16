@@ -7,29 +7,19 @@ import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
   globalIgnores(["dist"]),
-  ...tseslint.configs.recommended.map((config) => ({
-    ...config,
-    languageOptions: {
-      ...config.languageOptions,
-      parserOptions: {
-        ...config.languageOptions?.parserOptions,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  })),
   {
-    files: ["**/*.{ts,tsx}"],
+    files: ["apps/frontend/**/*.{ts,tsx}"],
     extends: [
       js.configs.recommended,
+      ...tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
     languageOptions: {
-      ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        projectService: true,
         tsconfigRootDir: import.meta.dirname,
+        project: ["apps/frontend/tsconfig.json"],
       },
     },
   },
