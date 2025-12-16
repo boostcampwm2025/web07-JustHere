@@ -1,11 +1,16 @@
-import { RoomCreate } from "@/components/RoomCreate";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { MainPage } from "@/components/MainPage";
+import { RoomDetailPage } from "@/components/RoomDetailPage";
 
 function App() {
   return (
-    <main className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Just Here</h1>
-      <RoomCreate />
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+        <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
