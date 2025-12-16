@@ -30,7 +30,7 @@ export function ParticipantInputPage() {
       alert('참여자를 2명 이상 추가해주세요.');
       return;
     }
-    navigate('/result');
+    navigate('/places');
   };
 
   return (
