@@ -1,5 +1,7 @@
 export type TransportMode = 'transit' | 'driving';
 
+export type PlaceCategory = 'restaurant' | 'cafe' | 'bar' | 'park' | 'culture' | 'shopping';
+
 export interface Participant {
   id: string;
   name: string;
@@ -15,4 +17,7 @@ export interface MeetingPlace {
   lat: number;
   lng: number;
   address: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  photoUrl?: string;
 }

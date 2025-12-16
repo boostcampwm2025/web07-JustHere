@@ -1,20 +1,23 @@
 import { create } from 'zustand';
-import type { Participant, MeetingPlace } from '../types/meeting';
+import type { Participant, MeetingPlace, PlaceCategory } from '../types/meeting';
 
 interface MeetingStore {
   participants: Participant[];
   selectedPlace: MeetingPlace | null;
+  selectedCategory: PlaceCategory | null;
 
   addParticipant: (participant: Participant) => void;
   removeParticipant: (id: string) => void;
   updateParticipant: (id: string, participant: Partial<Participant>) => void;
   setSelectedPlace: (place: MeetingPlace | null) => void;
+  setSelectedCategory: (category: PlaceCategory | null) => void;
   clearParticipants: () => void;
 }
 
 export const useMeetingStore = create<MeetingStore>((set) => ({
   participants: [],
   selectedPlace: null,
+  selectedCategory: null,
 
   addParticipant: (participant) =>
     set((state) => ({
@@ -32,6 +35,8 @@ export const useMeetingStore = create<MeetingStore>((set) => ({
     })),
 
   setSelectedPlace: (place) => set({ selectedPlace: place }),
+
+  setSelectedCategory: (category) => set({ selectedCategory: category }),
 
   clearParticipants: () => set({ participants: [] }),
 }));
