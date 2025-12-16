@@ -3,13 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { useMeetingStore } from '../../store/meetingStore';
 import type { MeetingPlace } from '../../types/meeting';
 
+interface ScoredPlace extends MeetingPlace {
+  score?: number;
+  avgDuration?: number;
+  maxDuration?: number;
+}
+
 export function PlacesPage() {
   const navigate = useNavigate();
   const { participants, setCenterPlace } = useMeetingStore();
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [candidates, setCandidates] = useState<MeetingPlace[]>([]);
+  const [candidates, setCandidates] = useState<ScoredPlace[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calculatingScores, setCalculatingScores] = useState(false);
 
   // 참여자가 없으면 리다이렉트
   useEffect(() => {
@@ -29,6 +36,20 @@ export function PlacesPage() {
       lat: sumLat / participants.length,
       lng: sumLng / participants.length,
     };
+  };
+
+  // 점수 계산 함수
+  const calculateScore = (durations: number[]) => {
+    const n = durations.length;
+    if (n === 0) return { score: Infinity, avg: Infinity, max: Infinity };
+    const sum = durations.reduce((a, b) => a + b, 0);
+    const avg = sum / n;
+    const max = Math.max(...durations);
+    const min = Math.min(...durations);
+    const spread = max - min;
+    const lambda = 0.5; // 공평성 가중치
+    const score = avg + lambda * spread;
+    return { score, avg, max };
   };
 
   // 지도 초기화 및 후보지 검색
@@ -87,13 +108,13 @@ export function PlacesPage() {
       location: center,
       radius: 3000, // 3km 반경
       type: 'subway_station', // 지하철역 우선 검색
-      // rankBy: google.maps.places.RankBy.PROMINENCE, // 기본값
     };
 
     setLoading(true);
-    service.nearbySearch(request, (results, status) => {
+    service.nearbySearch(request, async (results, status) => {
       if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        const places: MeetingPlace[] = results.slice(0, 10).map((place) => ({
+        // 상위 5개만 추려서 상세 계산
+        const initialPlaces: MeetingPlace[] = results.slice(0, 5).map((place) => ({
           placeId: place.place_id!,
           name: place.name!,
           lat: place.geometry!.location!.lat(),
@@ -102,20 +123,86 @@ export function PlacesPage() {
           rating: place.rating,
           userRatingsTotal: place.user_ratings_total,
         }));
-        setCandidates(places);
 
-        // 후보지 마커 표시
-        places.forEach((place) => {
-          const marker = new google.maps.Marker({
-            position: { lat: place.lat, lng: place.lng },
-            map: mapInstance,
-            title: place.name,
-            icon: {
-              url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-            },
+        setCalculatingScores(true);
+        const distanceService = new google.maps.DistanceMatrixService();
+
+        try {
+          const scoredPlaces = await Promise.all(
+            initialPlaces.map(async (place) => {
+              // 각 후보지에 대해 모든 참여자의 이동 시간 계산
+              const durations: number[] = [];
+
+              // DistanceMatrix 호출 (참여자 -> 후보지)
+              // 참여자가 많을 경우 API 제한 고려하여 분할 요청 필요할 수 있음 (여기선 단순화)
+              const response = await new Promise<google.maps.DistanceMatrixResponse | null>(
+                (resolve) => {
+                  distanceService.getDistanceMatrix(
+                    {
+                      origins: participants.map((p) => ({ lat: p.lat, lng: p.lng })),
+                      destinations: [{ lat: place.lat, lng: place.lng }],
+                      travelMode: google.maps.TravelMode.TRANSIT, // 대중교통 기준
+                    },
+                    (res, status) => {
+                      if (status === 'OK') resolve(res);
+                      else resolve(null);
+                    }
+                  );
+                }
+              );
+
+              if (response) {
+                response.rows.forEach((row) => {
+                  const element = row.elements[0];
+                  if (element.status === 'OK' && element.duration) {
+                    // duration.value는 초 단위 -> 분 단위 변환
+                    durations.push(element.duration.value / 60);
+                  } else {
+                    // 경로 없음 등의 경우 패널티 부여 (매우 큰 값)
+                    durations.push(120);
+                  }
+                });
+              } else {
+                // API 실패 시 패널티
+                participants.forEach(() => durations.push(120));
+              }
+
+              const { score, avg, max } = calculateScore(durations);
+              return {
+                ...place,
+                score,
+                avgDuration: Math.round(avg),
+                maxDuration: Math.round(max),
+              };
+            })
+          );
+
+          // 점수가 낮은 순(좋은 순)으로 정렬
+          scoredPlaces.sort((a, b) => (a.score || Infinity) - (b.score || Infinity));
+          setCandidates(scoredPlaces);
+
+          // 후보지 마커 표시 (순위별 색상 다르게 하거나 라벨 표시)
+          scoredPlaces.forEach((place, index) => {
+            const marker = new google.maps.Marker({
+              position: { lat: place.lat, lng: place.lng },
+              map: mapInstance,
+              title: place.name,
+              label: {
+                text: `${index + 1}`,
+                color: 'white',
+                className: 'bg-red-600 px-2 py-1 rounded-full text-xs font-bold shadow-md',
+              },
+              zIndex: 100 - index, // 상위 순위가 위로 오게
+            });
+            marker.addListener('click', () => handleSelectCandidate(place));
           });
-          marker.addListener('click', () => handleSelectCandidate(place));
-        });
+        } catch (error) {
+          console.error('Error calculating scores:', error);
+          // 에러 시 거리순(기본)으로라도 보여줌
+          setCandidates(initialPlaces);
+        } finally {
+          setCalculatingScores(false);
+        }
       }
       setLoading(false);
     });
@@ -132,28 +219,48 @@ export function PlacesPage() {
       <div className='w-full md:w-1/3 h-1/2 md:h-full overflow-y-auto border-r border-gray-200 bg-white shadow-lg z-10'>
         <div className='p-6 sticky top-0 bg-white border-b border-gray-100 z-10'>
           <h1 className='text-2xl font-bold text-gray-900'>어디서 만날까요?</h1>
-          <p className='text-gray-600 mt-2'>
-            중간 지점 주변의 주요 역이나 랜드마크를 선택해주세요.
-          </p>
+          <p className='text-gray-600 mt-2'>이동 시간과 공평성을 고려하여 추천된 순위입니다.</p>
         </div>
 
-        {loading ? (
-          <div className='flex justify-center items-center h-64'>
+        {loading || calculatingScores ? (
+          <div className='flex flex-col justify-center items-center h-64 space-y-4'>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+            <p className='text-sm text-gray-500'>
+              {loading ? '주변 역을 찾는 중...' : '최적의 장소를 계산하는 중...'}
+            </p>
           </div>
         ) : (
           <div className='divide-y divide-gray-100'>
-            {candidates.map((place) => (
+            {candidates.map((place, index) => (
               <button
                 key={place.placeId}
                 onClick={() => handleSelectCandidate(place)}
                 className='w-full text-left p-4 hover:bg-blue-50 transition-colors flex items-center justify-between group'
               >
-                <div>
-                  <h3 className='font-semibold text-gray-900 group-hover:text-blue-700'>
-                    {place.name}
-                  </h3>
-                  <p className='text-sm text-gray-500 mt-1'>{place.address}</p>
+                <div className='flex items-start gap-3'>
+                  <div
+                    className={`flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white ${
+                      index === 0 ? 'bg-red-500' : 'bg-gray-400'
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className='font-semibold text-gray-900 group-hover:text-blue-700'>
+                      {place.name}
+                    </h3>
+                    <p className='text-sm text-gray-500 mt-1'>{place.address}</p>
+                    {place.avgDuration && (
+                      <div className='mt-2 flex gap-2 text-xs'>
+                        <span className='bg-blue-100 text-blue-700 px-2 py-0.5 rounded'>
+                          평균 {place.avgDuration}분
+                        </span>
+                        <span className='bg-gray-100 text-gray-600 px-2 py-0.5 rounded'>
+                          최대 {place.maxDuration}분
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span className='text-gray-400 group-hover:text-blue-500'>→</span>
               </button>
@@ -179,7 +286,7 @@ export function PlacesPage() {
           </div>
           <div className='flex items-center gap-2'>
             <div className='w-3 h-3 rounded-full bg-red-600'></div>
-            <span>추천 후보지</span>
+            <span>추천 후보지 (순위)</span>
           </div>
         </div>
       </div>
