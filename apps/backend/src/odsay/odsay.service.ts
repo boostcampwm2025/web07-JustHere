@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OdsayTransitResponse } from '@web07/types';
+import { OdsayTransitResponse, OdsayLoadLaneResponse } from '@web07/types';
 
 @Injectable()
 export class OdsayService {
@@ -18,6 +18,13 @@ export class OdsayService {
     ey: number,
   ): Promise<OdsayTransitResponse> {
     const url = `${this.baseUrl}/searchPubTransPathT?SX=${sx}&SY=${sy}&EX=${ex}&EY=${ey}&apiKey=${this.apiKey}`;
+
+    const response = await fetch(url);
+    return response.json();
+  }
+
+  async loadLane(mapObject: string): Promise<OdsayLoadLaneResponse> {
+    const url = `${this.baseUrl}/loadLane?mapObject=${mapObject}&apiKey=${this.apiKey}`;
 
     const response = await fetch(url);
     return response.json();

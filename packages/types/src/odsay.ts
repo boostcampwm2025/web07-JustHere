@@ -10,6 +10,8 @@ export interface OdsayLane {
   subwayCode?: number;
   busNo?: string;
   type?: number;
+  busID?: number; // 버스 노선 ID
+  subwayCityCode?: number; // 지하철 도시 코드
 }
 
 export interface OdsaySubPath {
@@ -34,6 +36,7 @@ export interface OdsayPathInfo {
   totalDistance: number;
   firstStartStation: string;
   lastEndStation: string;
+  mapObj: string; // loadLane API용 mapObject 문자열
 }
 
 export interface OdsayTransitPath {
@@ -45,5 +48,33 @@ export interface OdsayTransitPath {
 export interface OdsayTransitResponse {
   result: {
     path: OdsayTransitPath[];
+  };
+}
+
+// LoadLane API 타입 정의
+export interface OdsayGraphPos {
+  x: number;
+  y: number;
+}
+
+export interface OdsayLaneSection {
+  graphPos: OdsayGraphPos[];
+}
+
+export interface OdsayLaneDetail {
+  class: number; // 1: 버스, 2: 지하철
+  type: number; // 노선 종류
+  section: OdsayLaneSection[];
+}
+
+export interface OdsayLoadLaneResponse {
+  result: {
+    lane: OdsayLaneDetail[];
+    boundary: {
+      left: number;
+      top: number;
+      right: number;
+      bottom: number;
+    };
   };
 }

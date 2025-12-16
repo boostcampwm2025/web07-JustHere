@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { OdsayService } from './odsay.service';
-import { OdsayTransitResponse } from '@web07/types';
+import { OdsayTransitResponse, OdsayLoadLaneResponse } from '@web07/types';
 
 @Controller('api/odsay')
 export class OdsayController {
@@ -19,5 +19,12 @@ export class OdsayController {
       parseFloat(ex),
       parseFloat(ey),
     );
+  }
+
+  @Get('load-lane')
+  async loadLane(
+    @Query('mapObject') mapObject: string,
+  ): Promise<OdsayLoadLaneResponse> {
+    return this.odsayService.loadLane(mapObject);
   }
 }

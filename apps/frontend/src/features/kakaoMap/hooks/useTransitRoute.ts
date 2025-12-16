@@ -5,6 +5,7 @@ import type {
   OdsayTransitResponse,
   OdsayTransitPath,
   OdsaySubPath,
+  OdsayLoadLaneResponse,
 } from '@web07/types';
 
 // 지하철 노선별 색상
@@ -51,26 +52,150 @@ export const useTransitRoute = (
   // 경로 색상 결정
   const getPathColor = (subPath: OdsaySubPath): string => {
     if (subPath.trafficType === 3) return '#888888'; // 도보: 회색
-    
+
     if (subPath.trafficType === 1 && subPath.lane?.[0]?.subwayCode) {
       return SUBWAY_COLORS[subPath.lane[0].subwayCode] || '#000000';
     }
-    
+
     if (subPath.trafficType === 2 && subPath.lane?.[0]?.type) {
       return BUS_COLORS[subPath.lane[0].type] || '#0068B7';
     }
-    
+
     return '#000000';
   };
 
-  // 경로 그리기
-  const drawRoute = (path: OdsayTransitPath) => {
+
+  // 상세 경로 좌표로 폴리라인 그리기
+  const drawDetailedRoute = async (path: OdsayTransitPath) => {
     if (!mapRef.current) return;
-    
+
     const { kakao } = window;
     clearRoute();
 
     const bounds = new kakao.maps.LatLngBounds();
+
+    // info.mapObj를 사용하여 전체 경로의 상세 좌표 가져오기
+    if (path.info.mapObj) {
+
+      const mapObject = `0:0@${path.info.mapObj}`;
+      const laneData = await fetchData<OdsayLoadLaneResponse>(
+        'http://localhost:3000/api/odsay/load-lane',
+        { mapObject }
+      );
+
+      if (laneData?.result?.lane?.length) {
+        // 대중교통 subPath들만 필터링
+        const transitSubPaths = path.subPath.filter(sp => sp.trafficType !== 3);
+
+        // 각 lane을 순회하며 폴리라인 그리기
+        laneData.result.lane.forEach((laneDetail) => {
+          // laneDetail.class로 해당하는 subPath 찾기
+          // class 1: 버스 (trafficType 2), class 2: 지하철 (trafficType 1)
+          const matchingSubPath = transitSubPaths.find(sp => {
+            if (laneDetail.class === 1) return sp.trafficType === 2; // 버스
+            if (laneDetail.class === 2) return sp.trafficType === 1; // 지하철
+            return false;
+          });
+
+          // laneDetail.type으로 더 정확한 색상 결정
+          let color = '#000000';
+          if (matchingSubPath) {
+            if (laneDetail.class === 1) {
+              // 버스: type으로 색상 결정
+              color = BUS_COLORS[laneDetail.type] || BUS_COLORS[matchingSubPath.lane?.[0]?.type || 1] || '#0068B7';
+            } else if (laneDetail.class === 2) {
+              // 지하철: type(노선번호)으로 색상 결정
+              color = SUBWAY_COLORS[laneDetail.type] || '#000000';
+            }
+          }
+
+
+          // section별로 폴리라인 그리기
+          laneDetail.section?.forEach((section) => {
+            if (section.graphPos?.length) {
+
+              const linePath = section.graphPos.map((pos) => {
+                const position = new kakao.maps.LatLng(pos.y, pos.x);
+                bounds.extend(position);
+                return position;
+              });
+
+              const polyline = new kakao.maps.Polyline({
+                path: linePath,
+                strokeWeight: 5,
+                strokeColor: color,
+                strokeOpacity: 0.8,
+                strokeStyle: 'solid',
+              });
+              polyline.setMap(mapRef.current);
+              polylinesRef.current.push(polyline);
+            }
+          });
+        });
+
+        // 시작/끝 정류장 마커 추가
+        path.subPath.forEach((subPath) => {
+          if (subPath.trafficType !== 3 && subPath.passStopList?.stations?.length) {
+            const firstStation = subPath.passStopList.stations[0];
+            const lastStation = subPath.passStopList.stations[subPath.passStopList.stations.length - 1];
+
+            [firstStation, lastStation].forEach((station) => {
+              const marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(
+                  parseFloat(station.y),
+                  parseFloat(station.x)
+                ),
+                map: mapRef.current!,
+              });
+
+              const infoWindow = new kakao.maps.InfoWindow({
+                content: `<div style="padding:5px;font-size:12px;">${station.stationName}</div>`,
+              });
+
+              kakao.maps.event.addListener(marker, 'click', () => {
+                infoWindow.open(mapRef.current!, marker);
+              });
+
+              markersRef.current.push(marker);
+            });
+          }
+        });
+
+        // 도보 구간 그리기
+        path.subPath.forEach((subPath) => {
+          if (subPath.trafficType === 3 && subPath.startX && subPath.startY && subPath.endX && subPath.endY) {
+            const startPos = new kakao.maps.LatLng(subPath.startY, subPath.startX);
+            const endPos = new kakao.maps.LatLng(subPath.endY, subPath.endX);
+
+            bounds.extend(startPos);
+            bounds.extend(endPos);
+
+            const polyline = new kakao.maps.Polyline({
+              path: [startPos, endPos],
+              strokeWeight: 4,
+              strokeColor: '#888888',
+              strokeOpacity: 0.6,
+              strokeStyle: 'dashed',
+            });
+            polyline.setMap(mapRef.current);
+            polylinesRef.current.push(polyline);
+          }
+        });
+      } else {
+        console.warn('⚠️ loadLane 실패, 기본 경로로 폴백');
+        drawRouteFallback(path, bounds);
+      }
+    } else {
+      console.warn('⚠️ mapObj 없음, 기본 경로로 폴백');
+      drawRouteFallback(path, bounds);
+    }
+
+    mapRef.current.setBounds(bounds);
+  };
+
+  // 폴백: 정류장 좌표로 그리기
+  const drawRouteFallback = (path: OdsayTransitPath, bounds: kakao.maps.LatLngBounds) => {
+    const { kakao } = window;
 
     path.subPath.forEach((subPath) => {
       const color = getPathColor(subPath);
@@ -86,7 +211,6 @@ export const useTransitRoute = (
           return position;
         });
 
-        // 폴리라인 생성
         const polyline = new kakao.maps.Polyline({
           path: linePath,
           strokeWeight: 5,
@@ -96,32 +220,8 @@ export const useTransitRoute = (
         });
         polyline.setMap(mapRef.current);
         polylinesRef.current.push(polyline);
-
-        // 시작/끝 정류장 마커
-        const firstStation = subPath.passStopList.stations[0];
-        const lastStation = subPath.passStopList.stations[subPath.passStopList.stations.length - 1];
-
-        [firstStation, lastStation].forEach((station) => {
-          const marker = new kakao.maps.Marker({
-            position: new kakao.maps.LatLng(
-              parseFloat(station.y),
-              parseFloat(station.x)
-            ),
-            map: mapRef.current!,
-          });
-
-          const infoWindow = new kakao.maps.InfoWindow({
-            content: `<div style="padding:5px;font-size:12px;">${station.stationName}</div>`,
-          });
-
-          kakao.maps.event.addListener(marker, 'click', () => {
-            infoWindow.open(mapRef.current!, marker);
-          });
-
-          markersRef.current.push(marker);
-        });
-      } 
-      // 도보 구간 (시작/끝 좌표만 있는 경우)
+      }
+      // 도보 구간
       else if (subPath.startX && subPath.startY && subPath.endX && subPath.endY) {
         const startPos = new kakao.maps.LatLng(subPath.startY, subPath.startX);
         const endPos = new kakao.maps.LatLng(subPath.endY, subPath.endX);
@@ -134,14 +234,12 @@ export const useTransitRoute = (
           strokeWeight: 4,
           strokeColor: color,
           strokeOpacity: 0.6,
-          strokeStyle: 'dashed', // 도보는 점선
+          strokeStyle: 'dashed',
         });
         polyline.setMap(mapRef.current);
         polylinesRef.current.push(polyline);
       }
     });
-
-    mapRef.current.setBounds(bounds);
   };
 
   // 경로 검색
@@ -162,7 +260,7 @@ export const useTransitRoute = (
       if (data.result?.path?.length) {
         setRoutes(data.result.path);
         setSelectedRouteIndex(0);
-        drawRoute(data.result.path[0]); // 첫 번째 경로 그리기
+        await drawDetailedRoute(data.result.path[0]); // 상세 경로 그리기
       } else {
         alert('경로를 찾을 수 없습니다.');
       }
@@ -175,10 +273,10 @@ export const useTransitRoute = (
   };
 
   // 다른 경로 선택
-  const selectRoute = (index: number) => {
+  const selectRoute = async (index: number) => {
     if (routes[index]) {
       setSelectedRouteIndex(index);
-      drawRoute(routes[index]);
+      await drawDetailedRoute(routes[index]); // 상세 경로 그리기
     }
   };
 
