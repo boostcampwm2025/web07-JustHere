@@ -1,59 +1,186 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMeetingStore } from '../../store/meetingStore';
-import type { PlaceCategory } from '../../types/meeting';
-
-const CATEGORIES: { id: PlaceCategory; label: string; icon: string; description: string }[] = [
-  { id: 'restaurant', label: '식당', icon: '🍽️', description: '맛있는 식사를 함께해요' },
-  { id: 'cafe', label: '카페', icon: '☕', description: '커피 한잔의 여유' },
-  { id: 'bar', label: '술집', icon: '🍺', description: '가볍게 한잔' },
-  { id: 'culture', label: '문화생활', icon: '🎬', description: '영화, 전시 관람' },
-  { id: 'shopping', label: '쇼핑', icon: '🛍️', description: '쇼핑몰 구경' },
-  { id: 'park', label: '공원', icon: '🌳', description: '산책과 휴식' },
-];
+import type { MeetingPlace } from '../../types/meeting';
 
 export function PlacesPage() {
   const navigate = useNavigate();
-  const { setSelectedCategory } = useMeetingStore();
+  const { participants, setCenterPlace } = useMeetingStore();
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [candidates, setCandidates] = useState<MeetingPlace[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSelectCategory = (category: PlaceCategory) => {
-    setSelectedCategory(category);
+  // 참여자가 없으면 리다이렉트
+  useEffect(() => {
+    if (participants.length < 2) {
+      alert('참여자가 충분하지 않습니다.');
+      navigate('/');
+      return;
+    }
+  }, [participants, navigate]);
+
+  // 중간 지점(Centroid) 계산
+  const getCentroid = () => {
+    if (participants.length === 0) return { lat: 37.5665, lng: 126.978 };
+    const sumLat = participants.reduce((sum, p) => sum + p.lat, 0);
+    const sumLng = participants.reduce((sum, p) => sum + p.lng, 0);
+    return {
+      lat: sumLat / participants.length,
+      lng: sumLng / participants.length,
+    };
+  };
+
+  // 지도 초기화 및 후보지 검색
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return;
+
+    const center = getCentroid();
+    const mapInstance = new google.maps.Map(mapRef.current, {
+      center,
+      zoom: 13,
+      mapTypeControl: false,
+    });
+    setMap(mapInstance);
+
+    // 참여자 마커 표시
+    participants.forEach((p) => {
+      new google.maps.Marker({
+        position: { lat: p.lat, lng: p.lng },
+        map: mapInstance,
+        title: p.name,
+        label: {
+          text: p.name,
+          color: 'white',
+          className: 'bg-blue-600 px-2 py-1 rounded-lg text-xs font-bold shadow-md',
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#2563EB',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+      });
+    });
+
+    // 중간 지점(Centroid) 표시
+    new google.maps.Marker({
+      position: center,
+      map: mapInstance,
+      title: '중간 지점',
+      icon: {
+        path: google.maps.SymbolPath.STAR,
+        scale: 10,
+        fillColor: '#9CA3AF',
+        fillOpacity: 0.8,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+      },
+      zIndex: 100,
+    });
+
+    // 주변 후보지(역, 번화가) 검색
+    const service = new google.maps.places.PlacesService(mapInstance);
+    const request: google.maps.places.PlaceSearchRequest = {
+      location: center,
+      radius: 3000, // 3km 반경
+      type: 'subway_station', // 지하철역 우선 검색
+      // rankBy: google.maps.places.RankBy.PROMINENCE, // 기본값
+    };
+
+    setLoading(true);
+    service.nearbySearch(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+        const places: MeetingPlace[] = results.slice(0, 10).map((place) => ({
+          placeId: place.place_id!,
+          name: place.name!,
+          lat: place.geometry!.location!.lat(),
+          lng: place.geometry!.location!.lng(),
+          address: place.vicinity || place.formatted_address || '',
+          rating: place.rating,
+          userRatingsTotal: place.user_ratings_total,
+        }));
+        setCandidates(places);
+
+        // 후보지 마커 표시
+        places.forEach((place) => {
+          const marker = new google.maps.Marker({
+            position: { lat: place.lat, lng: place.lng },
+            map: mapInstance,
+            title: place.name,
+            icon: {
+              url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+            },
+          });
+          marker.addListener('click', () => handleSelectCandidate(place));
+        });
+      }
+      setLoading(false);
+    });
+  }, [participants]);
+
+  const handleSelectCandidate = (place: MeetingPlace) => {
+    setCenterPlace(place);
     navigate('/result');
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-3xl mx-auto'>
-        <div className='text-center mb-12'>
-          <h1 className='text-3xl font-bold text-gray-900'>어떤 장소를 찾으시나요?</h1>
-          <p className='mt-4 text-lg text-gray-600'>만남의 목적에 맞는 장소 유형을 선택해주세요</p>
+    <div className='flex flex-col h-screen bg-gray-50 md:flex-row'>
+      {/* 왼쪽: 후보지 목록 */}
+      <div className='w-full md:w-1/3 h-1/2 md:h-full overflow-y-auto border-r border-gray-200 bg-white shadow-lg z-10'>
+        <div className='p-6 sticky top-0 bg-white border-b border-gray-100 z-10'>
+          <h1 className='text-2xl font-bold text-gray-900'>어디서 만날까요?</h1>
+          <p className='text-gray-600 mt-2'>
+            중간 지점 주변의 주요 역이나 랜드마크를 선택해주세요.
+          </p>
         </div>
 
-        <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
-          {CATEGORIES.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => handleSelectCategory(category.id)}
-              className='relative group bg-white p-6 focus:outline-none rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-blue-500 text-left'
-            >
-              <div className='flex items-center justify-between mb-4'>
-                <span className='text-4xl'>{category.icon}</span>
-                <div className='h-6 w-6 rounded-full border-2 border-gray-200 group-hover:border-blue-500 transition-colors' />
-              </div>
-              <h3 className='text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors'>
-                {category.label}
-              </h3>
-              <p className='mt-2 text-sm text-gray-500'>{category.description}</p>
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <div className='flex justify-center items-center h-64'>
+            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+          </div>
+        ) : (
+          <div className='divide-y divide-gray-100'>
+            {candidates.map((place) => (
+              <button
+                key={place.placeId}
+                onClick={() => handleSelectCandidate(place)}
+                className='w-full text-left p-4 hover:bg-blue-50 transition-colors flex items-center justify-between group'
+              >
+                <div>
+                  <h3 className='font-semibold text-gray-900 group-hover:text-blue-700'>
+                    {place.name}
+                  </h3>
+                  <p className='text-sm text-gray-500 mt-1'>{place.address}</p>
+                </div>
+                <span className='text-gray-400 group-hover:text-blue-500'>→</span>
+              </button>
+            ))}
+            {candidates.length === 0 && (
+              <div className='p-8 text-center text-gray-500'>주변에 적당한 후보지가 없습니다.</div>
+            )}
+          </div>
+        )}
+      </div>
 
-        <div className='mt-12 flex justify-center'>
-          <button
-            onClick={() => navigate(-1)}
-            className='text-gray-500 hover:text-gray-700 font-medium px-6 py-2'
-          >
-            이전으로
-          </button>
+      {/* 오른쪽: 지도 */}
+      <div className='w-full md:w-2/3 h-1/2 md:h-full relative'>
+        <div ref={mapRef} className='w-full h-full' />
+        <div className='absolute bottom-6 right-6 bg-white p-3 rounded-lg shadow-lg text-sm space-y-2'>
+          <div className='flex items-center gap-2'>
+            <div className='w-3 h-3 rounded-full bg-blue-600'></div>
+            <span>참여자</span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <div className='w-3 h-3 rounded-full bg-gray-400'></div>
+            <span>중간 지점(무게중심)</span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <div className='w-3 h-3 rounded-full bg-red-600'></div>
+            <span>추천 후보지</span>
+          </div>
         </div>
       </div>
     </div>
