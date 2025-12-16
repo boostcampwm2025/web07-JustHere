@@ -138,6 +138,9 @@ importers:
       react-dom:
         specifier: ^19.2.0
         version: 19.2.1(react@19.2.1)
+      react-kakao-maps-sdk:
+        specifier: ^1.2.0
+        version: 1.2.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1
@@ -364,6 +367,10 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
+
+  '@babel/runtime@7.28.4':
+    resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/template@7.27.2':
     resolution: {integrity: sha512-LPDZ85aEJyYSd18/DkjNh4/y1ntkE5KwUHWTiqgRxruuZL2F1yuHligVHLvcHY2vMHXttKFpJn6LwfI7cw7ODw==}
@@ -2823,6 +2830,9 @@ packages:
   jsonfile@6.2.0:
     resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
 
+  kakao.maps.d.ts@0.1.40:
+    resolution: {integrity: sha512-nX69MB1ok04epe3OqS+/tEeWBbU31GSQbvDPJmQRRltzzqn6t4jBsO5v1nzalUjCKzwcH2CptOc767NZ7Hbu3g==}
+
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
@@ -3286,6 +3296,12 @@ packages:
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
+
+  react-kakao-maps-sdk@1.2.0:
+    resolution: {integrity: sha512-ptyHhtSbvyza+9IAf6TXjE4ZhwwLbXR6avgNM2ju5xed2+fDwJ+gJDFSqhfsKbvFn9K9+3I+dY3JrqruwsGNBw==}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
 
   react@19.2.1:
     resolution: {integrity: sha512-DGrYcCWK7tvYMnWh79yrPHt+vdx9tY+1gPZa7nJQtO/p8bLTDaHp4dzwEhQB7pZ4Xe3ok4XKuEPrVuc+wlpkmw==}
@@ -4230,6 +4246,8 @@ snapshots:
     dependencies:
       '@babel/core': 7.28.5
       '@babel/helper-plugin-utils': 7.27.1
+
+  '@babel/runtime@7.28.4': {}
 
   '@babel/template@7.27.2':
     dependencies:
@@ -6918,6 +6936,8 @@ snapshots:
     optionalDependencies:
       graceful-fs: 4.2.11
 
+  kakao.maps.d.ts@0.1.40: {}
+
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -7310,6 +7330,13 @@ snapshots:
       scheduler: 0.27.0
 
   react-is@18.3.1: {}
+
+  react-kakao-maps-sdk@1.2.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+    dependencies:
+      '@babel/runtime': 7.28.4
+      kakao.maps.d.ts: 0.1.40
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
 
   react@19.2.1: {}
 
