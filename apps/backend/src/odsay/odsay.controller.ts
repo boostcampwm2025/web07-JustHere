@@ -1,10 +1,19 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body } from '@nestjs/common';
 import { OdsayService } from './odsay.service';
-import { OdsayTransitResponse, OdsayLoadLaneResponse } from '@web07/types';
+import { MiddleLocationService } from './middle-location.service';
+import {
+  OdsayTransitResponse,
+  OdsayLoadLaneResponse,
+  UserLocationInput,
+  MiddleLocationResult,
+} from '@web07/types';
 
 @Controller('api/odsay')
 export class OdsayController {
-  constructor(private readonly odsayService: OdsayService) {}
+  constructor(
+    private readonly odsayService: OdsayService,
+    private readonly middleLocationService: MiddleLocationService,
+  ) {}
 
   @Get('transit-route')
   async getTransitRoute(
@@ -26,5 +35,12 @@ export class OdsayController {
     @Query('mapObject') mapObject: string,
   ): Promise<OdsayLoadLaneResponse> {
     return this.odsayService.loadLane(mapObject);
+  }
+
+  @Post('find-middle-location')
+  async findMiddleLocation(
+    @Body('users') users: UserLocationInput[],
+  ): Promise<MiddleLocationResult[]> {
+    return this.middleLocationService.findMiddleLocations(users);
   }
 }

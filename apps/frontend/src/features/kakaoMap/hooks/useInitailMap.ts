@@ -27,9 +27,14 @@ export const useInitailMap = () => {
   useEffect(() => {
     // kakao SDK가 로드되었는지 확인
     if (window.kakao && window.kakao.maps) {
-      window.kakao.maps.load(() => {
-        initializeMap();
-      });
+      // DOM이 준비될 때까지 대기
+      const timer = setTimeout(() => {
+        window.kakao.maps.load(() => {
+          initializeMap();
+        });
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 

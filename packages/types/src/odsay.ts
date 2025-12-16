@@ -78,3 +78,30 @@ export interface OdsayLoadLaneResponse {
     };
   };
 }
+
+// 중간 위치 찾기 관련 타입
+export interface UserLocationInput {
+  name: string;
+  x: number;
+  y: number;
+}
+
+export interface StationCandidate {
+  name: string;
+  x: number;
+  y: number;
+  category: string; // "지하철역" or "버스정류장"
+}
+
+export interface UserToStationTime {
+  userName: string;
+  travelTime: number; // 분 단위
+}
+
+export interface MiddleLocationResult {
+  station: StationCandidate;
+  userTimes: UserToStationTime[];
+  averageTime: number;
+  maxTime: number;
+  fairnessScore: number; // 표준편차의 역수 (높을수록 공평함)
+}

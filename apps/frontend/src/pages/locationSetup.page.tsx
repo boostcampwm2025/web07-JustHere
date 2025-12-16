@@ -1,27 +1,19 @@
 // LocationSetupPage.tsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInitailMap } from '@/features/kakaoMap/hooks/useInitailMap';
-import { useTransitRoute } from '@/features/kakaoMap/hooks/useTransitRoute';
 import { useGeocode } from '@/features/kakaoMap/hooks/useGeocode';
 import { useUserMarkers } from '@/features/kakaoMap/hooks/useUserMarkers';
 
 function LocationSetupPage() {
+  const navigate = useNavigate();
   const { isMapLoaded, mapRef } = useInitailMap();
-
-  const {
-    searchTransitRoute,
-    routes,
-    selectedRouteIndex,
-    selectRoute,
-    isSearching: isRouteSearching
-  } = useTransitRoute(mapRef);
 
   const {
     query,
     setQuery,
     suggestions,
     selectedAddress,
-    isSearching: isGeocodeSearching,
     showDropdown,
     setShowDropdown,
     selectAddress,
@@ -37,8 +29,14 @@ function LocationSetupPage() {
 
   const [userName, setUserName] = useState('');
 
-  const handleRouteSearch = () => {
-    searchTransitRoute(127.073745786, 37.208885158, 127.123411119, 37.384999516);
+  const handleFindMiddleLocation = () => {
+    if (users.length < 2) {
+      alert('최소 2명 이상의 사용자를 추가해주세요.');
+      return;
+    }
+
+    // 중간 위치 찾기 페이지로 이동 (사용자 데이터 전달)
+    navigate('/middle', { state: { users } });
   };
 
   const handleAddUser = () => {
@@ -181,83 +179,16 @@ function LocationSetupPage() {
           </div>
         )}
 
-        {/* 경로 탐색 버튼 */}
+        {/* 중앙 위치 찾기 버튼 */}
         <div className="px-4 pb-3 border-t border-gray-200 pt-3">
           <button
-            onClick={handleRouteSearch}
-            disabled={isRouteSearching}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-gray-400"
+            onClick={handleFindMiddleLocation}
+            disabled={!isMapLoaded || users.length < 2}
+            className="w-full rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 disabled:bg-gray-300"
           >
-            {isRouteSearching ? '검색 중...' : '🚇 경로 탐색하기 (테스트)'}
+            {`📍 중앙 위치 찾기 (${users.length}명)`}
           </button>
         </div>
-
-        {/* 경로 결과 */}
-        {routes.length > 0 && (
-          <div className="max-h-[40vh] overflow-y-auto border-t border-gray-100">
-            {/* 경로 선택 탭 */}
-            <div className="flex gap-1.5 overflow-x-auto bg-gray-50 p-2">
-              {routes.map((route, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => selectRoute(idx)}
-                  className={`shrink-0 rounded-lg px-3 py-2 text-xs transition-all ${
-                    idx === selectedRouteIndex
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700'
-                  }`}
-                >
-                  <div className="font-bold">{route.info.totalTime}분</div>
-                  <div className="opacity-80">{route.info.payment.toLocaleString()}원</div>
-                </button>
-              ))}
-            </div>
-
-            {/* 선택된 경로 상세 */}
-            {routes[selectedRouteIndex] && (
-              <div className="p-3">
-                {/* 요약 */}
-                <div className="mb-3 flex justify-between rounded-lg bg-blue-50 p-2 text-center text-sm">
-                  <div>
-                    <div className="text-xs text-gray-500">시간</div>
-                    <div className="font-bold text-blue-600">{routes[selectedRouteIndex].info.totalTime}분</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500">요금</div>
-                    <div className="font-bold text-blue-600">{routes[selectedRouteIndex].info.payment.toLocaleString()}원</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500">거리</div>
-                    <div className="font-bold text-blue-600">{(routes[selectedRouteIndex].info.totalDistance / 1000).toFixed(1)}km</div>
-                  </div>
-                </div>
-
-                {/* 경로 */}
-                <div className="text-xs font-medium text-gray-500 mb-2">경로 상세</div>
-                <div className="space-y-1.5">
-                  {routes[selectedRouteIndex].subPath.map((subPath, idx) => (
-                    <div key={idx} className="flex items-center gap-2 rounded bg-gray-50 p-2 text-xs">
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1">
-                        {subPath.trafficType === 1 && (
-                          <span className="text-blue-600">🚇 {subPath.lane?.[0]?.name} · {subPath.sectionTime}분</span>
-                        )}
-                        {subPath.trafficType === 2 && (
-                          <span className="text-green-600">🚌 {subPath.lane?.[0]?.busNo} · {subPath.sectionTime}분</span>
-                        )}
-                        {subPath.trafficType === 3 && (
-                          <span className="text-gray-600">🚶 도보 · {subPath.sectionTime}분 · {subPath.distance}m</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
