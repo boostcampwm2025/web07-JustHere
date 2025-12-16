@@ -34,9 +34,22 @@ declare namespace kakao.maps {
 
   class ZoomControl {}
 
+  class Polyline {
+    constructor(options: PolylineOptions);
+    setMap(map: Map | null): void;
+  }
+
   interface MapOptions {
     center: LatLng;
     level: number;
+  }
+
+  interface PolylineOptions {
+    path: LatLng[];
+    strokeWeight?: number;
+    strokeColor?: string;
+    strokeOpacity?: number;
+    strokeStyle?: 'solid' | 'dashed' | 'dotted';
   }
 
   interface MarkerOptions {
