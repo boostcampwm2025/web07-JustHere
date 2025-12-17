@@ -5,7 +5,9 @@ declare namespace kakao.maps {
 
   class Map {
     constructor(container: HTMLElement, options: MapOptions);
+    setCenter(latlng: LatLng): void;
     getCenter(): LatLng;
+    panTo(latlng: LatLng): void;
     setBounds(bounds: LatLngBounds): void;
     addControl(control: ZoomControl, position: ControlPosition): void;
   }
@@ -21,8 +23,22 @@ declare namespace kakao.maps {
     extend(latlng: LatLng): void;
   }
 
+  class Size {
+    constructor(width: number, height: number);
+  }
+
+  class MarkerImage {
+    constructor(src: string, size: Size);
+  }
+
   class Marker {
     constructor(options: MarkerOptions);
+    setMap(map: Map | null): void;
+    getPosition(): LatLng;
+  }
+
+  class CustomOverlay {
+    constructor(options: CustomOverlayOptions);
     setMap(map: Map | null): void;
   }
 
@@ -39,9 +55,29 @@ declare namespace kakao.maps {
     setMap(map: Map | null): void;
   }
 
+  namespace event {
+    function addListener(target: any, type: string, handler: () => void): void;
+  }
+
   interface MapOptions {
     center: LatLng;
     level: number;
+  }
+
+  interface MarkerOptions {
+    position: LatLng;
+    map?: Map;
+    image?: MarkerImage;
+    title?: string;
+  }
+
+  interface CustomOverlayOptions {
+    content: string | HTMLElement;
+    map?: Map;
+    position: LatLng;
+    xAnchor?: number;
+    yAnchor?: number;
+    zIndex?: number;
   }
 
   interface PolylineOptions {
