@@ -4,6 +4,8 @@ import type {
   UserLocation,
   OdsayLoadLaneResponse,
   KakaoDirectionResponse,
+  OdsayStation,
+  OdsayGraphPos,
 } from "@web07/types";
 import type { MiddleLocationResult } from "@web07/types";
 import fetchData from "@/utils/fetchData";
@@ -234,7 +236,7 @@ export const useMiddleMap = (
             laneDetail.section?.forEach((section) => {
               if (section.graphPos?.length) {
                 const linePath = section.graphPos.map(
-                  (pos: any) => new kakao.maps.LatLng(pos.y, pos.x)
+                  (pos: OdsayGraphPos) => new kakao.maps.LatLng(pos.y, pos.x)
                 );
 
                 const polyline = new kakao.maps.Polyline({
@@ -251,9 +253,6 @@ export const useMiddleMap = (
             });
           });
         } else {
-          console.warn(
-            `${user.name}의 상세 경로 (loadLane) 실패. 기본 경로로 폴백 처리.`
-          );
           // loadLane 실패 시, 사용자 색상 사용
           path.subPath.forEach((subPath) => {
             const color = subPath.trafficType === 3 ? "#888888" : userColor; // 도보는 회색, 나머지는 사용자 색상
@@ -261,7 +260,7 @@ export const useMiddleMap = (
             if (subPath.passStopList?.stations?.length) {
               // 대중교통: 정류장/역 좌표 연결
               const linePath = subPath.passStopList.stations.map(
-                (station: any) =>
+                (station: OdsayStation) =>
                   new kakao.maps.LatLng(
                     parseFloat(station.y),
                     parseFloat(station.x)
@@ -282,29 +281,79 @@ export const useMiddleMap = (
         }
 
         // 도보 구간 그리기 (loadLane 성공/실패와 별개로 subPath의 도보 정보를 사용)
-        path.subPath.forEach((subPath) => {
-          if (
-            subPath.trafficType === 3 &&
-            subPath.startX &&
-            subPath.startY &&
-            subPath.endX &&
-            subPath.endY
-          ) {
-            const startPos = new kakao.maps.LatLng(
-              subPath.startY,
-              subPath.startX
-            );
-            const endPos = new kakao.maps.LatLng(subPath.endY, subPath.endX);
+        path.subPath.forEach((subPath, subPathIndex) => {
+          if (subPath.trafficType === 3) {
+            let startPos: kakao.maps.LatLng | null = null;
+            let endPos: kakao.maps.LatLng | null = null;
 
-            const polyline = new kakao.maps.Polyline({
-              path: [startPos, endPos],
-              strokeWeight: 4,
-              strokeColor: "#888888", // 도보 색상 (회색)
-              strokeOpacity: 0.6,
-              strokeStyle: "dashed", // 도보 스타일 (점선)
-            });
-            polyline.setMap(mapRef.current);
-            polylinesRef.current.push(polyline);
+            // startX/Y, endX/Y가 있으면 사용
+            if (
+              subPath.startX &&
+              subPath.startY &&
+              subPath.endX &&
+              subPath.endY
+            ) {
+              startPos = new kakao.maps.LatLng(subPath.startY, subPath.startX);
+              endPos = new kakao.maps.LatLng(subPath.endY, subPath.endX);
+            }
+            // startX/Y가 없으면 이전/다음 구간의 좌표 사용
+            else {
+              // 이전 구간에서 끝 좌표 가져오기
+              if (subPathIndex > 0) {
+                const prevSubPath = path.subPath[subPathIndex - 1];
+                if (prevSubPath.passStopList?.stations?.length) {
+                  const lastStation =
+                    prevSubPath.passStopList.stations[
+                      prevSubPath.passStopList.stations.length - 1
+                    ];
+                  startPos = new kakao.maps.LatLng(
+                    parseFloat(lastStation.y),
+                    parseFloat(lastStation.x)
+                  );
+                } else if (prevSubPath.endX && prevSubPath.endY) {
+                  startPos = new kakao.maps.LatLng(
+                    prevSubPath.endY,
+                    prevSubPath.endX
+                  );
+                }
+              } else {
+                // 첫 번째 구간이 도보인 경우 사용자 위치 사용
+                startPos = new kakao.maps.LatLng(user.y, user.x);
+              }
+
+              // 다음 구간에서 시작 좌표 가져오기
+              if (subPathIndex < path.subPath.length - 1) {
+                const nextSubPath = path.subPath[subPathIndex + 1];
+                if (nextSubPath.passStopList?.stations?.length) {
+                  const firstStation = nextSubPath.passStopList.stations[0];
+                  endPos = new kakao.maps.LatLng(
+                    parseFloat(firstStation.y),
+                    parseFloat(firstStation.x)
+                  );
+                } else if (nextSubPath.startX && nextSubPath.startY) {
+                  endPos = new kakao.maps.LatLng(
+                    nextSubPath.startY,
+                    nextSubPath.startX
+                  );
+                }
+              } else {
+                // 마지막 구간이 도보인 경우 역 위치 사용
+                endPos = new kakao.maps.LatLng(station.y, station.x);
+              }
+            }
+
+            // startPos와 endPos가 모두 있으면 폴리라인 그리기
+            if (startPos && endPos) {
+              const polyline = new kakao.maps.Polyline({
+                path: [startPos, endPos],
+                strokeWeight: 4,
+                strokeColor: "#888888", // 도보 색상 (회색)
+                strokeOpacity: 0.6,
+                strokeStyle: "dashed", // 도보 스타일 (점선)
+              });
+              polyline.setMap(mapRef.current);
+              polylinesRef.current.push(polyline);
+            }
           }
         });
       } catch (error) {
