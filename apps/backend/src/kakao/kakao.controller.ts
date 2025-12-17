@@ -37,4 +37,36 @@ export class KakaoController {
       throw error;
     }
   }
+
+  @Get('category-search')
+  async searchCategory(
+    @Query('category_group_code') categoryGroupCode: string,
+    @Query('x') x: number,
+    @Query('y') y: number,
+    @Query('radius') radius?: number,
+    @Query('page') page?: number,
+    @Query('sort') sort?: 'distance' | 'accuracy',
+  ): Promise<KakaoLocalSearchResponse> {
+    this.logger.log(
+      `[Request] category-search - code: ${categoryGroupCode}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}`,
+    );
+
+    try {
+      const result = await this.kakaoService.searchCategory(
+        categoryGroupCode,
+        x,
+        y,
+        radius,
+        page,
+        sort,
+      );
+      this.logger.log(
+        `[Response] category-search - success, result count: ${result.documents.length}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`[Error] category-search - ${error}`);
+      throw error;
+    }
+  }
 }
