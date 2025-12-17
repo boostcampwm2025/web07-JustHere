@@ -119,8 +119,8 @@ export class MiddleLocationService {
       category: '지하철역',
     }));
 
-    // 최대 15개 역만 검색 (계산 시간 단축)
-    return stations.slice(0, 15);
+    // 최대 5개 역만 검색 (계산 시간 단축)
+    return stations.slice(0, 5);
   }
 
   private async calculateTravelTime(
