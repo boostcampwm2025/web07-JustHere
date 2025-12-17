@@ -1,7 +1,10 @@
 // src/kakao/kakao.service.ts
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { KakaoLocalSearchResponse } from '@web07/types';
+import {
+  KakaoLocalSearchResponse,
+  KakaoAddressSearchResponse,
+} from '@web07/types';
 
 @Injectable()
 export class KakaoService {
