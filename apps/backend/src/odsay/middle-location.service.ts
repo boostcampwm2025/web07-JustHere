@@ -39,25 +39,32 @@ export class MiddleLocationService {
 
       for (const user of users) {
         try {
-          // 대중교통일 때만 시간 계산
+          let travelTime: number;
+
           if (user.transportationType === 'public_transit') {
-            const travelTime = await this.calculateTravelTime(
+            // 대중교통 경로 계산
+            travelTime = await this.calculateTravelTime(
               user.x,
               user.y,
               station.x,
               station.y,
             );
-
-            userTimes.push({
-              userName: user.name,
-              travelTime,
-            });
-
-            totalTime += travelTime;
           } else {
-            // 자동차일 때는 계산하지 않음 (비워둠)
-            // TODO: 자동차 경로 계산 구현 필요
+            // 자동차 경로 계산
+            travelTime = await this.calculateCarTravelTime(
+              user.x,
+              user.y,
+              station.x,
+              station.y,
+            );
           }
+
+          userTimes.push({
+            userName: user.name,
+            travelTime,
+          });
+
+          totalTime += travelTime;
         } catch (error) {
           console.error(
             `경로 계산 실패: ${user.name} -> ${station.name}`,
@@ -146,7 +153,29 @@ export class MiddleLocationService {
       throw new Error('경로를 찾을 수 없습니다.');
     }
 
-    // 가장 빠른 경로의 소요시간 반환
+    // 가장 빠른 경로의 소요시간 반환 (초 단위를 분 단위로 변환)
     return routeData.result.path[0].info.totalTime;
+  }
+
+  private async calculateCarTravelTime(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+  ): Promise<number> {
+    const directionData = await this.kakaoService.getDirections(
+      startX,
+      startY,
+      endX,
+      endY,
+    );
+
+    if (!directionData.routes?.length) {
+      throw new Error('경로를 찾을 수 없습니다.');
+    }
+
+    // 가장 빠른 경로의 소요시간 반환 (초 단위를 분 단위로 변환)
+    const durationInSeconds = directionData.routes[0].summary.duration;
+    return Math.round(durationInSeconds / 60); // 초를 분으로 변환
   }
 }

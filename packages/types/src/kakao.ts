@@ -28,3 +28,24 @@ export interface KakaoLocalSearchResponse {
   meta: KakaoLocalSearchMeta;
   documents: KakaoLocalSearchItem[];
 }
+
+export interface KakaoDirectionRoad {
+  vertexes: number[]; // 좌표 배열 [x1, y1, x2, y2, ...]
+}
+
+export interface KakaoDirectionSection {
+  roads: KakaoDirectionRoad[];
+}
+
+export interface KakaoDirectionSummary {
+  duration: number;
+}
+
+export interface KakaoDirectionRoute {
+  summary: KakaoDirectionSummary;
+  sections: KakaoDirectionSection[];
+}
+
+export interface KakaoDirectionResponse {
+  routes: KakaoDirectionRoute[];
+}

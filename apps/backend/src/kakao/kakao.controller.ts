@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common';
 import { KakaoService } from './kakao.service';
-import { KakaoLocalSearchResponse } from '@web07/types';
+import { KakaoLocalSearchResponse, KakaoDirectionResponse } from '@web07/types';
 
 @Controller('api/kakao')
 export class KakaoController {
@@ -34,6 +34,34 @@ export class KakaoController {
       return result;
     } catch (error) {
       this.logger.error(`[Error] local-search - ${error}`);
+      throw error;
+    }
+  }
+
+  @Get('directions')
+  async getDirections(
+    @Query('originX') originX: number,
+    @Query('originY') originY: number,
+    @Query('destinationX') destinationX: number,
+    @Query('destinationY') destinationY: number,
+  ): Promise<KakaoDirectionResponse> {
+    this.logger.log(
+      `[Request] directions - origin: ${originX},${originY}, destination: ${destinationX},${destinationY}`,
+    );
+
+    try {
+      const result = await this.kakaoService.getDirections(
+        originX,
+        originY,
+        destinationX,
+        destinationY,
+      );
+      this.logger.log(
+        `[Response] directions - success, routes count: ${result.routes.length}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`[Error] directions - ${error}`);
       throw error;
     }
   }
