@@ -1,14 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import fetchData from '@/utils/fetchData';
-import type { NaverGeocodingResponse, NaverAddress } from '@web07/types';
+import { useState, useEffect, useRef } from "react";
+import fetchData from "@/utils/fetchData";
+import type {
+  KakaoAddressSearchResponse,
+  KakaoAddressDocument,
+} from "@web07/types";
 
 export const useGeocode = () => {
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<NaverAddress[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<NaverAddress | null>(null);
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<KakaoAddressDocument[]>([]);
+  const [selectedAddress, setSelectedAddress] =
+    useState<KakaoAddressDocument | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
   const isSelectingRef = useRef(false); // 주소 선택 중인지 추적
 
   // 디바운스를 적용한 주소 검색
@@ -33,20 +37,20 @@ export const useGeocode = () => {
     debounceTimerRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const data = await fetchData<NaverGeocodingResponse>(
-          'http://localhost:3000/api/naver/geocode',
+        const data = await fetchData<KakaoAddressSearchResponse>(
+          "http://localhost:3000/api/kakao/search-address",
           { query }
         );
 
-        if (data.status === 'OK' && data.addresses.length > 0) {
-          setSuggestions(data.addresses);
+        if (data.documents && data.documents.length > 0) {
+          setSuggestions(data.documents);
           setShowDropdown(true);
         } else {
           setSuggestions([]);
           setShowDropdown(false);
         }
       } catch (error) {
-        console.error('주소 검색 오류:', error);
+        console.error("주소 검색 오류:", error);
         setSuggestions([]);
         setShowDropdown(false);
       } finally {
@@ -61,15 +65,20 @@ export const useGeocode = () => {
     };
   }, [query]);
 
-  const selectAddress = (address: NaverAddress) => {
+  const selectAddress = (address: KakaoAddressDocument) => {
     isSelectingRef.current = true; // 선택 중임을 표시
     setSelectedAddress(address);
-    setQuery(address.roadAddress);
+    // 도로명 주소 우선, 없으면 지번 주소 사용
+    const displayAddress =
+      address.road_address?.address_name ||
+      address.address?.address_name ||
+      address.address_name;
+    setQuery(displayAddress);
     setShowDropdown(false);
   };
 
   const clearQuery = () => {
-    setQuery('');
+    setQuery("");
     setSuggestions([]);
     setShowDropdown(false);
     setSelectedAddress(null);
