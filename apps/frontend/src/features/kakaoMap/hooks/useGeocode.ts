@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import fetchData from "@/utils/fetchData";
 import type {
-  KakaoAddressSearchResponse,
-  KakaoAddressDocument,
+  KakaoLocalSearchResponse,
+  KakaoLocalSearchItem,
 } from "@web07/types";
 
 export const useGeocode = () => {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<KakaoAddressDocument[]>([]);
+  const [suggestions, setSuggestions] = useState<KakaoLocalSearchItem[]>([]);
   const [selectedAddress, setSelectedAddress] =
-    useState<KakaoAddressDocument | null>(null);
+    useState<KakaoLocalSearchItem | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const debounceTimerRef = useRef<number | null>(null);
@@ -37,8 +37,8 @@ export const useGeocode = () => {
     debounceTimerRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const data = await fetchData<KakaoAddressSearchResponse>(
-          "http://localhost:3000/api/kakao/search-address",
+        const data = await fetchData<KakaoLocalSearchResponse>(
+          "http://localhost:3000/api/kakao/local-search",
           { query }
         );
 
@@ -65,14 +65,11 @@ export const useGeocode = () => {
     };
   }, [query]);
 
-  const selectAddress = (address: KakaoAddressDocument) => {
+  const selectAddress = (address: KakaoLocalSearchItem) => {
     isSelectingRef.current = true; // 선택 중임을 표시
     setSelectedAddress(address);
     // 도로명 주소 우선, 없으면 지번 주소 사용
-    const displayAddress =
-      address.road_address?.address_name ||
-      address.address?.address_name ||
-      address.address_name;
+    const displayAddress = address.road_address_name || address.address_name;
     setQuery(displayAddress);
     setShowDropdown(false);
   };
