@@ -25,6 +25,7 @@ interface Candidate {
     participantName: string;
     duration: number; // 분
     routeInfo: RouteInfo;
+    path: Array<{ lat: number; lng: number }>;
   }>;
 }
 
@@ -102,6 +103,7 @@ export class MidpointsService {
 
           if (!routeInfo) {
             // 이동 시간 계산
+
             if (participant.transportMode === 'PUBLIC_TRANSPORT') {
               routeInfo = await this.odsayService.searchPubTransPathT(
                 participant.lng,
@@ -125,6 +127,7 @@ export class MidpointsService {
             participantName: participant.name,
             duration: Math.round(routeInfo.duration / 60), // 초를 분으로 변환
             routeInfo,
+            path: routeInfo.path.map((p) => ({ lat: p.lat, lng: p.lng })),
           };
         }),
       );
@@ -139,9 +142,14 @@ export class MidpointsService {
       });
     }
 
-    // 통계 계산 및 스코어링 (커밋 11에서 상세 구현)
-    // 여기서는 기본 통계만 계산
-    const candidatesWithStats = candidates.map((candidate) => {
+    // 통계 계산 및 스코어링
+    const candidatesWithStats: Array<
+      Candidate & {
+        averageDuration: number;
+        timeDifference: number;
+        score: number;
+      }
+    > = candidates.map((candidate) => {
       const durations = candidate.participantDurations.map((d) => d.duration);
       const averageDuration =
         durations.reduce((sum, d) => sum + d, 0) / durations.length;
@@ -149,8 +157,18 @@ export class MidpointsService {
       const maxDuration = Math.max(...durations);
       const timeDifference = maxDuration - minDuration;
 
-      // 기본 스코어 (커밋 11에서 개선)
-      const score = averageDuration;
+      // 분산 계산: variance = Σ(time - averageTime)² / N
+      const variance =
+        durations.reduce(
+          (sum, d) => sum + Math.pow(d - averageDuration, 2),
+          0,
+        ) / durations.length;
+
+      // 표준편차 계산: stddev = √variance
+      const stddev = Math.sqrt(variance);
+
+      // 스코어 계산: score = 0.5 × averageTime + 0.3 × stddev + 0.2 × maxTime
+      const score = 0.5 * averageDuration + 0.3 * stddev + 0.2 * maxDuration;
 
       return {
         ...candidate,
@@ -182,8 +200,7 @@ export class MidpointsService {
             participantId: pd.participantId,
             participantName: pd.participantName,
             duration: pd.duration,
-            // routePolyline은 저작권 문제로 응답에서 제외
-            // 경로 정보는 routeCache에만 저장되며, 필요시 별도 엔드포인트로 제공
+            path: pd.path, // 프로토타입용 경로 정보
           })),
         }),
       ),

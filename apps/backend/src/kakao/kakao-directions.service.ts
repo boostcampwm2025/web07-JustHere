@@ -74,8 +74,30 @@ export class KakaoDirectionsService {
       // 첫 번째 경로 사용
       const route: RouteDto = data.routes[0];
       const summary = route.summary;
-      const duration = summary.duration; // 밀리초 단위
+
+      if (!summary) {
+        this.logger.error('Route summary is missing', {
+          route: JSON.stringify(route),
+        });
+        throw new Error('Route summary is missing');
+      }
+
+      const duration = summary.duration; // 초 단위
       const distance = summary.distance; // 미터
+
+      this.logger.debug('Car route duration', {
+        duration,
+        distance,
+        durationInSeconds: duration,
+        durationInMinutes: Math.floor(duration / 60),
+      });
+
+      if (!duration || duration === 0) {
+        this.logger.warn('Duration is 0 or missing', {
+          summary: JSON.stringify(summary),
+          route: JSON.stringify(route),
+        });
+      }
 
       // 경로 path 추출 (카카오 Directions API의 경로 path)
       // sections에서 경로 좌표 추출
@@ -100,17 +122,37 @@ export class KakaoDirectionsService {
         }
       }
 
+      // 경로가 없으면 시작점과 끝점만 포함
+      if (path.length === 0) {
+        path.push({ lat: startY, lng: startX }, { lat: endY, lng: endX });
+      }
+
       const routeInfo = new RouteInfo();
       routeInfo.path = path;
-      routeInfo.duration = Math.floor(duration / 1000); // 밀리초를 초로 변환
+      routeInfo.duration = duration; // 이미 초 단위
       routeInfo.distance = distance;
       routeInfo.transportMode = 'CAR';
 
       return routeInfo;
     } catch (error) {
-      this.logger.error('Kakao Directions API error:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as {
+          response?: { status?: number; data?: { message?: string } };
+          message?: string;
+        };
+        const status = axiosError.response?.status;
+        const message =
+          axiosError.response?.data?.message || axiosError.message;
+        this.logger.error(
+          `Kakao Directions API error: ${status || 'unknown'} - ${message || 'Unknown error'}`,
+        );
+        throw new Error(
+          `Failed to get car route: ${status ? `HTTP ${status}` : message || 'Unknown error'}`,
+        );
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
+      this.logger.error(`Kakao Directions API error: ${errorMessage}`);
       throw new Error(`Failed to get car route: ${errorMessage}`);
     }
   }

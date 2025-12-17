@@ -6,6 +6,7 @@ import { AppService } from '@/app.service';
 import { RoomsModule } from '@/rooms/rooms.module';
 import { ParticipantsModule } from '@/participants/participants.module';
 import { MidpointsModule } from '@/midpoints/midpoints.module';
+import { KakaoModule } from '@/kakao/kakao.module';
 
 @Module({
   imports: [
@@ -24,13 +25,14 @@ import { MidpointsModule } from '@/midpoints/midpoints.module';
         database: configService.get<string>('DB_DATABASE', 'just_here'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true, // 프로토타입에서는 true, 프로덕션에서는 false
-        logging: true, // 개발 환경에서 SQL 쿼리 로깅
+        logging: false, // SQL 쿼리 로깅 비활성화
       }),
       inject: [ConfigService],
     }),
     RoomsModule,
     ParticipantsModule,
     MidpointsModule,
+    KakaoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

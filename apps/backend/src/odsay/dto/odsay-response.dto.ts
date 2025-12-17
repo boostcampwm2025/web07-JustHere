@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { IsArray, IsNumber, ValidateNested } from 'class-validator';
+import { IsArray, IsNumber, ValidateNested, IsOptional } from 'class-validator';
 
 export class PathInfoDto {
   @Expose()
@@ -11,9 +11,42 @@ export class PathInfoDto {
   totalDistance: number; // 미터
 }
 
+export class StationDto {
+  @Expose()
+  @IsNumber()
+  x: number; // 경도
+
+  @Expose()
+  @IsNumber()
+  y: number; // 위도
+
+  @Expose()
+  @IsOptional()
+  stationName?: string;
+
+  @Expose()
+  @IsOptional()
+  stationID?: number;
+}
+
+export class PassStopListDto {
+  @Expose()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StationDto)
+  stations: StationDto[];
+}
+
 export class SubPathDto {
   @Expose()
-  path: string | Array<{ x: number; y: number }> | undefined;
+  @IsOptional()
+  path?: string | Array<{ x: number; y: number }>;
+
+  @Expose()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PassStopListDto)
+  passStopList?: PassStopListDto;
 }
 
 export class PathDto {

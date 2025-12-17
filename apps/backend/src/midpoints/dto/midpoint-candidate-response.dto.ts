@@ -2,8 +2,7 @@ import { Expose } from 'class-transformer';
 
 /**
  * 참가자별 소요시간 정보
- * 주의: routePolyline은 저작권 문제로 DB 저장 및 응답에 포함하지 않음
- * 경로 정보가 필요한 경우 별도 엔드포인트(GET /api/rooms/:roomId/midpoints/:candidateId/routes/:participantId) 사용
+ * 주의: path는 프로토타입용으로만 사용하며, 실제 서비스에서는 별도 엔드포인트 사용 권장
  */
 export class ParticipantDurationDto {
   @Expose()
@@ -14,6 +13,9 @@ export class ParticipantDurationDto {
 
   @Expose()
   duration: number; // 분
+
+  @Expose()
+  path?: Array<{ lat: number; lng: number }>; // 경로 좌표 배열 (프로토타입용)
 }
 
 export class MidpointCandidateResponseDto {

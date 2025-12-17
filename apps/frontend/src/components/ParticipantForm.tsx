@@ -1,20 +1,19 @@
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type FormEvent,
+} from "react";
 import { useMutation } from "@tanstack/react-query";
 import { createRoom } from "@/api/rooms";
 import { createParticipant } from "@/api/participants";
+import { searchAddresses, type AddressSearchResult } from "@/api/addresses";
 import { cn } from "@/lib/cn";
 
 interface ParticipantFormProps {
   onRoomCreated?: (roomId: number) => void;
   onParticipantsChange?: (participants: LocalParticipant[]) => void;
-}
-
-interface PlaceSearchResult {
-  place_name: string;
-  address_name: string;
-  road_address_name?: string;
-  x: string; // 경도
-  y: string; // 위도
 }
 
 interface LocalParticipant {
@@ -32,10 +31,9 @@ export function ParticipantForm({
 }: ParticipantFormProps) {
   const [name, setName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<PlaceSearchResult[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(
-    null
-  );
+  const [searchResults, setSearchResults] = useState<AddressSearchResult[]>([]);
+  const [selectedPlace, setSelectedPlace] =
+    useState<AddressSearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [transportMode, setTransportMode] = useState<
@@ -48,66 +46,39 @@ export function ParticipantForm({
     mutationFn: createRoom,
   });
 
-  const searchTimeoutRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 장소 검색 함수
-  const searchPlaces = (keyword: string) => {
+  // 도로명 주소 검색 함수
+  const handleSearchAddresses = useCallback(async (keyword: string) => {
     if (!keyword.trim()) {
       setSearchResults([]);
       setShowResults(false);
       return;
     }
 
-    if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
-      return;
-    }
-
     setIsSearching(true);
     setShowResults(true);
 
-    const places = new window.kakao.maps.services.Places();
-
-    places.keywordSearch(
-      keyword,
-      (data: PlaceSearchResult[], status: any) => {
-        setIsSearching(false);
-
-        if (status === window.kakao.maps.services.Status.OK) {
-          setSearchResults(data.slice(0, 10)); // 최대 10개만 표시
-        } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-          setSearchResults([]);
-        } else {
-          setSearchResults([]);
-        }
-      },
-      {
-        size: 10, // 최대 10개 결과
-      }
-    );
-  };
-
-  // 검색어 입력 시 debounce 처리
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    try {
+      const results = await searchAddresses(keyword);
+      setSearchResults(results);
+    } catch (error) {
+      console.error("주소 검색 실패:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
+  }, []);
 
-    searchTimeoutRef.current = setTimeout(() => {
+  // 엔터 키 입력 시 검색
+  const handleAddressKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
       if (searchQuery && !selectedPlace) {
-        searchPlaces(searchQuery);
-      } else {
-        setSearchResults([]);
-        setShowResults(false);
+        handleSearchAddresses(searchQuery);
       }
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, selectedPlace]);
+    }
+  };
 
   // 외부 클릭 시 검색 결과 닫기
   useEffect(() => {
@@ -126,9 +97,9 @@ export function ParticipantForm({
     };
   }, []);
 
-  const handlePlaceSelect = (place: PlaceSearchResult) => {
+  const handlePlaceSelect = (place: AddressSearchResult) => {
     setSelectedPlace(place);
-    setSearchQuery(place.place_name);
+    setSearchQuery(place.road_address_name || place.address_name);
     setSearchResults([]);
     setShowResults(false);
   };
@@ -152,8 +123,8 @@ export function ParticipantForm({
       id: nextParticipantId,
       name,
       address: selectedPlace.road_address_name || selectedPlace.address_name,
-      lat: parseFloat(selectedPlace.y),
-      lng: parseFloat(selectedPlace.x),
+      lat: selectedPlace.lat,
+      lng: selectedPlace.lng,
       transportMode,
     };
 
@@ -341,9 +312,10 @@ export function ParticipantForm({
           <div className="relative">
             <input
               type="text"
-              placeholder="주소나 장소명을 입력하세요"
+              placeholder="도로명 주소를 입력하고 엔터를 누르세요"
               value={searchQuery}
               onChange={handleAddressChange}
+              onKeyDown={handleAddressKeyDown}
               onFocus={() => {
                 if (searchResults.length > 0) {
                   setShowResults(true);
@@ -384,11 +356,13 @@ export function ParticipantForm({
                   className="w-full text-left px-4 py-3 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0"
                 >
                   <p className="font-medium text-sm text-gray-900">
-                    {place.place_name}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
                     {place.road_address_name || place.address_name}
                   </p>
+                  {place.road_address_name && place.address_name && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {place.address_name}
+                    </p>
+                  )}
                 </button>
               ))}
             </div>

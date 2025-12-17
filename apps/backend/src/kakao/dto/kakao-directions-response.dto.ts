@@ -8,7 +8,7 @@ export class RouteSummaryDto {
 
   @Expose()
   @IsNumber()
-  duration: number; // 밀리초
+  duration: number; // 초
 }
 
 export class RoadDto {
