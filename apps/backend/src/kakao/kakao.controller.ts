@@ -1,6 +1,9 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common';
 import { KakaoService } from './kakao.service';
-import { KakaoLocalSearchResponse } from '@web07/types';
+import {
+  KakaoLocalSearchResponse,
+  KakaoAddressSearchResponse,
+} from '@web07/types';
 
 @Controller('api/kakao')
 export class KakaoController {
@@ -36,5 +39,12 @@ export class KakaoController {
       this.logger.error(`[Error] local-search - ${error}`);
       throw error;
     }
+  }
+
+  @Get('search-address')
+  async searchAddress(
+    @Query('query') query: string,
+  ): Promise<KakaoAddressSearchResponse> {
+    return this.kakaoService.searchAddress(query);
   }
 }
