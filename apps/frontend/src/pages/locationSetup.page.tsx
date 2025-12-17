@@ -214,18 +214,20 @@ function LocationSetupPage() {
                     <div className="text-xs text-gray-500 truncate">
                       {user.address}
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      {user.transportationType === "car"
-                        ? "🚗 자동차"
-                        : "🚇 대중교통"}
-                    </div>
                   </div>
-                  <button
-                    onClick={() => removeUser(user.id)}
-                    className="ml-2 text-red-600 hover:text-red-700 text-xs font-medium shrink-0"
-                  >
-                    삭제
-                  </button>
+                  <div className="flex items-center">
+                    <div className="text-xs bg-gray-200 px-2 py-0.5 rounded-lg">
+                      {user.transportationType === "car"
+                        ? "자동차"
+                        : "대중교통"}
+                    </div>
+                    <button
+                      onClick={() => removeUser(user.id)}
+                      className="ml-2 text-red-600 hover:text-red-700 text-xs font-medium shrink-0"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

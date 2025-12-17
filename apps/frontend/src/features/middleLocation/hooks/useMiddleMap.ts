@@ -6,6 +6,7 @@ import type {
   KakaoDirectionResponse,
   OdsayStation,
   OdsayGraphPos,
+  UserDetailedRoute,
 } from "@web07/types";
 import type { MiddleLocationResult } from "@web07/types";
 import fetchData from "@/utils/fetchData";
@@ -155,8 +156,8 @@ export const useMiddleMap = (
       user: UserLocation,
       station: { x: number; y: number },
       userColor: string
-    ) => {
-      if (!mapRef.current || !window.kakao) return;
+    ): Promise<UserDetailedRoute | null> => {
+      if (!mapRef.current || !window.kakao) return null;
       const kakao = window.kakao;
 
       try {
@@ -172,9 +173,10 @@ export const useMiddleMap = (
             }
           );
 
-          if (!directionData.routes?.length) return;
+          if (!directionData.routes?.length) return null;
 
           const route = directionData.routes[0];
+          const totalTime = Math.round(route.summary.duration / 60); // 초를 분으로 변환
 
           // 각 section의 roads에서 경로 좌표 추출
           route.sections.forEach((section) => {
@@ -208,7 +210,13 @@ export const useMiddleMap = (
             });
           });
 
-          return;
+          // 자동차의 경우 상세 경로 정보 없음
+          return {
+            userName: user.name,
+            segments: [],
+            totalTime,
+            transferCount: 0,
+          };
         }
 
         // 대중교통일 때는 ODsay API로 경로 조회
@@ -217,9 +225,53 @@ export const useMiddleMap = (
           { SX: user.x, SY: user.y, EX: station.x, EY: station.y }
         );
 
-        if (!routeData.result?.path?.length) return;
+        if (!routeData.result?.path?.length) return null;
 
         const path = routeData.result.path[0]; // 최적 경로 1개 사용
+
+        // 상세 경로 정보 추출
+        const segments: UserDetailedRoute["segments"] = [];
+        const transitSubPaths = path.subPath.filter(
+          (sp) => sp.trafficType !== 3
+        );
+        const transferCount = Math.max(0, transitSubPaths.length - 1);
+
+        path.subPath.forEach((subPath) => {
+          // 버스인 경우 버스 번호 사용, 지하철인 경우 노선명 사용, 도보인 경우 "도보" 사용
+          let laneName: string;
+          if (subPath.trafficType === 3) {
+            // 도보
+            laneName = "도보";
+          } else if (subPath.trafficType === 2) {
+            // 버스
+            laneName = subPath.lane?.[0]?.busNo
+              ? `${subPath.lane[0].busNo}번 버스`
+              : subPath.lane?.[0]?.name || "버스";
+          } else {
+            // 지하철 (trafficType === 1)
+            laneName = subPath.lane?.[0]?.name || "지하철";
+          }
+
+          const startName = subPath.startName || "";
+          const endName = subPath.endName || "";
+          const sectionTime = Math.round(subPath.sectionTime); // 이미 분 단위
+
+          segments.push({
+            laneName,
+            startName,
+            endName,
+            sectionTime,
+            trafficType: subPath.trafficType,
+          });
+        });
+
+        const detailedRoute: UserDetailedRoute = {
+          userName: user.name,
+          segments,
+          totalTime: Math.round(path.info.totalTime / 60), // 초를 분으로 변환
+          transferCount,
+        };
+
         const mapObject = `0:0@${path.info.mapObj}`;
 
         // loadLane API로 상세 경로 가져오기
@@ -356,8 +408,11 @@ export const useMiddleMap = (
             }
           }
         });
+
+        return detailedRoute;
       } catch (error) {
         console.error(`${user.name}의 경로를 그리는 중 오류:`, error);
+        return null;
       }
     },
     [mapRef]
@@ -365,8 +420,11 @@ export const useMiddleMap = (
 
   // 경로 폴리라인 그리기 (모든 사용자에 대해 drawSingleUserRoute 호출)
   const drawRoutePolylines = useCallback(
-    async (users: UserLocation[], station: { x: number; y: number }) => {
-      if (!mapRef.current || !window.kakao) return;
+    async (
+      users: UserLocation[],
+      station: { x: number; y: number }
+    ): Promise<UserDetailedRoute[]> => {
+      if (!mapRef.current || !window.kakao) return [];
 
       // 기존 폴리라인 제거
       polylinesRef.current.forEach((polyline) => polyline.setMap(null));
@@ -378,9 +436,12 @@ export const useMiddleMap = (
           USER_COLORS[index % USER_COLORS.length] || USER_COLORS[0];
         return drawSingleUserRoute(user, station, userColor);
       });
-      await Promise.all(routePromises);
+      const detailedRoutes = await Promise.all(routePromises);
 
-      // 경로를 다 그린 후 지도 범위 조정 (선택 사항 - 여기서는 기존 로직대로 지도 조정은 생략)
+      // null 값 필터링하고 반환
+      return detailedRoutes.filter(
+        (route): route is UserDetailedRoute => route !== null
+      );
     },
     [mapRef, drawSingleUserRoute]
   );

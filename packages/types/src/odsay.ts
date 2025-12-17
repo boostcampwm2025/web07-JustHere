@@ -106,3 +106,18 @@ export interface MiddleLocationResult {
   maxTime: number;
   timeDifference: number; // 최대 시간 - 최소 시간 (작을수록 공평함)
 }
+
+export interface DetailedRouteSegment {
+  laneName: string; // 노선명 (예: "신분당선", "3호선")
+  startName: string; // 시작 역/정류장명
+  endName: string; // 도착 역/정류장명
+  sectionTime: number; // 구간 소요 시간 (분)
+  trafficType: number; // 1: 지하철, 2: 버스, 3: 도보
+}
+
+export interface UserDetailedRoute {
+  userName: string;
+  segments: DetailedRouteSegment[];
+  totalTime: number; // 총 소요 시간 (분)
+  transferCount: number; // 환승 횟수
+}
