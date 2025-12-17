@@ -79,31 +79,23 @@ export class MiddleLocationService {
 
       const averageTime = totalTime / users.length;
       const maxTime = Math.max(...userTimes.map((ut) => ut.travelTime));
-
-      // 표준편차 계산
-      const variance =
-        userTimes.reduce((sum, ut) => {
-          const diff = ut.travelTime - averageTime;
-          return sum + diff * diff;
-        }, 0) / users.length;
-
-      const stdDev = Math.sqrt(variance);
-      const fairnessScore = stdDev === 0 ? 100 : 1 / stdDev;
+      const minTime = Math.min(...userTimes.map((ut) => ut.travelTime));
+      const timeDifference = maxTime - minTime;
 
       results.push({
         station,
         userTimes,
         averageTime,
         maxTime,
-        fairnessScore,
+        timeDifference,
       });
     }
 
-    // 4. 공평성 점수와 평균 시간을 기준으로 정렬
+    // 4. 시간 차이와 평균 시간을 기준으로 정렬
     results.sort((a, b) => {
-      // 공평성 우선, 그 다음 평균 시간
-      const fairnessDiff = b.fairnessScore - a.fairnessScore;
-      if (Math.abs(fairnessDiff) > 0.01) return fairnessDiff;
+      // 시간 차이가 작을수록 좋음 (오름차순), 그 다음 평균 시간
+      const timeDiffDiff = a.timeDifference - b.timeDifference;
+      if (Math.abs(timeDiffDiff) > 0.01) return timeDiffDiff;
       return a.averageTime - b.averageTime;
     });
 

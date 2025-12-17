@@ -104,5 +104,5 @@ export interface MiddleLocationResult {
   userTimes: UserToStationTime[];
   averageTime: number;
   maxTime: number;
-  fairnessScore: number; // 표준편차의 역수 (높을수록 공평함)
+  timeDifference: number; // 최대 시간 - 최소 시간 (작을수록 공평함)
 }
