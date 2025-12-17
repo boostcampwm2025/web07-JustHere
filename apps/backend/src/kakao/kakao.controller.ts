@@ -15,9 +15,10 @@ export class KakaoController {
     @Query('y') y?: number,
     @Query('radius') radius?: number,
     @Query('page') page?: number,
+    @Query('size') size?: number,
   ): Promise<KakaoLocalSearchResponse> {
     this.logger.log(
-      `[Request] local-search - query: ${query}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}`,
+      `[Request] local-search - query: ${query}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}, size: ${size}`,
     );
 
     try {
@@ -27,6 +28,7 @@ export class KakaoController {
         y,
         radius,
         page,
+        size,
       );
       this.logger.log(
         `[Response] local-search - success, result count: ${result.documents.length}`,
@@ -46,9 +48,10 @@ export class KakaoController {
     @Query('radius') radius?: number,
     @Query('page') page?: number,
     @Query('sort') sort?: 'distance' | 'accuracy',
+    @Query('size') size?: number,
   ): Promise<KakaoLocalSearchResponse> {
     this.logger.log(
-      `[Request] category-search - code: ${categoryGroupCode}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}`,
+      `[Request] category-search - code: ${categoryGroupCode}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}, size: ${size}`,
     );
 
     try {
@@ -59,6 +62,7 @@ export class KakaoController {
         radius,
         page,
         sort,
+        size,
       );
       this.logger.log(
         `[Response] category-search - success, result count: ${result.documents.length}`,

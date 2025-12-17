@@ -20,6 +20,7 @@ export class KakaoService {
     y?: number,
     radius?: number,
     page?: number,
+    size?: number,
   ): Promise<KakaoLocalSearchResponse> {
     // 혹시 이미 인코딩된 상태라면 디코딩
     const decodedQuery = decodeURIComponent(query);
@@ -30,6 +31,7 @@ export class KakaoService {
       ...(y && { y: String(y) }),
       ...(radius && { radius: String(radius) }),
       ...(page && { page: String(page) }),
+      ...(size && { size: String(size) }),
     });
 
     const url = `https://dapi.kakao.com/v2/local/search/keyword.json?${params}`;
@@ -81,6 +83,7 @@ export class KakaoService {
     radius?: number,
     page?: number,
     sort?: 'distance' | 'accuracy',
+    size?: number,
   ): Promise<KakaoLocalSearchResponse> {
     const params = new URLSearchParams({
       category_group_code: categoryGroupCode,
@@ -89,6 +92,7 @@ export class KakaoService {
       ...(radius && { radius: String(radius) }),
       ...(page && { page: String(page) }),
       ...(sort && { sort }),
+      ...(size && { size: String(size) }),
     });
 
     const url = `https://dapi.kakao.com/v2/local/search/category.json?${params}`;
