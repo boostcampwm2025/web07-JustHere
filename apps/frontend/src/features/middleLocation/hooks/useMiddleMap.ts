@@ -8,27 +8,18 @@ import type {
 import type { MiddleLocationResult } from "@web07/types";
 import fetchData from "@/utils/fetchData";
 
-// 두 번째 코드에서 가져온 색상 정의
-const SUBWAY_COLORS: Record<number, string> = {
-  1: "#0052A4", // 1호선
-  2: "#00A84D", // 2호선
-  3: "#EF7C1C", // 3호선
-  4: "#00A5DE", // 4호선
-  5: "#996CAC", // 5호선
-  6: "#CD7C2F", // 6호선
-  7: "#747F00", // 7호선
-  8: "#E6186C", // 8호선
-  9: "#BDB092", // 9호선
-};
-
-const BUS_COLORS: Record<number, string> = {
-  1: "#0068B7", // 일반 (파랑)
-  11: "#0068B7", // 일반
-  12: "#53B332", // 지선 (초록)
-  13: "#FFC600", // 순환
-  14: "#E60012", // 광역 (빨강)
-  15: "#E60012", // 급행
-};
+const USER_COLORS = [
+  "#E74C3C", // 빨강
+  "#1ABC9C", // 청록
+  "#3498DB", // 파랑
+  "#E67E22", // 주황
+  "#2ECC71", // 초록
+  "#F1C40F", // 노랑
+  "#9B59B6", // 보라
+  "#16A085", // 진한 청록
+  "#D35400", // 진한 주황
+  "#27AE60", // 진한 초록
+];
 
 export const useMiddleMap = (
   mapRef: React.RefObject<kakao.maps.Map | null>
@@ -158,7 +149,11 @@ export const useMiddleMap = (
 
   // 단일 사용자-역 경로 폴리라인 그리기 로직 (두 번째 코드의 drawDetailedRoute 로직을 통합)
   const drawSingleUserRoute = useCallback(
-    async (user: UserLocation, station: { x: number; y: number }) => {
+    async (
+      user: UserLocation,
+      station: { x: number; y: number },
+      userColor: string
+    ) => {
       if (!mapRef.current || !window.kakao) return;
       const kakao = window.kakao;
 
@@ -200,7 +195,7 @@ export const useMiddleMap = (
                   const polyline = new kakao.maps.Polyline({
                     path: linePath,
                     strokeWeight: 6,
-                    strokeColor: "#FF6B6B", // 자동차 경로 색상 (빨간색)
+                    strokeColor: userColor, // 사용자별 색상 적용
                     strokeOpacity: 0.8,
                     strokeStyle: "solid",
                   });
@@ -232,36 +227,8 @@ export const useMiddleMap = (
         );
 
         if (laneData?.result?.lane?.length) {
-          const transitSubPaths = path.subPath.filter(
-            (sp) => sp.trafficType !== 3
-          );
-
-          // 상세 경로 (대중교통) 그리기
           laneData.result.lane.forEach((laneDetail) => {
-            let color = "#000000"; // 기본색
-
-            // 해당하는 subPath를 찾아서 색상 결정
-            const matchingSubPath = transitSubPaths.find((sp) => {
-              if (laneDetail.class === 1) return sp.trafficType === 2; // 버스
-              if (laneDetail.class === 2) return sp.trafficType === 1; // 지하철
-              return false;
-            });
-
-            if (matchingSubPath) {
-              if (laneDetail.class === 1) {
-                // 버스
-                color =
-                  BUS_COLORS[laneDetail.type] ||
-                  BUS_COLORS[matchingSubPath.lane?.[0]?.type || 1] ||
-                  "#0068B7";
-              } else if (laneDetail.class === 2) {
-                // 지하철
-                color =
-                  SUBWAY_COLORS[laneDetail.type] ||
-                  SUBWAY_COLORS[matchingSubPath.lane?.[0]?.subwayCode || 1] ||
-                  "#000000";
-              }
-            }
+            const color = userColor;
 
             // section별로 폴리라인 그리기
             laneDetail.section?.forEach((section) => {
@@ -287,9 +254,9 @@ export const useMiddleMap = (
           console.warn(
             `${user.name}의 상세 경로 (loadLane) 실패. 기본 경로로 폴백 처리.`
           );
-          // loadLane 실패 시, 두 번째 코드의 drawRouteFallback 로직을 따름
+          // loadLane 실패 시, 사용자 색상 사용
           path.subPath.forEach((subPath) => {
-            const color = subPath.trafficType === 3 ? "#888888" : "#3b82f6"; // Fallback 색상
+            const color = subPath.trafficType === 3 ? "#888888" : userColor; // 도보는 회색, 나머지는 사용자 색상
 
             if (subPath.passStopList?.stations?.length) {
               // 대중교통: 정류장/역 좌표 연결
@@ -356,10 +323,12 @@ export const useMiddleMap = (
       polylinesRef.current.forEach((polyline) => polyline.setMap(null));
       polylinesRef.current = [];
 
-      // 각 사용자에서 역까지 경로 그리기
-      const routePromises = users.map((user) =>
-        drawSingleUserRoute(user, station)
-      );
+      // 각 사용자에서 역까지 경로 그리기 (사용자별 색상 할당)
+      const routePromises = users.map((user, index) => {
+        const userColor =
+          USER_COLORS[index % USER_COLORS.length] || USER_COLORS[0];
+        return drawSingleUserRoute(user, station, userColor);
+      });
       await Promise.all(routePromises);
 
       // 경로를 다 그린 후 지도 범위 조정 (선택 사항 - 여기서는 기존 로직대로 지도 조정은 생략)
