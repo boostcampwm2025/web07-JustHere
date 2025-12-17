@@ -84,6 +84,7 @@ export interface UserLocationInput {
   name: string;
   x: number;
   y: number;
+  transportationType: "car" | "public_transit";
 }
 
 export interface StationCandidate {

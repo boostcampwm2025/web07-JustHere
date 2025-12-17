@@ -39,19 +39,25 @@ export class MiddleLocationService {
 
       for (const user of users) {
         try {
-          const travelTime = await this.calculateTravelTime(
-            user.x,
-            user.y,
-            station.x,
-            station.y,
-          );
+          // 대중교통일 때만 시간 계산
+          if (user.transportationType === 'public_transit') {
+            const travelTime = await this.calculateTravelTime(
+              user.x,
+              user.y,
+              station.x,
+              station.y,
+            );
 
-          userTimes.push({
-            userName: user.name,
-            travelTime,
-          });
+            userTimes.push({
+              userName: user.name,
+              travelTime,
+            });
 
-          totalTime += travelTime;
+            totalTime += travelTime;
+          } else {
+            // 자동차일 때는 계산하지 않음 (비워둠)
+            // TODO: 자동차 경로 계산 구현 필요
+          }
         } catch (error) {
           console.error(
             `경로 계산 실패: ${user.name} -> ${station.name}`,

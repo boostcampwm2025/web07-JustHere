@@ -1,9 +1,9 @@
 // LocationSetupPage.tsx
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useInitailMap } from '@/features/kakaoMap/hooks/useInitailMap';
-import { useGeocode } from '@/features/kakaoMap/hooks/useGeocode';
-import { useUserMarkers } from '@/features/kakaoMap/hooks/useUserMarkers';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useInitailMap } from "@/features/kakaoMap/hooks/useInitailMap";
+import { useGeocode } from "@/features/kakaoMap/hooks/useGeocode";
+import { useUserMarkers } from "@/features/kakaoMap/hooks/useUserMarkers";
 
 function LocationSetupPage() {
   const navigate = useNavigate();
@@ -20,33 +20,31 @@ function LocationSetupPage() {
     clearQuery,
   } = useGeocode();
 
-  const {
-    users,
-    addUser,
-    removeUser,
-    clearAllUsers,
-  } = useUserMarkers(mapRef);
+  const { users, addUser, removeUser, clearAllUsers } = useUserMarkers(mapRef);
 
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
+  const [transportationType, setTransportationType] = useState<
+    "car" | "public_transit"
+  >("public_transit");
 
   const handleFindMiddleLocation = () => {
     if (users.length < 2) {
-      alert('최소 2명 이상의 사용자를 추가해주세요.');
+      alert("최소 2명 이상의 사용자를 추가해주세요.");
       return;
     }
 
     // 중간 위치 찾기 페이지로 이동 (사용자 데이터 전달)
-    navigate('/middle', { state: { users } });
+    navigate("/middle", { state: { users } });
   };
 
   const handleAddUser = () => {
     if (!userName.trim()) {
-      alert('사용자 이름을 입력해주세요.');
+      alert("사용자 이름을 입력해주세요.");
       return;
     }
 
     if (!selectedAddress) {
-      alert('주소를 선택해주세요.');
+      alert("주소를 선택해주세요.");
       return;
     }
 
@@ -54,12 +52,14 @@ function LocationSetupPage() {
       userName,
       selectedAddress.roadAddress,
       parseFloat(selectedAddress.x),
-      parseFloat(selectedAddress.y)
+      parseFloat(selectedAddress.y),
+      transportationType
     );
 
     // 입력 필드 초기화
-    setUserName('');
+    setUserName("");
     clearQuery();
+    setTransportationType("public_transit"); // 기본값으로 리셋
   };
 
   return (
@@ -68,12 +68,12 @@ function LocationSetupPage() {
       <div
         id="kakao-map"
         style={{
-          position: 'fixed',
+          position: "fixed",
           top: 0,
           left: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 0
+          width: "100vw",
+          height: "100vh",
+          zIndex: 0,
         }}
       />
 
@@ -92,7 +92,9 @@ function LocationSetupPage() {
 
         {/* 사용자 추가 섹션 */}
         <div className="px-4 pb-4">
-          <h3 className="text-sm font-bold text-gray-700 mb-3">👥 사용자 위치 추가</h3>
+          <h3 className="text-sm font-bold text-gray-700 mb-3">
+            👥 사용자 위치 추가
+          </h3>
 
           {/* 사용자 이름 입력 */}
           <div className="mb-2">
@@ -130,12 +132,49 @@ function LocationSetupPage() {
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
                   >
-                    <div className="text-sm font-medium text-gray-800">{addr.roadAddress}</div>
-                    <div className="text-xs text-gray-500">{addr.jibunAddress}</div>
+                    <div className="text-sm font-medium text-gray-800">
+                      {addr.roadAddress}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {addr.jibunAddress}
+                    </div>
                   </button>
                 ))}
               </div>
             )}
+          </div>
+
+          {/* 교통수단 선택 */}
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              교통수단 선택
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTransportationType("public_transit")}
+                disabled={!isMapLoaded}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  transportationType === "public_transit"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                } disabled:opacity-50`}
+              >
+                🚇 대중교통
+              </button>
+              <button
+                type="button"
+                onClick={() => setTransportationType("car")}
+                disabled={!isMapLoaded}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  transportationType === "car"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                } disabled:opacity-50`}
+              >
+                🚗 자동차
+              </button>
+            </div>
           </div>
 
           {/* 추가 버튼 */}
@@ -152,7 +191,9 @@ function LocationSetupPage() {
         {users.length > 0 && (
           <div className="px-4 pb-4">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-sm font-bold text-gray-700">추가된 사용자 ({users.length})</h4>
+              <h4 className="text-sm font-bold text-gray-700">
+                추가된 사용자 ({users.length})
+              </h4>
               <button
                 onClick={clearAllUsers}
                 className="text-xs text-red-600 hover:text-red-700 font-medium"
@@ -162,10 +203,22 @@ function LocationSetupPage() {
             </div>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between bg-gray-50 rounded-lg p-2"
+                >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-800 truncate">{user.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{user.address}</div>
+                    <div className="text-sm font-medium text-gray-800 truncate">
+                      {user.name}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {user.address}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {user.transportationType === "car"
+                        ? "🚗 자동차"
+                        : "🚇 대중교통"}
+                    </div>
                   </div>
                   <button
                     onClick={() => removeUser(user.id)}
