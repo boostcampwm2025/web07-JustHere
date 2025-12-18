@@ -73,4 +73,13 @@ export class KakaoController {
       throw error;
     }
   }
+
+  @Get('image-search')
+  async searchImage(
+    @Query('query') query: string,
+  ): Promise<{ imageUrl: string | null }> {
+    this.logger.log(`[Request] image-search - query: ${query}`);
+    const imageUrl = await this.kakaoService.searchImage(query);
+    return { imageUrl };
+  }
 }

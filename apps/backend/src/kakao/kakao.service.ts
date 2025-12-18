@@ -136,4 +136,36 @@ export class KakaoService {
       );
     }
   }
+
+  async searchImage(query: string): Promise<string | null> {
+    const decodedQuery = decodeURIComponent(query);
+    const params = new URLSearchParams({
+      query: decodedQuery,
+      size: '1', // 1개만 가져옴
+    });
+
+    const url = `https://dapi.kakao.com/v2/search/image?${params}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `KakaoAK ${this.restApiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const result = await response.json();
+      if (result.documents && result.documents.length > 0) {
+        return result.documents[0].image_url;
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`[Kakao Image Search Error] ${error}`);
+      return null;
+    }
+  }
 }

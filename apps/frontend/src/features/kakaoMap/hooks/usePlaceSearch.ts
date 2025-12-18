@@ -11,11 +11,38 @@ interface SearchOptions {
   sort?: 'distance' | 'accuracy';
 }
 
+export interface KakaoLocalSearchItemWithImage extends KakaoLocalSearchItem {
+  imageUrl?: string;
+}
+
 export const usePlaceSearch = () => {
-  const [places, setPlaces] = useState<KakaoLocalSearchItem[]>([]);
+  const [places, setPlaces] = useState<KakaoLocalSearchItemWithImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<KakaoLocalSearchResponse['meta'] | null>(null);
+
+  // 이미지 검색 헬퍼 함수
+  const fetchImagesForPlaces = async (
+    items: KakaoLocalSearchItem[]
+  ): Promise<KakaoLocalSearchItemWithImage[]> => {
+    const promises = items.map(async (item) => {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/kakao/image-search?query=${encodeURIComponent(
+            item.place_name
+          )}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          return { ...item, imageUrl: data.imageUrl };
+        }
+      } catch (e) {
+        console.error('이미지 검색 실패:', e);
+      }
+      return item;
+    });
+    return Promise.all(promises);
+  };
 
   const searchKeyword = useCallback(async (query: string, options: SearchOptions) => {
     if (!query.trim()) return;
@@ -38,7 +65,8 @@ export const usePlaceSearch = () => {
         params
       );
 
-      setPlaces(response.documents);
+      const placesWithImages = await fetchImagesForPlaces(response.documents);
+      setPlaces(placesWithImages);
       setMeta(response.meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : '검색 중 오류가 발생했습니다.');
@@ -68,7 +96,8 @@ export const usePlaceSearch = () => {
         params
       );
 
-      setPlaces(response.documents);
+      const placesWithImages = await fetchImagesForPlaces(response.documents);
+      setPlaces(placesWithImages);
       setMeta(response.meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : '카테고리 검색 중 오류가 발생했습니다.');
@@ -103,7 +132,8 @@ export const usePlaceSearch = () => {
         const responses = await Promise.all(promises);
         const allPlaces = responses.flatMap((response) => response.documents);
 
-        setPlaces(allPlaces);
+        const placesWithImages = await fetchImagesForPlaces(allPlaces);
+        setPlaces(placesWithImages);
         setMeta(null); // 통합 검색은 메타 정보 제공 안 함
       } catch (err) {
         setError(err instanceof Error ? err.message : '통합 검색 중 오류가 발생했습니다.');

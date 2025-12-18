@@ -261,9 +261,19 @@ function ResultPage() {
                     : 'border-gray-100 hover:border-blue-200'
                 }`}
               >
-                {/* 이미지 플레이스홀더 (카카오 API는 이미지를 기본 제공하지 않음) */}
-                <div className='w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center text-2xl'>
-                  {CATEGORIES.find((c) => place.category_group_code === c.code)?.icon || '📍'}
+                {/* 이미지 표시 (이미지가 없으면 아이콘 표시) */}
+                <div className='w-16 h-16 bg-gray-200 rounded-md flex-shrink-0 flex items-center justify-center overflow-hidden'>
+                  {place.imageUrl ? (
+                    <img
+                      src={place.imageUrl}
+                      alt={place.place_name}
+                      className='w-full h-full object-cover'
+                    />
+                  ) : (
+                    <span className='text-2xl'>
+                      {CATEGORIES.find((c) => place.category_group_code === c.code)?.icon || '📍'}
+                    </span>
+                  )}
                 </div>
 
                 <div className='flex-1 min-w-0'>
