@@ -1,6 +1,10 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common';
 import { KakaoService } from './kakao.service';
-import { KakaoLocalSearchResponse } from '@web07/types';
+import {
+  KakaoLocalSearchResponse,
+  KakaoDirectionResponse,
+  KakaoAddressSearchResponse,
+} from '@web07/types';
 
 @Controller('api/kakao')
 export class KakaoController {
@@ -81,5 +85,15 @@ export class KakaoController {
     this.logger.log(`[Request] image-search - query: ${query}`);
     const imageUrl = await this.kakaoService.searchImage(query);
     return { imageUrl };
+  @Get('search-address')
+  async searchAddress(
+    @Query('query') query: string,
+  ): Promise<KakaoAddressSearchResponse> {
+    try {
+      return await this.kakaoService.searchAddress(query);
+    } catch (error) {
+      this.logger.error(`[Error] directions - ${error}`);
+      throw error;
+    }
   }
 }

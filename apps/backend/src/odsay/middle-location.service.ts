@@ -39,12 +39,25 @@ export class MiddleLocationService {
 
       for (const user of users) {
         try {
-          const travelTime = await this.calculateTravelTime(
-            user.x,
-            user.y,
-            station.x,
-            station.y,
-          );
+          let travelTime: number;
+
+          if (user.transportationType === 'public_transit') {
+            // 대중교통 경로 계산
+            travelTime = await this.calculateTravelTime(
+              user.x,
+              user.y,
+              station.x,
+              station.y,
+            );
+          } else {
+            // 자동차 경로 계산
+            travelTime = await this.calculateCarTravelTime(
+              user.x,
+              user.y,
+              station.x,
+              station.y,
+            );
+          }
 
           userTimes.push({
             userName: user.name,
@@ -66,31 +79,23 @@ export class MiddleLocationService {
 
       const averageTime = totalTime / users.length;
       const maxTime = Math.max(...userTimes.map((ut) => ut.travelTime));
-
-      // 표준편차 계산
-      const variance =
-        userTimes.reduce((sum, ut) => {
-          const diff = ut.travelTime - averageTime;
-          return sum + diff * diff;
-        }, 0) / users.length;
-
-      const stdDev = Math.sqrt(variance);
-      const fairnessScore = stdDev === 0 ? 100 : 1 / stdDev;
+      const minTime = Math.min(...userTimes.map((ut) => ut.travelTime));
+      const timeDifference = maxTime - minTime;
 
       results.push({
         station,
         userTimes,
         averageTime,
         maxTime,
-        fairnessScore,
+        timeDifference,
       });
     }
 
-    // 4. 공평성 점수와 평균 시간을 기준으로 정렬
+    // 4. 시간 차이와 평균 시간을 기준으로 정렬
     results.sort((a, b) => {
-      // 공평성 우선, 그 다음 평균 시간
-      const fairnessDiff = b.fairnessScore - a.fairnessScore;
-      if (Math.abs(fairnessDiff) > 0.01) return fairnessDiff;
+      // 시간 차이가 작을수록 좋음 (오름차순), 그 다음 평균 시간
+      const timeDiffDiff = a.timeDifference - b.timeDifference;
+      if (Math.abs(timeDiffDiff) > 0.01) return timeDiffDiff;
       return a.averageTime - b.averageTime;
     });
 
@@ -119,8 +124,8 @@ export class MiddleLocationService {
       category: '지하철역',
     }));
 
-    // 최대 15개 역만 검색 (계산 시간 단축)
-    return stations.slice(0, 15);
+    // 최대 5개 역만 검색 (계산 시간 단축)
+    return stations.slice(0, 5);
   }
 
   private async calculateTravelTime(
@@ -140,7 +145,29 @@ export class MiddleLocationService {
       throw new Error('경로를 찾을 수 없습니다.');
     }
 
-    // 가장 빠른 경로의 소요시간 반환
+    // 가장 빠른 경로의 소요시간 반환 (초 단위를 분 단위로 변환)
     return routeData.result.path[0].info.totalTime;
+  }
+
+  private async calculateCarTravelTime(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+  ): Promise<number> {
+    const directionData = await this.kakaoService.getDirections(
+      startX,
+      startY,
+      endX,
+      endY,
+    );
+
+    if (!directionData.routes?.length) {
+      throw new Error('경로를 찾을 수 없습니다.');
+    }
+
+    // 가장 빠른 경로의 소요시간 반환 (초 단위를 분 단위로 변환)
+    const durationInSeconds = directionData.routes[0].summary.duration;
+    return Math.round(durationInSeconds / 60); // 초를 분으로 변환
   }
 }
