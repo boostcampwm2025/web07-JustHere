@@ -11,14 +11,9 @@ function MiddleLocationPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMapLoaded, mapRef } = useInitailMap();
-  const { results, isLoading, error, findMiddleLocations } =
-    useMiddleLocation();
-  const {
-    displayUserMarkers,
-    displayStationMarkers,
-    drawRoutePolylines,
-    clearPolylines,
-  } = useMiddleMap(mapRef);
+  const { results, isLoading, error, findMiddleLocations } = useMiddleLocation();
+  const { displayUserMarkers, displayStationMarkers, drawRoutePolylines, clearPolylines } =
+    useMiddleMap(mapRef);
 
   const [selectedStationIndex, setSelectedStationIndex] = useState<
     number | null
@@ -128,11 +123,17 @@ function MiddleLocationPage() {
     }
   };
 
+  const handleNext = () => {
+    if (selectedStationIndex === null) return;
+    const selectedStation = results[selectedStationIndex].station;
+    navigate('/result', { state: { station: selectedStation } });
+  };
+
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div className='fixed inset-0 overflow-hidden'>
       {/* 지도 */}
       <div
-        id="kakao-map"
+        id='kakao-map'
         style={{
           position: "fixed",
           top: 0,
@@ -145,29 +146,25 @@ function MiddleLocationPage() {
 
       {/* 로딩 중 오버레이 */}
       {(!isMapLoaded || isLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
-          <div className="text-center">
-            <div className="text-lg font-semibold text-gray-700 mb-2">
-              {!isMapLoaded
-                ? "지도를 불러오는 중..."
-                : "중간 위치를 찾는 중..."}
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-gray-100'>
+          <div className='text-center'>
+            <div className='text-lg font-semibold text-gray-700 mb-2'>
+              {!isMapLoaded ? '지도를 불러오는 중...' : '중간 위치를 찾는 중...'}
             </div>
-            <div className="text-sm text-gray-500">잠시만 기다려주세요</div>
+            <div className='text-sm text-gray-500'>잠시만 기다려주세요</div>
           </div>
         </div>
       )}
 
       {/* 에러 오버레이 */}
       {error && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
-          <div className="text-center max-w-md px-4">
-            <div className="text-red-600 text-lg font-semibold mb-2">
-              오류가 발생했습니다
-            </div>
-            <div className="text-sm text-gray-600 mb-4">{error}</div>
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-gray-100'>
+          <div className='text-center max-w-md px-4'>
+            <div className='text-red-600 text-lg font-semibold mb-2'>오류가 발생했습니다</div>
+            <div className='text-sm text-gray-600 mb-4'>{error}</div>
             <button
-              onClick={() => navigate("/")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              onClick={() => navigate('/')}
+              className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
             >
               처음으로 돌아가기
             </button>
@@ -176,48 +173,46 @@ function MiddleLocationPage() {
       )}
 
       {/* 상단 헤더 */}
-      <div className="fixed top-0 left-0 right-0 z-20 bg-white shadow-md">
-        <div className="flex items-center justify-between px-4 py-3">
+      <div className='fixed top-0 left-0 right-0 z-20 bg-white shadow-md'>
+        <div className='flex items-center justify-between px-4 py-3'>
           <button
-            onClick={() => navigate("/")}
-            className="text-gray-600 hover:text-gray-800 font-medium text-sm"
+            onClick={() => navigate('/')}
+            className='text-gray-600 hover:text-gray-800 font-medium text-sm'
           >
             ← 돌아가기
           </button>
-          <h1 className="text-lg font-bold text-gray-800">중간 위치 찾기</h1>
-          <div className="w-20"></div> {/* 중앙 정렬을 위한 공간 */}
+          <h1 className='text-lg font-bold text-gray-800'>중간 위치 찾기</h1>
+          <div className='w-20'></div> {/* 중앙 정렬을 위한 공간 */}
         </div>
       </div>
 
       {/* 하단 패널 - 중간 위치 리스트 */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 rounded-t-xl bg-white shadow-2xl max-h-[50vh] overflow-y-auto">
+      <div className='fixed bottom-0 left-0 right-0 z-20 rounded-t-xl bg-white shadow-2xl max-h-[50vh] overflow-y-auto'>
         {/* 드래그 핸들 */}
-        <div className="flex justify-center py-2 bg-white sticky top-0 z-10">
-          <div className="h-1 w-8 rounded-full bg-gray-300" />
+        <div className='flex justify-center py-2 bg-white sticky top-0 z-10'>
+          <div className='h-1 w-8 rounded-full bg-gray-300' />
         </div>
 
         {/* 결과가 없을 때 */}
         {results.length === 0 && !isLoading && (
-          <div className="px-4 pb-6 text-center">
-            <div className="text-gray-500 text-sm py-8">
-              중간 위치를 찾을 수 없습니다.
-            </div>
+          <div className='px-4 pb-6 text-center'>
+            <div className='text-gray-500 text-sm py-8'>중간 위치를 찾을 수 없습니다.</div>
           </div>
         )}
 
         {/* 중간 위치 리스트 */}
         {results.length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="mb-3">
-              <h3 className="text-sm font-bold text-gray-700">
+          <div className='px-4 pb-4'>
+            <div className='mb-3'>
+              <h3 className='text-sm font-bold text-gray-700'>
                 📍 추천 중간 위치 ({results.length}개)
               </h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className='text-xs text-gray-500 mt-1'>
                 역을 선택하면 각 사용자의 경로를 확인할 수 있습니다
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {results.map((result, index) => (
                 <button
                   key={index}
@@ -242,31 +237,25 @@ function MiddleLocationPage() {
                       >
                         {index + 1}
                       </span>
-                      <span className="font-bold text-gray-800 text-sm">
-                        {result.station.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({result.station.category})
-                      </span>
+                      <span className='font-bold text-gray-800 text-sm'>{result.station.name}</span>
+                      <span className='text-xs text-gray-500'>({result.station.category})</span>
                     </div>
                     {selectedStationIndex === index && (
-                      <span className="text-purple-600 text-xs font-medium">
-                        ✓ 선택됨
-                      </span>
+                      <span className='text-purple-600 text-xs font-medium'>✓ 선택됨</span>
                     )}
                   </div>
 
                   {/* 통계 정보 */}
-                  <div className="grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2">
+                  <div className='grid grid-cols-3 gap-2 text-center bg-gray-50 rounded p-2'>
                     <div>
-                      <div className="text-xs text-gray-500">평균 시간</div>
-                      <div className="text-sm font-bold text-blue-600">
+                      <div className='text-xs text-gray-500'>평균 시간</div>
+                      <div className='text-sm font-bold text-blue-600'>
                         {Math.round(result.averageTime)}분
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500">최대 시간</div>
-                      <div className="text-sm font-bold text-orange-600">
+                      <div className='text-xs text-gray-500'>최대 시간</div>
+                      <div className='text-sm font-bold text-orange-600'>
                         {Math.round(result.maxTime)}분
                       </div>
                     </div>
@@ -436,10 +425,28 @@ function MiddleLocationPage() {
 
         {/* 경로 그리는 중 */}
         {isDrawingRoutes && (
-          <div className="px-4 pb-3 text-center">
-            <div className="text-sm text-blue-600 font-medium">
-              경로를 그리는 중...
-            </div>
+          <div className='px-4 pb-3 text-center'>
+            <div className='text-sm text-blue-600 font-medium'>경로를 그리는 중...</div>
+          </div>
+        )}
+
+        {/* 다음 단계 버튼 */}
+        {selectedStationIndex !== null && !isDrawingRoutes && (
+          <div className='sticky bottom-0 p-4 bg-white border-t border-gray-100'>
+            <button
+              onClick={() => {
+                const selectedResult = results[selectedStationIndex];
+                navigate('/result', {
+                  state: {
+                    station: selectedResult.station,
+                    users: users,
+                  },
+                });
+              }}
+              className='w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg'
+            >
+              이 장소 선택하기
+            </button>
           </div>
         )}
       </div>

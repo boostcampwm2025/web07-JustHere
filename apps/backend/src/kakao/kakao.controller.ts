@@ -19,9 +19,10 @@ export class KakaoController {
     @Query('y') y?: number,
     @Query('radius') radius?: number,
     @Query('page') page?: number,
+    @Query('size') size?: number,
   ): Promise<KakaoLocalSearchResponse> {
     this.logger.log(
-      `[Request] local-search - query: ${query}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}`,
+      `[Request] local-search - query: ${query}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}, size: ${size}`,
     );
 
     try {
@@ -31,6 +32,7 @@ export class KakaoController {
         y,
         radius,
         page,
+        size,
       );
       this.logger.log(
         `[Response] local-search - success, result count: ${result.documents.length}`,
@@ -38,6 +40,61 @@ export class KakaoController {
       return result;
     } catch (error) {
       this.logger.error(`[Error] local-search - ${error}`);
+      throw error;
+    }
+  }
+
+  @Get('category-search')
+  async searchCategory(
+    @Query('category_group_code') categoryGroupCode: string,
+    @Query('x') x: number,
+    @Query('y') y: number,
+    @Query('radius') radius?: number,
+    @Query('page') page?: number,
+    @Query('sort') sort?: 'distance' | 'accuracy',
+    @Query('size') size?: number,
+  ): Promise<KakaoLocalSearchResponse> {
+    this.logger.log(
+      `[Request] category-search - code: ${categoryGroupCode}, x: ${x}, y: ${y}, radius: ${radius}, page: ${page}, size: ${size}`,
+    );
+
+    try {
+      const result = await this.kakaoService.searchCategory(
+        categoryGroupCode,
+        x,
+        y,
+        radius,
+        page,
+        sort,
+        size,
+      );
+      this.logger.log(
+        `[Response] category-search - success, result count: ${result.documents.length}`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`[Error] category-search - ${error}`);
+      throw error;
+    }
+  }
+
+  @Get('image-search')
+  async searchImage(
+    @Query('query') query: string,
+  ): Promise<{ imageUrl: string | null }> {
+    this.logger.log(`[Request] image-search - query: ${query}`);
+    const imageUrl = await this.kakaoService.searchImage(query);
+    return { imageUrl };
+  }
+
+  @Get('search-address')
+  async searchAddress(
+    @Query('query') query: string,
+  ): Promise<KakaoAddressSearchResponse> {
+    try {
+      return await this.kakaoService.searchAddress(query);
+    } catch (error) {
+      this.logger.error(`[Error] search-address - ${error}`);
       throw error;
     }
   }
@@ -61,21 +118,9 @@ export class KakaoController {
         destinationY,
       );
       this.logger.log(
-        `[Response] directions - success, routes count: ${result.routes.length}`,
+        `[Response] directions - success, routes count: ${result.routes?.length || 0}`,
       );
       return result;
-    } catch (error) {
-      this.logger.error(`[Error] directions - ${error}`);
-      throw error;
-    }
-  }
-
-  @Get('search-address')
-  async searchAddress(
-    @Query('query') query: string,
-  ): Promise<KakaoAddressSearchResponse> {
-    try {
-      return await this.kakaoService.searchAddress(query);
     } catch (error) {
       this.logger.error(`[Error] directions - ${error}`);
       throw error;
