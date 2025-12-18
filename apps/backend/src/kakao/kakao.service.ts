@@ -101,6 +101,45 @@ export class KakaoService {
     const url = `https://dapi.kakao.com/v2/local/search/category.json?${params}`;
 
     this.logger.log(`[Kakao API Call] URL: ${url}`);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `KakaoAK ${this.restApiKey}`,
+        },
+      });
+
+      this.logger.log(`[Kakao API Response] Status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `[Kakao API Error] Status: ${response.status}, Body: ${errorText}`,
+        );
+        throw new HttpException('카카오 API 호출 실패', HttpStatus.BAD_REQUEST);
+      }
+
+      const result = (await response.json()) as KakaoLocalSearchResponse;
+      this.logger.log(
+        `[Kakao API Success] Documents count: ${result.documents?.length || 0}`,
+      );
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `[Kakao API Exception] ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : '',
+      );
+      throw new HttpException(
+        '카카오 API 호출 중 오류 발생',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async getDirections(
     originX: number,
     originY: number,
@@ -126,7 +165,6 @@ export class KakaoService {
         },
       });
 
-      this.logger.log(`[Kakao API Response] Status: ${response.status}`);
       this.logger.log(
         `[Kakao Direction API Response] Status: ${response.status}`,
       );
@@ -134,15 +172,6 @@ export class KakaoService {
       if (!response.ok) {
         const errorText = await response.text();
         this.logger.error(
-          `[Kakao API Error] Status: ${response.status}, Body: ${errorText}`,
-        );
-        throw new HttpException('카카오 API 호출 실패', HttpStatus.BAD_REQUEST);
-      }
-
-      const result = (await response.json()) as KakaoLocalSearchResponse;
-      this.logger.log(
-        `[Kakao API Success] Documents count: ${result.documents?.length || 0}`,
-      );
           `[Kakao Direction API Error] Status: ${response.status}, Body: ${errorText}`,
         );
         throw new HttpException(
@@ -161,12 +190,6 @@ export class KakaoService {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error(
-        `[Kakao API Exception] ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error instanceof Error ? error.stack : '',
-      );
-      throw new HttpException(
-        '카카오 API 호출 중 오류 발생',
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : '';
@@ -189,6 +212,34 @@ export class KakaoService {
     });
 
     const url = `https://dapi.kakao.com/v2/search/image?${params}`;
+
+    this.logger.log(`[Kakao Image Search API Call] URL: ${url}`);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `KakaoAK ${this.restApiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const result = (await response.json()) as {
+        documents?: Array<{ image_url?: string }>;
+      };
+      if (result.documents && result.documents.length > 0) {
+        return result.documents[0].image_url || null;
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`[Kakao Image Search Error] ${error}`);
+      return null;
+    }
+  }
+
   async searchAddress(query: string): Promise<KakaoAddressSearchResponse> {
     const decodedQuery = decodeURIComponent(query);
     const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(decodedQuery)}`;
@@ -203,18 +254,6 @@ export class KakaoService {
         },
       });
 
-      if (!response.ok) {
-        return null;
-      }
-
-      const result = await response.json();
-      if (result.documents && result.documents.length > 0) {
-        return result.documents[0].image_url;
-      }
-      return null;
-    } catch (error) {
-      this.logger.error(`[Kakao Image Search Error] ${error}`);
-      return null;
       this.logger.log(
         `[Kakao Address API Response] Status: ${response.status}`,
       );
@@ -230,7 +269,7 @@ export class KakaoService {
         );
       }
 
-      return await response.json();
+      return (await response.json()) as KakaoAddressSearchResponse;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

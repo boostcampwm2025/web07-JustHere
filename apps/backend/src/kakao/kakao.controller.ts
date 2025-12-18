@@ -85,12 +85,42 @@ export class KakaoController {
     this.logger.log(`[Request] image-search - query: ${query}`);
     const imageUrl = await this.kakaoService.searchImage(query);
     return { imageUrl };
+  }
+
   @Get('search-address')
   async searchAddress(
     @Query('query') query: string,
   ): Promise<KakaoAddressSearchResponse> {
     try {
       return await this.kakaoService.searchAddress(query);
+    } catch (error) {
+      this.logger.error(`[Error] search-address - ${error}`);
+      throw error;
+    }
+  }
+
+  @Get('directions')
+  async getDirections(
+    @Query('originX') originX: number,
+    @Query('originY') originY: number,
+    @Query('destinationX') destinationX: number,
+    @Query('destinationY') destinationY: number,
+  ): Promise<KakaoDirectionResponse> {
+    this.logger.log(
+      `[Request] directions - origin: ${originX},${originY}, destination: ${destinationX},${destinationY}`,
+    );
+
+    try {
+      const result = await this.kakaoService.getDirections(
+        originX,
+        originY,
+        destinationX,
+        destinationY,
+      );
+      this.logger.log(
+        `[Response] directions - success, routes count: ${result.routes?.length || 0}`,
+      );
+      return result;
     } catch (error) {
       this.logger.error(`[Error] directions - ${error}`);
       throw error;
