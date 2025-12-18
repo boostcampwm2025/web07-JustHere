@@ -35,4 +35,5 @@ export interface UserLocation {
   address: string;
   x: number; // 경도
   y: number; // 위도
+  transportationType: "car" | "public_transit";
 }

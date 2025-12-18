@@ -29,6 +29,27 @@ export interface KakaoLocalSearchResponse {
   documents: KakaoLocalSearchItem[];
 }
 
+export interface KakaoDirectionRoad {
+  vertexes: number[]; // 좌표 배열 [x1, y1, x2, y2, ...]
+}
+
+export interface KakaoDirectionSection {
+  roads: KakaoDirectionRoad[];
+}
+
+export interface KakaoDirectionSummary {
+  duration: number;
+}
+
+export interface KakaoDirectionRoute {
+  summary: KakaoDirectionSummary;
+  sections: KakaoDirectionSection[];
+}
+
+export interface KakaoDirectionResponse {
+  routes: KakaoDirectionRoute[];
+}
+
 export interface KakaoAddressDocument {
   address_name: string;
   address_type: "REGION" | "ROAD" | "REGION_ADDR" | "ROAD_ADDR";

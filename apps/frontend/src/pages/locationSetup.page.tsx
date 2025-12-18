@@ -23,6 +23,9 @@ function LocationSetupPage() {
   const { users, addUser, removeUser, clearAllUsers } = useUserMarkers(mapRef);
 
   const [userName, setUserName] = useState("");
+  const [transportationType, setTransportationType] = useState<
+    "car" | "public_transit"
+  >("public_transit");
 
   const handleFindMiddleLocation = () => {
     if (users.length < 2) {
@@ -53,12 +56,14 @@ function LocationSetupPage() {
       userName,
       addressToDisplay,
       parseFloat(selectedAddress.x),
-      parseFloat(selectedAddress.y)
+      parseFloat(selectedAddress.y),
+      transportationType
     );
 
     // 입력 필드 초기화
     setUserName("");
     clearQuery();
+    setTransportationType("public_transit"); // 기본값으로 리셋
   };
 
   return (
@@ -156,6 +161,39 @@ function LocationSetupPage() {
             )}
           </div>
 
+          {/* 교통수단 선택 */}
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              교통수단 선택
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTransportationType("public_transit")}
+                disabled={!isMapLoaded}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  transportationType === "public_transit"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                } disabled:opacity-50`}
+              >
+                🚇 대중교통
+              </button>
+              <button
+                type="button"
+                onClick={() => setTransportationType("car")}
+                disabled={!isMapLoaded}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  transportationType === "car"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                } disabled:opacity-50`}
+              >
+                🚗 자동차
+              </button>
+            </div>
+          </div>
+
           {/* 추가 버튼 */}
           <button
             onClick={handleAddUser}
@@ -194,12 +232,19 @@ function LocationSetupPage() {
                       {user.address}
                     </div>
                   </div>
-                  <button
-                    onClick={() => removeUser(user.id)}
-                    className="ml-2 text-red-600 hover:text-red-700 text-xs font-medium shrink-0"
-                  >
-                    삭제
-                  </button>
+                  <div className="flex items-center">
+                    <div className="text-xs bg-gray-200 px-2 py-0.5 rounded-lg">
+                      {user.transportationType === "car"
+                        ? "자동차"
+                        : "대중교통"}
+                    </div>
+                    <button
+                      onClick={() => removeUser(user.id)}
+                      className="ml-2 text-red-600 hover:text-red-700 text-xs font-medium shrink-0"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

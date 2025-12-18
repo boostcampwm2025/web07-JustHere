@@ -1,8 +1,8 @@
-// src/kakao/kakao.service.ts
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   KakaoLocalSearchResponse,
+  KakaoDirectionResponse,
   KakaoAddressSearchResponse,
 } from '@web07/types';
 
@@ -77,6 +77,70 @@ export class KakaoService {
     }
   }
 
+  async getDirections(
+    originX: number,
+    originY: number,
+    destinationX: number,
+    destinationY: number,
+  ): Promise<KakaoDirectionResponse> {
+    const params = new URLSearchParams({
+      origin: `${originX},${originY}`,
+      destination: `${destinationX},${destinationY}`,
+    });
+
+    const url = `https://apis-navi.kakaomobility.com/v1/directions?${params}`;
+
+    this.logger.log(
+      `[Kakao Direction API Call] URL: ${url}, origin: ${originX},${originY}, destination: ${destinationX},${destinationY}`,
+    );
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `KakaoAK ${this.restApiKey}`,
+        },
+      });
+
+      this.logger.log(
+        `[Kakao Direction API Response] Status: ${response.status}`,
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `[Kakao Direction API Error] Status: ${response.status}, Body: ${errorText}`,
+        );
+        throw new HttpException(
+          `카카오 Direction API 호출 실패: ${errorText}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const result = (await response.json()) as KakaoDirectionResponse;
+      this.logger.log(
+        `[Kakao Direction API Success] Routes count: ${result.routes?.length || 0}`,
+      );
+
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : '';
+      this.logger.error(
+        `[Kakao Direction API Exception] ${errorMessage}`,
+        errorStack,
+      );
+      throw new HttpException(
+        `카카오 Direction API 호출 중 오류 발생: ${errorMessage}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async searchAddress(query: string): Promise<KakaoAddressSearchResponse> {
     const decodedQuery = decodeURIComponent(query);
     const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(decodedQuery)}`;
@@ -106,11 +170,7 @@ export class KakaoService {
         );
       }
 
-      const result = (await response.json()) as KakaoAddressSearchResponse;
-      this.logger.log(
-        `[Kakao Address API Success] Documents count: ${result.documents?.length || 0}`,
-      );
-      return result;
+      return await response.json();
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
