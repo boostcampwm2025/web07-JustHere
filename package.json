@@ -16,6 +16,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.20.0",
   "devDependencies": {
+    "prettier": "^3.4.2",
     "turbo": "^2.6.3"
   },
   "dependencies": {
@@ -24,9 +25,13 @@
     "zod": "^4.3.5"
   },
   "lint-staged": {
-    "apps/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+    "apps/frontend/**/*.{ts,tsx}": [
+      "cd apps/frontend && pnpm eslint --fix",
+      "pnpm prettier --write"
+    ],
+    "apps/backend/**/*.ts": [
+      "cd apps/backend && pnpm eslint --fix",
+      "pnpm prettier --write"
     ]
   }
 }
