@@ -18,6 +18,7 @@
     "turbo": "^2.6.3"
   },
   "dependencies": {
+    "husky": "^9.1.7",
     "zod": "^4.3.5"
   }
 }
