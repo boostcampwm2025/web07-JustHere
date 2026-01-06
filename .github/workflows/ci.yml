@@ -1,0 +1,37 @@
+name: ci.yml
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  cache-and-install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Check
+        run: pnpm turbo run lint
+
+      - name: Build Check
+        run: pnpm turbo run build
+
+      - name: Test
+        run: pnpm test
