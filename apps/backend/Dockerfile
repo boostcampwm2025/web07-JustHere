@@ -4,10 +4,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # pnpm 활성화
-RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
+RUN apk add --no-cache libc6-compat
+RUN apk update
 
 # turbo 설치
-RUN pnpm add -g turbo
+RUN npm install -g turbo
+RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
 
 # monorepo 전체 복사
 COPY . .
@@ -19,6 +21,7 @@ RUN turbo prune backend --docker
 # 2. Install Dependencies
 FROM node:20-alpine AS installer
 
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
@@ -33,6 +36,7 @@ RUN pnpm install --frozen-lockfile
 # 3. Build
 FROM node:20-alpine AS build
 
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY --from=installer /app/node_modules ./node_modules
