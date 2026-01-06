@@ -1,9 +1,9 @@
 name: ci.yml
+
 on:
-  pull_request:
+  push:
     branches:
-      - main
-      - develop
+      - chore/47-ci-cd
 
 jobs:
   cache-and-install:
