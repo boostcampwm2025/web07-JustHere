@@ -1,41 +1,37 @@
+# === 0. Base (공통 설정) ===
 FROM node:20-alpine AS base
-
-# 1. Builder
-FROM base AS builder
 RUN apk add --no-cache libc6-compat
-RUN apk update
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+
+# 1. pruner (필요 파일 추출)
+FROM base AS pruner
 WORKDIR /app
 
 RUN npm install -g turbo
-RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY . .
 
 RUN turbo prune frontend --docker
 
-
-# 2. Build (Install + Build 통합)
-FROM base AS build
-RUN apk add --no-cache libc6-compat
+# 2. Builder stage
+FROM base AS builder
 WORKDIR /app
 
-# pnpm 및 Turbo 설정
-RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN npm install -g turbo
-
-# 1) 의존성 명세(package.json 등) 먼저 복사 -> 캐싱 활용
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+# 1) 의존성 명세 복사 (캐시 활용)
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # 2) 의존성 설치
 RUN pnpm install --frozen-lockfile
 
-# 3) 소스코드(out/full) 복사
-COPY --from=builder /app/out/full/ .
+# 3) 소스코드 복사
+COPY --from=pruner /app/out/full/ .
 
 # 4) 빌드 실행
 RUN turbo run build --filter=frontend
-
 
 # 3. Nginx
 FROM nginx:alpine AS runner
