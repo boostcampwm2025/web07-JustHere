@@ -38,8 +38,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 RUN npm install -g turbo
 
-COPY --from=installer /app/node_modules ./node_modules
+# 1. 소스코드(out/full)를 먼저 복사
 COPY --from=builder /app/out/full/ .
+
+# 2. 그 위에 설치된 의존성(node_modules)을 덮어씌우기
+COPY --from=installer /app/node_modules ./node_modules
 
 RUN turbo run build --filter=frontend
 
