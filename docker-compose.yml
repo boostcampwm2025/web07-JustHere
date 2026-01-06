@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: backend
+    image: ${NCP_CR_ENDPOINT}/my-backend:latest
+    expose:
+      - "3000" # 호스트(외부)에는 포트를 노출하지 않고, 내부 도커 네트워크끼리만 통신함.
+    env_file:
+      - .env.backend
+    networks:
+      - app-network
+    restart: always
+
+  frontend:
+    container_name: frontend
+    image: ${NCP_CR_ENDPOINT}/my-frontend:latest
+    ports:
+      - "80:80" # 외부 80번 포트를 컨테이너 Nginx 80번으로 연결
+    depends_on:
+      - backend # 백엔드 컨테이너 먼저 실행 후 프론트엔드를 실행
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
