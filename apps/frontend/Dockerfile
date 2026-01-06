@@ -34,6 +34,8 @@ FROM node:20-alpine AS build
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
+
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=builder /app/out/full/ .
 
