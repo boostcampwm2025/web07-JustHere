@@ -24,6 +24,9 @@ RUN turbo prune backend --docker
 FROM base AS builder
 WORKDIR /app
 
+# turbo 설치
+RUN npm install -g turbo
+
 # lockfile과 json 복사
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
