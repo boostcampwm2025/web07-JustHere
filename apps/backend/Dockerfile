@@ -6,10 +6,6 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# [중요] .npmrc 파일을 생성하여 node-linker=hoisted 설정 추가
-# 이 설정은 pnpm이 심볼릭 링크 대신 실제 파일을 복사하게 만듭니다.
-RUN echo "node-linker=hoisted" > .npmrc
-
 # 1. pruner Stage (필요 파일 추출)
 FROM base AS pruner
 WORKDIR /app
@@ -35,6 +31,10 @@ RUN npm install -g turbo
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# [중요] .npmrc 파일을 생성하여 node-linker=hoisted 설정 추가
+# 이 설정은 pnpm이 심볼릭 링크 대신 실제 파일을 복사하게 만듭니다.
+RUN echo "node-linker=hoisted" > .npmrc
+
 # 전체 의존성 설치 (Build를 위해 devDependencies 필요)
 RUN pnpm install --frozen-lockfile
 
@@ -49,6 +49,8 @@ WORKDIR /app
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN echo "node-linker=hoisted" > .npmrc
 
 # 중요: --prod 옵션으로 실행에 필요한 패키지(Nestjs core 등)만 설치
 RUN pnpm install --prod --frozen-lockfile
