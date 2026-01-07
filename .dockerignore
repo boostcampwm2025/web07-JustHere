@@ -1,0 +1,50 @@
+# VCS
+.git
+.gitignore
+
+# Node / Package Managers
+node_modules
+**/node_modules
+
+.pnpm-store
+.pnpm-debug.log
+
+# Build Outputs
+dist
+**/dist
+build
+**/build
+out
+.next
+.turbo
+
+# Logs
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+.vscode
+.idea
+
+# Env Files
+.env
+.env.*
+!.env.example
+
+# Test / Coverage
+coverage
+**/coverage
+
+# Docker
+docker-compose*.yml
+Dockerfile
+**/Dockerfile
+
+# Docs
+README.md
+docs

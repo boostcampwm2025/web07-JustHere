@@ -1,0 +1,71 @@
+# === 0. Base ===
+FROM node:20-alpine AS base
+# pnpm 호환성을 위해 libc6-compat 설치 (모든 단계 공통)
+RUN apk add --no-cache libc6-compat
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 1. pruner Stage (필요 파일 추출)
+FROM base AS pruner
+WORKDIR /app
+
+# turbo 설치
+RUN npm install -g turbo
+
+# monorepo 전체 복사
+COPY . .
+
+# backend만 남기고 prune
+RUN turbo prune backend --docker
+
+
+# 2. Builder (전체 의존성 설치 및 빌드)
+FROM base AS builder
+WORKDIR /app
+
+# turbo 설치
+RUN npm install -g turbo
+
+# lockfile과 json 복사
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# [중요] .npmrc 파일을 생성하여 node-linker=hoisted 설정 추가
+# 이 설정은 pnpm이 심볼릭 링크 대신 실제 파일을 복사하게 만듭니다.
+RUN echo "node-linker=hoisted" > .npmrc
+
+# 전체 의존성 설치 (Build를 위해 devDependencies 필요)
+RUN pnpm install --frozen-lockfile
+
+# 소스코드 복사 및 빌드
+COPY --from=pruner /app/out/full/ .
+RUN turbo run build --filter=backend
+
+# 3. Prod-Deps (실행용 의존성만 따로 설치)
+# 이 단계가 없으면 node_modules가 너무 크거나, 심볼릭 링크가 깨짐
+FROM base AS prod-deps
+WORKDIR /app
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+
+RUN echo "node-linker=hoisted" > .npmrc
+
+# 중요: --prod 옵션으로 실행에 필요한 패키지(Nestjs core 등)만 설치
+RUN pnpm install --prod --frozen-lockfile
+
+# 4. Production
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=prod-deps /app/node_modules ./node_modules
+
+COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/package.json ./package.json
+
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]

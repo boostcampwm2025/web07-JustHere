@@ -1,0 +1,113 @@
+name: cd.yml
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      NCR_REGISTRY: ${{ secrets.NCP_CR_ENDPOINT }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to NCP Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.NCP_CR_ENDPOINT }}
+          username: ${{ secrets.NCP_ACCESS_KEY }}
+          password: ${{ secrets.NCP_SECRET_KEY }}
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/frontend/Dockerfile
+          push: true
+          tags: ${{ env.NCR_REGISTRY }}/my-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/backend/Dockerfile
+          push: true
+          tags: ${{ env.NCR_REGISTRY }}/my-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. 로컬(Runner)에서 파일 생성
+      - name: Create .env Files locally
+        run: |
+          # 1) 백엔드용 환경변수 파일 생성
+          echo "${{ secrets.BACKEND_ENV }}" > .env.backend
+          
+          # 2) docker-compose 변수 치환용 .env 파일 생성 (NCP_CR_ENDPOINT)
+          echo "NCP_CR_ENDPOINT=${{ secrets.NCP_CR_ENDPOINT }}" > .env
+
+      # 2. 서버에 디렉토리 생성 (SSH)
+      - name: Create Directory on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NCP_SERVER_IP }}
+          username: ${{ secrets.NCP_USERNAME }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          port: ${{ secrets.NCP_SSH_PORT }}
+          script: |
+            mkdir -p /root/my-project
+
+      # 3. 파일 전송 (SCP)
+      # 로컬에 있는 3개 파일(.env, .env.backend, docker-compose.yml)을 서버로 전송
+      - name: Copy Files to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.NCP_SERVER_IP }}
+          username: ${{ secrets.NCP_USERNAME }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          port: ${{ secrets.NCP_SSH_PORT }}
+          source: "docker-compose.yml, .env.backend, .env"
+          target: "/root/my-project"
+          overwrite: true
+
+      # 4. 배포 실행 (SSH)
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.NCP_SERVER_IP }}
+          username: ${{ secrets.NCP_USERNAME }}
+          password: ${{ secrets.NCP_PASSWORD }}
+          port: ${{ secrets.NCP_SSH_PORT }}
+          script: |
+            cd /root/my-project
+
+            # NCR 로그인
+            docker login ${{ secrets.NCP_CR_ENDPOINT }} -u ${{ secrets.NCP_ACCESS_KEY }} -p ${{ secrets.NCP_SECRET_KEY }}
+
+            # 이미지 Pull
+            docker-compose pull
+            
+            # 컨테이너 실행
+            docker-compose up -d --remove-orphans
+
+            # 이미지 정리
+            docker image prune -f
+
+            echo "[SUCCESS] Deployment completed successfully ✅"
