@@ -10,11 +10,13 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "prepare": "husky"
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.27.0",
   "devDependencies": {
     "prettier": "^3.4.2",
     "turbo": "^2.6.3"
