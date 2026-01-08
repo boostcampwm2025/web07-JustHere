@@ -6,12 +6,6 @@ labels:
 assignees: ''
 ---
 
-### 스토리 포인트 (Story Points)
-
-> 작업의 크기 (복잡도)
-
-
-<br>
 
 ### 상세 내용 (Description)
 
