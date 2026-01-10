@@ -1,28 +1,28 @@
 # 딱! 여기 (Just Here)
 
 <p align="center">
-  <img alt="딱! 여기 - 메인 이미지" src="https://github.com/user-attachments/assets/2ef9683f-e09c-440e-8f24-0424ebbd3f93" />
+  <img alt="딱! 여기 - 메인 이미지" src="https://github.com/user-attachments/assets/a971430e-3fc3-40a4-a900-5861f56ffc5b" />
 </p>
 
 <h4 align="center">
-  모두가 균등하게 최소 시간으로 도착하는
+  딱! 여기 는 여러 사람이 함께 모여야 하는 상황에서
   <br/>
-  <span style="color: #5046E5; font-weight: 700;">만남 장소</span>를 한 번에 찾고,
-  <span style="color: #5046E5; font-weight: 700;">즐길 거리</span>까지 추천받는 서비스
+  <span style="color: #5046E5; font-weight: 700;">어디서 만날지</span>라는 복잡한 의사결정을
+  <span style="color: #5046E5; font-weight: 700;">실시간 협업 방식</span>으로 해결해주는 서비스다.
 </h4>
 
 <div align="center">
 
-| [📋 프로젝트 위키](https://github.com/boostcampwm2025/web07-JustHere/wiki) | [🎨 디자인 프로토타입](https://autumn-fiction-676.notion.site/2c637262a17980f89beec5d971a7aba0) | [🚀 프로젝트 백로그](https://github.com/orgs/boostcampwm2025/projects/209) |
+| [📋 프로젝트 위키](https://github.com/boostcampwm2025/web07-JustHere/wiki) | [🎨 디자인 프로토타입](https://www.figma.com/design/WfhqUuOyyqQ8i8nnZ2eVvo/%ED%8E%98%EC%9D%B4%EC%A7%80-%EB%94%94%EC%9E%90%EC%9D%B8?node-id=0-1&t=UPl0gl2R2kTWENeR-1) | [🚀 프로젝트 백로그](https://github.com/orgs/boostcampwm2025/projects/209) |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 
 </div>
 
 ## 프로젝트 소개
 
-> 자세한 내용은 [기획서](https://autumn-fiction-676.notion.site/2c637262a17980daa787f43297c8d62e?source=copy_link)를 참고해 주세요.
+> 자세한 내용은 [기획서](https://www.notion.so/2df37262a179806cbe76ed7115570e25?source=copy_link)를 참고해 주세요.
 
-<img alt="딱! 여기 - 핵심 가치" src="https://github.com/user-attachments/assets/800f7931-39f4-40e5-afd6-96c9377b335f" />
+<img alt="딱! 여기 - 핵심 가치" width="1012" height="495" alt="image" src="https://github.com/user-attachments/assets/cfc6f0d6-c158-4796-bd0a-5a596d9a09ef" />
 
 ## 팀 소개
 
