@@ -22,7 +22,8 @@
 
 > 자세한 내용은 [기획서](https://www.notion.so/2df37262a179806cbe76ed7115570e25?source=copy_link)를 참고해 주세요.
 
-<img alt="딱! 여기 - 핵심 가치" width="1012" height="495" alt="image" src="https://github.com/user-attachments/assets/cfc6f0d6-c158-4796-bd0a-5a596d9a09ef" />
+<img  alt="딱! 여기 - 핵심 가치" width="888" height="409" alt="image" src="https://github.com/user-attachments/assets/1383ab48-1fff-4183-8425-b55b1e27a81a" />
+
 
 ## 팀 소개
 
