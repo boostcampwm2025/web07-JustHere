@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { MapPin } from "lucide-react";
 import LocationStep from "@/components/onboarding/LocationStep";
 import InviteStep from "@/components/onboarding/InviteStep";
+import Header from "@/components/Header";
 
 type OnboardingStep = "location" | "invite";
 
@@ -31,13 +31,7 @@ function OnboardingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-bg">
       {/* Header */}
-      {/* TODO: 공통 컴포넌트로 빼기 */}
-      <header className="flex items-center gap-2 px-6 py-4 bg-white border-b border-gray-200">
-        <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-          <MapPin className="w-4 h-4 text-white" />
-        </div>
-        <span className="font-semibold text-black">Just Here</span>
-      </header>
+      <Header />
 
       {/* Step Content */}
       {currentStep === "location" && (
