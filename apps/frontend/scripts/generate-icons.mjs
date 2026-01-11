@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { optimize } from "svgo";
 
 const projectRoot = process.cwd();
 
@@ -39,10 +40,39 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function optimizeSvg(filePath) {
+  const svgContent = fs.readFileSync(filePath, "utf8");
+  const result = optimize(svgContent, {
+    path: filePath,
+    plugins: [
+      "preset-default",
+      {
+        name: "removeViewBox",
+        active: false, // React에서 사용할 때 필요한 속성 보존
+      },
+      "removeDimensions", // width, height 제거 (viewBox만 사용)
+    ],
+  });
+
+  if (result.data) {
+    fs.writeFileSync(filePath, result.data, "utf8");
+    return true;
+  }
+  return false;
+}
+
 function main() {
   ensureDir(ICONS_DIR);
 
   const files = readSvgFiles(ICON_DIR);
+
+  console.log("SVG 파일 최적화 중...");
+  files.forEach((file) => {
+    const filePath = path.join(ICON_DIR, file);
+    optimizeSvg(filePath);
+  });
+  console.log(`총 ${files.length}개 파일 최적화 완료\n`);
+
   const iconImports = files
     .map((f) => {
       const pascal = toPascal(toKebab(f));
@@ -65,6 +95,8 @@ ${iconExports}
 `,
     "utf8"
   );
+
+  console.log(`아이콘 인덱스 파일 생성 완료:\n${ICONS_INDEX}`);
 }
 
 main();
