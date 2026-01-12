@@ -5,7 +5,7 @@ import {
   ContentCopyIcon,
   CheckIcon,
 } from "@/components/Icons";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/common/Button";
 
 interface InviteStepProps {
   selectedLocation: string;

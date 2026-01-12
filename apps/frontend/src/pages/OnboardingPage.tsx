@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LocationStep from "@/components/onboarding/LocationStep";
 import InviteStep from "@/components/onboarding/InviteStep";
-import Header from "@/components/Header";
+import Header from "@/components/common/Header";
 
 type OnboardingStep = "location" | "invite";
 
