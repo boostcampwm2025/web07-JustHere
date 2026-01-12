@@ -31,6 +31,10 @@ RUN npm install -g turbo
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# Prisma 파일 복사 (postinstall의 prisma generate를 위해 필요)
+COPY --from=pruner /app/out/full/apps/backend/prisma ./apps/backend/prisma
+COPY --from=pruner /app/out/full/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
+
 # [중요] .npmrc 파일을 생성하여 node-linker=hoisted 설정 추가
 # 이 설정은 pnpm이 심볼릭 링크 대신 실제 파일을 복사하게 만듭니다.
 RUN echo "node-linker=hoisted" > .npmrc
