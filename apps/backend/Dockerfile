@@ -52,7 +52,12 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 RUN echo "node-linker=hoisted" > .npmrc
 
+# Prisma 파일 복사 (postinstall의 prisma generate를 위해 필요)
+COPY --from=pruner /app/out/full/apps/backend/prisma ./apps/backend/prisma
+COPY --from=pruner /app/out/full/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
+
 # 중요: --prod 옵션으로 실행에 필요한 패키지(Nestjs core 등)만 설치
+# postinstall 스크립트가 prisma generate를 실행함
 RUN pnpm install --prod --frozen-lockfile
 
 # 4. Production
@@ -65,6 +70,10 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/package.json ./package.json
+
+# Prisma 파일 복사 (CD 워크플로우에서 마이그레이션 실행을 위해 필요)
+COPY --from=prod-deps /app/apps/backend/prisma ./prisma
+COPY --from=prod-deps /app/apps/backend/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
