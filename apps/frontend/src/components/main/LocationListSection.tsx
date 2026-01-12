@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Search, X, Star, Plus, ListTodo, Vote, Sparkles } from "lucide-react";
+import {
+  MagnifyIcon,
+  CloseIcon,
+  StarIcon,
+  PlusIcon,
+  ListBoxOutlineIcon,
+  VoteIcon,
+  CreationIcon,
+} from "@/components/Icons";
 
 interface Location {
   id: number;
@@ -68,12 +76,12 @@ function LocationListSection() {
     {
       id: "locations",
       label: "장소 리스트",
-      icon: <ListTodo className="w-4 h-4" />,
+      icon: <ListBoxOutlineIcon className="w-4 h-4" />,
     },
     {
       id: "candidates",
       label: "후보 리스트",
-      icon: <Vote className="w-4 h-4" />,
+      icon: <VoteIcon className="w-4 h-4" />,
     },
   ];
 
@@ -109,7 +117,7 @@ function LocationListSection() {
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
+          <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
           <input
             type="text"
             value={searchQuery}
@@ -122,7 +130,7 @@ function LocationListSection() {
               onClick={() => setSearchQuery("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray hover:text-black"
             >
-              <X className="w-4 h-4" />
+              <CloseIcon className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -178,7 +186,7 @@ function LocationListSection() {
                       {location.rating > 0 && (
                         <div className="flex flex-col items-end">
                           <div className="flex items-center gap-0.5">
-                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                            <StarIcon className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                             <span className="font-bold text-yellow-400 text-xs">
                               {location.rating}
                             </span>
@@ -201,7 +209,7 @@ function LocationListSection() {
                     <div className="flex items-center gap-1">
                       {location.isAiRecommended && (
                         <span className="inline-flex items-center gap-1 px-2.5 h-5 bg-black text-white text-[9px] font-bold rounded-full">
-                          <Sparkles className="w-2.5 h-2.5" />
+                          <CreationIcon className="w-2.5 h-2.5" />
                           AI 추천
                         </span>
                       )}
@@ -210,7 +218,7 @@ function LocationListSection() {
                       <span className="font-bold text-gray-800 text-xs">
                         추가
                       </span>
-                      <Plus className="w-3.5 h-3.5 text-gray-800" />
+                      <PlusIcon className="w-3.5 h-3.5 text-gray-800" />
                     </button>
                   </div>
                 </div>

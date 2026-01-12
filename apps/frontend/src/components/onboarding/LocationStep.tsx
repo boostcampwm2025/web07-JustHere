@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Search, X, Check, MapPin, Users } from "lucide-react";
+import {
+  MagnifyIcon,
+  CloseIcon,
+  CheckIcon,
+  MapMarkerIcon,
+  MapCheckOutlineIcon,
+  AccountCheckOutlineIcon,
+} from "@/components/Icons";
 
 interface SearchResult {
   id: number;
@@ -41,7 +48,7 @@ function LocationStep({ onNext }: LocationStepProps) {
           {/* Step 1 - Active */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+              <MapCheckOutlineIcon className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-primary">지역 선택</span>
           </div>
@@ -52,7 +59,7 @@ function LocationStep({ onNext }: LocationStepProps) {
           {/* Step 2 - Inactive */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-gray-disable" />
+              <AccountCheckOutlineIcon className="w-5 h-5 text-gray-disable" />
             </div>
             <span className="text-xs font-medium text-gray-disable">
               사용자 초대
@@ -73,12 +80,12 @@ function LocationStep({ onNext }: LocationStepProps) {
               강남역
             </div>
           </div>
-          <MapPin className="absolute top-1/2 left-1/2 -translate-x-1/2 w-6 h-6 text-primary" />
+          <MapMarkerIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 w-6 h-6 text-primary" />
         </div>
 
         {/* Search Input */}
         <div className="relative mb-2">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
+          <MagnifyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
           <input
             type="text"
             value={searchQuery}
@@ -91,7 +98,7 @@ function LocationStep({ onNext }: LocationStepProps) {
               onClick={() => setSearchQuery("")}
               className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black"
             >
-              <X className="w-5 h-5" />
+              <CloseIcon className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -123,7 +130,7 @@ function LocationStep({ onNext }: LocationStepProps) {
                 </div>
                 {isSelected && (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white" />
+                    <CheckIcon className="w-4 h-4 text-white" />
                   </div>
                 )}
               </button>

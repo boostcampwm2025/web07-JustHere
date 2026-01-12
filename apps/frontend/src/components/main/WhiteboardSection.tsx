@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { UtensilsCrossed, Coffee, Wine, Plus } from "lucide-react";
+import {
+  SilverwareForkKnifeIcon,
+  CoffeeIcon,
+  LiquorIcon,
+  PlusIcon,
+} from "@/components/Icons";
 
 type TabType = "restaurant" | "cafe" | "bar";
 
@@ -16,10 +21,10 @@ function WhiteboardSection() {
     {
       id: "restaurant",
       label: "음식점",
-      icon: <UtensilsCrossed className="w-4 h-4" />,
+      icon: <SilverwareForkKnifeIcon className="w-4 h-4" />,
     },
-    { id: "cafe", label: "카페", icon: <Coffee className="w-4 h-4" /> },
-    { id: "bar", label: "술집", icon: <Wine className="w-4 h-4" /> },
+    { id: "cafe", label: "카페", icon: <CoffeeIcon className="w-4 h-4" /> },
+    { id: "bar", label: "술집", icon: <LiquorIcon className="w-4 h-4" /> },
   ];
 
   return (
@@ -52,7 +57,7 @@ function WhiteboardSection() {
           className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-slate-200 transition-colors mb-1"
           aria-label="새 탭 추가"
         >
-          <Plus className="w-5 h-5 text-gray-800" />
+          <PlusIcon className="w-5 h-5 text-gray-800" />
         </button>
       </header>
 

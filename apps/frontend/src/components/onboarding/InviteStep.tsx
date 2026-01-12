@@ -1,6 +1,10 @@
 import { useState } from "react";
-// TODO 임시로 라이브러리 적용함. svgr 적용 되면 수정 필요
-import { MapPin, Users, Copy, Check } from "lucide-react";
+import {
+  MapCheckOutlineIcon,
+  AccountCheckOutlineIcon,
+  ContentCopyIcon,
+  CheckIcon,
+} from "@/components/Icons";
 
 interface InviteStepProps {
   selectedLocation: string;
@@ -37,7 +41,7 @@ function InviteStep({
           {/* Step 1 - Completed */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
+              <MapCheckOutlineIcon className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-primary">지역 선택</span>
           </div>
@@ -48,7 +52,7 @@ function InviteStep({
           {/* Step 2 - Active */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+              <AccountCheckOutlineIcon className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-primary">
               사용자 초대
@@ -81,9 +85,9 @@ function InviteStep({
             className="w-14 h-12 bg-gray rounded-xl flex items-center justify-center hover:bg-gray-600 transition-colors"
           >
             {copied ? (
-              <Check className="w-5 h-5 text-white" />
+              <CheckIcon className="w-5 h-5 text-white" />
             ) : (
-              <Copy className="w-5 h-5 text-white" />
+              <ContentCopyIcon className="w-5 h-5 text-white" />
             )}
           </button>
         </div>
