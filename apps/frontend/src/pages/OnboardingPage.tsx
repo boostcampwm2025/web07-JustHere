@@ -18,6 +18,7 @@ function OnboardingPage() {
     useState<SelectedLocation | null>(null);
 
   // TODO: 실제 초대 링크 생성 로직으로 대체
+
   const inviteLink = "www.justhere.p-e.kr/abxbdfffdfadff";
 
   const handleLocationSelect = (location: SelectedLocation) => {
