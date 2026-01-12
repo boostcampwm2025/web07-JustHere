@@ -31,7 +31,10 @@
     "@prisma/client": "^7.2.0",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "ws": "^8.18.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.29"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -44,6 +47,7 @@
     "@types/node": "^22.10.7",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.5.13",
     "class-validator": "^0.14.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
