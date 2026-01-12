@@ -23,7 +23,9 @@ export class RoomGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly roomService: RoomService) {}
+  constructor(private readonly roomService: RoomService) {
+    this.roomService.setServer(this.server);
+  }
 
   async handleDisconnect(client: Socket) {
     await this.roomService.leaveByDisconnect(client);
