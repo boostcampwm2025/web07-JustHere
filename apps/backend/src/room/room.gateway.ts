@@ -14,7 +14,7 @@ import {
   type RoomLeavePayload,
   roomJoinSchema,
   roomLeaveSchema,
-} from './dto/room.request.dto';
+} from './dto/room.c2s.dto';
 import { RoomService } from './room.service';
 
 @WebSocketGateway({

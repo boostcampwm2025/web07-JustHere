@@ -4,7 +4,7 @@ import type { Socket } from 'socket.io';
 import { CategoryRepository } from '@/category/category.repository';
 import { SocketBroadcaster } from '@/socket/socket.broadcaster';
 import { UserService } from '@/user/user.service';
-import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.request.dto';
+import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto';
 import {
   Participant,
   participantSchema,
@@ -13,7 +13,7 @@ import {
   RoomUserJoinedPayload,
   RoomUserLeftPayload,
   RoomUserMovedPayload,
-} from './dto/room.event.dto';
+} from './dto/room.s2c.dto';
 import { UserSession } from '@/user/user.type';
 
 @Injectable()

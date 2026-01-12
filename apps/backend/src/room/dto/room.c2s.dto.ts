@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// [C->S] room:join
 export const roomJoinSchema = z.object({
   roomId: z.string().min(1),
   user: z.object({
@@ -10,6 +11,7 @@ export const roomJoinSchema = z.object({
 });
 export type RoomJoinPayload = z.infer<typeof roomJoinSchema>;
 
+// [C->S] room:leave
 export const roomLeaveSchema = z.object({
   roomId: z.string().min(1),
 });
