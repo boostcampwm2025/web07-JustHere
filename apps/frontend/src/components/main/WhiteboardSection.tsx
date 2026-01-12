@@ -34,6 +34,7 @@ function WhiteboardSection() {
     { id: "bar", label: "술집", icon: <LiquorIcon className="w-4 h-4" /> },
   ];
 
+  // TODO: [아진] 해당 버튼 스타일이 많이 사용되면 Button 컴포넌트를 확장한 ToggleButton을 따로 만들어도 좋을 것 같음.
   // 토글 버튼 공통 스타일
   const toggleButtonBaseClass = "rounded-full transition-all duration-200";
 
@@ -89,7 +90,6 @@ function WhiteboardSection() {
           <WhiteboardCanvas />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            {/* TODO: 카카오맵 컴포넌트 배치 */}
             <KakaoMap />
           </div>
         )}
