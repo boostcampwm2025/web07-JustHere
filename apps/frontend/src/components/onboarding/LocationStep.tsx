@@ -1,12 +1,11 @@
 import { useRef, useEffect, useState } from "react";
 import {
-  CheckIcon,
   MapCheckOutlineIcon,
   AccountCheckOutlineIcon,
 } from "@/components/Icons";
 import { Button } from "@/components/common/Button";
 import { SearchInput } from "@/components/common/SearchInput";
-import { cn } from "@/utils/cn";
+import { SearchResultsList } from "@/components/onboarding/SearchResultsList";
 import { useKakaoMap } from "@/hooks/useKakaoMap";
 import type { KakaoPlace, KakaoMap, KakaoMarker } from "@/types/kakao";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -149,41 +148,12 @@ function LocationStep({ onNext }: LocationStepProps) {
           검색 결과 ({searchResults.length})
         </p>
 
-        <div
+        <SearchResultsList
           ref={listContainerRef}
-          className="flex flex-col gap-3 mb-6 max-h-[300px] overflow-y-auto custom-scrollbar"
-        >
-          {searchResults.map((result) => {
-            const isSelected = selectedPlace?.id === result.id;
-            return (
-              <button
-                key={result.id}
-                onClick={() => setSelectedPlace(result)}
-                className={cn(
-                  "flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left w-full shrink-0",
-                  {
-                    "bg-primary-bg border-primary": isSelected,
-                    "bg-white border-gray-300 hover:border-gray": !isSelected,
-                  },
-                )}
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-black">
-                    {result.place_name}
-                  </span>
-                  <span className="text-xs text-gray">
-                    {result.road_address_name || result.address_name}
-                  </span>
-                </div>
-                {isSelected && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                    <CheckIcon className="w-4 h-4 text-white" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+          results={searchResults}
+          selectedPlace={selectedPlace}
+          onSelect={setSelectedPlace}
+        />
 
         <Button
           onClick={handleNext}
