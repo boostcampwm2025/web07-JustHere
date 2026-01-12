@@ -1,19 +1,15 @@
-import { useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   CheckIcon,
-  MapMarkerIcon,
   MapCheckOutlineIcon,
   AccountCheckOutlineIcon,
 } from "@/components/Icons";
 import { Button } from "@/components/common/Button";
 import { SearchInput } from "@/components/common/SearchInput";
 import { cn } from "@/utils/cn";
-
-interface SearchResult {
-  id: number;
-  name: string;
-  address: string;
-}
+import { useKakaoMap } from "@/hooks/useKakaoMap";
+import type { KakaoPlace, KakaoMap, KakaoMarker } from "@/types/kakao";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string }) => void;
@@ -21,21 +17,77 @@ interface LocationStepProps {
 
 function LocationStep({ onNext }: LocationStepProps) {
   const [searchQuery, setSearchQuery] = useState("강남역");
-  const [selectedId, setSelectedId] = useState<number>(1);
+  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
+  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null);
 
-  const searchResults: SearchResult[] = [
-    { id: 1, name: "강남역(2호선)", address: "서울 강남구 강남대로 396" },
-    { id: 2, name: "강남역(신분당선)", address: "서울 강남구 강남대로 396" },
-    { id: 3, name: "스타벅스 강남역점", address: "서울 강남구 강남대로 396" },
-  ];
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<KakaoMap | null>(null);
+  const markerRef = useRef<KakaoMarker | null>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
-  const selectedLocation = searchResults.find((r) => r.id === selectedId);
+  const { isLoaded, searchPlaces } = useKakaoMap();
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    if (
+      isLoaded &&
+      mapContainerRef.current &&
+      !mapRef.current &&
+      window.kakao
+    ) {
+      const options = {
+        center: new window.kakao.maps.LatLng(37.498095, 127.02761),
+        level: 3,
+        draggable: false,
+      };
+
+      const map = new window.kakao.maps.Map(mapContainerRef.current, options);
+      mapRef.current = map;
+
+      const marker = new window.kakao.maps.Marker({
+        position: options.center,
+        map: map,
+      });
+      markerRef.current = marker;
+    }
+  }, [isLoaded]);
+
+  useEffect(() => {
+    if (!debouncedSearchQuery.trim()) return;
+
+    searchPlaces(debouncedSearchQuery, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK) {
+        setSearchResults(result);
+      } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+        setSearchResults([]);
+      }
+    });
+  }, [debouncedSearchQuery, searchPlaces]);
+
+  useEffect(() => {
+    if (selectedPlace && mapRef.current && markerRef.current && window.kakao) {
+      const moveLatLon = new window.kakao.maps.LatLng(
+        Number(selectedPlace.y),
+        Number(selectedPlace.x),
+      );
+
+      mapRef.current.setCenter(moveLatLon);
+      markerRef.current.setMap(mapRef.current);
+      markerRef.current.setPosition(moveLatLon);
+    }
+  }, [selectedPlace]);
+
+  useEffect(() => {
+    if (listContainerRef.current) {
+      listContainerRef.current.scrollTop = 0;
+    }
+  }, [searchResults]);
 
   const handleNext = () => {
-    if (selectedLocation) {
+    if (selectedPlace) {
       onNext({
-        name: selectedLocation.name,
-        address: selectedLocation.address,
+        name: selectedPlace.place_name,
+        address: selectedPlace.road_address_name || selectedPlace.address_name,
       });
     }
   };
@@ -66,14 +118,23 @@ function LocationStep({ onNext }: LocationStepProps) {
         <h1 className="text-2xl font-medium text-black text-center mb-8">
           만날 지역을 선택해보세요
         </h1>
-        <div className="w-full h-36 bg-gray-100 rounded-xl mb-6 overflow-hidden relative">
-          <div className="absolute inset-0 bg-linear-to-br from-gray-50 to-gray-200" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium">
-              강남역
+        <div
+          ref={mapContainerRef}
+          className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0"
+        >
+          {!isLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <span className="text-gray-400 text-sm">지도 로딩 중...</span>
             </div>
-          </div>
-          <MapMarkerIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 w-6 h-6 text-primary" />
+          )}
+
+          {selectedPlace && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium mb-1 whitespace-nowrap shadow-sm">
+                {selectedPlace.place_name}
+              </div>
+            </div>
+          )}
         </div>
 
         <SearchInput
@@ -88,15 +149,18 @@ function LocationStep({ onNext }: LocationStepProps) {
           검색 결과 ({searchResults.length})
         </p>
 
-        <div className="flex flex-col gap-3 mb-6">
+        <div
+          ref={listContainerRef}
+          className="flex flex-col gap-3 mb-6 max-h-[300px] overflow-y-auto custom-scrollbar"
+        >
           {searchResults.map((result) => {
-            const isSelected = selectedId === result.id;
+            const isSelected = selectedPlace?.id === result.id;
             return (
               <button
                 key={result.id}
-                onClick={() => setSelectedId(result.id)}
+                onClick={() => setSelectedPlace(result)}
                 className={cn(
-                  "flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left",
+                  "flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left w-full shrink-0",
                   {
                     "bg-primary-bg border-primary": isSelected,
                     "bg-white border-gray-300 hover:border-gray": !isSelected,
@@ -105,12 +169,14 @@ function LocationStep({ onNext }: LocationStepProps) {
               >
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-black">
-                    {result.name}
+                    {result.place_name}
                   </span>
-                  <span className="text-xs text-gray">{result.address}</span>
+                  <span className="text-xs text-gray">
+                    {result.road_address_name || result.address_name}
+                  </span>
                 </div>
                 {isSelected && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
                     <CheckIcon className="w-4 h-4 text-white" />
                   </div>
                 )}
@@ -121,7 +187,7 @@ function LocationStep({ onNext }: LocationStepProps) {
 
         <Button
           onClick={handleNext}
-          disabled={!selectedLocation}
+          disabled={!selectedPlace}
           size="lg"
           className="py-4 text-base font-bold"
         >
