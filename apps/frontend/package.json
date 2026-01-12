@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.16",
@@ -30,10 +31,12 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "svgo": "^4.0.0",
     "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
+    "vite-plugin-svgr": "^4.5.0",
     "vitest": "^4.0.16"
   }
 }
