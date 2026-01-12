@@ -40,3 +40,16 @@ export type RoomUserJoinedPayload = {
 export type RoomUserLeftPayload = {
   participant: Participant;
 };
+
+// [S->C] room:user_moved
+export type RoomUserMovedPayload = {
+  participant: Participant;
+  fromCategoryId: string | null;
+  toCategoryId: string | null;
+};
+
+// [S->C] room:category_changed
+export type RoomCategoryChangedPayload = {
+  action: 'created' | 'updated' | 'deleted';
+  category: Category;
+};

@@ -6,6 +6,8 @@ import type {
   RoomStatePayload,
   RoomUserJoinedPayload,
   RoomUserLeftPayload,
+  RoomUserMovedPayload,
+  RoomCategoryChangedPayload,
   Participant,
   Category,
   UserSession,
@@ -124,6 +126,52 @@ export class RoomService {
       };
       this.server.to(`room:${roomId}`).emit('room:user_left', leftPayload);
     }
+  }
+
+  /**
+   * 사용자가 카테고리를 변경했을 때 브로드캐스트
+   *
+   * @param socketId - 소켓 ID
+   * @param fromCategoryId - 이전 카테고리 ID
+   * @param toCategoryId - 새로운 카테고리 ID
+   */
+  broadcastUserMoved(
+    socketId: string,
+    fromCategoryId: string | null,
+    toCategoryId: string | null,
+  ) {
+    const session = this.sessions.get(socketId);
+    if (!session || !this.server) return;
+
+    const payload: RoomUserMovedPayload = {
+      participant: this.sessionToParticipant(session),
+      fromCategoryId,
+      toCategoryId,
+    };
+
+    this.server.to(`room:${session.roomId}`).emit('room:user_moved', payload);
+  }
+
+  /**
+   * 카테고리 CRUD 변경 시 브로드캐스트
+   *
+   * @param roomId - 방 ID
+   * @param action - 변경 액션 (created/updated/deleted)
+   * @param category - 카테고리 정보
+   */
+  broadcastCategoryChanged(
+    roomId: string,
+    action: 'created' | 'updated' | 'deleted',
+    category: Category,
+  ) {
+    if (!this.server) return;
+
+    const payload: RoomCategoryChangedPayload = {
+      action,
+      category,
+    };
+
+    this.server.to(`room:${roomId}`).emit('room:category_changed', payload);
   }
 
   /**
