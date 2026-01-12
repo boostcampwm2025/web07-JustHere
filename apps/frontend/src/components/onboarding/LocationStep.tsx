@@ -7,6 +7,8 @@ import {
   MapCheckOutlineIcon,
   AccountCheckOutlineIcon,
 } from "@/components/Icons";
+import { Button } from "@/components/Button";
+import { cn } from "@/utils/cn";
 
 interface SearchResult {
   id: number;
@@ -42,10 +44,7 @@ function LocationStep({ onNext }: LocationStepProps) {
   return (
     <main className="flex-1 flex items-start justify-center px-4 py-16">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm p-12">
-        {/* 진행도 바 */}
-        {/* TODO 컴포넌트로 빼기 */}
         <div className="flex items-center justify-center gap-4 mb-10">
-          {/* Step 1 - Active */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
               <MapCheckOutlineIcon className="w-5 h-5 text-white" />
@@ -53,10 +52,8 @@ function LocationStep({ onNext }: LocationStepProps) {
             <span className="text-xs font-medium text-primary">지역 선택</span>
           </div>
 
-          {/* Progress Line */}
           <div className="w-24 h-0.5 bg-gray-200 -mt-6" />
 
-          {/* Step 2 - Inactive */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
               <AccountCheckOutlineIcon className="w-5 h-5 text-gray-disable" />
@@ -67,12 +64,9 @@ function LocationStep({ onNext }: LocationStepProps) {
           </div>
         </div>
 
-        {/* Title */}
         <h1 className="text-2xl font-medium text-black text-center mb-8">
           만날 지역을 선택해보세요
         </h1>
-
-        {/* Map Preview */}
         <div className="w-full h-36 bg-gray-100 rounded-xl mb-6 overflow-hidden relative">
           <div className="absolute inset-0 bg-linear-to-br from-gray-50 to-gray-200" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -83,7 +77,6 @@ function LocationStep({ onNext }: LocationStepProps) {
           <MapMarkerIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 w-6 h-6 text-primary" />
         </div>
 
-        {/* Search Input */}
         <div className="relative mb-2">
           <MagnifyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
           <input
@@ -103,12 +96,10 @@ function LocationStep({ onNext }: LocationStepProps) {
           )}
         </div>
 
-        {/* Search Results Count */}
         <p className="text-sm text-gray mb-3">
           검색 결과 ({searchResults.length})
         </p>
 
-        {/* Search Results List */}
         <div className="flex flex-col gap-3 mb-6">
           {searchResults.map((result) => {
             const isSelected = selectedId === result.id;
@@ -116,11 +107,13 @@ function LocationStep({ onNext }: LocationStepProps) {
               <button
                 key={result.id}
                 onClick={() => setSelectedId(result.id)}
-                className={`flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left ${
-                  isSelected
-                    ? "bg-primary-bg border-primary"
-                    : "bg-white border-gray-300 hover:border-gray"
-                }`}
+                className={cn(
+                  "flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left",
+                  {
+                    "bg-primary-bg border-primary": isSelected,
+                    "bg-white border-gray-300 hover:border-gray": !isSelected,
+                  },
+                )}
               >
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-black">
@@ -138,14 +131,14 @@ function LocationStep({ onNext }: LocationStepProps) {
           })}
         </div>
 
-        {/* CTA Button */}
-        <button
+        <Button
           onClick={handleNext}
           disabled={!selectedLocation}
-          className="w-full h-13 bg-primary hover:bg-primary-pressed disabled:bg-gray-disable text-white font-bold text-base rounded-xl transition-colors py-4"
+          size="lg"
+          className="py-4 text-base font-bold"
         >
           참여자 초대하기
-        </button>
+        </Button>
       </div>
     </main>
   );
