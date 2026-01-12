@@ -1,3 +1,7 @@
+import { Button } from "@/components/Button";
+import KakaoMap from "@/components/KakaoMap";
+import WhiteboardCanvas from "@/components/main/WhiteboardCanvas.tsx";
+import { cn } from "@/utils/cn.ts";
 import { useState } from "react";
 import {
   SilverwareForkKnifeIcon,
@@ -7,6 +11,7 @@ import {
 } from "@/components/Icons";
 
 type TabType = "restaurant" | "cafe" | "bar";
+type ToggleType = "map" | "canvas";
 
 interface Tab {
   id: TabType;
@@ -17,6 +22,8 @@ interface Tab {
 function WhiteboardSection() {
   const [activeTab, setActiveTab] = useState<TabType>("restaurant");
 
+  const [viewMode, setViewMode] = useState<ToggleType>("canvas");
+
   const tabs: Tab[] = [
     {
       id: "restaurant",
@@ -26,6 +33,17 @@ function WhiteboardSection() {
     { id: "cafe", label: "카페", icon: <CoffeeIcon className="w-4 h-4" /> },
     { id: "bar", label: "술집", icon: <LiquorIcon className="w-4 h-4" /> },
   ];
+
+  // 토글 버튼 공통 스타일
+  const toggleButtonBaseClass = "rounded-full transition-all duration-200";
+
+  // 토글 활성화 스타일
+  const activeClass =
+    "bg-primary hover:bg-primary-pressed ring-primary text-white shadow-md";
+
+  // 토글 비활성화 스타일
+  const inactiveClass =
+    "text-gray hover:bg-gray-bg hover:text-black bg-transparent";
 
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
@@ -66,7 +84,46 @@ function WhiteboardSection() {
         className="flex-1 bg-slate-50 overflow-hidden relative"
         role="tabpanel"
       >
-        {/* TODO: 화이트보드 캔버스 구현 */}
+        {viewMode === "canvas" ? (
+          // TODO: 화이트보드 캔버스 구현
+          <WhiteboardCanvas />
+        ) : (
+          <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+            {/* TODO: 카카오맵 컴포넌트 배치 */}
+            <KakaoMap />
+          </div>
+        )}
+
+        {/* 4. 하단 중앙 토글 버튼 (Floating UI) */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="flex p-1 bg-white rounded-full shadow-lg border border-slate-200">
+            {/* Canvas Mode Button */}
+            <Button
+              size="sm"
+              variant={viewMode === "canvas" ? "primary" : "ghost"}
+              onClick={() => setViewMode("canvas")}
+              className={cn(
+                toggleButtonBaseClass,
+                viewMode === "canvas" ? activeClass : inactiveClass,
+              )}
+            >
+              캔버스
+            </Button>
+
+            {/* Map Mode Button */}
+            <Button
+              size="sm"
+              variant={viewMode === "map" ? "primary" : "ghost"}
+              onClick={() => setViewMode("map")}
+              className={cn(
+                toggleButtonBaseClass,
+                viewMode === "map" ? activeClass : inactiveClass,
+              )}
+            >
+              지도
+            </Button>
+          </div>
+        </div>
       </main>
     </section>
   );
