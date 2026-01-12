@@ -1,13 +1,12 @@
 import { useState } from "react";
 import {
-  MagnifyIcon,
-  CloseIcon,
   CheckIcon,
   MapMarkerIcon,
   MapCheckOutlineIcon,
   AccountCheckOutlineIcon,
 } from "@/components/Icons";
-import { Button } from "@/components/Button";
+import { Button } from "@/components/common/Button";
+import { SearchInput } from "@/components/common/SearchInput";
 import { cn } from "@/utils/cn";
 
 interface SearchResult {
@@ -77,24 +76,13 @@ function LocationStep({ onNext }: LocationStepProps) {
           <MapMarkerIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 w-6 h-6 text-primary" />
         </div>
 
-        <div className="relative mb-2">
-          <MagnifyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="장소를 검색하세요"
-            className="w-full h-12 pl-12 pr-12 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black"
-            >
-              <CloseIcon className="w-5 h-5" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onClear={() => setSearchQuery("")}
+          placeholder="장소를 검색하세요"
+          containerClassName="mb-2"
+        />
 
         <p className="text-sm text-gray mb-3">
           검색 결과 ({searchResults.length})
