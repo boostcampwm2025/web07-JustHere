@@ -48,6 +48,6 @@ export class RoomGateway implements OnGatewayDisconnect {
     const parsed = RoomLeaveSchema.safeParse(payload);
     if (!parsed.success) return;
 
-    await this.roomService.leaveRoom(client, parsed.data);
+    await this.roomService.leaveRoomBySession(client, parsed.data);
   }
 }
