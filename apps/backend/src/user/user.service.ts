@@ -46,6 +46,9 @@ export class UserService {
     return session;
   }
 
+  /**
+   * 유저의 카테고리 위치 변경
+   */
   moveCategory(
     socketId: string,
     toCategoryId: string | null,

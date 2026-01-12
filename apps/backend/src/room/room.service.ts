@@ -122,6 +122,7 @@ export class RoomService {
     _from: string | null,
     to: string | null,
   ) {
+    // 유저 입력과 소켓 세션 기반으로 위치 변경 처리
     const moved = this.users.moveCategory(socketId, to);
     if (!moved) return;
 
