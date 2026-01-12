@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserSession } from './room.type';
+import { UserSession } from './user.type';
 
 @Injectable()
 export class UserSessionStore {

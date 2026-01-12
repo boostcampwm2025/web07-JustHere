@@ -2,16 +2,18 @@ import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
+  OnGatewayInit,
   OnGatewayDisconnect,
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { SocketBroadcaster } from '@/socket/socket.broadcaster';
 import {
   type RoomJoinPayload,
   type RoomLeavePayload,
-  RoomJoinSchema,
-  RoomLeaveSchema,
+  roomJoinSchema,
+  roomLeaveSchema,
 } from './dto/room.request.dto';
 import { RoomService } from './room.service';
 
@@ -19,12 +21,17 @@ import { RoomService } from './room.service';
   namespace: '/room',
   cors: { origin: '*' },
 })
-export class RoomGateway implements OnGatewayDisconnect {
+export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly roomService: RoomService) {
-    this.roomService.setServer(this.server);
+  constructor(
+    private readonly roomService: RoomService,
+    private readonly broadcaster: SocketBroadcaster,
+  ) {}
+
+  afterInit(server: Server) {
+    this.broadcaster.setServer(server);
   }
 
   async handleDisconnect(client: Socket) {
@@ -36,7 +43,7 @@ export class RoomGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: RoomJoinPayload,
   ) {
-    const parsed = RoomJoinSchema.safeParse(payload);
+    const parsed = roomJoinSchema.safeParse(payload);
     if (!parsed.success) return;
 
     await this.roomService.joinRoom(client, parsed.data);
@@ -47,7 +54,7 @@ export class RoomGateway implements OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: RoomLeavePayload,
   ) {
-    const parsed = RoomLeaveSchema.safeParse(payload);
+    const parsed = roomLeaveSchema.safeParse(payload);
     if (!parsed.success) return;
 
     await this.roomService.leaveRoomBySession(client, parsed.data);

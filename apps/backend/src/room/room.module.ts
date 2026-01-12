@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '@/prisma/prisma.module';
+import { CategoryModule } from '@/category/category.module';
+import { SocketModule } from '@/socket/socket.module';
+import { UserModule } from '@/user/user.module';
 import { RoomService } from './room.service';
 import { RoomGateway } from './room.gateway';
-import { UserSessionStore } from './user-session.store';
 
 @Module({
-  imports: [PrismaModule],
-  providers: [RoomService, UserSessionStore, RoomGateway],
+  imports: [CategoryModule, SocketModule, UserModule],
+  providers: [RoomService, RoomGateway],
   exports: [RoomService],
 })
 export class RoomModule {}

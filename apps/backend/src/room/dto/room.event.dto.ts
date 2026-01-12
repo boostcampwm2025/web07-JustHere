@@ -1,29 +1,19 @@
-export type UserSession = {
-  socketId: string;
-  userId: string;
-  nickname: string;
-  color: string;
-  roomId: string;
-  categoryId: string | null;
-  joinedAt: Date;
-};
+import { Category } from '@prisma/client';
 
-export type Participant = {
-  socketId: string;
-  userId: string;
-  nickname: string;
-  color: string;
-  categoryId: string | null;
-  joinedAt: string; // ISO 8601 형식
-};
+import { z } from 'zod';
 
-export type Category = {
-  id: string;
-  roomId: string;
-  title: string;
-  orderIndex: number;
-  createdAt: string; // ISO 8601 형식
-};
+export const participantSchema = z.object({
+  userId: z.string(),
+  nickname: z.string(),
+  socketId: z.string(),
+  color: z.string(),
+  categoryId: z.string().nullable(),
+  joinedAt: z.preprocess(
+    (v) => (v instanceof Date ? v.toISOString() : v),
+    z.iso.datetime(),
+  ),
+});
+export type Participant = z.infer<typeof participantSchema>;
 
 // [S->C] room:state
 export type RoomStatePayload = {

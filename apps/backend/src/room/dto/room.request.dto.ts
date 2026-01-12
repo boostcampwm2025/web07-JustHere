@@ -1,19 +1,16 @@
 import { z } from 'zod';
 
-export const UserSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  profile_image: z.string().optional(),
-});
-export type User = z.infer<typeof UserSchema>;
-
-export const RoomJoinSchema = z.object({
+export const roomJoinSchema = z.object({
   roomId: z.string().min(1),
-  user: UserSchema,
+  user: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    profile_image: z.string().optional(),
+  }),
 });
-export type RoomJoinPayload = z.infer<typeof RoomJoinSchema>;
+export type RoomJoinPayload = z.infer<typeof roomJoinSchema>;
 
-export const RoomLeaveSchema = z.object({
+export const roomLeaveSchema = z.object({
   roomId: z.string().min(1),
 });
-export type RoomLeavePayload = z.infer<typeof RoomLeaveSchema>;
+export type RoomLeavePayload = z.infer<typeof roomLeaveSchema>;
