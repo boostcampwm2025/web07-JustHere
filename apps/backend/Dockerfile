@@ -71,11 +71,10 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/package.json ./package.json
 
-# Prisma 관련 파일 복사 (마이그레이션 실행을 위해 필요)
+# Prisma 파일 복사 (CD 워크플로우에서 마이그레이션 실행을 위해 필요)
 COPY --from=prod-deps /app/apps/backend/prisma ./prisma
 COPY --from=prod-deps /app/apps/backend/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
-# 마이그레이션 실행 후 앱 시작
-CMD ["sh", "-c", "npx prisma migrate deploy --config prisma.config.ts && node dist/main.js"]
+CMD ["node", "dist/main.js"]

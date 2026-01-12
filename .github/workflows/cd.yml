@@ -103,7 +103,10 @@ jobs:
 
             # 이미지 Pull
             docker-compose pull
-            
+
+            # 마이그레이션 실행 (컨테이너 시작 전)
+            docker-compose run --rm backend npx prisma migrate deploy --config prisma.config.ts
+
             # 컨테이너 실행
             docker-compose up -d --remove-orphans
 
