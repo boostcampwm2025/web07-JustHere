@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LocationStep from "@/components/onboarding/LocationStep";
 import InviteStep from "@/components/onboarding/InviteStep";
 import Header from "@/components/common/Header";
@@ -11,6 +12,7 @@ interface SelectedLocation {
 }
 
 function OnboardingPage() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("location");
   const [selectedLocation, setSelectedLocation] =
     useState<SelectedLocation | null>(null);
@@ -24,16 +26,13 @@ function OnboardingPage() {
   };
 
   const handleInviteComplete = () => {
-    // TODO: 메인 페이지로 이동 또는 다음 플로우 처리
-    console.log("Onboarding completed!");
+    navigate("/main");
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-bg">
-      {/* Header */}
       <Header />
 
-      {/* Step Content */}
       {currentStep === "location" && (
         <LocationStep onNext={handleLocationSelect} />
       )}
