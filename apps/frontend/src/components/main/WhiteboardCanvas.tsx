@@ -1,4 +1,6 @@
-import { useRef, useEffect } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
+import { Stage, Layer, Circle, Text, Rect, Line } from 'react-konva'
+import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
 
 interface WhiteboardCanvasProps {
@@ -6,81 +8,149 @@ interface WhiteboardCanvasProps {
   canvasId: string
 }
 
+type Tool = 'cursor' | 'pen' | 'rectangle'
+
+interface Rectangle {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  fill: string
+}
+
+interface Line {
+  id: string
+  points: number[]
+  stroke: string
+  strokeWidth: number
+}
+
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const stageRef = useRef<Konva.Stage>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
+  const [tool, setTool] = useState<Tool>('cursor')
+  const [rectangles, setRectangles] = useState<Rectangle[]>([])
+  const [lines, setLines] = useState<Line[]>([])
+  const [scale, setScale] = useState(1)
+  const isDrawing = useRef(false)
+
   const { isConnected, cursors, updateCursor } = useYjsSocket({
     roomId,
     canvasId,
   })
 
+  // 컨테이너 크기에 맞춰 Stage 크기 조정
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // 캔버스 크기 설정
-    const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth
-      canvas.height = canvas.offsetHeight
-    }
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
-
-    // 마우스 이동 이벤트
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      updateCursor(x, y)
+    const updateSize = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        })
+      }
     }
 
-    canvas.addEventListener('mousemove', handleMouseMove)
+    updateSize()
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [])
 
-    return () => {
-      window.removeEventListener('resize', resizeCanvas)
-      canvas.removeEventListener('mousemove', handleMouseMove)
+  // 마우스 이동 시 커서 위치 업데이트 및 펜 그리기
+  const handleMouseMove = () => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pos = stage.getPointerPosition()
+    if (pos) {
+      updateCursor(pos.x, pos.y)
+
+      // 펜 모드에서 그리기 중일 때
+      if (tool === 'pen' && isDrawing.current) {
+        const lastLine = lines[lines.length - 1]
+        if (lastLine) {
+          const newPoints = lastLine.points.concat([pos.x, pos.y])
+          const updatedLines = lines.slice(0, -1).concat([{ ...lastLine, points: newPoints }])
+          setLines(updatedLines)
+        }
+      }
     }
-  }, [updateCursor])
+  }
 
-  // 커서 렌더링
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+  // 마우스 다운 이벤트
+  const handleMouseDown = () => {
+    const stage = stageRef.current
+    if (!stage) return
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const pos = stage.getPointerPosition()
+    if (!pos) return
 
-    const renderCursors = () => {
-      // 캔버스 클리어
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (tool === 'rectangle') {
+      // 네모 추가
+      const newRect: Rectangle = {
+        id: `rect-${Date.now()}`,
+        x: pos.x,
+        y: pos.y,
+        width: 100,
+        height: 100,
+        fill: '#3b82f6',
+      }
+      setRectangles([...rectangles, newRect])
+    } else if (tool === 'pen') {
+      // 펜 그리기 시작
+      isDrawing.current = true
+      const newLine: Line = {
+        id: `line-${Date.now()}`,
+        points: [pos.x, pos.y],
+        stroke: '#000000',
+        strokeWidth: 3,
+      }
+      setLines([...lines, newLine])
+    }
+  }
 
-      // 다른 사용자의 커서 그리기
-      cursors.forEach(cursor => {
-        ctx.beginPath()
-        ctx.arc(cursor.x, cursor.y, 8, 0, Math.PI * 2)
-        ctx.fillStyle = '#3b82f6'
-        ctx.fill()
-        ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
-        ctx.stroke()
+  // 마우스 업 이벤트
+  const handleMouseUp = () => {
+    isDrawing.current = false
+  }
 
-        // 커서 소유자 표시
-        ctx.fillStyle = '#3b82f6'
-        ctx.font = '12px sans-serif'
-        ctx.fillText(`User ${cursor.socketId.substring(0, 4)}`, cursor.x + 12, cursor.y - 8)
-      })
+  // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault()
 
-      requestAnimationFrame(renderCursors)
+    // Cmd(Mac) 또는 Ctrl(Windows) 키가 눌렸는지 확인
+    if (!e.evt.metaKey && !e.evt.ctrlKey) {
+      return
     }
 
-    const animationId = requestAnimationFrame(renderCursors)
+    const stage = stageRef.current
+    if (!stage) return
 
-    return () => {
-      cancelAnimationFrame(animationId)
+    const scaleBy = 1.05
+    const oldScale = stage.scaleX()
+    const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
+
+    // 최소 0.1배, 최대 5배로 제한
+    const clampedScale = Math.max(0.1, Math.min(5, newScale))
+
+    const pointer = stage.getPointerPosition()
+    if (!pointer) return
+
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
     }
-  }, [cursors])
+
+    const newPos = {
+      x: pointer.x - mousePointTo.x * clampedScale,
+      y: pointer.y - mousePointTo.y * clampedScale,
+    }
+
+    stage.scale({ x: clampedScale, y: clampedScale })
+    stage.position(newPos)
+    setScale(clampedScale)
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -91,10 +161,79 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             <span className="text-sm">{isConnected ? '연결됨' : '연결 안 됨'}</span>
           </div>
           <span className="text-sm">참여자: {cursors.size + 1}명</span>
+
+          {/* 도구 메뉴 */}
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => setTool('cursor')}
+              className={`px-4 py-2 rounded ${tool === 'cursor' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              커서
+            </button>
+            <button
+              onClick={() => setTool('pen')}
+              className={`px-4 py-2 rounded ${tool === 'pen' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              펜
+            </button>
+            <button
+              onClick={() => setTool('rectangle')}
+              className={`px-4 py-2 rounded ${tool === 'rectangle' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            >
+              네모
+            </button>
+          </div>
         </div>
       </div>
-      <div className="flex-1 relative">
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-crosshair" style={{ touchAction: 'none' }} />
+      <div ref={containerRef} className="flex-1 relative">
+        {/* 확대/축소 컨트롤 */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+          <div className="px-4 py-2 bg-white border border-gray-300 rounded shadow-md text-sm text-center">{Math.round(scale * 100)}%</div>
+        </div>
+
+        <Stage
+          ref={stageRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          onMouseMove={handleMouseMove}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onWheel={handleWheel}
+          onTouchMove={handleMouseMove}
+          onTouchStart={handleMouseDown}
+          onTouchEnd={handleMouseUp}
+          className={tool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}
+        >
+          <Layer>
+            {/* 네모 렌더링 */}
+            {rectangles.map(rect => (
+              <Rect key={rect.id} x={rect.x} y={rect.y} width={rect.width} height={rect.height} fill={rect.fill} draggable={tool === 'cursor'} />
+            ))}
+
+            {/* 선 렌더링 */}
+            {lines.map(line => (
+              <Line
+                key={line.id}
+                points={line.points}
+                stroke={line.stroke}
+                strokeWidth={line.strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+              />
+            ))}
+
+            {/* 다른 사용자의 커서 렌더링 */}
+            {Array.from(cursors.values()).map(cursor => (
+              <React.Fragment key={cursor.socketId}>
+                {/* 커서 원 */}
+                <Circle x={cursor.x} y={cursor.y} radius={8} fill="#3b82f6" stroke="#ffffff" strokeWidth={2} />
+                {/* 사용자 ID 텍스트 */}
+                <Text x={cursor.x + 12} y={cursor.y - 8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
+              </React.Fragment>
+            ))}
+          </Layer>
+        </Stage>
       </div>
     </div>
   )
