@@ -48,3 +48,5 @@ Dockerfile
 # Docs
 README.md
 docs
+
+!.env
