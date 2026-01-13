@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   BellIcon,
   CogIcon,
@@ -5,8 +6,11 @@ import {
   MapCheckOutlineIcon,
 } from "@/components/Icons";
 import { AVATARS } from "@/mocks";
+import RoomInfoModal from "@/components/main/RoomInfoModal";
 
 export default function Header() {
+  const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false);
+
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
       <div className="flex items-center gap-4">
@@ -40,10 +44,19 @@ export default function Header() {
         <div className="w-[1px] h-6 bg-gray-200" />
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 text-white transition-colors rounded-lg bg-primary hover:bg-primary-pressed">
-            <ShareVariantIcon className="w-[18px] h-[18px]" />
-            <span className="text-sm font-bold">Share</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsRoomInfoModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 text-white transition-colors rounded-lg bg-primary hover:bg-primary-pressed"
+            >
+              <ShareVariantIcon className="w-[18px] h-[18px]" />
+              <span className="text-sm font-bold">Share</span>
+            </button>
+            <RoomInfoModal
+              isOpen={isRoomInfoModalOpen}
+              onClose={() => setIsRoomInfoModalOpen(false)}
+            />
+          </div>
 
           <button className="flex items-center justify-center transition-colors rounded-lg w-9 h-9 bg-gray-100 hover:bg-gray-200 text-gray-800">
             <BellIcon className="w-5 h-5" />
