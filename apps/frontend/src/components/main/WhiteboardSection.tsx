@@ -1,4 +1,4 @@
-import { Button } from "@/components/Button";
+import { Button } from "@/components/common/Button";
 import KakaoMap from "@/components/KakaoMap";
 import WhiteboardCanvas from "@/components/main/WhiteboardCanvas.tsx";
 import { cn } from "@/utils/cn.ts";

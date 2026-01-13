@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { MapMarker } from "react-kakao-maps-sdk";
 import {
   MapCheckOutlineIcon,
   AccountCheckOutlineIcon,
@@ -6,8 +7,8 @@ import {
 import { Button } from "@/components/common/Button";
 import { SearchInput } from "@/components/common/SearchInput";
 import { SearchResultsList } from "@/components/onboarding/SearchResultsList";
-import { useKakaoMap } from "@/hooks/useKakaoMap";
-import type { KakaoPlace, KakaoMap, KakaoMarker } from "@/types/kakao";
+import KakaoMap from "@/components/KakaoMap";
+import type { KakaoPlace } from "@/types/kakao";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface LocationStepProps {
@@ -18,63 +19,39 @@ function LocationStep({ onNext }: LocationStepProps) {
   const [searchQuery, setSearchQuery] = useState("강남역");
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<KakaoMap | null>(null);
-  const markerRef = useRef<KakaoMarker | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
 
-  const { isLoaded, searchPlaces } = useKakaoMap();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const defaultCenter = { lat: 37.498095, lng: 127.02761 };
+
+  const getCenter = () => {
+    if (selectedPlace) {
+      return { lat: Number(selectedPlace.y), lng: Number(selectedPlace.x) };
+    }
+    return defaultCenter;
+  };
 
   useEffect(() => {
     if (
-      isLoaded &&
-      mapContainerRef.current &&
-      !mapRef.current &&
-      window.kakao
-    ) {
-      const options = {
-        center: new window.kakao.maps.LatLng(37.498095, 127.02761),
-        level: 3,
-        draggable: false,
-      };
+      !debouncedSearchQuery.trim() ||
+      !window.kakao ||
+      !window.kakao.maps.services ||
+      !isMapLoaded
+    )
+      return;
 
-      const map = new window.kakao.maps.Map(mapContainerRef.current, options);
-      mapRef.current = map;
-
-      const marker = new window.kakao.maps.Marker({
-        position: options.center,
-        map: map,
-      });
-      markerRef.current = marker;
-    }
-  }, [isLoaded]);
-
-  useEffect(() => {
-    if (!debouncedSearchQuery.trim()) return;
-
-    searchPlaces(debouncedSearchQuery, (result, status) => {
-      if (status === window.kakao.maps.services.Status.OK) {
+    const places = new window.kakao.maps.services.Places();
+    places.keywordSearch(debouncedSearchQuery, (result, status) => {
+      if (status === "OK") {
         setSearchResults(result);
-      } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+      } else if (status === "ZERO_RESULT") {
         setSearchResults([]);
       }
     });
-  }, [debouncedSearchQuery, searchPlaces]);
-
-  useEffect(() => {
-    if (selectedPlace && mapRef.current && markerRef.current && window.kakao) {
-      const moveLatLon = new window.kakao.maps.LatLng(
-        Number(selectedPlace.y),
-        Number(selectedPlace.x),
-      );
-
-      mapRef.current.setCenter(moveLatLon);
-      markerRef.current.setMap(mapRef.current);
-      markerRef.current.setPosition(moveLatLon);
-    }
-  }, [selectedPlace]);
+  }, [debouncedSearchQuery, isMapLoaded]);
 
   useEffect(() => {
     if (listContainerRef.current) {
@@ -117,18 +94,22 @@ function LocationStep({ onNext }: LocationStepProps) {
         <h1 className="text-2xl font-medium text-black text-center mb-8">
           만날 지역을 선택해보세요
         </h1>
-        <div
-          ref={mapContainerRef}
-          className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0"
-        >
-          {!isLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-              <span className="text-gray-400 text-sm">지도 로딩 중...</span>
-            </div>
-          )}
+        <div className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0">
+          <KakaoMap
+            center={getCenter()}
+            level={3}
+            draggable={false}
+            onLoad={() => setIsMapLoaded(true)}
+            className="w-full h-full"
+          >
+            {selectedPlace && <MapMarker position={getCenter()} />}
+          </KakaoMap>
 
-          {selectedPlace && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
+          {selectedPlace && isMapLoaded && (
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10"
+              style={{ marginTop: "-45px" }}
+            >
               <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium mb-1 whitespace-nowrap shadow-sm">
                 {selectedPlace.place_name}
               </div>
