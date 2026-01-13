@@ -19,6 +19,10 @@ function WhiteboardSection() {
 
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
 
+  // TODO: 실제 roomId는 URL 파라미터나 Context에서 가져와야 함
+  const roomId = 'test-room-1'
+  const categoryId = `category-${activeTab}`
+
   const tabs: Tab[] = [
     {
       id: 'restaurant',
@@ -69,8 +73,7 @@ function WhiteboardSection() {
       {/* Whiteboard Canvas */}
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
-          // TODO: 화이트보드 캔버스 구현
-          <WhiteboardCanvas />
+          <WhiteboardCanvas roomId={roomId} categoryId={categoryId} />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
             <KakaoMap />
