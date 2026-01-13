@@ -2,28 +2,11 @@ import React, { useRef, useState, useEffect } from 'react'
 import { Stage, Layer, Circle, Text, Rect, Line } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
+import type { Tool, Rectangle, Line as LineData } from '@/types/canvas.types'
 
 interface WhiteboardCanvasProps {
   roomId: string
   canvasId: string
-}
-
-type Tool = 'cursor' | 'pen' | 'rectangle'
-
-interface Rectangle {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  fill: string
-}
-
-interface Line {
-  id: string
-  points: number[]
-  stroke: string
-  strokeWidth: number
 }
 
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
@@ -32,7 +15,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [tool, setTool] = useState<Tool>('cursor')
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
-  const [lines, setLines] = useState<Line[]>([])
+  const [lines, setLines] = useState<LineData[]>([])
   const [scale, setScale] = useState(1)
   const isDrawing = useRef(false)
 
@@ -100,7 +83,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     } else if (tool === 'pen') {
       // 펜 그리기 시작
       isDrawing.current = true
-      const newLine: Line = {
+      const newLine: LineData = {
         id: `line-${Date.now()}`,
         points: [pos.x, pos.y],
         stroke: '#000000',

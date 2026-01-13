@@ -47,14 +47,9 @@ export class YjsService {
    * 클라이언트 연결 해제
    */
   disconnectClient(socketId: string) {
-    for (const [categoryId, yjsDoc] of this.documents.entries()) {
+    for (const [, yjsDoc] of this.documents.entries()) {
       if (yjsDoc.connections.has(socketId)) {
         yjsDoc.connections.delete(socketId)
-
-        // 연결된 클라이언트가 없으면 문서 정리 (선택사항)
-        if (yjsDoc.connections.size === 0) {
-          this.documents.delete(categoryId)
-        }
       }
     }
   }

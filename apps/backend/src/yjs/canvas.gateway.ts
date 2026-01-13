@@ -106,6 +106,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { canvasId, state } = payload
 
     // Awareness는 서버에 저장하지 않고 바로 브로드캐스트
+    // TODO 메모리 캐시에 저장하여 뒤늦게 들어온 참여자도 정보를 바로 볼 수 있게해야함
     this.broadcaster.emitToCanvas(
       canvasId,
       'y:awareness',

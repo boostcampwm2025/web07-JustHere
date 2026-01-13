@@ -58,7 +58,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
 
     // 캔버스 나가기 완료
     socket.on('canvas:detached', () => {
-      // 처리 로직
+      // TODO: 카테고리 나갔을 때 처리 로직
     })
 
     // Yjs 업데이트 수신
