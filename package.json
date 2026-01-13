@@ -8,7 +8,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,json}\"",
     "prepare": "husky",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch"
@@ -27,13 +27,15 @@
     "zod": "^4.3.5"
   },
   "lint-staged": {
+    "apps/**/*.{ts,tsx,js,json}": [
+      "prettier --write"
+    ],
+
     "apps/frontend/**/*.{ts,tsx}": [
-      "cd apps/frontend && pnpm eslint --fix",
-      "pnpm prettier --write"
+      "pnpm --filter frontend eslint --fix"
     ],
     "apps/backend/**/*.ts": [
-      "cd apps/backend && pnpm eslint --fix",
-      "pnpm prettier --write"
+      "pnpm --filter backend eslint --fix"
     ]
   }
 }
