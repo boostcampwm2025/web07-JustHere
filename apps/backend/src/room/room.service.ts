@@ -5,6 +5,7 @@ import type { Socket } from 'socket.io';
 import { CategoryRepository } from '@/category/category.repository';
 import { SocketBroadcaster } from '@/socket/socket.broadcaster';
 import { UserService } from '@/user/user.service';
+import { UserSession } from '@/user/user.type';
 import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto';
 import {
   Participant,
@@ -14,7 +15,6 @@ import {
   RoomUserLeftPayload,
   RoomUserMovedPayload,
 } from './dto/room.s2c.dto';
-import { UserSession } from '@/user/user.type';
 
 @Injectable()
 export class RoomService {
@@ -28,9 +28,7 @@ export class RoomService {
    * 클라이언트를 방에 참여시킴
    * 이미 다른 방에 참여 중이면 먼저 나간 후 새 방에 참여
    */
-  async joinRoom(client: Socket, payload: RoomJoinPayload) {
-    const { roomId, user } = payload;
-
+  async joinRoom(client: Socket, { roomId, user }: RoomJoinPayload) {
     // 이미 다른 방에 참여 중이면 먼저 나가기
     const existing = this.users.getSession(client.id);
     if (existing) await this.leaveRoom(client);
@@ -69,11 +67,11 @@ export class RoomService {
    * 클라이언트가 명시적으로 방을 나갈 때 호출
    * payload의 roomId와 session의 roomId가 일치하는지 검증 후 처리
    */
-  async leaveRoomBySession(client: Socket, payload: RoomLeavePayload) {
+  async leaveRoomBySession(client: Socket, { roomId }: RoomLeavePayload) {
     const session = this.users.getSession(client.id);
     if (!session) return;
 
-    if (payload.roomId !== session.roomId) return;
+    if (roomId !== session.roomId) return;
 
     await this.leaveRoom(client);
   }

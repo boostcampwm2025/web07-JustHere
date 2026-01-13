@@ -2,24 +2,23 @@ import { Category } from '@prisma/client';
 import { IsDate, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-// Participant 클래스
 export class Participant {
-  @IsString()
+  @IsString({ message: 'userId는 문자열이어야 합니다' })
   userId: string;
 
-  @IsString()
+  @IsString({ message: 'nickname은 문자열이어야 합니다' })
   nickname: string;
 
-  @IsString()
+  @IsString({ message: 'socketId는 문자열이어야 합니다' })
   socketId: string;
 
-  @IsString()
+  @IsString({ message: 'color는 문자열이어야 합니다' })
   color: string;
 
-  @IsString()
+  @IsString({ message: 'categoryId는 문자열이어야 합니다' })
   categoryId: string | null;
 
-  @IsDate()
+  @IsDate({ message: 'joinedAt은 날짜 형식이어야 합니다' })
   @Transform(({ value }: { value: string | Date }) =>
     value instanceof Date ? value.toISOString() : value,
   )
