@@ -5,6 +5,7 @@ import {
   ShareVariantIcon,
   MapCheckOutlineIcon,
 } from "@/components/Icons";
+import Logo from '@/assets/images/logo.svg?react'
 import { AVATARS } from "@/mocks";
 import RoomInfoModal from "@/components/main/RoomInfoModal";
 import { Button } from "@/components/common/Button";
@@ -15,6 +16,7 @@ export default function Header() {
   const MAX_DISPLAY_AVATARS = 3;
   const displayAvatars = AVATARS.slice(0, MAX_DISPLAY_AVATARS);
   const extraCount = AVATARS.length - MAX_DISPLAY_AVATARS;
+
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
@@ -78,5 +80,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  );
+  )
 }
