@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import type { Room } from '@prisma/client'
 import { RoomController } from './room.controller'
 import { RoomService } from './room.service'
 import { CreateRoomDto } from './dto/create-room.dto'
 
 describe('RoomController', () => {
   let controller: RoomController
-  let service: RoomService
+  let service: jest.Mocked<RoomService>
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,7 +22,7 @@ describe('RoomController', () => {
     }).compile()
 
     controller = module.get<RoomController>(RoomController)
-    service = module.get<RoomService>(RoomService)
+    service = module.get(RoomService)
   })
 
   describe('POST /room/create', () => {
@@ -33,7 +34,7 @@ describe('RoomController', () => {
         place_name: '강남역',
       }
 
-      const mockRoom = {
+      const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
         title: '우리 팀 모임',
@@ -44,12 +45,12 @@ describe('RoomController', () => {
         updatedAt: new Date(),
       }
 
-      jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
+      const createRoomSpy = jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
 
       const result = await controller.createRoom(dto)
 
       expect(result).toEqual(mockRoom)
-      expect(service.createRoom).toHaveBeenCalledWith({
+      expect(createRoomSpy).toHaveBeenCalledWith({
         title: dto.title,
         x: dto.x,
         y: dto.y,
@@ -64,7 +65,7 @@ describe('RoomController', () => {
         y: 37.497952,
       }
 
-      const mockRoom = {
+      const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
         title: '우리 팀 모임',
@@ -75,12 +76,12 @@ describe('RoomController', () => {
         updatedAt: new Date(),
       }
 
-      jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
+      const createRoomSpy = jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
 
       const result = await controller.createRoom(dto)
 
       expect(result).toEqual(mockRoom)
-      expect(service.createRoom).toHaveBeenCalledWith({
+      expect(createRoomSpy).toHaveBeenCalledWith({
         title: dto.title,
         x: dto.x,
         y: dto.y,
