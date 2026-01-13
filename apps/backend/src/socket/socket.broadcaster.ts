@@ -12,7 +12,7 @@ export class SocketBroadcaster {
   emitToRoom<T>(roomId: string, event: string, payload: T, options?: { exceptSocketId?: string }) {
     if (!this.server) return
 
-    const room = this.server.to(`category:${roomId}`)
+    const room = this.server.to(`room:${roomId}`)
     if (options?.exceptSocketId) {
       room.except(options.exceptSocketId).emit(event, payload)
       return
