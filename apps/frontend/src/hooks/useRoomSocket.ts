@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react'
-import { useRoomStore } from '@/stores/room.store'
+import { useRoomStore } from '@/stores/useRoomStore'
 import type { RoomJoinPayload, RoomJoinedPayload, ParticipantConnectedPayload, ParticipantDisconnectedPayload } from '@/types/socket'
 import { useSocketClient } from './useSocket'
 
@@ -9,7 +9,7 @@ export function useRoomSocket() {
     autoConnect: false,
   })
 
-  const setJoined = useRoomStore(s => s.setJoined)
+  const setRoom = useRoomStore(s => s.setRoom)
   const addParticipant = useRoomStore(s => s.addParticipant)
   const removeParticipant = useRoomStore(s => s.removeParticipant)
   const reset = useRoomStore(s => s.reset)
@@ -18,7 +18,7 @@ export function useRoomSocket() {
     const socket = getSocket()
     if (!socket) return
 
-    const onJoined = (p: RoomJoinedPayload) => setJoined(p)
+    const onJoined = (p: RoomJoinedPayload) => setRoom(p)
     const onConnected = (p: ParticipantConnectedPayload) => addParticipant(p)
     const onDisconnected = (p: ParticipantDisconnectedPayload) => removeParticipant(p)
     const onDisconnect = () => reset()
@@ -34,7 +34,7 @@ export function useRoomSocket() {
       socket.off('participant:disconnected', onDisconnected)
       socket.off('disconnect', onDisconnect)
     }
-  }, [getSocket, setJoined, addParticipant, removeParticipant, reset])
+  }, [getSocket, setRoom, addParticipant, removeParticipant, reset])
 
   const joinRoom = useCallback(
     (roomId: string, user: { userId: string; name: string }) => {

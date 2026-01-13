@@ -9,7 +9,7 @@ type RoomState = {
   categories: Category[]
   ownerId: string | null
 
-  setJoined: (p: RoomJoinedPayload) => void
+  setRoom: (p: RoomJoinedPayload) => void
   addParticipant: (p: ParticipantConnectedPayload) => void
   removeParticipant: (p: ParticipantDisconnectedPayload) => void
   reset: () => void
@@ -26,7 +26,7 @@ const initial = {
 export const useRoomStore = create<RoomState>(set => ({
   ...initial,
 
-  setJoined: p =>
+  setRoom: p =>
     set({
       roomId: p.roomId,
       me: p.me,
