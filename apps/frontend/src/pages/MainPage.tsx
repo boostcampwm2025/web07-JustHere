@@ -1,6 +1,6 @@
-import Header from "@/components/common/Header";
-import WhiteboardSection from "@/components/main/WhiteboardSection";
-import LocationListSection from "@/components/main/LocationListSection";
+import Header from '@/components/common/Header'
+import WhiteboardSection from '@/components/main/WhiteboardSection'
+import LocationListSection from '@/components/main/LocationListSection'
 
 function MainPage() {
   return (
@@ -11,7 +11,7 @@ function MainPage() {
         <LocationListSection />
       </div>
     </div>
-  );
+  )
 }
 
-export default MainPage;
+export default MainPage
