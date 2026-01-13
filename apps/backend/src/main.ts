@@ -1,9 +1,14 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { GlobalExceptionsFilter } from '@/lib/logger/global-exception.filter'
+import { LoggingInterceptor } from '@/lib/logger/logging.interceptor'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+
+  app.useGlobalInterceptors(new LoggingInterceptor())
+  app.useGlobalFilters(new GlobalExceptionsFilter())
 
   app.setGlobalPrefix('api')
 
