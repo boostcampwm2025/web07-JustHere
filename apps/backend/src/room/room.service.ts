@@ -6,7 +6,7 @@ import { RoomRepository } from './room.repository'
 export class RoomService {
   constructor(private readonly roomRepository: RoomRepository) {}
 
-  async createRoom(title: string): Promise<Room> {
-    return this.roomRepository.createRoom(title)
+  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
+    return this.roomRepository.createRoom(data)
   }
 }

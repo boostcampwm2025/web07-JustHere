@@ -8,6 +8,11 @@ export class CreateRoomDto {
     minLength: 1,
     maxLength: 100,
   })
+  @IsString()
+  @IsNotEmpty()
+  @Length(1, 100)
+  title: string
+
   @ApiProperty({
     description: '경도 (longitude)',
     example: 127.027621,

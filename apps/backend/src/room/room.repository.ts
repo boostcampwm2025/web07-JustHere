@@ -9,7 +9,7 @@ const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 export class RoomRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createRoom(title: string): Promise<Room> {
+  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
     const maxRetries = 3
     let lastError: Error | undefined
 
@@ -17,7 +17,13 @@ export class RoomRepository {
       try {
         const slug = nanoid()
         return await this.prisma.room.create({
-          data: { title, slug },
+          data: {
+            title: data.title,
+            slug,
+            x: data.x,
+            y: data.y,
+            place_name: data.place_name || '',
+          },
         })
       } catch (error) {
         lastError = error
