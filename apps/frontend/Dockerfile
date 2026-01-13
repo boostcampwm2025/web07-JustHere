@@ -33,7 +33,10 @@ RUN pnpm install --frozen-lockfile
 # 3) 소스코드(out/full) 복사
 COPY --from=builder /app/out/full/ .
 
-# 4) 빌드 실행
+# 4) 빌드 시점에 필요한 VITE 환경 변수 주입
+COPY .env .
+
+# 5) 빌드 실행
 RUN turbo run build --filter=frontend
 
 
