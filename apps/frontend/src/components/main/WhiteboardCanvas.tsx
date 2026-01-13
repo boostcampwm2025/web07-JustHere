@@ -3,14 +3,14 @@ import { useYjsSocket } from '@/hooks/useYjsSocket'
 
 interface WhiteboardCanvasProps {
   roomId: string
-  categoryId: string
+  canvasId: string
 }
 
-function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanvasProps) {
+function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { isConnected, connectionCount, cursors, updateCursor } = useYjsSocket({
+  const { isConnected, cursors, updateCursor } = useYjsSocket({
     roomId,
-    categoryId,
+    canvasId,
   })
 
   useEffect(() => {
@@ -90,7 +90,7 @@ function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanvasProps) {
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
             <span className="text-sm">{isConnected ? '연결됨' : '연결 안 됨'}</span>
           </div>
-          <span className="text-sm">참여자: {connectionCount}명</span>
+          <span className="text-sm">참여자: {cursors.size + 1}명</span>
         </div>
       </div>
       <div className="flex-1 relative">

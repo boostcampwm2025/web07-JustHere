@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
 import * as Y from 'yjs'
+import type {
+  CanvasAttachPayload,
+  CanvasDetachPayload,
+  YjsUpdatePayload,
+  YjsAwarenessPayload,
+  CanvasAttachedPayload,
+  YjsUpdateBroadcast,
+  YjsAwarenessBroadcast,
+  CursorPositionWithId,
+} from '@/types/yjs.types'
 
 interface UseYjsSocketOptions {
   roomId: string
-  categoryId: string
+  canvasId: string
   serverUrl?: string
 }
 
-interface CursorPosition {
-  x: number
-  y: number
-  socketId: string
-}
-
-export function useYjsSocket({ roomId, categoryId, serverUrl = 'http://localhost:3000' }: UseYjsSocketOptions) {
+export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3000' }: UseYjsSocketOptions) {
   const [isConnected, setIsConnected] = useState(false)
-  const [connectionCount, setConnectionCount] = useState(0)
-  const [cursors, setCursors] = useState<Map<string, CursorPosition>>(new Map())
+  const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
@@ -28,7 +31,7 @@ export function useYjsSocket({ roomId, categoryId, serverUrl = 'http://localhost
     docRef.current = doc
 
     // Socket.io 연결
-    const socket = io(`${serverUrl}/category`, {
+    const socket = io(`${serverUrl}/canvas`, {
       transports: ['websocket'],
     })
     socketRef.current = socket
@@ -36,92 +39,92 @@ export function useYjsSocket({ roomId, categoryId, serverUrl = 'http://localhost
     socket.on('connect', () => {
       setIsConnected(true)
 
-      // 방 참여
-      socket.emit('category:join', { roomId, categoryId })
+      // 캔버스 참여
+      const attachPayload: CanvasAttachPayload = { roomId, canvasId }
+      socket.emit('canvas:attach', attachPayload)
     })
 
     socket.on('disconnect', () => {
       setIsConnected(false)
     })
 
-    // 초기 동기화
-    socket.on('category:sync', ({ update }: { categoryId: string; update: number[] }) => {
-      const updateArray = new Uint8Array(update)
+    // 캔버스 참여 완료 (초기 동기화)
+    socket.on('canvas:attached', (payload: CanvasAttachedPayload) => {
+      if (payload.update) {
+        const updateArray = new Uint8Array(payload.update)
+        Y.applyUpdate(doc, updateArray)
+      }
+    })
+
+    // 캔버스 나가기 완료
+    socket.on('canvas:detached', () => {
+      // 처리 로직
+    })
+
+    // Yjs 업데이트 수신
+    socket.on('y:update', (payload: YjsUpdateBroadcast) => {
+      const updateArray = new Uint8Array(payload.update)
       Y.applyUpdate(doc, updateArray)
-    })
-
-    // 다른 클라이언트의 업데이트 수신
-    socket.on('category:update', ({ update }: { categoryId: string; update: number[]; from: string }) => {
-      const updateArray = new Uint8Array(update)
-      Y.applyUpdate(doc, updateArray)
-    })
-
-    // 사용자 참여 알림
-    socket.on('category:user_joined', ({ connectionCount: count }: { socketId: string; connectionCount: number }) => {
-      setConnectionCount(count)
-    })
-
-    // 사용자 퇴장 알림
-    socket.on('category:user_left', ({ socketId, connectionCount: count }: { socketId: string; connectionCount: number }) => {
-      setConnectionCount(count)
-      setCursors(prev => {
-        const next = new Map(prev)
-        next.delete(socketId)
-        return next
-      })
     })
 
     // Awareness 업데이트 (커서 위치)
-    socket.on('category:awareness', ({ socketId, state }: { socketId: string; state: any }) => {
-      if (state.cursor) {
+    socket.on('y:awareness', (payload: YjsAwarenessBroadcast) => {
+      if (payload.state.cursor) {
         setCursors(prev => {
           const next = new Map(prev)
-          next.set(socketId, { ...state.cursor, socketId })
+          next.set(payload.socketId, { ...payload.state.cursor!, socketId: payload.socketId })
+          return next
+        })
+      } else {
+        // 커서가 없으면 제거 (사용자가 나간 경우)
+        setCursors(prev => {
+          const next = new Map(prev)
+          next.delete(payload.socketId)
           return next
         })
       }
     })
 
     // Yjs 문서 변경 시 서버로 전송
-    const updateHandler = (update: Uint8Array, origin: any) => {
+    const updateHandler = (update: Uint8Array, origin: unknown) => {
       // 로컬 변경만 전송 (원격에서 받은 업데이트는 재전송하지 않음)
       if (origin !== socket) {
-        socket.emit('category:update', {
-          categoryId,
+        const updatePayload: YjsUpdatePayload = {
+          canvasId,
           update: Array.from(update),
-        })
+        }
+        socket.emit('y:update', updatePayload)
       }
     }
 
     doc.on('update', updateHandler)
 
     return () => {
-      // 방 나가기
-      socket.emit('category:leave', { categoryId })
+      // 캔버스 나가기
+      const detachPayload: CanvasDetachPayload = { canvasId }
+      socket.emit('canvas:detach', detachPayload)
 
       doc.off('update', updateHandler)
       socket.disconnect()
       doc.destroy()
     }
-  }, [roomId, categoryId, serverUrl])
+  }, [roomId, canvasId, serverUrl])
 
   // 커서 위치 업데이트 함수
   const updateCursor = (x: number, y: number) => {
     if (socketRef.current?.connected) {
-      socketRef.current.emit('category:awareness', {
-        categoryId,
+      const awarenessPayload: YjsAwarenessPayload = {
+        canvasId,
         state: {
           cursor: { x, y },
         },
-      })
+      }
+      socketRef.current.emit('y:awareness', awarenessPayload)
     }
   }
 
   return {
-    doc: docRef.current,
-    socket: socketRef.current,
     isConnected,
-    connectionCount,
     cursors,
     updateCursor,
   }

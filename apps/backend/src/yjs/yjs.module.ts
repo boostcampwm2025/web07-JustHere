@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common'
 import { YjsService } from './yjs.service'
-import { CategoryGateway } from './yjs.gateway'
+import { CanvasGateway } from './canvas.gateway'
 import { SocketModule } from '@/socket/socket.module'
 
 @Module({
   imports: [SocketModule],
-  providers: [YjsService, CategoryGateway],
+  providers: [YjsService, CanvasGateway],
   exports: [YjsService],
 })
 export class YjsModule {}
