@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsNotEmpty, IsString, Length } from 'class-validator'
+import { IsNotEmpty, IsString, Length, IsNumber, IsOptional } from 'class-validator'
 
 export class CreateRoomDto {
   @ApiProperty({
@@ -8,8 +8,28 @@ export class CreateRoomDto {
     minLength: 1,
     maxLength: 100,
   })
+  @ApiProperty({
+    description: '경도 (longitude)',
+    example: 127.027621,
+  })
+  @IsNumber()
+  x: number
+
+  @ApiProperty({
+    description: '위도 (latitude)',
+    example: 37.497952,
+  })
+  @IsNumber()
+  y: number
+
+  @ApiProperty({
+    description: '장소명 (선택)',
+    example: '강남역',
+    required: false,
+    maxLength: 255,
+  })
   @IsString()
-  @IsNotEmpty()
-  @Length(1, 100)
-  title: string
+  @IsOptional()
+  @Length(0, 255)
+  place_name?: string
 }

@@ -19,6 +19,15 @@ export class RoomResponseDto {
   })
   title: string
 
+  @ApiProperty({ description: '경도 (x)', example: 127.027621 })
+  x: number
+
+  @ApiProperty({ description: '위도 (y)', example: 37.497952 })
+  y: number
+
+  @ApiProperty({ description: '장소명', example: '강남역', required: false })
+  place_name?: string
+
   @ApiProperty({
     description: '생성 일시',
     example: '2026-01-13T10:30:00Z',
