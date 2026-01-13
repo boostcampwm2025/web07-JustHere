@@ -1,6 +1,6 @@
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator'
+import { Type } from 'class-transformer'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class SearchKeywordDto {
   @ApiProperty({
@@ -8,7 +8,7 @@ export class SearchKeywordDto {
     example: '강남역 카페',
   })
   @IsString()
-  keyword: string;
+  keyword: string
 
   @ApiProperty({
     required: false,
@@ -17,7 +17,7 @@ export class SearchKeywordDto {
   })
   @IsOptional()
   @IsString()
-  x?: string;
+  x?: string
 
   @ApiProperty({
     required: false,
@@ -26,7 +26,7 @@ export class SearchKeywordDto {
   })
   @IsOptional()
   @IsString()
-  y?: string;
+  y?: string
 
   @ApiProperty({
     required: false,
@@ -40,7 +40,7 @@ export class SearchKeywordDto {
   @IsInt()
   @Min(0)
   @Max(20000)
-  radius?: number;
+  radius?: number
 
   @ApiProperty({
     required: false,
@@ -55,7 +55,7 @@ export class SearchKeywordDto {
   @IsInt()
   @Min(1)
   @Max(45)
-  page?: number = 1;
+  page?: number = 1
 
   @ApiProperty({
     required: false,
@@ -70,5 +70,5 @@ export class SearchKeywordDto {
   @IsInt()
   @Min(1)
   @Max(15)
-  size?: number = 15;
+  size?: number = 15
 }

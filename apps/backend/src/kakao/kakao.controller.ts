@@ -1,8 +1,8 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { KakaoService } from './kakao.service';
-import { SearchKeywordDto } from './dto/search-keyword.dto';
-import { KeywordResponseDto } from './dto/keyword-response.dto';
+import { Controller, Get, Query } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger'
+import { KakaoService } from './kakao.service'
+import { SearchKeywordDto } from './dto/search-keyword.dto'
+import { KeywordResponseDto } from './dto/keyword-response.dto'
 
 @ApiTags('kakao')
 @Controller('kakao')
@@ -71,9 +71,7 @@ export class KakaoController {
     status: 502,
     description: 'Kakao API 호출 실패',
   })
-  async searchByKeyword(
-    @Query() dto: SearchKeywordDto,
-  ): Promise<KeywordResponseDto> {
-    return this.kakaoService.searchByKeyword(dto);
+  async searchByKeyword(@Query() dto: SearchKeywordDto): Promise<KeywordResponseDto> {
+    return this.kakaoService.searchByKeyword(dto)
   }
 }
