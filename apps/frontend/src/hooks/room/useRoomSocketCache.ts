@@ -52,9 +52,7 @@ export function useRoomSocketCache() {
       setIsReady(false)
 
       if (!roomId) return
-      queryClient.removeQueries({ queryKey: roomQueryKeys.room(roomId) })
-      queryClient.removeQueries({ queryKey: roomQueryKeys.participants(roomId) })
-      queryClient.removeQueries({ queryKey: roomQueryKeys.categories(roomId) })
+      queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
     }
 
     socket.on('room:joined', onReady)
@@ -99,9 +97,7 @@ export function useRoomSocketCache() {
     setIsReady(false)
 
     if (!roomId) return
-    queryClient.removeQueries({ queryKey: roomQueryKeys.room(roomId) })
-    queryClient.removeQueries({ queryKey: roomQueryKeys.participants(roomId) })
-    queryClient.removeQueries({ queryKey: roomQueryKeys.categories(roomId) })
+    queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
   }, [getSocket, queryClient])
 
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
