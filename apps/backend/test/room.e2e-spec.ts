@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import request from 'supertest'
+import type { Server } from 'http'
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
 
 describe('Room API (e2e)', () => {
   let app: INestApplication
   let prisma: PrismaService
+  let server: Server
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,6 +19,7 @@ describe('Room API (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true }))
     await app.init()
 
+    server = server as Server
     prisma = app.get<PrismaService>(PrismaService)
   })
 
@@ -31,7 +34,7 @@ describe('Room API (e2e)', () => {
 
   describe('POST /room/create', () => {
     it('유효한 요청으로 방을 생성해야 한다 (201)', () => {
-      return request(app.getHttpServer())
+      return request(server)
         .post('/room/create')
         .send({
           title: '우리 팀 모임',
@@ -55,7 +58,7 @@ describe('Room API (e2e)', () => {
     })
 
     it('place_name 없이 방을 생성할 수 있어야 한다 (201)', () => {
-      return request(app.getHttpServer())
+      return request(server)
         .post('/room/create')
         .send({
           title: '우리 팀 모임',
@@ -69,7 +72,7 @@ describe('Room API (e2e)', () => {
     })
 
     it('여러 방을 생성하면 각각 다른 slug를 가져야 한다', async () => {
-      const res1 = await request(app.getHttpServer())
+      const res1 = await request(server)
         .post('/room/create')
         .send({
           title: '방 1',
@@ -78,7 +81,7 @@ describe('Room API (e2e)', () => {
         })
         .expect(201)
 
-      const res2 = await request(app.getHttpServer())
+      const res2 = await request(server)
         .post('/room/create')
         .send({
           title: '방 2',
@@ -92,7 +95,7 @@ describe('Room API (e2e)', () => {
 
     describe('Validation 에러', () => {
       it('title이 없으면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             x: 127.027621,
@@ -102,7 +105,7 @@ describe('Room API (e2e)', () => {
       })
 
       it('title이 빈 문자열이면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: '',
@@ -114,7 +117,7 @@ describe('Room API (e2e)', () => {
 
       it('title이 100자를 초과하면 400 에러를 반환해야 한다', () => {
         const longTitle = 'a'.repeat(101)
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: longTitle,
@@ -125,7 +128,7 @@ describe('Room API (e2e)', () => {
       })
 
       it('x가 없으면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: '우리 팀 모임',
@@ -135,7 +138,7 @@ describe('Room API (e2e)', () => {
       })
 
       it('y가 없으면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: '우리 팀 모임',
@@ -145,7 +148,7 @@ describe('Room API (e2e)', () => {
       })
 
       it('x가 숫자가 아니면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: '우리 팀 모임',
@@ -156,7 +159,7 @@ describe('Room API (e2e)', () => {
       })
 
       it('y가 숫자가 아니면 400 에러를 반환해야 한다', () => {
-        return request(app.getHttpServer())
+        return request(server)
           .post('/room/create')
           .send({
             title: '우리 팀 모임',

@@ -9,6 +9,10 @@ const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 export class RoomRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private isPrismaUniqueConstraintError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
+  }
+
   async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
     const maxRetries = 3
     let lastError: Error | undefined
@@ -26,8 +30,8 @@ export class RoomRepository {
           },
         })
       } catch (error) {
-        lastError = error
-        if (error.code !== 'P2002') {
+        lastError = error as Error
+        if (!this.isPrismaUniqueConstraintError(error)) {
           throw error
         }
         // slug 중복이면 재시도
