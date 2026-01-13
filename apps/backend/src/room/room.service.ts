@@ -1,20 +1,11 @@
 import { Injectable } from '@nestjs/common'
-import { Category } from '@prisma/client'
-import { plainToInstance } from 'class-transformer'
 import type { Socket } from 'socket.io'
 import { CategoryRepository } from '@/category/category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
-import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto'
-import {
-  Participant,
-  RoomCategoryChangedPayload,
-  RoomStatePayload,
-  RoomUserJoinedPayload,
-  RoomUserLeftPayload,
-  RoomUserMovedPayload,
-} from './dto/room.s2c.dto'
+import type { RoomJoinPayload } from './dto/room.c2s.dto'
+import { Participant, ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload } from './dto/room.s2c.dto'
 
 @Injectable()
 export class RoomService {
@@ -37,36 +28,42 @@ export class RoomService {
 
     const session = this.users.createSession({
       socketId: client.id,
-      userId: user.id,
-      nickname: user.name,
+      userId: user.userId,
+      name: user.name,
       roomId,
     })
 
-    const participants = this.getUsersByRoom(roomId)
+    // 본인을 제외한 다른 참여자 목록
+    const otherParticipants = this.getOtherParticipants(roomId, client.id)
     const categories = await this.categories.findByRoomId(roomId)
 
-    // 본인에게 room:state 이벤트 전송
-    const statePayload: RoomStatePayload = { participants, categories }
-    client.emit('room:state', statePayload)
-
-    // 다른 클라이언트에게 room:user_joined 브로드캐스트
-    const userPayload: RoomUserJoinedPayload = {
-      participant: this.sessionToParticipant(session),
+    // 본인에게 room:joined 이벤트 전송
+    const joinedPayload: RoomJoinedPayload = {
+      roomId,
+      me: this.sessionToParticipant(session),
+      participants: otherParticipants,
+      categories,
+      ownerId: this.getOwnerId(roomId),
     }
-    this.broadcaster.emitToRoom(session.roomId, 'room:user_joined', userPayload, {
+    client.emit('room:joined', joinedPayload)
+
+    // 다른 클라이언트에게 participant:connected 브로드캐스트
+    const connectedPayload: ParticipantConnectedPayload = {
+      userId: session.userId,
+      name: session.name,
+    }
+    this.broadcaster.emitToRoom(session.roomId, 'participant:connected', connectedPayload, {
       exceptSocketId: client.id,
     })
   }
 
   /**
    * 클라이언트가 명시적으로 방을 나갈 때 호출
-   * payload의 roomId와 session의 roomId가 일치하는지 검증 후 처리
+   * 세션에서 roomId를 조회하여 처리
    */
-  async leaveRoomBySession(client: Socket, { roomId }: RoomLeavePayload) {
+  async leaveRoomBySession(client: Socket) {
     const session = this.users.getSession(client.id)
     if (!session) return
-
-    if (roomId !== session.roomId) return
 
     await this.leaveRoom(client)
   }
@@ -90,13 +87,21 @@ export class RoomService {
 
     await client.leave(`room:${roomId}`)
 
-    // 다른 클라이언트에게 room:user_left 브로드캐스트
-    const payload: RoomUserLeftPayload = {
-      participant: this.sessionToParticipant(session),
+    // 다른 클라이언트에게 participant:disconnected 브로드캐스트
+    const payload: ParticipantDisconnectedPayload = {
+      userId: session.userId,
     }
-    this.broadcaster.emitToRoom(session.roomId, 'room:user_left', payload)
+    this.broadcaster.emitToRoom(session.roomId, 'participant:disconnected', payload)
 
     this.users.removeSession(client.id)
+  }
+
+  /**
+   * 방의 본인을 제외한 다른 참여자 목록 조회
+   */
+  private getOtherParticipants(roomId: string, excludeSocketId: string): Participant[] {
+    const sessions = this.users.getSessionsByRoom(roomId)
+    return sessions.filter(session => session.socketId !== excludeSocketId).map(session => this.sessionToParticipant(session))
   }
 
   /**
@@ -108,38 +113,23 @@ export class RoomService {
   }
 
   /**
-   * 사용자가 카테고리를 변경했을 때 브로드캐스트
+   * 방장 ID 조회 (가장 먼저 들어온 유저)
    */
-  broadcastUserMoved(socketId: string, _from: string | null, to: string | null) {
-    // 유저 입력과 소켓 세션 기반으로 위치 변경 처리
-    const moved = this.users.moveCategory(socketId, to)
-    if (!moved) return
+  private getOwnerId(roomId: string): string {
+    const sessions = this.users.getSessionsByRoom(roomId)
+    if (sessions.length === 0) return ''
 
-    const payload: RoomUserMovedPayload = {
-      participant: this.sessionToParticipant(moved.session),
-      fromCategoryId: moved.from,
-      toCategoryId: moved.to,
-    }
-
-    this.broadcaster.emitToRoom(moved.session.roomId, 'room:user_moved', payload)
-  }
-
-  /**
-   * 카테고리 CRUD 변경 시 브로드캐스트
-   */
-  broadcastCategoryChanged(roomId: string, action: 'created' | 'updated' | 'deleted', category: Category) {
-    const payload: RoomCategoryChangedPayload = {
-      action,
-      category,
-    }
-
-    this.broadcaster.emitToRoom(roomId, 'room:category_changed', payload)
+    const oldest = sessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
+    return oldest.userId
   }
 
   /**
    * UserSession을 Participant로 변환
    */
-  private sessionToParticipant(session: UserSession) {
-    return plainToInstance(Participant, { ...session })
+  private sessionToParticipant(session: UserSession): Participant {
+    return {
+      userId: session.userId,
+      name: session.name,
+    }
   }
 }

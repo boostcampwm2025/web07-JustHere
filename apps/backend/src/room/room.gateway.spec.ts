@@ -6,7 +6,7 @@ import * as classValidator from 'class-validator'
 import { RoomGateway } from './room.gateway'
 import { RoomService } from './room.service'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
-import { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto'
+import { RoomJoinPayload } from './dto/room.c2s.dto'
 
 describe('RoomGateway', () => {
   let gateway: RoomGateway
@@ -58,7 +58,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
@@ -78,7 +78,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -96,7 +96,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -114,7 +114,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -132,7 +132,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -146,19 +146,19 @@ describe('RoomGateway', () => {
       expect(roomService.joinRoom).not.toHaveBeenCalled()
     })
 
-    it('user.id가 문자열이 아니면 joinRoom을 호출하지 않는다', async () => {
+    it('user.userId가 문자열이 아니면 joinRoom을 호출하지 않는다', async () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
         property: 'user',
         children: [
           {
-            property: 'id',
-            constraints: { isString: 'id는 문자열이어야 합니다' },
+            property: 'userId',
+            constraints: { isString: 'userId는 문자열이어야 합니다' },
           },
         ],
       }
@@ -169,19 +169,19 @@ describe('RoomGateway', () => {
       expect(roomService.joinRoom).not.toHaveBeenCalled()
     })
 
-    it('user.id가 비어있으면 joinRoom을 호출하지 않는다', async () => {
+    it('user.userId가 비어있으면 joinRoom을 호출하지 않는다', async () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
         property: 'user',
         children: [
           {
-            property: 'id',
-            constraints: { isNotEmpty: 'id는 비어있을 수 없습니다' },
+            property: 'userId',
+            constraints: { isNotEmpty: 'userId는 비어있을 수 없습니다' },
           },
         ],
       }
@@ -196,7 +196,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -219,7 +219,7 @@ describe('RoomGateway', () => {
       const client = {} as Socket
       const payload: RoomJoinPayload = {
         roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
+        user: { userId: 'u1', name: 'user' },
       }
 
       const validationError: ValidationError = {
@@ -237,92 +237,20 @@ describe('RoomGateway', () => {
 
       expect(roomService.joinRoom).not.toHaveBeenCalled()
     })
-
-    it('user.profile_image가 문자열이 아니면 joinRoom을 호출하지 않는다', async () => {
-      const client = {} as Socket
-      const payload: RoomJoinPayload = {
-        roomId: 'room-1',
-        user: { id: 'u1', name: 'user' },
-      }
-
-      const validationError: ValidationError = {
-        property: 'user',
-        children: [
-          {
-            property: 'profile_image',
-            constraints: { isString: 'profile_image는 문자열이어야 합니다' },
-          },
-        ],
-      }
-      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
-
-      await gateway.onRoomJoin(client, payload)
-
-      expect(roomService.joinRoom).not.toHaveBeenCalled()
-    })
   })
 
   describe('onRoomLeave', () => {
-    it('유효한 payload가 전달되면 RoomService.leaveRoomBySession을 호출한다', async () => {
+    it('RoomService.leaveRoomBySession을 호출한다', async () => {
       const client = {} as Socket
-      const payload: RoomLeavePayload = { roomId: 'room-1' }
 
-      jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
-
-      await gateway.onRoomLeave(client, payload)
+      await gateway.onRoomLeave(client)
 
       expect(roomService.leaveRoomBySession).toHaveBeenCalledTimes(1)
 
       const calls = roomService.leaveRoomBySession.mock.calls
-      const [calledClient, calledPayload] = calls[0] as [Socket, unknown]
+      const [calledClient] = calls[0] as [Socket]
 
       expect(calledClient).toBe(client)
-      expect(calledPayload).toEqual(payload)
-    })
-
-    it('roomId가 문자열이 아니면 leaveRoomBySession을 호출하지 않는다', async () => {
-      const client = {} as Socket
-      const payload: RoomLeavePayload = { roomId: 'room-1' }
-
-      const validationError: ValidationError = {
-        property: 'roomId',
-        constraints: { isString: 'roomId는 문자열이어야 합니다' },
-      }
-      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
-
-      await gateway.onRoomLeave(client, payload)
-
-      expect(roomService.leaveRoomBySession).not.toHaveBeenCalled()
-    })
-
-    it('roomId가 비어있으면 leaveRoomBySession을 호출하지 않는다', async () => {
-      const client = {} as Socket
-      const payload: RoomLeavePayload = { roomId: 'room-1' }
-
-      const validationError: ValidationError = {
-        property: 'roomId',
-        constraints: { isNotEmpty: 'roomId는 비어있을 수 없습니다' },
-      }
-      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
-
-      await gateway.onRoomLeave(client, payload)
-
-      expect(roomService.leaveRoomBySession).not.toHaveBeenCalled()
-    })
-
-    it('roomId가 최소 길이 미만이면 leaveRoomBySession을 호출하지 않는다', async () => {
-      const client = {} as Socket
-      const payload: RoomLeavePayload = { roomId: 'room-1' }
-
-      const validationError: ValidationError = {
-        property: 'roomId',
-        constraints: { minLength: 'roomId는 최소 1자 이상이어야 합니다' },
-      }
-      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
-
-      await gateway.onRoomLeave(client, payload)
-
-      expect(roomService.leaveRoomBySession).not.toHaveBeenCalled()
     })
   })
 })

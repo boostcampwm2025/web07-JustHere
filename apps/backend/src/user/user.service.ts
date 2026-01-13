@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { UserSessionStore } from './user-session.store'
-import { CreateSessionParams, MoveCategoryResult, UserSession } from './user.type'
+import { CreateSessionParams, UserSession } from './user.type'
 
 @Injectable()
 export class UserService {
@@ -13,10 +13,9 @@ export class UserService {
     const session: UserSession = {
       socketId: params.socketId,
       userId: params.userId,
-      nickname: params.nickname,
+      name: params.name,
       color: this.generateColor(params.userId),
       roomId: params.roomId,
-      categoryId: null,
       joinedAt: new Date(),
     }
 
@@ -40,20 +39,6 @@ export class UserService {
 
     this.sessions.delete(socketId)
     return session
-  }
-
-  /**
-   * 유저의 카테고리 위치 변경
-   */
-  moveCategory(socketId: string, toCategoryId: string | null): MoveCategoryResult | undefined {
-    const session = this.sessions.get(socketId)
-    if (!session) return undefined
-
-    const from = session.categoryId
-    session.categoryId = toCategoryId
-
-    this.sessions.set(socketId, session)
-    return { session, from, to: toCategoryId }
   }
 
   /**

@@ -6,15 +6,9 @@ import { RoomService } from './room.service'
 import { CategoryRepository } from '@/category/category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
-import type { UserSession, MoveCategoryResult } from '@/user/user.type'
-import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto'
-import { RoomCategoryChangedPayload, RoomUserJoinedPayload, RoomUserLeftPayload, RoomUserMovedPayload } from './dto/room.s2c.dto'
-
-jest.mock('class-transformer', () => ({
-  plainToInstance: <T>(_cls: unknown, obj: T) => obj,
-  Transform: () => () => undefined,
-  Type: () => () => undefined,
-}))
+import type { UserSession } from '@/user/user.type'
+import type { RoomJoinPayload } from './dto/room.c2s.dto'
+import { ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload } from './dto/room.s2c.dto'
 
 function createMockSocket(id = 'socket-1') {
   return {
@@ -34,25 +28,24 @@ describe('RoomService', () => {
 
   const roomId = 'room-1'
   const now = new Date()
+  const laterDate = new Date(now.getTime() + 1000)
 
   const sessionA: UserSession = {
     socketId: 'socket-1',
     userId: 'user-1',
-    nickname: 'ajin',
+    name: 'ajin',
     roomId,
     color: 'red',
-    categoryId: null,
     joinedAt: now,
   }
 
   const sessionB: UserSession = {
     socketId: 'socket-2',
     userId: 'user-2',
-    nickname: 'kim',
+    name: 'kim',
     roomId,
     color: 'blue',
-    categoryId: 'cat-1',
-    joinedAt: now,
+    joinedAt: laterDate,
   }
 
   const users = {
@@ -60,7 +53,6 @@ describe('RoomService', () => {
     createSession: jest.fn(),
     removeSession: jest.fn(),
     getSessionsByRoom: jest.fn(),
-    moveCategory: jest.fn(),
   }
 
   const categories = {
@@ -87,7 +79,7 @@ describe('RoomService', () => {
   })
 
   describe('joinRoom', () => {
-    it('기존 세션이 없으면: join -> state emit(본인) -> user_joined broadcast(타인) 순으로 처리', async () => {
+    it('기존 세션이 없으면: join -> room:joined emit(본인) -> participant:connected broadcast(타인) 순으로 처리', async () => {
       const client = createMockSocket('socket-1')
 
       const mockCategory: Category = {
@@ -105,40 +97,42 @@ describe('RoomService', () => {
 
       const payload: RoomJoinPayload = {
         roomId,
-        user: { id: 'user-1', name: 'ajin', profile_image: undefined },
+        user: { userId: 'user-1', name: 'ajin' },
       }
 
       await service.joinRoom(client, payload)
 
       expect(client.join).toHaveBeenCalledWith(`room:${roomId}`)
 
-      // 본인에게 room:state
+      // 본인에게 room:joined
       const emitCalls = client.emit.mock.calls
       expect(emitCalls.length).toBe(1)
 
       const [emitEvent, emitPayload] = emitCalls[0] as [string, unknown]
-      expect(emitEvent).toBe('room:state')
+      expect(emitEvent).toBe('room:joined')
 
-      const statePayload = emitPayload as {
-        participants: unknown[]
-        categories: Category[]
-      }
-      expect(Array.isArray(statePayload.participants)).toBe(true)
-      expect(statePayload.categories).toEqual([mockCategory])
+      const joinedPayload = emitPayload as RoomJoinedPayload
+      expect(joinedPayload.roomId).toBe(roomId)
+      expect(joinedPayload.me.userId).toBe('user-1')
+      expect(joinedPayload.me.name).toBe('ajin')
+      expect(Array.isArray(joinedPayload.participants)).toBe(true)
+      // 본인 제외 다른 참여자만 포함
+      expect(joinedPayload.participants).toHaveLength(1)
+      expect(joinedPayload.participants[0].userId).toBe('user-2')
+      expect(joinedPayload.categories).toEqual([mockCategory])
+      expect(joinedPayload.ownerId).toBe('user-1') // 가장 먼저 들어온 유저
 
       const calls = broadcaster.emitToRoom.mock.calls
       expect(calls.length).toBe(1)
 
-      const [calledRoomId, event, payloadArg, options] = calls[0] as [string, string, RoomUserJoinedPayload, string]
+      const [calledRoomId, event, payloadArg, options] = calls[0] as [string, string, ParticipantConnectedPayload, object]
 
       expect(calledRoomId).toBe(roomId)
-      expect(event).toBe('room:user_joined')
+      expect(event).toBe('participant:connected')
       expect(options).toEqual({ exceptSocketId: 'socket-1' })
 
-      const participant = payloadArg.participant
-      expect(participant.socketId).toBe('socket-1')
-      expect(participant.userId).toBe('user-1')
-      expect(participant.nickname).toBe('ajin')
+      expect(payloadArg.userId).toBe('user-1')
+      expect(payloadArg.name).toBe('ajin')
     })
 
     it('기존 세션이 있으면: leaveRoom 수행 후 새 방 join 처리', async () => {
@@ -152,7 +146,7 @@ describe('RoomService', () => {
 
       const payload: RoomJoinPayload = {
         roomId,
-        user: { id: 'user-1', name: 'ajin', profile_image: undefined },
+        user: { userId: 'user-1', name: 'ajin' },
       }
 
       await service.joinRoom(client, payload)
@@ -160,30 +154,29 @@ describe('RoomService', () => {
       // 기존 방 leave 호출됨
       expect(client.leave).toHaveBeenCalledWith(`room:${roomId}`)
 
-      // joinRoom 안에서 (1) user_left, (2) user_joined 총 2번 호출됨
+      // joinRoom 안에서 (1) participant:disconnected, (2) participant:connected 총 2번 호출됨
       const calls = broadcaster.emitToRoom.mock.calls
       expect(calls.length).toBe(2)
 
-      const [leftRoomId, leftEvent, leftPayload] = calls[0] as [string, string, RoomUserLeftPayload]
+      const [leftRoomId, leftEvent, leftPayload] = calls[0] as [string, string, ParticipantDisconnectedPayload]
       expect(leftRoomId).toBe(roomId)
-      expect(leftEvent).toBe('room:user_left')
+      expect(leftEvent).toBe('participant:disconnected')
 
-      expect(leftPayload.participant.socketId).toBe('socket-1')
+      expect(leftPayload.userId).toBe('user-1')
 
       expect(users.removeSession).toHaveBeenCalledWith('socket-1')
 
       // 새 방 join 호출됨
       expect(client.join).toHaveBeenCalledWith(`room:${roomId}`)
 
-      // 두 번째 호출: user_joined
-      const [joinedRoomId, joinedEvent, joinedPayload, joinedOptions] = calls[1] as [string, string, RoomUserJoinedPayload, string]
+      // 두 번째 호출: participant:connected
+      const [joinedRoomId, joinedEvent, joinedPayload, joinedOptions] = calls[1] as [string, string, ParticipantConnectedPayload, object]
 
       expect(joinedRoomId).toBe(roomId)
-      expect(joinedEvent).toBe('room:user_joined')
+      expect(joinedEvent).toBe('participant:connected')
       expect(joinedOptions).toEqual({ exceptSocketId: 'socket-1' })
 
-      const joinedParticipant = joinedPayload.participant
-      expect(joinedParticipant.socketId).toBe('socket-1')
+      expect(joinedPayload.userId).toBe('user-1')
     })
   })
 
@@ -192,42 +185,29 @@ describe('RoomService', () => {
       const client = createMockSocket('socket-1')
       users.getSession.mockReturnValue(null)
 
-      const payload: RoomLeavePayload = { roomId }
-
-      await service.leaveRoomBySession(client, payload)
+      await service.leaveRoomBySession(client)
 
       expect(client.leave).not.toHaveBeenCalled()
       expect(users.removeSession).not.toHaveBeenCalled()
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
 
-    it('payload.roomId와 session.roomId가 다르면 아무것도 하지 않음', async () => {
-      const client = createMockSocket('socket-1')
-      users.getSession.mockReturnValue({ ...sessionA, roomId: 'room-A' })
-
-      await service.leaveRoomBySession(client, { roomId: 'room-B' })
-
-      expect(client.leave).not.toHaveBeenCalled()
-      expect(users.removeSession).not.toHaveBeenCalled()
-      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
-    })
-
-    it('roomId가 일치하면 leaveRoom 실행', async () => {
+    it('세션이 있으면 leaveRoom 실행', async () => {
       const client = createMockSocket('socket-1')
       users.getSession.mockReturnValue(sessionA)
 
-      await service.leaveRoomBySession(client, { roomId })
+      await service.leaveRoomBySession(client)
 
       expect(client.leave).toHaveBeenCalledWith(`room:${roomId}`)
 
       const calls = broadcaster.emitToRoom.mock.calls
       expect(calls.length).toBe(1)
 
-      const [calledRoomId, event, payloadArg] = calls[0] as [string, string, RoomUserLeftPayload]
+      const [calledRoomId, event, payloadArg] = calls[0] as [string, string, ParticipantDisconnectedPayload]
       expect(calledRoomId).toBe(roomId)
-      expect(event).toBe('room:user_left')
+      expect(event).toBe('participant:disconnected')
 
-      expect(payloadArg.participant.socketId).toBe('socket-1')
+      expect(payloadArg.userId).toBe('user-1')
 
       expect(users.removeSession).toHaveBeenCalledWith('socket-1')
     })
@@ -248,7 +228,7 @@ describe('RoomService', () => {
 
       const [calledRoomId, event] = calls[0] as [string, string]
       expect(calledRoomId).toBe(roomId)
-      expect(event).toBe('room:user_left')
+      expect(event).toBe('participant:disconnected')
     })
   })
 
@@ -261,65 +241,9 @@ describe('RoomService', () => {
       expect(participants).toHaveLength(2)
 
       expect(participants[0].userId).toBe('user-1')
+      expect(participants[0].name).toBe('ajin')
       expect(participants[1].userId).toBe('user-2')
-    })
-  })
-
-  describe('broadcastUserMoved', () => {
-    it('moveCategory가 실패하면 브로드캐스트 하지 않음', () => {
-      users.moveCategory.mockReturnValue(null)
-
-      service.broadcastUserMoved('socket-1', null, 'cat-1')
-
-      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
-    })
-
-    it('moveCategory가 성공하면 room:user_moved 브로드캐스트', () => {
-      const moveResult: MoveCategoryResult = {
-        session: sessionA,
-        from: null,
-        to: 'cat-1',
-      }
-      users.moveCategory.mockReturnValue(moveResult)
-
-      service.broadcastUserMoved('socket-1', null, 'cat-1')
-
-      const calls = broadcaster.emitToRoom.mock.calls
-      expect(calls.length).toBe(1)
-
-      const [calledRoomId, event, payloadArg] = calls[0] as [string, string, RoomUserMovedPayload]
-
-      expect(calledRoomId).toBe(roomId)
-      expect(event).toBe('room:user_moved')
-
-      expect(payloadArg.participant.socketId).toBe('socket-1')
-      expect(payloadArg.fromCategoryId).toBeNull()
-      expect(payloadArg.toCategoryId).toBe('cat-1')
-    })
-  })
-
-  describe('broadcastCategoryChanged', () => {
-    it('room:category_changed 브로드캐스트', () => {
-      const category: Category = {
-        id: 'cat-1',
-        roomId,
-        title: '카테고리1',
-        orderIndex: 0,
-        createdAt: now,
-      }
-
-      service.broadcastCategoryChanged(roomId, 'updated', category)
-
-      const calls = broadcaster.emitToRoom.mock.calls
-      expect(calls.length).toBe(1)
-
-      const [calledRoomId, event, payloadArg] = calls[0] as [string, string, RoomCategoryChangedPayload]
-
-      expect(calledRoomId).toBe(roomId)
-      expect(event).toBe('room:category_changed')
-
-      expect(payloadArg.action).toBe('updated')
-      expect(payloadArg.category).toBe(category)
+      expect(participants[1].name).toBe('kim')
     })
   })
 })

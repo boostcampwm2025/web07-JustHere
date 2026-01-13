@@ -11,7 +11,7 @@ import { Server, Socket } from 'socket.io'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
-import { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto'
+import { RoomJoinPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
 
 @WebSocketGateway({
@@ -45,11 +45,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('room:leave')
-  async onRoomLeave(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomLeavePayload) {
-    const roomLeavePayload = plainToInstance(RoomLeavePayload, payload)
-    const errors = validateSync(roomLeavePayload)
-    if (errors.length > 0) return
-
-    await this.roomService.leaveRoomBySession(client, roomLeavePayload)
+  async onRoomLeave(@ConnectedSocket() client: Socket) {
+    await this.roomService.leaveRoomBySession(client)
   }
 }

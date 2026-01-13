@@ -10,17 +10,16 @@ describe('UserService', () => {
   const createParams: CreateSessionParams = {
     socketId: 'socket-1',
     userId: 'user-1',
-    nickname: 'ajin',
+    name: 'user1',
     roomId: 'room-1',
   }
 
   const existingSession: UserSession = {
     socketId: 'socket-1',
     userId: 'user-1',
-    nickname: 'ajin',
+    name: 'user1',
     roomId: 'room-1',
     color: 'hsl(100, 70%, 50%)',
-    categoryId: null,
     joinedAt: now,
   }
 
@@ -35,9 +34,8 @@ describe('UserService', () => {
 
       expect(result.socketId).toBe(createParams.socketId)
       expect(result.userId).toBe(createParams.userId)
-      expect(result.nickname).toBe(createParams.nickname)
+      expect(result.name).toBe(createParams.name)
       expect(result.roomId).toBe(createParams.roomId)
-      expect(result.categoryId).toBeNull()
       expect(result.joinedAt).toBeInstanceOf(Date)
     })
 
@@ -91,49 +89,6 @@ describe('UserService', () => {
 
     it('존재하지 않는 socketId를 삭제하면 undefined를 반환한다', () => {
       const result = service.removeSession('non-existent')
-
-      expect(result).toBeUndefined()
-    })
-  })
-
-  describe('moveCategory', () => {
-    it('유저의 카테고리를 변경하고 결과를 반환한다', () => {
-      store.set(existingSession.socketId, existingSession)
-
-      const result = service.moveCategory(existingSession.socketId, 'cat-1')
-
-      expect(result).toBeDefined()
-      expect(result!.from).toBeNull()
-      expect(result!.to).toBe('cat-1')
-      expect(result!.session.categoryId).toBe('cat-1')
-    })
-
-    it('카테고리를 null로 변경할 수 있다', () => {
-      const sessionWithCategory: UserSession = {
-        ...existingSession,
-        categoryId: 'cat-1',
-      }
-      store.set(sessionWithCategory.socketId, sessionWithCategory)
-
-      const result = service.moveCategory(sessionWithCategory.socketId, null)
-
-      expect(result).toBeDefined()
-      expect(result!.from).toBe('cat-1')
-      expect(result!.to).toBeNull()
-      expect(result!.session.categoryId).toBeNull()
-    })
-
-    it('변경된 세션이 store에 저장된다', () => {
-      store.set(existingSession.socketId, existingSession)
-
-      service.moveCategory(existingSession.socketId, 'cat-1')
-
-      const stored = store.get(existingSession.socketId)
-      expect(stored?.categoryId).toBe('cat-1')
-    })
-
-    it('존재하지 않는 socketId로 호출하면 undefined를 반환한다', () => {
-      const result = service.moveCategory('non-existent', 'cat-1')
 
       expect(result).toBeUndefined()
     })
