@@ -2,10 +2,7 @@ import type { ChangeEvent, InputHTMLAttributes } from "react";
 import { MagnifyIcon, CloseIcon } from "@/components/Icons";
 import { cn } from "@/utils/cn";
 
-interface SearchInputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  "onChange"
-> {
+interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
   value: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
