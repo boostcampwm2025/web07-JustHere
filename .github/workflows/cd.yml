@@ -3,7 +3,8 @@ name: cd.yml
 on:
   push:
     branches:
-      - hotfix/112-docker-compose
+      - main
+      - develop
 
 jobs:
   build-and-push:
