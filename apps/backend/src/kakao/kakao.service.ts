@@ -49,7 +49,9 @@ export class KakaoService {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
-        const message = error.response?.data?.message || error.message;
+        const message =
+          (error.response?.data as { message?: string })?.message ||
+          error.message;
 
         // Kakao API 에러 상태 코드별 처리
         if (status === 400) {
