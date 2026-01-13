@@ -1,6 +1,6 @@
 import type { Participant, Category } from './domain'
 
-// [C->S] room:join 페이로드
+// [C->S] room:join
 export type RoomJoinPayload = {
   roomId: string
   user: {
@@ -9,7 +9,7 @@ export type RoomJoinPayload = {
   }
 }
 
-// [S->C] room:joined 페이로드
+// [S->C] room:joined
 export type RoomJoinedPayload = {
   roomId: string
   me: Participant
@@ -18,13 +18,13 @@ export type RoomJoinedPayload = {
   ownerId: string
 }
 
-// [S->C] participant:connected 페이로드
+// [S->C] participant:connected
 export type ParticipantConnectedPayload = {
   userId: string
   name: string
 }
 
-// [S->C] participant:disconnected 페이로드
+// [S->C] participant:disconnected
 export type ParticipantDisconnectedPayload = {
   userId: string
 }

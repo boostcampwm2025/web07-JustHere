@@ -1,3 +1,9 @@
+export type RoomMeta = {
+  roomId: string
+  me: Participant
+  ownerId: string
+}
+
 export type Participant = {
   userId: string
   name: string
