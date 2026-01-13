@@ -2,8 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import request from 'supertest'
 import type { Server } from 'http'
+import type { Room } from '@prisma/client'
 import { AppModule } from '@/app.module'
 import { PrismaService } from '@/prisma/prisma.service'
+
+interface RoomResponse {
+  body: Room
+}
 
 describe('Room API (e2e)', () => {
   let app: INestApplication
@@ -19,7 +24,7 @@ describe('Room API (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true }))
     await app.init()
 
-    server = server as Server
+    server = app.getHttpServer() as Server
     prisma = app.get<PrismaService>(PrismaService)
   })
 
@@ -43,7 +48,7 @@ describe('Room API (e2e)', () => {
           place_name: '강남역',
         })
         .expect(201)
-        .expect(res => {
+        .expect((res: RoomResponse) => {
           expect(res.body).toHaveProperty('id')
           expect(res.body).toHaveProperty('slug')
           expect(res.body.slug).toHaveLength(8)
@@ -66,29 +71,29 @@ describe('Room API (e2e)', () => {
           y: 37.497952,
         })
         .expect(201)
-        .expect(res => {
+        .expect((res: RoomResponse) => {
           expect(res.body.place_name).toBe('')
         })
     })
 
     it('여러 방을 생성하면 각각 다른 slug를 가져야 한다', async () => {
-      const res1 = await request(server)
+      const res1 = (await request(server)
         .post('/room/create')
         .send({
           title: '방 1',
           x: 127.027621,
           y: 37.497952,
         })
-        .expect(201)
+        .expect(201)) as RoomResponse
 
-      const res2 = await request(server)
+      const res2 = (await request(server)
         .post('/room/create')
         .send({
           title: '방 2',
           x: 127.027621,
           y: 37.497952,
         })
-        .expect(201)
+        .expect(201)) as RoomResponse
 
       expect(res1.body.slug).not.toBe(res2.body.slug)
     })
