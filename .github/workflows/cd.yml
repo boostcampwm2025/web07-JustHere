@@ -3,8 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - main
-      - develop
+      - hotfix/105-cd-pipeline-FE
 
 jobs:
   build-and-push:
