@@ -1,22 +1,15 @@
-import { useState } from "react";
-import {
-  BellIcon,
-  CogIcon,
-  ShareVariantIcon,
-  MapCheckOutlineIcon,
-} from "@/components/Icons";
-import Logo from '@/assets/images/logo.svg?react'
-import { AVATARS } from "@/mocks";
-import RoomInfoModal from "@/components/main/RoomInfoModal";
-import { Button } from "@/components/common/Button";
+import { useState } from 'react'
+import { BellIcon, CogIcon, ShareVariantIcon, MapCheckOutlineIcon } from '@/components/Icons'
+import { AVATARS } from '@/mocks'
+import RoomInfoModal from '@/components/main/RoomInfoModal'
+import { Button } from '@/components/common/Button'
 
 export default function Header() {
-  const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false);
+  const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
 
-  const MAX_DISPLAY_AVATARS = 3;
-  const displayAvatars = AVATARS.slice(0, MAX_DISPLAY_AVATARS);
-  const extraCount = AVATARS.length - MAX_DISPLAY_AVATARS;
-
+  const MAX_DISPLAY_AVATARS = 3
+  const displayAvatars = AVATARS.slice(0, MAX_DISPLAY_AVATARS)
+  const extraCount = AVATARS.length - MAX_DISPLAY_AVATARS
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
@@ -24,30 +17,19 @@ export default function Header() {
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50">
           <MapCheckOutlineIcon className="w-6 h-6 text-primary" />
         </div>
-        <span className="text-xl font-bold text-black font-['Plus_Jakarta_Sans']">
-          Just Here
-        </span>
+        <span className="text-xl font-bold text-black font-['Plus_Jakarta_Sans']">Just Here</span>
       </div>
 
       <div className="flex items-center gap-5">
         <div className="flex items-center -space-x-2">
           {displayAvatars.map((src, i) => (
-            <div
-              key={i}
-              className="overflow-hidden border-2 border-white rounded-full w-9 h-9 bg-gray-200"
-            >
-              <img
-                src={src}
-                alt="User"
-                className="object-cover w-full h-full"
-              />
+            <div key={i} className="overflow-hidden border-2 border-white rounded-full w-9 h-9 bg-gray-200">
+              <img src={src} alt="User" className="object-cover w-full h-full" />
             </div>
           ))}
           {extraCount > 0 && (
             <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
-              <span className="text-xs font-medium text-gray-800">
-                +{extraCount}
-              </span>
+              <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
             </div>
           )}
         </div>
@@ -64,10 +46,7 @@ export default function Header() {
             >
               Share
             </Button>
-            <RoomInfoModal
-              isOpen={isRoomInfoModalOpen}
-              onClose={() => setIsRoomInfoModalOpen(false)}
-            />
+            <RoomInfoModal isOpen={isRoomInfoModalOpen} onClose={() => setIsRoomInfoModalOpen(false)} />
           </div>
 
           <Button variant="gray" size="icon" className="w-9 h-9">
