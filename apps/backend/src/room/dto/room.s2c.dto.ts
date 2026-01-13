@@ -1,19 +1,30 @@
 import { Category } from '@prisma/client';
+import { IsDate, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
-import { z } from 'zod';
+// Participant 클래스
+export class Participant {
+  @IsString()
+  userId: string;
 
-export const participantSchema = z.object({
-  userId: z.string(),
-  nickname: z.string(),
-  socketId: z.string(),
-  color: z.string(),
-  categoryId: z.string().nullable(),
-  joinedAt: z.preprocess(
-    (v) => (v instanceof Date ? v.toISOString() : v),
-    z.iso.datetime(),
-  ),
-});
-export type Participant = z.infer<typeof participantSchema>;
+  @IsString()
+  nickname: string;
+
+  @IsString()
+  socketId: string;
+
+  @IsString()
+  color: string;
+
+  @IsString()
+  categoryId: string | null;
+
+  @IsDate()
+  @Transform(({ value }: { value: string | Date }) =>
+    value instanceof Date ? value.toISOString() : value,
+  )
+  joinedAt: string;
+}
 
 // [S->C] room:state
 export type RoomStatePayload = {

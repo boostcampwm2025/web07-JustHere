@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Category } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
 import type { Socket } from 'socket.io';
 import { CategoryRepository } from '@/category/category.repository';
 import { SocketBroadcaster } from '@/socket/socket.broadcaster';
@@ -7,7 +8,6 @@ import { UserService } from '@/user/user.service';
 import type { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto';
 import {
   Participant,
-  participantSchema,
   RoomCategoryChangedPayload,
   RoomStatePayload,
   RoomUserJoinedPayload,
@@ -158,14 +158,7 @@ export class RoomService {
   /**
    * UserSession을 Participant로 변환
    */
-  private sessionToParticipant(session: UserSession): Participant {
-    return participantSchema.parse({
-      socketId: session.socketId,
-      userId: session.userId,
-      nickname: session.nickname,
-      color: session.color,
-      categoryId: session.categoryId,
-      joinedAt: session.joinedAt,
-    });
+  private sessionToParticipant(session: UserSession) {
+    return plainToInstance(Participant, { ...session });
   }
 }

@@ -1,18 +1,45 @@
-import { z } from 'zod';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+// User 정보 클래스 (nested object)
+class RoomJoinUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  profile_image?: string;
+}
 
 // [C->S] room:join
-export const roomJoinSchema = z.object({
-  roomId: z.string().min(1),
-  user: z.object({
-    id: z.string().min(1),
-    name: z.string().min(1),
-    profile_image: z.string().optional(),
-  }),
-});
-export type RoomJoinPayload = z.infer<typeof roomJoinSchema>;
+export class RoomJoinPayload {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  roomId: string;
+
+  @ValidateNested()
+  @Type(() => RoomJoinUserDto)
+  user: RoomJoinUserDto;
+}
 
 // [C->S] room:leave
-export const roomLeaveSchema = z.object({
-  roomId: z.string().min(1),
-});
-export type RoomLeavePayload = z.infer<typeof roomLeaveSchema>;
+export class RoomLeavePayload {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  roomId: string;
+}

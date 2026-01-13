@@ -8,13 +8,10 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { plainToInstance } from 'class-transformer';
+import { validateSync } from 'class-validator';
 import { SocketBroadcaster } from '@/socket/socket.broadcaster';
-import {
-  type RoomJoinPayload,
-  type RoomLeavePayload,
-  roomJoinSchema,
-  roomLeaveSchema,
-} from './dto/room.c2s.dto';
+import { RoomJoinPayload, RoomLeavePayload } from './dto/room.c2s.dto';
 import { RoomService } from './room.service';
 
 @WebSocketGateway({
@@ -43,10 +40,11 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: RoomJoinPayload,
   ) {
-    const parsed = roomJoinSchema.safeParse(payload);
-    if (!parsed.success) return;
+    const roomJoinPayload = plainToInstance(RoomJoinPayload, payload);
+    const errors = validateSync(roomJoinPayload);
+    if (errors.length > 0) return;
 
-    await this.roomService.joinRoom(client, parsed.data);
+    await this.roomService.joinRoom(client, roomJoinPayload);
   }
 
   @SubscribeMessage('room:leave')
@@ -54,9 +52,10 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: RoomLeavePayload,
   ) {
-    const parsed = roomLeaveSchema.safeParse(payload);
-    if (!parsed.success) return;
+    const roomLeavePayload = plainToInstance(RoomLeavePayload, payload);
+    const errors = validateSync(roomLeavePayload);
+    if (errors.length > 0) return;
 
-    await this.roomService.leaveRoomBySession(client, parsed.data);
+    await this.roomService.leaveRoomBySession(client, roomLeavePayload);
   }
 }
