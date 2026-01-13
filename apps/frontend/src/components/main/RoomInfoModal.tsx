@@ -1,5 +1,6 @@
 import { CloseIcon, PencilIcon, ContentCopyIcon } from "@/components/Icons";
 import { MOCK_PARTICIPANTS } from "@/mocks";
+import { Button } from "@/components/common/Button";
 
 interface RoomInfoModalProps {
   isOpen: boolean;
@@ -19,13 +20,15 @@ export default function RoomInfoModal({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-transparent" onClick={onClose} />
-      <div className="absolute top-full right-0 mt-2 z-50 bg-white rounded-[24px] w-[340px] max-h-[600px] shadow-xl border border-gray-100 overflow-y-auto scrollbar-hide">
-        <button
+      <div className="absolute top-full right-0 z-50 bg-white rounded-3xl w-[340px] max-h-[600px] shadow-xl border border-gray-100 overflow-y-auto scrollbar-hide">
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onClose}
-          className="absolute top-6 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+          className="absolute top-4.5 right-4 z-10 text-gray-disable hover:bg-transparent hover:text-gray"
         >
           <CloseIcon className="w-6 h-6" />
-        </button>
+        </Button>
 
         <div className="px-6 py-6">
           <h3 className="text-xl font-bold text-black text-center mb-6">
@@ -59,9 +62,13 @@ export default function RoomInfoModal({
                 defaultValue={userName}
                 className="w-full h-[50px] px-4 border border-gray-200 rounded-lg text-gray text-base focus:outline-none focus:border-primary transition-colors"
               />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-disable group-focus-within:text-primary">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-0 text-gray-disable hover:bg-transparent group-focus-within:text-primary"
+              >
                 <PencilIcon className="w-[18px] h-[18px]" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -73,10 +80,14 @@ export default function RoomInfoModal({
                   {roomLink}
                 </span>
               </div>
-              <button className="w-full h-[52px] bg-primary text-white rounded-lg flex items-center justify-center gap-2 hover:bg-primary-pressed transition-colors shadow-sm active:scale-[0.98]">
-                <ContentCopyIcon className="w-[18px] h-[18px]" />
-                <span className="text-base font-normal">링크 복사</span>
-              </button>
+              <Button
+                variant="primary"
+                size="lg"
+                className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
+                icon={<ContentCopyIcon className="w-[18px] h-[18px]" />}
+              >
+                링크 복사
+              </Button>
             </div>
           </div>
         </div>
