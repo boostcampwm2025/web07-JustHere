@@ -1,13 +1,10 @@
 import { useRef, useEffect, useState } from "react";
 import { MapMarker } from "react-kakao-maps-sdk";
-import {
-  MapCheckOutlineIcon,
-  AccountCheckOutlineIcon,
-} from "@/components/Icons";
 import { Button } from "@/components/common/Button";
 import { SearchInput } from "@/components/common/SearchInput";
 import { SearchResultsList } from "@/components/onboarding/SearchResultsList";
 import KakaoMap from "@/components/KakaoMap";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import type { KakaoPlace } from "@/types/kakao";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -71,25 +68,7 @@ function LocationStep({ onNext }: LocationStepProps) {
   return (
     <main className="flex-1 flex items-start justify-center px-4 py-16">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm p-12">
-        <div className="flex items-center justify-center gap-4 mb-10">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <MapCheckOutlineIcon className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-medium text-primary">지역 선택</span>
-          </div>
-
-          <div className="w-24 h-0.5 bg-gray-200 -mt-6" />
-
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <AccountCheckOutlineIcon className="w-5 h-5 text-gray-disable" />
-            </div>
-            <span className="text-xs font-medium text-gray-disable">
-              사용자 초대
-            </span>
-          </div>
-        </div>
+        <OnboardingProgress currentStep="location" />
 
         <h1 className="text-2xl font-medium text-black text-center mb-8">
           만날 지역을 선택해보세요

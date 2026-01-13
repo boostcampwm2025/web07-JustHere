@@ -1,38 +1,12 @@
 import { useState } from "react";
-import {
-  MapCheckOutlineIcon,
-  AccountCheckOutlineIcon,
-  ContentCopyIcon,
-  CheckIcon,
-} from "@/components/Icons";
+import { ContentCopyIcon, CheckIcon } from "@/components/Icons";
 import { Button } from "@/components/common/Button";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 
 interface InviteStepProps {
   selectedLocation: string;
   inviteLink: string;
   onComplete: () => void;
-}
-
-function InviteProgress() {
-  return (
-    <div className="flex items-center justify-center gap-4 mb-10">
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-          <MapCheckOutlineIcon className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-xs font-medium text-primary">지역 선택</span>
-      </div>
-
-      <div className="w-24 h-0.5 bg-primary -mt-6" />
-
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-          <AccountCheckOutlineIcon className="w-5 h-5 text-white" />
-        </div>
-        <span className="text-xs font-medium text-primary">사용자 초대</span>
-      </div>
-    </div>
-  );
 }
 
 function InviteStep({
@@ -58,7 +32,7 @@ function InviteStep({
   return (
     <main className="flex-1 flex items-start justify-center px-4 py-16">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm p-12">
-        <InviteProgress />
+        <OnboardingProgress currentStep="invite" />
 
         <h1 className="text-3xl font-bold text-black text-center mb-6">
           참여자 초대
