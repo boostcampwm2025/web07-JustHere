@@ -1,4 +1,4 @@
-import Header from "@/components/Header";
+import Header from "@/components/common/Header";
 import WhiteboardSection from "@/components/main/WhiteboardSection";
 import LocationListSection from "@/components/main/LocationListSection";
 

@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LocationStep from "@/components/onboarding/LocationStep";
 import InviteStep from "@/components/onboarding/InviteStep";
-import Header from "@/components/Header";
+import Header from "@/components/common/Header";
 
 type OnboardingStep = "location" | "invite";
 
@@ -11,11 +12,13 @@ interface SelectedLocation {
 }
 
 function OnboardingPage() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("location");
   const [selectedLocation, setSelectedLocation] =
     useState<SelectedLocation | null>(null);
 
   // TODO: 실제 초대 링크 생성 로직으로 대체
+
   const inviteLink = "www.justhere.p-e.kr/abxbdfffdfadff";
 
   const handleLocationSelect = (location: SelectedLocation) => {
@@ -24,16 +27,13 @@ function OnboardingPage() {
   };
 
   const handleInviteComplete = () => {
-    // TODO: 메인 페이지로 이동 또는 다음 플로우 처리
-    console.log("Onboarding completed!");
+    navigate("/main");
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-bg">
-      {/* Header */}
       <Header />
 
-      {/* Step Content */}
       {currentStep === "location" && (
         <LocationStep onNext={handleLocationSelect} />
       )}

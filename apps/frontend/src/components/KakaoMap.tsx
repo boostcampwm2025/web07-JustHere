@@ -15,19 +15,27 @@ interface KakaoMapProps {
 
   // 마커 등을 주입받기 위한 children
   children?: ReactNode;
+
+  // 지도가 로드되었을 때 호출될 콜백
+  onLoad?: (map: kakao.maps.Map) => void;
+
+  // 지도 드래그 가능 여부
+  draggable?: boolean;
 }
 
 function KakaoMap({
   width = "100%",
   height = "100%",
   className = "",
-  center = { lat: 37.566826, lng: 126.9786567 }, // 기본값: 서울시청
+  center = { lat: 37.566826, lng: 126.9786567 },
   level = 3,
   children,
+  onLoad,
+  draggable = true,
 }: KakaoMapProps) {
   // 2. 카카오맵 로더
   const [loading, error] = useKakaoLoader({
-    appkey: import.meta.env.VITE_KAKAO_MAP_KEY,
+    appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY,
     libraries: ["clusterer", "services", "drawing"],
   });
 
@@ -64,6 +72,8 @@ function KakaoMap({
       style={containerStyle}
       level={level}
       className={className}
+      onCreate={onLoad}
+      draggable={draggable}
     >
       {/* 부모 컴포넌트에서 전달한 마커 등이 여기에 렌더링됨 */}
       {children}
