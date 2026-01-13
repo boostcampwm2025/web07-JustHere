@@ -31,10 +31,7 @@
     "@prisma/client": "^7.2.0",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "ws": "^8.18.0",
-    "y-websocket": "^3.0.0",
-    "yjs": "^13.6.29"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
