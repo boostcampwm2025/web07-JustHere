@@ -11,6 +11,12 @@ services:
     networks:
       - app-network
     restart: always
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "-", "http://localhost:3000/api/health" ] # 혹은 단순히 TCP 연결 확인: ["CMD", "nc", "-z", "localhost", "3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     container_name: frontend
@@ -18,7 +24,8 @@ services:
     ports:
       - "80:80" # 외부 80번 포트를 컨테이너 Nginx 80번으로 연결
     depends_on:
-      - backend # 백엔드 컨테이너 먼저 실행 후 프론트엔드를 실행
+      backend:
+        condition: service_healthy # 백엔드가 healthcheck를 통과해야 프론트엔드 시작
     networks:
       - app-network
     restart: always
