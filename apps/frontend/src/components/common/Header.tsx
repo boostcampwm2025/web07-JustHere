@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BellIcon, CogIcon, ShareVariantIcon, MapCheckOutlineIcon } from '@/components/Icons'
+import { BellIcon, CogIcon, ShareVariantIcon } from '@/components/Icons'
+import Logo from '@/assets/images/logo.svg?react'
 import { AVATARS } from '@/mocks'
 import RoomInfoModal from '@/components/main/RoomInfoModal'
 import { Button } from '@/components/common/Button'
@@ -14,10 +15,7 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
       <div className="flex items-center gap-4">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50">
-          <MapCheckOutlineIcon className="w-6 h-6 text-primary" />
-        </div>
-        <span className="text-xl font-bold text-black font-['Plus_Jakarta_Sans']">Just Here</span>
+        <Logo />
       </div>
 
       <div className="flex items-center gap-5">
