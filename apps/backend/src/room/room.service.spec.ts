@@ -8,7 +8,13 @@ import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import type { UserSession } from '@/user/user.type'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
-import { ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload, ParticipantNameUpdatedPayload } from './dto/room.s2c.dto'
+import {
+  ParticipantConnectedPayload,
+  ParticipantDisconnectedPayload,
+  RoomJoinedPayload,
+  ParticipantNameUpdatedPayload,
+  RoomOwnerTransferredPayload,
+} from './dto/room.s2c.dto'
 
 function createMockSocket(id = 'socket-1') {
   return {
@@ -57,6 +63,8 @@ describe('RoomService', () => {
     removeSession: jest.fn(),
     getSessionsByRoom: jest.fn(),
     updateSessionName: jest.fn(),
+    getSessionByUserIdInRoom: jest.fn(),
+    transferOwnership: jest.fn(),
   }
 
   const categories = {
@@ -422,6 +430,80 @@ describe('RoomService', () => {
 
       service.updateParticipantName(client, 'newName')
 
+      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('transferOwner', () => {
+    it('방장이 권한을 위임하면 방 전체에 브로드캐스트한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(sessionA) // isOwner: true
+      users.getSessionByUserIdInRoom.mockReturnValue(sessionB)
+      users.transferOwnership.mockReturnValue(true)
+
+      service.transferOwner(client, 'user-2')
+
+      expect(users.transferOwnership).toHaveBeenCalledWith(roomId, 'user-1', 'user-2')
+
+      const calls = broadcaster.emitToRoom.mock.calls
+      expect(calls.length).toBe(1)
+
+      const [calledRoomId, event, payload] = calls[0] as [string, string, RoomOwnerTransferredPayload]
+      expect(calledRoomId).toBe(roomId)
+      expect(event).toBe('room:owner_transferred')
+      expect(payload.previousOwnerId).toBe('user-1')
+      expect(payload.newOwnerId).toBe('user-2')
+    })
+
+    it('세션이 없으면 error 이벤트를 emit한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(null)
+
+      service.transferOwner(client, 'user-2')
+
+      expect(client.emit).toHaveBeenCalledWith('error', { message: '세션을 찾을 수 없습니다.' })
+    })
+
+    it('방장이 아니면 NOT_OWNER 에러를 emit한다', () => {
+      const client = createMockSocket('socket-2')
+      const notOwnerSession = { ...sessionB, isOwner: false }
+
+      users.getSession.mockReturnValue(notOwnerSession)
+
+      service.transferOwner(client, 'user-1')
+
+      expect(client.emit).toHaveBeenCalledWith('error', {
+        code: 'NOT_OWNER',
+        message: '방장만 권한을 위임할 수 있습니다.',
+      })
+    })
+
+    it('대상 유저가 없으면 TARGET_NOT_FOUND 에러를 emit한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(sessionA)
+      users.getSessionByUserIdInRoom.mockReturnValue(null)
+
+      service.transferOwner(client, 'non-existent')
+
+      expect(client.emit).toHaveBeenCalledWith('error', {
+        code: 'TARGET_NOT_FOUND',
+        message: '대상 유저를 찾을 수 없습니다.',
+      })
+    })
+
+    it('transferOwnership이 실패하면 에러를 emit한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(sessionA)
+      users.getSessionByUserIdInRoom.mockReturnValue(sessionB)
+      users.transferOwnership.mockReturnValue(false)
+
+      service.transferOwner(client, 'user-2')
+
+      expect(client.emit).toHaveBeenCalledWith('error', { message: '권한 위임에 실패했습니다.' })
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })

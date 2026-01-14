@@ -175,4 +175,73 @@ describe('UserService', () => {
       expect(result).toBeUndefined()
     })
   })
+
+  describe('transferOwnership', () => {
+    const ownerSession: UserSession = {
+      ...existingSession,
+      socketId: 'socket-1',
+      userId: 'user-1',
+      isOwner: true,
+    }
+
+    const memberSession: UserSession = {
+      ...existingSession,
+      socketId: 'socket-2',
+      userId: 'user-2',
+      isOwner: false,
+    }
+
+    it('방장 권한을 다른 유저에게 이전한다', () => {
+      store.set(ownerSession.socketId, ownerSession)
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(true)
+      expect(store.get('socket-1')!.isOwner).toBe(false)
+      expect(store.get('socket-2')!.isOwner).toBe(true)
+    })
+
+    it('현재 방장이 아니면 false를 반환한다', () => {
+      const notOwner = { ...ownerSession, isOwner: false }
+      store.set(notOwner.socketId, notOwner)
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+
+    it('현재 방장 세션이 없으면 false를 반환한다', () => {
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+
+    it('새 방장 세션이 없으면 false를 반환한다', () => {
+      store.set(ownerSession.socketId, ownerSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('getSessionByUserIdInRoom', () => {
+    it('특정 방에서 userId로 세션을 조회한다', () => {
+      store.set(existingSession.socketId, existingSession)
+
+      const result = service.getSessionByUserIdInRoom('room-1', 'user-1')
+
+      expect(result).toEqual(existingSession)
+    })
+
+    it('해당 유저가 없으면 undefined를 반환한다', () => {
+      const result = service.getSessionByUserIdInRoom('room-1', 'non-existent')
+
+      expect(result).toBeUndefined()
+    })
+  })
 })
