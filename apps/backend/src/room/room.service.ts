@@ -114,6 +114,7 @@ export class RoomService {
     if (!session) return
 
     const { roomId } = session
+    const wasOwner = session.isOwner
 
     await client.leave(`room:${roomId}`)
 
@@ -124,6 +125,23 @@ export class RoomService {
     this.broadcaster.emitToRoom(session.roomId, 'participant:disconnected', payload)
 
     this.users.removeSession(client.id)
+
+    // 방장이 나갔으면 다음 참여자에게 자동 위임
+    if (wasOwner) {
+      const remainingSessions = this.users.getSessionsByRoom(roomId)
+      if (remainingSessions.length > 0) {
+        // 가장 먼저 입장한 유저에게 방장 위임
+        const nextOwner = remainingSessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
+        nextOwner.isOwner = true
+
+        // 방장 변경 알림
+        const ownerPayload: RoomOwnerTransferredPayload = {
+          previousOwnerId: session.userId,
+          newOwnerId: nextOwner.userId,
+        }
+        this.broadcaster.emitToRoom(roomId, 'room:owner_transferred', ownerPayload)
+      }
+    }
   }
 
   /**
