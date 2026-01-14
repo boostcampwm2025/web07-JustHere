@@ -2,9 +2,10 @@ import React, { useRef, useState } from 'react'
 import { Stage, Layer, Circle, Text, Rect, Group } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { Rectangle } from '@/types/canvas.types'
+import type { Rectangle, PostIt } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
+import EditablePostIt from './EditablePostIt'
 
 type ToolType = 'hand' | 'pencil' | 'postit'
 
@@ -18,7 +19,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
-  const { cursors, rectangles, updateCursor, addRectangle, updateRectangle } = useYjsSocket({
+  const { cursors, rectangles, postits, socketId, updateCursor, addRectangle, updateRectangle, addPostIt, updatePostIt } = useYjsSocket({
     roomId,
     canvasId,
   })
@@ -76,15 +77,17 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postit') {
-      const newRect: Rectangle = {
-        id: `rect-${Date.now()}`,
-        x: canvasPos.x - 50, // 중앙 정렬 (width / 2)
-        y: canvasPos.y - 50, // 중앙 정렬 (height / 2)
-        width: 100,
-        height: 100,
+      const newPostIt: PostIt = {
+        id: `postit-${Date.now()}`,
+        x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
+        y: canvasPos.y - 75, // 중앙 정렬 (height / 2)
+        width: 150,
+        height: 150,
         fill: '#FFF9C4', // 노란색 포스트잇
+        text: '내용을 입력하세요',
+        authorName: `User ${socketId.substring(0, 4)}`,
       }
-      addRectangle(newRect)
+      addPostIt(newPostIt)
     }
   }
 
@@ -194,7 +197,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         onTouchStart={handleStageClick}
       >
         <Layer>
-          {/* 포스트잇(네모) 렌더링 */}
+          {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
           {rectangles.map(shape => (
             <Rect
               key={shape.id}
@@ -216,16 +219,31 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             />
           ))}
 
+          {/* 포스트잇 렌더링 */}
+          {postits.map(postit => (
+            <EditablePostIt
+              key={postit.id}
+              postit={postit}
+              draggable={activeTool === 'hand'}
+              onDragEnd={(x, y) => {
+                updatePostIt(postit.id, { x, y })
+              }}
+              onChange={updates => {
+                updatePostIt(postit.id, updates)
+              }}
+            />
+          ))}
+
           {/* 고스트 포스트잇 (미리보기) */}
           {activeTool === 'postit' && cursorPos && (
             <Group
-              x={cursorPos.x - 50} // 마우스 중앙 정렬
-              y={cursorPos.y - 50}
+              x={cursorPos.x - 75} // 마우스 중앙 정렬 (150 / 2)
+              y={cursorPos.y - 75}
               listening={false} // 클릭 이벤트를 가로채지 않도록 설정 (클릭 통과)
             >
               <Rect
-                width={100}
-                height={100}
+                width={150}
+                height={150}
                 fill="#FFF9C4" // 기본 노란색
                 opacity={0.6} // 반투명 효과
                 cornerRadius={8}
@@ -233,7 +251,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
                 strokeWidth={2}
                 dash={[5, 5]} // 점선 효과로 '임시'임을 강조
               />
-              <Text x={0} y={40} width={100} text="Click to add" align="center" fill="#6B7280" fontSize={12} />
+              <Text x={0} y={65} width={150} text="Click to add" align="center" fill="#6B7280" fontSize={14} />
             </Group>
           )}
 
