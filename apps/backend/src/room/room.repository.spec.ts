@@ -28,7 +28,6 @@ describe('RoomRepository', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -39,7 +38,6 @@ describe('RoomRepository', () => {
       const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
 
       const result = await repository.createRoom({
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -50,7 +48,6 @@ describe('RoomRepository', () => {
       expect(result.slug).toMatch(/^[a-z0-9]+$/)
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          title: '우리 팀 모임',
           x: 127.027621,
           y: 37.497952,
           place_name: '강남역',
@@ -63,7 +60,6 @@ describe('RoomRepository', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '',
@@ -74,7 +70,6 @@ describe('RoomRepository', () => {
       const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
 
       await repository.createRoom({
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
       })
@@ -91,7 +86,6 @@ describe('RoomRepository', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'b4k8m3x9',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -105,7 +99,6 @@ describe('RoomRepository', () => {
         .mockResolvedValueOnce(mockRoom as never)
 
       const result = await repository.createRoom({
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -122,7 +115,6 @@ describe('RoomRepository', () => {
 
       await expect(
         repository.createRoom({
-          title: '우리 팀 모임',
           x: 127.027621,
           y: 37.497952,
           place_name: '강남역',
@@ -139,7 +131,6 @@ describe('RoomRepository', () => {
 
       await expect(
         repository.createRoom({
-          title: '우리 팀 모임',
           x: 127.027621,
           y: 37.497952,
         }),

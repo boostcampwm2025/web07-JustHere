@@ -18,7 +18,7 @@ export class RoomService {
     private readonly broadcaster: SocketBroadcaster,
   ) {}
 
-  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
+  async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
     return this.roomRepository.createRoom(data)
   }
 
