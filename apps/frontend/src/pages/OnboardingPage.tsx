@@ -18,29 +18,27 @@ function OnboardingPage() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('location')
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
 
-  // TODO: 실제 초대 링크 생성 로직으로 대체
-
-  const inviteLink = 'www.justhere.p-e.kr/abxbdfffdfadff'
-
-  const handleLocationSelect = (location: SelectedLocation) => {
+  const handleLocationSelect = async (location: SelectedLocation) => {
     setSelectedLocation(location)
-    setCurrentStep('invite')
-  }
-
-  const handleInviteComplete = async () => {
-    if (!selectedLocation) return
 
     try {
-      await createRoom({
-        x: selectedLocation.x,
-        y: selectedLocation.y,
-        place_name: selectedLocation.name,
+      const room = await createRoom({
+        x: location.x,
+        y: location.y,
+        place_name: location.name,
       })
-      navigate('/main')
+      const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
+      setInviteLink(`${baseUrl}/invite/${room.slug}`)
+      setCurrentStep('invite')
     } catch (error) {
       console.error('방 생성 실패', error)
     }
+  }
+
+  const handleInviteComplete = () => {
+    navigate('/main')
   }
 
   return (
@@ -49,7 +47,7 @@ function OnboardingPage() {
 
       {currentStep === 'location' && <LocationStep onNext={handleLocationSelect} />}
 
-      {currentStep === 'invite' && selectedLocation && (
+      {currentStep === 'invite' && selectedLocation && inviteLink && (
         <InviteStep selectedLocation={selectedLocation.name} inviteLink={inviteLink} onComplete={handleInviteComplete} />
       )}
     </div>
