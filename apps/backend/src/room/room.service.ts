@@ -56,15 +56,15 @@ export class RoomService {
       roomId: actualRoomId,
     })
 
-    // 본인을 제외한 다른 참여자 목록
-    const otherParticipants = this.getOtherParticipants(actualRoomId, client.id)
+    // 본인을 포함한 전체 참여자 목록
+    const allParticipants = this.getAllParticipants(actualRoomId)
     const categories = await this.categories.findByRoomId(actualRoomId)
 
     // 본인에게 room:joined 이벤트 전송
     const joinedPayload: RoomJoinedPayload = {
       roomId: actualRoomId,
       me: this.sessionToParticipant(session),
-      participants: otherParticipants,
+      participants: allParticipants,
       categories,
       ownerId: this.getOwnerId(actualRoomId),
     }
@@ -120,11 +120,11 @@ export class RoomService {
   }
 
   /**
-   * 방의 본인을 제외한 다른 참여자 목록 조회
+   * 방의 전체 참여자 목록 조회
    */
-  private getOtherParticipants(roomId: string, excludeSocketId: string): Participant[] {
+  private getAllParticipants(roomId: string): Participant[] {
     const sessions = this.users.getSessionsByRoom(roomId)
-    return sessions.filter(session => session.socketId !== excludeSocketId).map(session => this.sessionToParticipant(session))
+    return sessions.map(session => this.sessionToParticipant(session))
   }
 
   /**
