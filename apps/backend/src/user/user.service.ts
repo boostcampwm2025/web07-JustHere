@@ -10,6 +10,8 @@ export class UserService {
    * 새 세션 생성 및 저장
    */
   createSession(params: CreateSessionParams): UserSession {
+    const isFirstInRoom = this.sessions.listByRoom(params.roomId).length === 0
+
     const session: UserSession = {
       socketId: params.socketId,
       userId: params.userId,
@@ -17,6 +19,7 @@ export class UserService {
       color: this.generateColor(params.userId),
       roomId: params.roomId,
       joinedAt: new Date(),
+      isOwner: isFirstInRoom,
     }
 
     this.sessions.set(params.socketId, session)
