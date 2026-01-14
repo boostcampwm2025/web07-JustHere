@@ -17,7 +17,7 @@ export class RoomRepository {
     const maxRetries = 3
     let lastError: Error | undefined
 
-    for (let i = 0; i < maxRetries; i++) {
+    for (let i = 0; i < maxRetries; i) {
       try {
         const slug = nanoid()
         return await this.prisma.room.create({
@@ -38,5 +38,11 @@ export class RoomRepository {
       }
     }
     throw new Error(`최대 재시도 횟수 ${maxRetries} 회를 초과하였습니다: ${lastError ? lastError.message : '알 수 없는 오류'}`)
+  }
+
+  async findBySlug(slug: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({
+      where: { slug },
+    })
   }
 }
