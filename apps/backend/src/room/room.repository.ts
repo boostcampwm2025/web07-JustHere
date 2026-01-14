@@ -17,7 +17,7 @@ export class RoomRepository {
     const maxRetries = 3
     let lastError: Error | undefined
 
-    for (let i = 0; i < maxRetries; i) {
+    for (let i = 0; i < maxRetries; i++) {
       try {
         const slug = nanoid()
         return await this.prisma.room.create({
