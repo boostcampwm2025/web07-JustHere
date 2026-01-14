@@ -38,6 +38,7 @@ describe('RoomService', () => {
     roomId,
     color: 'red',
     joinedAt: now,
+    isOwner: true,
   }
 
   const sessionB: UserSession = {
@@ -47,6 +48,7 @@ describe('RoomService', () => {
     roomId,
     color: 'blue',
     joinedAt: laterDate,
+    isOwner: false,
   }
 
   const users = {
@@ -182,9 +184,10 @@ describe('RoomService', () => {
       expect(joinedPayload.me.userId).toBe('user-1')
       expect(joinedPayload.me.name).toBe('ajin')
       expect(Array.isArray(joinedPayload.participants)).toBe(true)
-      // 본인 제외 다른 참여자만 포함
-      expect(joinedPayload.participants).toHaveLength(1)
-      expect(joinedPayload.participants[0].userId).toBe('user-2')
+      // 본인 포함 전체 참여자
+      expect(joinedPayload.participants).toHaveLength(2)
+      expect(joinedPayload.participants.map(p => p.userId)).toContain('user-1')
+      expect(joinedPayload.participants.map(p => p.userId)).toContain('user-2')
       expect(joinedPayload.categories).toEqual([mockCategory])
       expect(joinedPayload.ownerId).toBe('user-1') // 가장 먼저 들어온 유저
 
