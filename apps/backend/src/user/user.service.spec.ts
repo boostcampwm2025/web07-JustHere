@@ -21,6 +21,7 @@ describe('UserService', () => {
     roomId: 'room-1',
     color: 'hsl(100, 70%, 50%)',
     joinedAt: now,
+    isOwner: true,
   }
 
   beforeEach(() => {
@@ -58,6 +59,28 @@ describe('UserService', () => {
       const result = service.createSession(createParams)
 
       expect(store.get(createParams.socketId)).toEqual(result)
+    })
+
+    it('방에 첫 번째로 입장하면 isOwner가 true이다', () => {
+      const result = service.createSession(createParams)
+
+      expect(result.isOwner).toBe(true)
+    })
+
+    it('방에 두 번째로 입장하면 isOwner가 false이다', () => {
+      // 첫 번째 유저 입장
+      service.createSession(createParams)
+
+      // 두 번째 유저 입장
+      const secondParams: CreateSessionParams = {
+        socketId: 'socket-2',
+        userId: 'user-2',
+        name: 'user2',
+        roomId: 'room-1',
+      }
+      const result = service.createSession(secondParams)
+
+      expect(result.isOwner).toBe(false)
     })
   })
 
@@ -100,18 +123,21 @@ describe('UserService', () => {
         ...existingSession,
         socketId: 'socket-1',
         roomId: 'room-1',
+        isOwner: true,
       }
       const sessionB: UserSession = {
         ...existingSession,
         socketId: 'socket-2',
         userId: 'user-2',
         roomId: 'room-1',
+        isOwner: false,
       }
       const sessionC: UserSession = {
         ...existingSession,
         socketId: 'socket-3',
         userId: 'user-3',
         roomId: 'room-2',
+        isOwner: true,
       }
 
       store.set(sessionA.socketId, sessionA)
