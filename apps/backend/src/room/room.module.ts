@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common'
+import { Module } from '@nestjs/common'
 import { PrismaModule } from '@/prisma/prisma.module'
 import { CategoryModule } from '@/category/category.module'
 import { SocketModule } from '@/socket/socket.module'
@@ -9,7 +9,7 @@ import { RoomController } from './room.controller'
 import { RoomGateway } from './room.gateway'
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => CategoryModule), SocketModule, UserModule],
+  imports: [PrismaModule, CategoryModule, SocketModule, UserModule],
   controllers: [RoomController],
   providers: [RoomRepository, RoomService, RoomGateway],
   exports: [RoomService],

@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import type { Socket } from 'socket.io'
 import { Room } from '@prisma/client'
 import { RoomRepository } from './room.repository'
@@ -14,7 +14,6 @@ export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly users: UserService,
-    @Inject(forwardRef(() => CategoryService))
     private readonly categoryService: CategoryService,
     private readonly broadcaster: SocketBroadcaster,
   ) {}
