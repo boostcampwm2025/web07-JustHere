@@ -20,10 +20,10 @@ export default function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanva
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
 
-  useEffect(() => {
-    connect(roomId, categoryId)
-    return () => disconnect()
-  }, [roomId, categoryId, connect, disconnect])
+  // useEffect(() => {
+  //   connect(roomId, categoryId)
+  //   return () => disconnect()
+  // }, [roomId, categoryId, connect, disconnect])
 
   /**
    * 도구에 따른 커서 스타일 반환
