@@ -45,10 +45,4 @@ export class RoomRepository {
       where: { slug },
     })
   }
-
-  async findById(id: string): Promise<Room | null> {
-    return this.prisma.room.findUnique({
-      where: { id },
-    })
-  }
 }
