@@ -1,23 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { BadRequestException, NotFoundException } from '@nestjs/common'
-import { type Category, Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import type { Socket } from 'socket.io'
 import { CategoryRepository } from './category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
-import { UserSession } from '@/user/user.type'
+import type { UserSession } from '@/user/user.type'
 import { CategoryService } from './category.service'
 
-describe('CategoryService', () => {
+describe('CategoryService (socket handlers only)', () => {
   let service: CategoryService
 
   const roomId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-  const userId = 'f9e8d7c6-b5a4-3210-fedc-ba9876543210'
   const categoryId = 'c1d2e3f4-a5b6-7890-cdef-0123456789ab'
   const socketId = 'socket-123'
-  const now = new Date()
+  const now = new Date('2026-01-15T00:00:00.000Z')
 
-  const mockCategory: Category = {
+  const mockCategory = {
     id: categoryId,
     roomId,
     title: '카페',
@@ -27,7 +25,7 @@ describe('CategoryService', () => {
 
   const mockUserSession: UserSession = {
     socketId,
-    userId,
+    userId: 'user-1',
     name: '테스트 사용자',
     color: 'hsl(120, 70%, 50%)',
     roomId,
@@ -40,11 +38,8 @@ describe('CategoryService', () => {
     delete: jest.fn(),
   }
 
-  const setServerMock = jest.fn()
   const emitToRoomMock = jest.fn()
-
   const broadcasterMock = {
-    setServer: setServerMock,
     emitToRoom: emitToRoomMock,
   }
 
@@ -54,7 +49,6 @@ describe('CategoryService', () => {
   }
 
   const clientEmitMock = jest.fn() as (event: string, ...args: unknown[]) => boolean
-
   const mockClient = {
     id: socketId,
     emit: clientEmitMock,
@@ -72,121 +66,45 @@ describe('CategoryService', () => {
       ],
     }).compile()
 
-    service = module.get<CategoryService>(CategoryService)
+    service = module.get(CategoryService)
   })
 
   describe('findByRoomId', () => {
     it('roomId로 카테고리 목록을 조회한다', async () => {
-      const categories: Category[] = [mockCategory]
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(categories)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([mockCategory])
 
       const result = await service.findByRoomId(roomId)
 
-      expect(result).toEqual(categories)
+      expect(result).toEqual([mockCategory])
       expect(categoryRepositoryMock.findByRoomId).toHaveBeenCalledWith(roomId)
     })
   })
 
-  describe('create', () => {
-    it('카테고리를 생성한다', async () => {
-      const title = '음식'
-      categoryRepositoryMock.findByRoomId.mockResolvedValue([])
-      categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title, orderIndex: 0 })
-
-      const result = await service.create(roomId, title)
-
-      expect(result.title).toBe(title)
-      expect(result.orderIndex).toBe(0)
-      expect(categoryRepositoryMock.create).toHaveBeenCalledWith({
-        roomId,
-        title,
-        orderIndex: 0,
-      })
-    })
-
-    it('기존 카테고리가 있으면 orderIndex를 최대값 + 1로 설정한다', async () => {
-      const title = '음식'
-      const existingCategories: Category[] = [
-        { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891', orderIndex: 0 },
-        { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567892', orderIndex: 2 },
-      ]
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-      categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title, orderIndex: 3 })
-
-      const result = await service.create(roomId, title)
-
-      expect(result.orderIndex).toBe(3)
-      expect(categoryRepositoryMock.create).toHaveBeenCalledWith({
-        roomId,
-        title,
-        orderIndex: 3,
-      })
-    })
-
-    it('카테고리가 10개 이상이면 BadRequestException을 던진다', async () => {
-      const existingCategories: Category[] = Array.from({ length: 10 }, (_, i) => ({
-        ...mockCategory,
-        id: `a1b2c3d4-e5f6-7890-abcd-ef12345678${i.toString().padStart(2, '0')}`,
-        orderIndex: i,
-      }))
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-
-      await expect(service.create(roomId, '카페')).rejects.toThrow(BadRequestException)
-      expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('delete', () => {
-    it('카테고리를 삭제한다', async () => {
-      const existingCategories: Category[] = [
-        { ...mockCategory, id: categoryId },
-        { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
-      ]
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-      categoryRepositoryMock.delete.mockResolvedValue(mockCategory)
-
-      const result = await service.delete(categoryId, roomId)
-
-      expect(result).toEqual(mockCategory)
-      expect(categoryRepositoryMock.delete).toHaveBeenCalledWith(categoryId)
-    })
-
-    it('카테고리가 존재하지 않으면 NotFoundException을 던진다', async () => {
-      const nonExistentCategoryId = '99999999-9999-9999-9999-999999999999'
-      const existingCategories: Category[] = [
-        { ...mockCategory, id: categoryId },
-        { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
-      ]
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
-        code: 'P2025',
-        clientVersion: '5.0.0',
-      })
-      categoryRepositoryMock.delete.mockRejectedValue(prismaError)
-
-      await expect(service.delete(nonExistentCategoryId, roomId)).rejects.toThrow(NotFoundException)
-      expect(categoryRepositoryMock.delete).toHaveBeenCalledWith(nonExistentCategoryId)
-    })
-
-    it('카테고리가 1개 이하면 BadRequestException을 던진다', async () => {
-      const existingCategories: Category[] = [{ ...mockCategory, id: categoryId }]
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-
-      await expect(service.delete(categoryId, roomId)).rejects.toThrow(BadRequestException)
-      expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
-    })
-  })
-
   describe('createCategory', () => {
-    it('카테고리를 생성하고 브로드캐스트한다', async () => {
+    it('세션이 없으면 에러를 클라이언트에 전송하고 종료한다', async () => {
+      getSessionMock.mockReturnValue(undefined)
+
+      await service.createCategory(mockClient, '음식')
+
+      expect(getSessionMock).toHaveBeenCalledWith(socketId)
+      expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
+        message: '방에 참여하지 않았습니다.',
+      })
+      expect(categoryRepositoryMock.findByRoomId).not.toHaveBeenCalled()
+      expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
+      expect(emitToRoomMock).not.toHaveBeenCalled()
+    })
+
+    it('카테고리를 생성하고 브로드캐스트한다 (orderIndex=0)', async () => {
       const name = '음식'
-      userServiceMock.getSession.mockReturnValue(mockUserSession)
+      getSessionMock.mockReturnValue(mockUserSession)
       categoryRepositoryMock.findByRoomId.mockResolvedValue([])
       categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title: name, orderIndex: 0 })
 
       await service.createCategory(mockClient, name)
 
       expect(getSessionMock).toHaveBeenCalledWith(socketId)
+      expect(categoryRepositoryMock.findByRoomId).toHaveBeenCalledWith(roomId)
       expect(categoryRepositoryMock.create).toHaveBeenCalledWith({
         roomId,
         title: name,
@@ -202,54 +120,94 @@ describe('CategoryService', () => {
       expect(clientEmitMock).not.toHaveBeenCalled()
     })
 
-    it('세션이 없으면 에러를 클라이언트에 전송한다', async () => {
+    it('기존 카테고리가 있으면 orderIndex를 최대값+1로 생성한다', async () => {
       const name = '음식'
-      userServiceMock.getSession.mockReturnValue(undefined)
+      getSessionMock.mockReturnValue(mockUserSession)
+
+      const existing = [
+        { ...mockCategory, id: 'c-1', orderIndex: 0 },
+        { ...mockCategory, id: 'c-2', orderIndex: 2 },
+      ]
+      categoryRepositoryMock.findByRoomId.mockResolvedValue(existing)
+      categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title: name, orderIndex: 3 })
 
       await service.createCategory(mockClient, name)
 
-      expect(getSessionMock).toHaveBeenCalledWith(socketId)
+      expect(categoryRepositoryMock.create).toHaveBeenCalledWith({
+        roomId,
+        title: name,
+        orderIndex: 3,
+      })
+      expect(emitToRoomMock).toHaveBeenCalledWith(roomId, 'category:created', {
+        category_id: categoryId,
+        room_id: roomId,
+        name,
+        order: 3,
+        created_at: now,
+      })
+    })
+
+    it('카테고리가 10개 이상이면 에러를 클라이언트에 전송한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+
+      const existing = Array.from({ length: 10 }, (_, i) => ({
+        ...mockCategory,
+        id: `c-${i}`,
+        orderIndex: i,
+      }))
+      categoryRepositoryMock.findByRoomId.mockResolvedValue(existing)
+
+      await service.createCategory(mockClient, '음식')
+
       expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
-        message: '방에 참여하지 않았습니다.',
+        message: '카테고리 개수 제한을 초과했습니다. (최대 10개)',
       })
       expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
       expect(emitToRoomMock).not.toHaveBeenCalled()
     })
 
-    it('카테고리 생성 실패 시 에러를 클라이언트에 전송한다', async () => {
-      const name = '음식'
-      userServiceMock.getSession.mockReturnValue(mockUserSession)
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(
-        Array.from({ length: 10 }, (_, i) => ({
-          ...mockCategory,
-          id: `a1b2c3d4-e5f6-7890-abcd-ef12345678${i.toString().padStart(2, '0')}`,
-          orderIndex: i,
-        })),
-      )
+    it('레포지토리 create가 실패하면 에러를 클라이언트에 전송한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([])
+      categoryRepositoryMock.create.mockRejectedValue(new Error('DB down'))
 
-      await service.createCategory(mockClient, name)
+      await service.createCategory(mockClient, '음식')
 
       expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
-        message: '카테고리 개수 제한을 초과했습니다. (최대 10개)',
+        message: 'DB down',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()
     })
   })
 
   describe('deleteCategory', () => {
-    it('카테고리를 삭제하고 브로드캐스트한다', async () => {
-      const existingCategories: Category[] = [
-        { ...mockCategory, id: categoryId },
-        { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
-      ]
-      userServiceMock.getSession.mockReturnValue(mockUserSession)
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
-      categoryRepositoryMock.delete.mockResolvedValue(mockCategory)
+    it('세션이 없으면 에러를 클라이언트에 전송하고 종료한다', async () => {
+      getSessionMock.mockReturnValue(undefined)
 
       await service.deleteCategory(mockClient, categoryId)
 
       expect(getSessionMock).toHaveBeenCalledWith(socketId)
+      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+        message: '방에 참여하지 않았습니다.',
+      })
+      expect(categoryRepositoryMock.findByRoomId).not.toHaveBeenCalled()
+      expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
+      expect(emitToRoomMock).not.toHaveBeenCalled()
+    })
+
+    it('카테고리를 삭제하고 브로드캐스트한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([
+        { ...mockCategory, id: categoryId },
+        { ...mockCategory, id: 'c-2' },
+      ])
+      categoryRepositoryMock.delete.mockResolvedValue(mockCategory)
+
+      await service.deleteCategory(mockClient, categoryId)
+
+      expect(categoryRepositoryMock.findByRoomId).toHaveBeenCalledWith(roomId)
       expect(categoryRepositoryMock.delete).toHaveBeenCalledWith(categoryId)
+
       expect(emitToRoomMock).toHaveBeenCalledWith(roomId, 'category:deleted', {
         category_id: categoryId,
         deleted_at: expect.any(Date) as Date,
@@ -257,28 +215,52 @@ describe('CategoryService', () => {
       expect(clientEmitMock).not.toHaveBeenCalled()
     })
 
-    it('세션이 없으면 에러를 클라이언트에 전송한다', async () => {
-      userServiceMock.getSession.mockReturnValue(undefined)
-
-      await service.deleteCategory(mockClient, categoryId)
-
-      expect(getSessionMock).toHaveBeenCalledWith(socketId)
-      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
-        message: '방에 참여하지 않았습니다.',
-      })
-      expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
-      expect(emitToRoomMock).not.toHaveBeenCalled()
-    })
-
-    it('카테고리 삭제 실패 시 에러를 클라이언트에 전송한다', async () => {
-      const existingCategories: Category[] = [{ ...mockCategory, id: categoryId }]
-      userServiceMock.getSession.mockReturnValue(mockUserSession)
-      categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
+    it('카테고리가 1개 이하면 에러를 클라이언트에 전송한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([{ ...mockCategory, id: categoryId }])
 
       await service.deleteCategory(mockClient, categoryId)
 
       expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
         message: '최소 1개의 카테고리는 유지해야 합니다.',
+      })
+      expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
+      expect(emitToRoomMock).not.toHaveBeenCalled()
+    })
+
+    it('P2025이면 NotFoundException 메시지로 에러를 클라이언트에 전송한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([
+        { ...mockCategory, id: categoryId },
+        { ...mockCategory, id: 'c-2' },
+      ])
+
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      })
+      categoryRepositoryMock.delete.mockRejectedValue(prismaError)
+
+      await service.deleteCategory(mockClient, categoryId)
+
+      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+        message: '카테고리를 찾을 수 없습니다.',
+      })
+      expect(emitToRoomMock).not.toHaveBeenCalled()
+    })
+
+    it('알 수 없는 에러면 기본 메시지로 에러를 클라이언트에 전송한다', async () => {
+      getSessionMock.mockReturnValue(mockUserSession)
+      categoryRepositoryMock.findByRoomId.mockResolvedValue([
+        { ...mockCategory, id: categoryId },
+        { ...mockCategory, id: 'c-2' },
+      ])
+      categoryRepositoryMock.delete.mockRejectedValue('weird') // Error가 아닌 값
+
+      await service.deleteCategory(mockClient, categoryId)
+
+      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+        message: '카테고리 삭제에 실패했습니다.',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()
     })
