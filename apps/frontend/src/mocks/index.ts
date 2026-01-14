@@ -20,3 +20,9 @@ export const MOCK_PARTICIPANTS: Participant[] = [
   { id: '4', name: '강!!민석', initial: 'S', color: '#FFCBA4' },
   { id: '5', name: '류건', initial: 'S', color: '#E1F5FE' },
 ]
+
+export const MOCK_ROOM_ID = '550e8400-e29b-41d4-a716-446655440001'
+export const MOCK_USER = {
+  userId: crypto.randomUUID(),
+  name: 'test',
+}
