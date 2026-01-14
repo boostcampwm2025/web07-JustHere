@@ -44,11 +44,12 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     await client.join(`canvas:${canvasId}`)
 
     // Yjs 문서 생성 및 클라이언트 연결
-    this.yjsService.getOrCreateDocument(roomId, canvasId)
+    await this.yjsService.getOrCreateDocument(roomId, canvasId)
     this.yjsService.connectClient(canvasId, client.id)
 
     // 현재 문서 전체 상태를 클라이언트에게 전송 (동기화)
     const stateVector = this.yjsService.getStateVector(canvasId)
+
     const docKey = `${roomId}-${canvasId}`
 
     client.emit('canvas:attached', {
