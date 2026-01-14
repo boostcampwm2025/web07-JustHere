@@ -1,14 +1,15 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Injectable, Inject, forwardRef, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { Category, Prisma } from '@prisma/client'
-import { RoomRepository } from '@/room/room.repository'
-import { UserService } from '@/user/user.service'
 import { CategoryRepository } from './category.repository'
+import { RoomService } from '@/room/room.service'
+import { UserService } from '@/user/user.service'
 
 @Injectable()
 export class CategoryService {
   constructor(
     private readonly categoryRepository: CategoryRepository,
-    private readonly roomRepository: RoomRepository,
+    @Inject(forwardRef(() => RoomService))
+    private readonly roomService: RoomService,
     private readonly userService: UserService,
   ) {}
 
@@ -68,7 +69,7 @@ export class CategoryService {
   private async resolveRoomId(roomIdOrSlug: string): Promise<string> {
     // UUID면 방 존재 확인 후 반환
     if (this.isUUID(roomIdOrSlug)) {
-      const room = await this.roomRepository.findById(roomIdOrSlug)
+      const room = await this.roomService.findById(roomIdOrSlug)
       if (!room) {
         throw new NotFoundException('방을 찾을 수 없습니다.')
       }
@@ -76,7 +77,7 @@ export class CategoryService {
     }
 
     // slug면 DB에서 UUID 조회
-    const room = await this.roomRepository.findBySlug(roomIdOrSlug)
+    const room = await this.roomService.findBySlug(roomIdOrSlug)
     if (!room) {
       throw new NotFoundException('방을 찾을 수 없습니다.')
     }

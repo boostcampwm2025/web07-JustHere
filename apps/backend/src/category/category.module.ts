@@ -1,15 +1,15 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { PrismaModule } from '@/prisma/prisma.module'
-import { RoomRepositoryModule } from '@/room/room-repository.module'
+import { RoomModule } from '@/room/room.module'
 import { UserModule } from '@/user/user.module'
 import { CategoryRepository } from './category.repository'
 import { CategoryService } from './category.service'
 import { CategoryController } from './category.controller'
 
 @Module({
-  imports: [PrismaModule, RoomRepositoryModule, UserModule],
+  imports: [PrismaModule, forwardRef(() => RoomModule), UserModule],
   controllers: [CategoryController],
   providers: [CategoryRepository, CategoryService],
-  exports: [CategoryRepository, CategoryService],
+  exports: [CategoryService],
 })
 export class CategoryModule {}

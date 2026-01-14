@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common'
 import { type Category, type Room, Prisma } from '@prisma/client'
-import { RoomRepository } from '@/room/room.repository'
+import { CategoryRepository } from './category.repository'
+import { RoomService } from '@/room/room.service'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
 import { CategoryService } from './category.service'
-import { CategoryRepository } from './category.repository'
 
 describe('CategoryService', () => {
   let service: CategoryService
@@ -49,7 +49,7 @@ describe('CategoryService', () => {
     delete: jest.fn(),
   }
 
-  const roomRepositoryMock = {
+  const roomServiceMock = {
     findById: jest.fn(),
     findBySlug: jest.fn(),
   }
@@ -65,7 +65,7 @@ describe('CategoryService', () => {
       providers: [
         CategoryService,
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
-        { provide: RoomRepository, useValue: roomRepositoryMock },
+        { provide: RoomService, useValue: roomServiceMock },
         { provide: UserService, useValue: userServiceMock },
       ],
     }).compile()
@@ -92,7 +92,7 @@ describe('CategoryService', () => {
 
     it('카테고리를 생성한다', async () => {
       const title = '음식'
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue([])
       categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title, orderIndex: 0 })
 
@@ -114,7 +114,7 @@ describe('CategoryService', () => {
         { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891', orderIndex: 0 },
         { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567892', orderIndex: 2 },
       ]
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
       categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title, orderIndex: 3 })
 
@@ -132,15 +132,15 @@ describe('CategoryService', () => {
     it('room slug로 카테고리를 생성할 수 있다', async () => {
       const slug = 'test-room-slug-123'
       const title = '음식'
-      roomRepositoryMock.findById.mockResolvedValue(null) // UUID가 아니므로 null
-      roomRepositoryMock.findBySlug.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(null) // UUID가 아니므로 null
+      roomServiceMock.findBySlug.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue([])
       categoryRepositoryMock.create.mockResolvedValue({ ...mockCategory, title, orderIndex: 0 })
 
       const result = await service.create(slug, title, userId)
 
       expect(result.title).toBe(title)
-      expect(roomRepositoryMock.findBySlug).toHaveBeenCalledWith(slug)
+      expect(roomServiceMock.findBySlug).toHaveBeenCalledWith(slug)
       expect(userServiceMock.getSessionsByRoom).toHaveBeenCalledWith(roomId)
       expect(categoryRepositoryMock.create).toHaveBeenCalledWith({
         roomId: mockRoom.id,
@@ -150,8 +150,8 @@ describe('CategoryService', () => {
     })
 
     it('방이 존재하지 않으면 NotFoundException을 던진다', async () => {
-      roomRepositoryMock.findById.mockResolvedValue(null)
-      roomRepositoryMock.findBySlug.mockResolvedValue(null)
+      roomServiceMock.findById.mockResolvedValue(null)
+      roomServiceMock.findBySlug.mockResolvedValue(null)
 
       await expect(service.create('invalid-slug', '카페', userId)).rejects.toThrow(NotFoundException)
       expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
@@ -164,7 +164,7 @@ describe('CategoryService', () => {
         id: `a1b2c3d4-e5f6-7890-abcd-ef12345678${i.toString().padStart(2, '0')}`,
         orderIndex: i,
       }))
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
 
       await expect(service.create(roomId, '카페', userId)).rejects.toThrow(BadRequestException)
@@ -175,7 +175,7 @@ describe('CategoryService', () => {
     it('해당 방에 속한 사용자가 아니면 ForbiddenException을 던진다', async () => {
       const unauthorizedUserId = '99999999-9999-9999-9999-999999999999'
       userServiceMock.getSessionsByRoom.mockReturnValue([mockUserSession])
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
 
       await expect(service.create(roomId, '카페', unauthorizedUserId)).rejects.toThrow(ForbiddenException)
       expect(userServiceMock.getSessionsByRoom).toHaveBeenCalledWith(roomId)
@@ -193,7 +193,7 @@ describe('CategoryService', () => {
         { ...mockCategory, id: categoryId },
         { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
       ]
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
       categoryRepositoryMock.delete.mockResolvedValue(mockCategory)
 
@@ -205,8 +205,8 @@ describe('CategoryService', () => {
     })
 
     it('방이 존재하지 않으면 NotFoundException을 던진다', async () => {
-      roomRepositoryMock.findById.mockResolvedValue(null)
-      roomRepositoryMock.findBySlug.mockResolvedValue(null)
+      roomServiceMock.findById.mockResolvedValue(null)
+      roomServiceMock.findBySlug.mockResolvedValue(null)
 
       await expect(service.delete(categoryId, 'invalid-slug', userId)).rejects.toThrow(NotFoundException)
       expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
@@ -219,7 +219,7 @@ describe('CategoryService', () => {
         { ...mockCategory, id: categoryId },
         { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
       ]
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
       const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', {
         code: 'P2025',
@@ -234,7 +234,7 @@ describe('CategoryService', () => {
 
     it('카테고리가 1개 이하면 BadRequestException을 던진다', async () => {
       const existingCategories: Category[] = [{ ...mockCategory, id: categoryId }]
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
 
       await expect(service.delete(categoryId, roomId, userId)).rejects.toThrow(BadRequestException)
@@ -249,7 +249,7 @@ describe('CategoryService', () => {
         { ...mockCategory, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567891' },
       ]
       userServiceMock.getSessionsByRoom.mockReturnValue([mockUserSession])
-      roomRepositoryMock.findById.mockResolvedValue(mockRoom)
+      roomServiceMock.findById.mockResolvedValue(mockRoom)
       categoryRepositoryMock.findByRoomId.mockResolvedValue(existingCategories)
 
       await expect(service.delete(categoryId, roomId, unauthorizedUserId)).rejects.toThrow(ForbiddenException)

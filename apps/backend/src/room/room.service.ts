@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject, forwardRef } from '@nestjs/common'
 import type { Socket } from 'socket.io'
 import { Room } from '@prisma/client'
 import { RoomRepository } from './room.repository'
-import { CategoryRepository } from '@/category/category.repository'
+import { CategoryService } from '@/category/category.service'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
@@ -14,12 +14,27 @@ export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly users: UserService,
-    private readonly categories: CategoryRepository,
+    @Inject(forwardRef(() => CategoryService))
+    private readonly categoryService: CategoryService,
     private readonly broadcaster: SocketBroadcaster,
   ) {}
 
   async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
     return this.roomRepository.createRoom(data)
+  }
+
+  /**
+   * roomId로 방 조회
+   */
+  async findById(id: string): Promise<Room | null> {
+    return this.roomRepository.findById(id)
+  }
+
+  /**
+   * slug로 방 조회
+   */
+  async findBySlug(slug: string): Promise<Room | null> {
+    return this.roomRepository.findBySlug(slug)
   }
 
   /**
@@ -35,7 +50,7 @@ export class RoomService {
       actualRoomId = roomId
     } else {
       // slug면 DB에서 UUID 조회
-      const room = await this.roomRepository.findBySlug(roomId)
+      const room = await this.findBySlug(roomId)
       if (!room) {
         client.emit('error', { message: '방을 찾을 수 없습니다.' })
         return
@@ -58,15 +73,16 @@ export class RoomService {
 
     // 본인을 제외한 다른 참여자 목록
     const otherParticipants = this.getOtherParticipants(actualRoomId, client.id)
-    const categories = await this.categories.findByRoomId(actualRoomId)
+    const categories = await this.categoryService.findByRoomId(actualRoomId)
 
     // 본인에게 room:joined 이벤트 전송
+    const ownerId = this.getOwnerId(actualRoomId)
     const joinedPayload: RoomJoinedPayload = {
       roomId: actualRoomId,
       me: this.sessionToParticipant(session),
       participants: otherParticipants,
       categories,
-      ownerId: this.getOwnerId(actualRoomId),
+      ownerId: ownerId || '',
     }
     client.emit('room:joined', joinedPayload)
 
@@ -138,9 +154,9 @@ export class RoomService {
   /**
    * 방장 ID 조회 (가장 먼저 들어온 유저)
    */
-  private getOwnerId(roomId: string): string {
+  getOwnerId(roomId: string): string | undefined {
     const sessions = this.users.getSessionsByRoom(roomId)
-    if (sessions.length === 0) return ''
+    if (sessions.length === 0) return undefined
 
     const oldest = sessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
     return oldest.userId
