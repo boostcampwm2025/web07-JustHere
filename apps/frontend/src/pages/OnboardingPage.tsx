@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import LocationStep from '@/components/onboarding/LocationStep'
 import InviteStep from '@/components/onboarding/InviteStep'
 import Header from '@/components/common/Header'
+import { createRoom } from '@/api/room'
 
 type OnboardingStep = 'location' | 'invite'
 
 interface SelectedLocation {
   name: string
   address: string
+  x: number
+  y: number
 }
 
 function OnboardingPage() {
@@ -25,8 +28,19 @@ function OnboardingPage() {
     setCurrentStep('invite')
   }
 
-  const handleInviteComplete = () => {
-    navigate('/main')
+  const handleInviteComplete = async () => {
+    if (!selectedLocation) return
+
+    try {
+      await createRoom({
+        x: selectedLocation.x,
+        y: selectedLocation.y,
+        place_name: selectedLocation.name,
+      })
+      navigate('/main')
+    } catch (error) {
+      console.error('방 생성 실패', error)
+    }
   }
 
   return (

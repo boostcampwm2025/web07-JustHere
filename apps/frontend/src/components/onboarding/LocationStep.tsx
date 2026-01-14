@@ -9,7 +9,7 @@ import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { KakaoPlace } from '@/types/kakao'
 
 interface LocationStepProps {
-  onNext: (location: { name: string; address: string }) => void
+  onNext: (location: { name: string; address: string; x: number; y: number }) => void
 }
 
 function LocationStep({ onNext }: LocationStepProps) {
@@ -57,6 +57,8 @@ function LocationStep({ onNext }: LocationStepProps) {
       onNext({
         name: selectedPlace.place_name,
         address: selectedPlace.road_address_name || selectedPlace.address_name,
+        x: Number(selectedPlace.x),
+        y: Number(selectedPlace.y),
       })
     }
   }
