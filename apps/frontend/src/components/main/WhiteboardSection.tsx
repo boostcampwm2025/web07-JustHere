@@ -19,7 +19,7 @@ interface CategoryTab {
 function WhiteboardSection() {
   // 카테고리 더미 데이터
   // TODO: 실제로는 API를 통해 방(Room) 정보를 불러올 때 카테고리 리스트도 받아와야 함.
-  const [categories, setCategories] = useState<CategoryTab[]>([
+  const [categories] = useState<CategoryTab[]>([
     {
       id: 'cat-uuid-1', // 예: 실제 UUID
       type: 'restaurant',

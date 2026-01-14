@@ -11,7 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorPositionWithId,
 } from '@/types/yjs.types'
-import type { Rectangle } from '@/types/canvas.types'
+import type { Rectangle, PostIt } from '@/types/canvas.types'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -23,6 +23,8 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
   const [isConnected, setIsConnected] = useState(false)
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
+  const [postits, setPostits] = useState<PostIt[]>([])
+  const [socketId, setSocketId] = useState('unknown')
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
@@ -34,6 +36,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
 
     // Yjs SharedTypes 생성
     const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
+    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
 
     // Yjs 변경사항을 React state에 반영하는 함수
     const syncRectanglesToState = () => {
@@ -48,13 +51,29 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
       setRectangles(rects)
     }
 
+    const syncPostitsToState = () => {
+      const items: PostIt[] = yPostits.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        width: yMap.get('width') as number,
+        height: yMap.get('height') as number,
+        fill: yMap.get('fill') as string,
+        text: yMap.get('text') as string,
+        authorName: yMap.get('authorName') as string,
+      }))
+      setPostits(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yRectangles.observeDeep(syncRectanglesToState)
+    yPostits.observeDeep(syncPostitsToState)
 
     // 초기 동기화
     syncRectanglesToState()
+    syncPostitsToState()
 
     // Socket.io 연결
     const socket = io(`${serverUrl}/canvas`, {
@@ -64,6 +83,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
 
     socket.on('connect', () => {
       setIsConnected(true)
+      setSocketId(socket.id || 'unknown')
 
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
@@ -134,6 +154,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
 
       doc.off('update', updateHandler)
       yRectangles.unobserveDeep(syncRectanglesToState)
+      yPostits.unobserveDeep(syncPostitsToState)
       socket.disconnect()
       doc.destroy()
     }
@@ -185,12 +206,53 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     })
   }
 
+  // 포스트잇 추가 함수
+  const addPostIt = (postit: PostIt) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const yMap = new Y.Map()
+    yMap.set('id', postit.id)
+    yMap.set('x', postit.x)
+    yMap.set('y', postit.y)
+    yMap.set('width', postit.width)
+    yMap.set('height', postit.height)
+    yMap.set('fill', postit.fill)
+    yMap.set('text', postit.text)
+    yMap.set('authorName', postit.authorName)
+    yPostits.push([yMap])
+  }
+
+  // 포스트잇 업데이트 함수 (위치, 텍스트 등)
+  const updatePostIt = (id: string, updates: Partial<Omit<PostIt, 'id'>>) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index === -1) return
+
+    // Yjs 트랜잭션으로 명시적으로 감싸기
+    doc.transact(() => {
+      const yMap = yPostits.get(index)
+      Object.entries(updates).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+    })
+  }
+
   return {
     isConnected,
     cursors,
     rectangles,
+    postits,
+    socketId,
     updateCursor,
     addRectangle,
     updateRectangle,
+    addPostIt,
+    updatePostIt,
   }
 }
