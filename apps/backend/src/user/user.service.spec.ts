@@ -157,4 +157,22 @@ describe('UserService', () => {
       expect(result).toEqual([])
     })
   })
+
+  describe('updateSessionName', () => {
+    it('세션 이름을 업데이트하고 업데이트된 세션을 반환한다', () => {
+      store.set(existingSession.socketId, existingSession)
+
+      const result = service.updateSessionName(existingSession.socketId, 'newName')
+
+      expect(result).toBeDefined()
+      expect(result!.name).toBe('newName')
+      expect(store.get(existingSession.socketId)!.name).toBe('newName')
+    })
+
+    it('존재하지 않는 socketId로 업데이트하면 undefined를 반환한다', () => {
+      const result = service.updateSessionName('non-existent', 'newName')
+
+      expect(result).toBeUndefined()
+    })
+  })
 })

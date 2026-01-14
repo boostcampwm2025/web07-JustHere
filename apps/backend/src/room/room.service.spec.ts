@@ -8,7 +8,7 @@ import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import type { UserSession } from '@/user/user.type'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
-import { ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload } from './dto/room.s2c.dto'
+import { ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload, ParticipantNameUpdatedPayload } from './dto/room.s2c.dto'
 
 function createMockSocket(id = 'socket-1') {
   return {
@@ -56,6 +56,7 @@ describe('RoomService', () => {
     createSession: jest.fn(),
     removeSession: jest.fn(),
     getSessionsByRoom: jest.fn(),
+    updateSessionName: jest.fn(),
   }
 
   const categories = {
@@ -378,6 +379,50 @@ describe('RoomService', () => {
       expect(participants[0].name).toBe('ajin')
       expect(participants[1].userId).toBe('user-2')
       expect(participants[1].name).toBe('kim')
+    })
+  })
+
+  describe('updateParticipantName', () => {
+    it('이름을 변경하고 방 전체에 브로드캐스트한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(sessionA)
+      users.updateSessionName.mockReturnValue({ ...sessionA, name: 'newName' })
+
+      service.updateParticipantName(client, 'newName')
+
+      expect(users.updateSessionName).toHaveBeenCalledWith('socket-1', 'newName')
+
+      const calls = broadcaster.emitToRoom.mock.calls
+      expect(calls.length).toBe(1)
+
+      const [calledRoomId, event, payload] = calls[0] as [string, string, ParticipantNameUpdatedPayload]
+      expect(calledRoomId).toBe(roomId)
+      expect(event).toBe('participant:name_updated')
+      expect(payload.userId).toBe('user-1')
+      expect(payload.name).toBe('newName')
+    })
+
+    it('세션이 없으면 error 이벤트를 emit한다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(null)
+
+      service.updateParticipantName(client, 'newName')
+
+      expect(client.emit).toHaveBeenCalledWith('error', { message: '세션을 찾을 수 없습니다.' })
+      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
+    })
+
+    it('updateSessionName이 실패하면 브로드캐스트하지 않는다', () => {
+      const client = createMockSocket('socket-1')
+
+      users.getSession.mockReturnValue(sessionA)
+      users.updateSessionName.mockReturnValue(undefined)
+
+      service.updateParticipantName(client, 'newName')
+
+      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })
 })
