@@ -171,7 +171,7 @@ describe('CategoryService (socket handlers only)', () => {
 
       expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
         code: 'INTERNAL_ERROR',
-        message: 'DB down',
+        message: '카테고리 생성에 실패했습니다.',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()
     })
