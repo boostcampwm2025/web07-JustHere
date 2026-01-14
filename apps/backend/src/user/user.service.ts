@@ -63,4 +63,16 @@ export class UserService {
     const hue = Math.abs(hash % 360)
     return `hsl(${hue}, 70%, 50%)`
   }
+
+  /**
+   * 세션 이름 업데이트
+   */
+  updateSessionName(socketId: string, name: string): UserSession | undefined {
+    const session = this.sessions.get(socketId)
+    if (!session) return undefined
+
+    session.name = name
+    this.sessions.set(socketId, session)
+    return session
+  }
 }

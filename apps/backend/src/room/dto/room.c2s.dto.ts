@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MinLength, ValidateNested } from 'class-validator'
+import { IsNotEmpty, IsString, Max, MaxLength, maxLength, MinLength, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
 
 class RoomJoinUserDto {
@@ -27,3 +27,12 @@ export class RoomJoinPayload {
 
 // [C->S] room:leave - 빈 payload (세션에서 roomId 조회)
 export class RoomLeavePayload {}
+
+// [C->S] participant:update_name
+export class ParticipantUpdateNamePayload {
+  @IsString({ message: 'name은 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'name은 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'name은 최소 1자 이상이어야 합니다' })
+  @MaxLength(20, { message: 'name은 최대 20자 이하여야 합니다' })
+  name: string
+}

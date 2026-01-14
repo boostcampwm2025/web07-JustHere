@@ -6,8 +6,14 @@ import { CategoryRepository } from '@/category/category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
-import type { RoomJoinPayload } from './dto/room.c2s.dto'
-import { Participant, ParticipantConnectedPayload, ParticipantDisconnectedPayload, RoomJoinedPayload } from './dto/room.s2c.dto'
+import type { ParticipantUpdateNamePayload, RoomJoinPayload } from './dto/room.c2s.dto'
+import {
+  Participant,
+  ParticipantConnectedPayload,
+  ParticipantDisconnectedPayload,
+  ParticipantNameUpdatedPayload,
+  RoomJoinedPayload,
+} from './dto/room.s2c.dto'
 
 @Injectable()
 export class RoomService {
@@ -117,6 +123,27 @@ export class RoomService {
     this.broadcaster.emitToRoom(session.roomId, 'participant:disconnected', payload)
 
     this.users.removeSession(client.id)
+  }
+
+  /**
+   * 참여자 이름 변경
+   */
+  updateParticipantName(client: Socket, name: string): void {
+    const session = this.users.getSession(client.id)
+    if (!session) {
+      client.emit('error', { message: '세션을 찾을 수 없습니다.' })
+      return
+    }
+
+    const updatedSession = this.users.updateSessionName(client.id, name)
+    if (!updatedSession) return
+
+    // 방의 모든 참여자에게 브로드 캐스트 (본인 포함)
+    const payload: ParticipantNameUpdatedPayload = {
+      userId: updatedSession.userId,
+      name: updatedSession.name,
+    }
+    this.broadcaster.emitToRoom(session.roomId, 'participant:name_updated', payload)
   }
 
   /**
