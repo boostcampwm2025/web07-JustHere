@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { Socket } from 'socket.io-client'
 import type { RoomJoinPayload, RoomJoinedPayload, ParticipantConnectedPayload, ParticipantDisconnectedPayload } from '@/types/socket'
 import type { Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
@@ -15,6 +16,7 @@ export function useRoomSocketCache() {
 
   const [isReady, setIsReady] = useState(false)
   const roomIdRef = useRef<string | null>(null)
+  const userInfoRef = useRef<{ userId: string; name: string } | null>(null)
 
   useEffect(() => {
     const socket = getSocket()
@@ -27,6 +29,15 @@ export function useRoomSocketCache() {
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, me, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
       queryClient.setQueryData(roomQueryKeys.categories(roomId), categories)
+    }
+
+    const handleReconnect = () => {
+      const roomId = roomIdRef.current
+      const userInfo = userInfoRef.current
+
+      if (roomId && userInfo && socket.connected) {
+        socket.emit('room:join', { roomId, user: userInfo })
+      }
     }
 
     const onConnected = (p: ParticipantConnectedPayload) => {
@@ -46,25 +57,31 @@ export function useRoomSocketCache() {
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.userId !== p.userId))
     }
 
-    const onDisconnect = () => {
-      const roomId = roomIdRef.current
-      roomIdRef.current = null
+    const onDisconnect = (reason: Socket.DisconnectReason) => {
       setIsReady(false)
 
-      if (!roomId) return
-      queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        const roomId = roomIdRef.current
+        roomIdRef.current = null
+        userInfoRef.current = null
+
+        if (!roomId) return
+        queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
+      }
     }
 
     socket.on('room:joined', onReady)
     socket.on('participant:connected', onConnected)
     socket.on('participant:disconnected', onDisconnected)
     socket.on('disconnect', onDisconnect)
+    socket.on('connect', handleReconnect)
 
     return () => {
       socket.off('room:joined', onReady)
       socket.off('participant:connected', onConnected)
       socket.off('participant:disconnected', onDisconnected)
       socket.off('disconnect', onDisconnect)
+      socket.off('connect', handleReconnect)
     }
   }, [getSocket, queryClient])
 
@@ -75,6 +92,8 @@ export function useRoomSocketCache() {
       const socket = getSocket()
       if (!socket) return
 
+      roomIdRef.current = nextRoomId
+      userInfoRef.current = user
       const payload: RoomJoinPayload = { roomId: nextRoomId, user }
 
       if (socket.connected) {
@@ -94,6 +113,7 @@ export function useRoomSocketCache() {
     if (socket?.connected) socket.emit('room:leave')
 
     roomIdRef.current = null
+    userInfoRef.current = null
     setIsReady(false)
 
     if (!roomId) return
