@@ -177,7 +177,7 @@ export class RoomService {
 
     // 방장 권한 확인
     if (!session.isOwner) {
-      client.emit('error', { code: 'NOT_ONWER', message: '방장만 권한을 위임할 수 있습니다.' })
+      client.emit('error', { code: 'NOT_OWNER', message: '방장만 권한을 위임할 수 있습니다.' })
       return
     }
 

@@ -216,8 +216,9 @@ describe('RoomService', () => {
     it('기존 세션이 있으면: leaveRoom 수행 후 새 방 join 처리', async () => {
       const client = createMockSocket('socket-1')
 
-      // 기존 세션 존재
-      users.getSession.mockReturnValue(sessionA)
+      // 기존 세션 존재 (방장 아님 - 방장 퇴장 시 자동 위임 로직 제외)
+      const nonOwnerSession = { ...sessionA, isOwner: false }
+      users.getSession.mockReturnValue(nonOwnerSession)
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA])
       categories.findByRoomId.mockResolvedValue([])
@@ -337,7 +338,9 @@ describe('RoomService', () => {
 
     it('세션이 있으면 leaveRoom 실행', async () => {
       const client = createMockSocket('socket-1')
-      users.getSession.mockReturnValue(sessionA)
+      // 방장 아닌 세션 사용 (방장 퇴장 시 자동 위임 로직 제외)
+      const nonOwnerSession = { ...sessionA, isOwner: false }
+      users.getSession.mockReturnValue(nonOwnerSession)
 
       await service.leaveRoomBySession(client)
 
@@ -359,7 +362,9 @@ describe('RoomService', () => {
   describe('leaveByDisconnect', () => {
     it('disconnect 시에도 leaveRoom 수행', async () => {
       const client = createMockSocket('socket-1')
-      users.getSession.mockReturnValue(sessionA)
+      // 방장 아닌 세션 사용 (방장 퇴장 시 자동 위임 로직 제외)
+      const nonOwnerSession = { ...sessionA, isOwner: false }
+      users.getSession.mockReturnValue(nonOwnerSession)
 
       await service.leaveByDisconnect(client)
 
