@@ -1,8 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState } from 'react'
 import { Stage, Layer, Circle, Text, Rect, Group } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { Tool, Rectangle } from '@/types/canvas.types'
+import type { Rectangle } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 
@@ -15,27 +15,114 @@ interface WhiteboardCanvasProps {
 
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
-  const [scale, setScale] = useState(1)
 
-  const { isConnected, cursors, rectangles, updateCursor, addRectangle, updateRectangle } = useYjsSocket({
+  const { cursors, rectangles, updateCursor, addRectangle, updateRectangle } = useYjsSocket({
     roomId,
     canvasId,
   })
 
-  // 컨테이너 크기에 맞춰 Stage 크기 조정
-
-  // 마우스 이동 시 커서 위치 업데이트
-
-  // 마우스 다운 이벤트
-
-  // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
-
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+
+  // 화면 좌표를 캔버스 좌표로 변환
+  const getCanvasPosition = (screenX: number, screenY: number) => {
+    const stage = stageRef.current
+    if (!stage) return { x: screenX, y: screenY }
+
+    const transform = stage.getAbsoluteTransform().copy()
+    transform.invert()
+    return transform.point({ x: screenX, y: screenY })
+  }
+
+  // 마우스 이동 시 커서 위치 업데이트
+  const handleMouseMove = () => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pos = stage.getPointerPosition()
+    if (pos) {
+      // 화면 좌표를 캔버스 좌표로 변환
+      const canvasPos = getCanvasPosition(pos.x, pos.y)
+
+      // 실시간 커서 동기화 (캔버스 좌표)
+      updateCursor(canvasPos.x, canvasPos.y)
+
+      // 포스트잇 고스트 UI 업데이트 (캔버스 좌표)
+      if (activeTool === 'postit') {
+        setCursorPos(canvasPos)
+      }
+    }
+  }
+
+  // 마우스 나갈 때 포스트잇 고스트 제거
+  const handleMouseLeave = () => {
+    if (activeTool === 'postit') {
+      setCursorPos(null)
+    }
+  }
+
+  // 마우스 클릭 이벤트
+  const handleStageClick = () => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pos = stage.getPointerPosition()
+    if (!pos) return
+
+    // 화면 좌표를 캔버스 좌표로 변환
+    const canvasPos = getCanvasPosition(pos.x, pos.y)
+
+    // 포스트잇 추가 (커서를 중앙으로)
+    if (activeTool === 'postit') {
+      const newRect: Rectangle = {
+        id: `rect-${Date.now()}`,
+        x: canvasPos.x - 50, // 중앙 정렬 (width / 2)
+        y: canvasPos.y - 50, // 중앙 정렬 (height / 2)
+        width: 100,
+        height: 100,
+        fill: '#FFF9C4', // 노란색 포스트잇
+      }
+      addRectangle(newRect)
+    }
+  }
+
+  // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault()
+
+    // Cmd(Mac) 또는 Ctrl(Windows) 키가 눌렸는지 확인
+    if (!e.evt.metaKey && !e.evt.ctrlKey) {
+      return
+    }
+
+    const stage = stageRef.current
+    if (!stage) return
+
+    const scaleBy = 1.05
+    const oldScale = stage.scaleX()
+    const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
+
+    // 최소 0.1배, 최대 5배로 제한
+    const clampedScale = Math.max(0.1, Math.min(5, newScale))
+
+    const pointer = stage.getPointerPosition()
+    if (!pointer) return
+
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    }
+
+    const newPos = {
+      x: pointer.x - mousePointTo.x * clampedScale,
+      y: pointer.y - mousePointTo.y * clampedScale,
+    }
+
+    stage.scale({ x: clampedScale, y: clampedScale })
+    stage.position(newPos)
+  }
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -94,38 +181,47 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       </div>
 
       <Stage
+        ref={stageRef}
         width={window.innerWidth}
         height={window.innerHeight}
         // 손 도구일 때만 캔버스 전체 드래그(Pan) 가능
         draggable={activeTool === 'hand'}
-        // onClick={handleStageClick}
-        // onMouseMove={handleMouseMove} // 마우스 이동 감지
-        // onMouseLeave={handleMouseLeave} // 마우스 이탈 감지
+        onClick={handleStageClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
+        onTouchMove={handleMouseMove}
+        onTouchStart={handleStageClick}
       >
         <Layer>
+          {/* 포스트잇(네모) 렌더링 */}
           {rectangles.map(shape => (
             <Rect
               key={shape.id}
               x={shape.x}
               y={shape.y}
-              width={100}
-              height={100}
+              width={shape.width}
+              height={shape.height}
+              fill={shape.fill}
               shadowBlur={5}
               cornerRadius={8}
-              // 손 도구일 때만 개별 객체 드래그 가능하도록 제어 (선택 사항)
+              // 손 도구일 때만 개별 객체 드래그 가능
               draggable={activeTool === 'hand'}
-              // onDragEnd={e => {
-              //   updateShapePosition(shape.id, e.target.x(), e.target.y())
-              // }}
+              onDragEnd={e => {
+                updateRectangle(shape.id, {
+                  x: e.target.x(),
+                  y: e.target.y(),
+                })
+              }}
             />
           ))}
 
-          {/* ✨ 2. 고스트 포스트잇 (미리보기) */}
+          {/* 고스트 포스트잇 (미리보기) */}
           {activeTool === 'postit' && cursorPos && (
             <Group
               x={cursorPos.x - 50} // 마우스 중앙 정렬
               y={cursorPos.y - 50}
-              listening={false} // ✨ 중요: 클릭 이벤트를 가로채지 않도록 설정 (클릭 통과)
+              listening={false} // 클릭 이벤트를 가로채지 않도록 설정 (클릭 통과)
             >
               <Rect
                 width={100}
@@ -141,9 +237,15 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             </Group>
           )}
 
-          {/* {shapes.length === 0 && (
-            <Text text="도구를 선택해 보세요!" x={window.innerWidth / 2 - 100} y={window.innerHeight / 2} fontSize={20} fill="gray" />
-          )} */}
+          {/* 다른 사용자의 커서 렌더링 */}
+          {Array.from(cursors.values()).map(cursor => (
+            <React.Fragment key={cursor.socketId}>
+              {/* 커서 원 */}
+              <Circle x={cursor.x} y={cursor.y} radius={8} fill="#3b82f6" stroke="#ffffff" strokeWidth={2} />
+              {/* 사용자 ID 텍스트 */}
+              <Text x={cursor.x + 12} y={cursor.y - 8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
+            </React.Fragment>
+          ))}
         </Layer>
       </Stage>
     </div>
