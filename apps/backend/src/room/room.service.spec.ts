@@ -507,4 +507,60 @@ describe('RoomService', () => {
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })
+
+  describe('leaveRoom - 방장 자동 위임', () => {
+    it('방장이 퇴장하면 다음 참여자에게 자동으로 방장을 위임한다', async () => {
+      const client = createMockSocket('socket-1')
+      const ownerSession = { ...sessionA, isOwner: true }
+      const nextSession = { ...sessionB, isOwner: false }
+
+      users.getSession.mockReturnValue(ownerSession)
+      users.getSessionsByRoom.mockReturnValue([nextSession])
+
+      await service.leaveByDisconnect(client)
+
+      // participant:disconnected + room:owner_transferred
+      const calls = broadcaster.emitToRoom.mock.calls
+      expect(calls.length).toBe(2)
+
+      const [, disconnectEvent] = calls[0] as [string, string]
+      expect(disconnectEvent).toBe('participant:disconnected')
+
+      const [, ownerEvent, ownerPayload] = calls[1] as [string, string, RoomOwnerTransferredPayload]
+      expect(ownerEvent).toBe('room:owner_transferred')
+      expect(ownerPayload.previousOwnerId).toBe('user-1')
+      expect(ownerPayload.newOwnerId).toBe('user-2')
+    })
+
+    it('방장이 아닌 사람이 퇴장하면 owner_transferred를 브로드캐스트하지 않는다', async () => {
+      const client = createMockSocket('socket-2')
+      const memberSession = { ...sessionB, isOwner: false }
+
+      users.getSession.mockReturnValue(memberSession)
+
+      await service.leaveByDisconnect(client)
+
+      const calls = broadcaster.emitToRoom.mock.calls
+      expect(calls.length).toBe(1)
+
+      const [, event] = calls[0] as [string, string]
+      expect(event).toBe('participant:disconnected')
+    })
+
+    it('마지막 참여자(방장)가 퇴장하면 owner_transferred를 브로드캐스트하지 않는다', async () => {
+      const client = createMockSocket('socket-1')
+      const ownerSession = { ...sessionA, isOwner: true }
+
+      users.getSession.mockReturnValue(ownerSession)
+      users.getSessionsByRoom.mockReturnValue([]) // 남은 참여자 없음
+
+      await service.leaveByDisconnect(client)
+
+      const calls = broadcaster.emitToRoom.mock.calls
+      expect(calls.length).toBe(1) // participant:disconnected만
+
+      const [, event] = calls[0] as [string, string]
+      expect(event).toBe('participant:disconnected')
+    })
+  })
 })
