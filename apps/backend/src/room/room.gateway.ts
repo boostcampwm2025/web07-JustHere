@@ -50,20 +50,20 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('participant:update_name')
-  async onUpdateName(@ConnectedSocket() client: Socket, @MessageBody() payload: ParticipantUpdateNamePayload) {
+  onUpdateName(@ConnectedSocket() client: Socket, @MessageBody() payload: ParticipantUpdateNamePayload) {
     const updatedNamePayload = plainToInstance(ParticipantUpdateNamePayload, payload)
     const errors = validateSync(updatedNamePayload)
     if (errors.length > 0) return
 
-    await this.roomService.updateParticipantName(client, updatedNamePayload.name)
+    this.roomService.updateParticipantName(client, updatedNamePayload.name)
   }
 
   @SubscribeMessage('room:transfer_owner')
-  async onTransferOwner(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomTransferOwnerPayload) {
+  onTransferOwner(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomTransferOwnerPayload) {
     const transferPayload = plainToInstance(RoomTransferOwnerPayload, payload)
     const errors = validateSync(transferPayload)
     if (errors.length > 0) return
 
-    await this.roomService.transferOwner(client, transferPayload.targetUserId)
+    this.roomService.transferOwner(client, transferPayload.targetUserId)
   }
 }

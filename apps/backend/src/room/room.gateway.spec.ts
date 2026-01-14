@@ -257,19 +257,19 @@ describe('RoomGateway', () => {
   })
 
   describe('onUpdateName', () => {
-    it('유효한 payload가 전달되면 RoomService.updateParticipantName을 호출한다', async () => {
+    it('유효한 payload가 전달되면 RoomService.updateParticipantName을 호출한다', () => {
       const client = {} as Socket
       const payload: ParticipantUpdateNamePayload = { name: 'newName' }
 
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
 
-      await gateway.onUpdateName(client, payload)
+      gateway.onUpdateName(client, payload)
 
       expect(roomService.updateParticipantName).toHaveBeenCalledTimes(1)
       expect(roomService.updateParticipantName).toHaveBeenCalledWith(client, 'newName')
     })
 
-    it('name이 비어있으면 updateParticipantName을 호출하지 않는다', async () => {
+    it('name이 비어있으면 updateParticipantName을 호출하지 않는다', () => {
       const client = {} as Socket
       const payload: ParticipantUpdateNamePayload = { name: '' }
 
@@ -279,12 +279,12 @@ describe('RoomGateway', () => {
       }
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
 
-      await gateway.onUpdateName(client, payload)
+      gateway.onUpdateName(client, payload)
 
       expect(roomService.updateParticipantName).not.toHaveBeenCalled()
     })
 
-    it('name이 20자를 초과하면 updateParticipantName을 호출하지 않는다', async () => {
+    it('name이 20자를 초과하면 updateParticipantName을 호출하지 않는다', () => {
       const client = {} as Socket
       const payload: ParticipantUpdateNamePayload = { name: 'a'.repeat(21) }
 
@@ -294,26 +294,26 @@ describe('RoomGateway', () => {
       }
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
 
-      await gateway.onUpdateName(client, payload)
+      gateway.onUpdateName(client, payload)
 
       expect(roomService.updateParticipantName).not.toHaveBeenCalled()
     })
   })
 
   describe('onTransferOwner', () => {
-    it('유효한 payload가 전달되면 RoomService.transferOwner를 호출한다', async () => {
+    it('유효한 payload가 전달되면 RoomService.transferOwner를 호출한다', () => {
       const client = {} as Socket
       const payload: RoomTransferOwnerPayload = { targetUserId: 'user-2' }
 
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
 
-      await gateway.onTransferOwner(client, payload)
+      gateway.onTransferOwner(client, payload)
 
       expect(roomService.transferOwner).toHaveBeenCalledTimes(1)
       expect(roomService.transferOwner).toHaveBeenCalledWith(client, 'user-2')
     })
 
-    it('targetUserId가 비어있으면 transferOwner를 호출하지 않는다', async () => {
+    it('targetUserId가 비어있으면 transferOwner를 호출하지 않는다', () => {
       const client = {} as Socket
       const payload: RoomTransferOwnerPayload = { targetUserId: '' }
 
@@ -323,7 +323,7 @@ describe('RoomGateway', () => {
       }
       jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
 
-      await gateway.onTransferOwner(client, payload)
+      gateway.onTransferOwner(client, payload)
 
       expect(roomService.transferOwner).not.toHaveBeenCalled()
     })
