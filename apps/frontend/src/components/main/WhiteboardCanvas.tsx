@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import { Stage, Layer, Circle, Text, Rect, Group } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { Rectangle, PostIt } from '@/types/canvas.types'
+import type { PostIt } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
@@ -19,7 +19,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
-  const { cursors, rectangles, postits, socketId, updateCursor, addRectangle, updateRectangle, addPostIt, updatePostIt } = useYjsSocket({
+  const { cursors, rectangles, postits, socketId, updateCursor, updateRectangle, addPostIt, updatePostIt } = useYjsSocket({
     roomId,
     canvasId,
   })
@@ -27,26 +27,14 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
 
-  // 화면 좌표를 캔버스 좌표로 변환
-  const getCanvasPosition = (screenX: number, screenY: number) => {
-    const stage = stageRef.current
-    if (!stage) return { x: screenX, y: screenY }
-
-    const transform = stage.getAbsoluteTransform().copy()
-    transform.invert()
-    return transform.point({ x: screenX, y: screenY })
-  }
-
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
     const stage = stageRef.current
     if (!stage) return
 
-    const pos = stage.getPointerPosition()
-    if (pos) {
-      // 화면 좌표를 캔버스 좌표로 변환
-      const canvasPos = getCanvasPosition(pos.x, pos.y)
-
+    // Stage 변환(scale, position)을 자동으로 반영한 캔버스 좌표
+    const canvasPos = stage.getRelativePointerPosition()
+    if (canvasPos) {
       // 실시간 커서 동기화 (캔버스 좌표)
       updateCursor(canvasPos.x, canvasPos.y)
 
@@ -69,11 +57,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     const stage = stageRef.current
     if (!stage) return
 
-    const pos = stage.getPointerPosition()
-    if (!pos) return
-
-    // 화면 좌표를 캔버스 좌표로 변환
-    const canvasPos = getCanvasPosition(pos.x, pos.y)
+    // Stage 변환(scale, position)을 자동으로 반영한 캔버스 좌표
+    const canvasPos = stage.getRelativePointerPosition()
+    if (!canvasPos) return
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postit') {
