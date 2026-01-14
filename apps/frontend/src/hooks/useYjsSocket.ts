@@ -11,6 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorPositionWithId,
 } from '@/types/yjs.types'
+import type { Rectangle } from '@/types/canvas.types'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -21,6 +22,7 @@ interface UseYjsSocketOptions {
 export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3000' }: UseYjsSocketOptions) {
   const [isConnected, setIsConnected] = useState(false)
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
+  const [rectangles, setRectangles] = useState<Rectangle[]>([])
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
@@ -29,6 +31,30 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     // Yjs 문서 초기화
     const doc = new Y.Doc()
     docRef.current = doc
+
+    // Yjs SharedTypes 생성
+    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
+
+    // Yjs 변경사항을 React state에 반영하는 함수
+    const syncRectanglesToState = () => {
+      const rects: Rectangle[] = yRectangles.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        width: yMap.get('width') as number,
+        height: yMap.get('height') as number,
+        fill: yMap.get('fill') as string,
+      }))
+      setRectangles(rects)
+    }
+
+    // Yjs 변경 감지 리스너
+    // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
+    // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
+    yRectangles.observeDeep(syncRectanglesToState)
+
+    // 초기 동기화
+    syncRectanglesToState()
 
     // Socket.io 연결
     const socket = io(`${serverUrl}/canvas`, {
@@ -52,7 +78,8 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     socket.on('canvas:attached', (payload: CanvasAttachedPayload) => {
       if (payload.update) {
         const updateArray = new Uint8Array(payload.update)
-        Y.applyUpdate(doc, updateArray)
+        // origin을 socket으로 명시하여 재전송 방지
+        Y.applyUpdate(doc, updateArray, socket)
       }
     })
 
@@ -64,7 +91,8 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     // Yjs 업데이트 수신
     socket.on('y:update', (payload: YjsUpdateBroadcast) => {
       const updateArray = new Uint8Array(payload.update)
-      Y.applyUpdate(doc, updateArray)
+      // origin을 socket으로 명시하여 재전송 방지
+      Y.applyUpdate(doc, updateArray, socket)
     })
 
     // Awareness 업데이트 (커서 위치)
@@ -105,6 +133,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
       socket.emit('canvas:detach', detachPayload)
 
       doc.off('update', updateHandler)
+      yRectangles.unobserveDeep(syncRectanglesToState)
       socket.disconnect()
       doc.destroy()
     }
@@ -123,9 +152,45 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     }
   }
 
+  // 네모 추가 함수
+  const addRectangle = (rect: Rectangle) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
+    const yMap = new Y.Map()
+    yMap.set('id', rect.id)
+    yMap.set('x', rect.x)
+    yMap.set('y', rect.y)
+    yMap.set('width', rect.width)
+    yMap.set('height', rect.height)
+    yMap.set('fill', rect.fill)
+    yRectangles.push([yMap])
+  }
+
+  // 네모 위치 업데이트 함수
+  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
+    const index = yRectangles.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    // Yjs 트랜잭션으로 명시적으로 감싸기
+    doc.transact(() => {
+      const yMap = yRectangles.get(index)
+      Object.entries(updates).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+    })
+  }
+
   return {
     isConnected,
     cursors,
+    rectangles,
     updateCursor,
+    addRectangle,
+    updateRectangle,
   }
 }

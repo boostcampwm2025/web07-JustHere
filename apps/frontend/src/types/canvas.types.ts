@@ -8,10 +8,3 @@ export interface Rectangle {
   height: number
   fill: string
 }
-
-export interface Line {
-  id: string
-  points: number[]
-  stroke: string
-  strokeWidth: number
-}

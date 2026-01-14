@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
-import { Stage, Layer, Circle, Text, Rect, Line } from 'react-konva'
+import { Stage, Layer, Circle, Text, Rect } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { Tool, Rectangle, Line as LineData } from '@/types/canvas.types'
+import type { Tool, Rectangle } from '@/types/canvas.types'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -14,12 +14,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [tool, setTool] = useState<Tool>('cursor')
-  const [rectangles, setRectangles] = useState<Rectangle[]>([])
-  const [lines, setLines] = useState<LineData[]>([])
   const [scale, setScale] = useState(1)
-  const isDrawing = useRef(false)
 
-  const { isConnected, cursors, updateCursor } = useYjsSocket({
+  const { isConnected, cursors, rectangles, updateCursor, addRectangle, updateRectangle } = useYjsSocket({
     roomId,
     canvasId,
   })
@@ -40,7 +37,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     return () => window.removeEventListener('resize', updateSize)
   }, [])
 
-  // 마우스 이동 시 커서 위치 업데이트 및 펜 그리기
+  // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
     const stage = stageRef.current
     if (!stage) return
@@ -48,16 +45,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     const pos = stage.getPointerPosition()
     if (pos) {
       updateCursor(pos.x, pos.y)
-
-      // 펜 모드에서 그리기 중일 때
-      if (tool === 'pen' && isDrawing.current) {
-        const lastLine = lines[lines.length - 1]
-        if (lastLine) {
-          const newPoints = lastLine.points.concat([pos.x, pos.y])
-          const updatedLines = lines.slice(0, -1).concat([{ ...lastLine, points: newPoints }])
-          setLines(updatedLines)
-        }
-      }
     }
   }
 
@@ -79,23 +66,8 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         height: 100,
         fill: '#3b82f6',
       }
-      setRectangles([...rectangles, newRect])
-    } else if (tool === 'pen') {
-      // 펜 그리기 시작
-      isDrawing.current = true
-      const newLine: LineData = {
-        id: `line-${Date.now()}`,
-        points: [pos.x, pos.y],
-        stroke: '#000000',
-        strokeWidth: 3,
-      }
-      setLines([...lines, newLine])
+      addRectangle(newRect)
     }
-  }
-
-  // 마우스 업 이벤트
-  const handleMouseUp = () => {
-    isDrawing.current = false
   }
 
   // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
@@ -154,12 +126,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               커서
             </button>
             <button
-              onClick={() => setTool('pen')}
-              className={`px-4 py-2 rounded ${tool === 'pen' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              펜
-            </button>
-            <button
               onClick={() => setTool('rectangle')}
               className={`px-4 py-2 rounded ${tool === 'rectangle' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
             >
@@ -180,29 +146,28 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           height={dimensions.height}
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
           onWheel={handleWheel}
           onTouchMove={handleMouseMove}
           onTouchStart={handleMouseDown}
-          onTouchEnd={handleMouseUp}
           className={tool === 'pen' ? 'cursor-crosshair' : 'cursor-default'}
         >
           <Layer>
             {/* 네모 렌더링 */}
             {rectangles.map(rect => (
-              <Rect key={rect.id} x={rect.x} y={rect.y} width={rect.width} height={rect.height} fill={rect.fill} draggable={tool === 'cursor'} />
-            ))}
-
-            {/* 선 렌더링 */}
-            {lines.map(line => (
-              <Line
-                key={line.id}
-                points={line.points}
-                stroke={line.stroke}
-                strokeWidth={line.strokeWidth}
-                tension={0.5}
-                lineCap="round"
-                lineJoin="round"
+              <Rect
+                key={rect.id}
+                x={rect.x}
+                y={rect.y}
+                width={rect.width}
+                height={rect.height}
+                fill={rect.fill}
+                draggable={tool === 'cursor'}
+                onDragEnd={e => {
+                  updateRectangle(rect.id, {
+                    x: e.target.x(),
+                    y: e.target.y(),
+                  })
+                }}
               />
             ))}
 
