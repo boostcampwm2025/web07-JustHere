@@ -1,29 +1,41 @@
+import React, { useRef, useState, useEffect } from 'react'
+import { Stage, Layer, Circle, Text, Rect, Group } from 'react-konva'
+import type Konva from 'konva'
+import { useYjsSocket } from '@/hooks/useYjsSocket'
+import type { Tool, Rectangle } from '@/types/canvas.types'
+import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
-import { useEffect, useState } from 'react'
-import { Stage, Layer, Rect, Text, Group } from 'react-konva'
-import { useWhiteboardStore } from '@/stores/whiteboardStore'
-import { cn } from '@/utils/cn' // cn 유틸리티가 없다면 클래스 문자열 결합으로 대체 가능
 
 type ToolType = 'hand' | 'pencil' | 'postit'
 
 interface WhiteboardCanvasProps {
   roomId: string
-  categoryId: string
+  canvasId: string
 }
 
-export default function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanvasProps) {
-  const { connect, disconnect, shapes, addRect, updateShapePosition } = useWhiteboardStore()
-
+function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
+  const stageRef = useRef<Konva.Stage>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
+  const [scale, setScale] = useState(1)
+
+  const { isConnected, cursors, rectangles, updateCursor, addRectangle, updateRectangle } = useYjsSocket({
+    roomId,
+    canvasId,
+  })
+
+  // 컨테이너 크기에 맞춰 Stage 크기 조정
+
+  // 마우스 이동 시 커서 위치 업데이트
+
+  // 마우스 다운 이벤트
+
+  // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
 
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-
-  // useEffect(() => {
-  //   connect(roomId, categoryId)
-  //   return () => disconnect()
-  // }, [roomId, categoryId, connect, disconnect])
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -38,57 +50,6 @@ export default function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanva
         return 'cursor-pointer' // 포인터 커서
       default:
         return 'cursor-default'
-    }
-  }
-
-  /**
-   * 마우스 이동 핸들러
-   * 포스트잇 모드일 때만 좌표를 업데이트하여 리렌더링 최적화
-   */
-  const handleMouseMove = (e: any) => {
-    if (activeTool !== 'postit') return
-
-    const stage = e.target.getStage()
-    // 줌/팬이 적용된 정확한 상대 좌표 계산
-    const pos = stage.getRelativePointerPosition()
-    setCursorPos(pos)
-  }
-
-  /**
-   * 마우스가 캔버스를 벗어났을 때 고스트 숨김
-   */
-  const handleMouseLeave = () => {
-    if (activeTool === 'postit') {
-      setCursorPos(null)
-    }
-  }
-
-  /**
-   * 캔버스 클릭 핸들러 (포스트잇 모드일 때 추가 로직)
-   */
-  const handleStageClick = (e: any) => {
-    // 1. 포스트잇 도구가 아니면 무시
-    if (activeTool !== 'postit') return
-
-    // 2. 스테이지(빈 공간)를 클릭했는지 확인 (이미 있는 도형 클릭 시 생성 방지)
-    const stage = e.target.getStage()
-    const isClickedOnEmptyStage = e.target === stage
-
-    if (isClickedOnEmptyStage) {
-      // 3. 중요: 현재 뷰포트(화면) 기준이 아닌, '스테이지 내부 좌표계' 기준 좌표를 가져옴
-      // 현재 캔버스의 이동(Offset)과 확대/축소(Scale) 상태를 모두 고려한 좌표를 반환함.
-      const pos = stage.getRelativePointerPosition()
-
-      if (pos) {
-        // 4. 클릭한 지점이 포스트잇의 정중앙이 되도록 좌표 보정 (100x100 크기 가정 시 -50)
-        addRect(pos.x - 50, pos.y - 50)
-
-        // 5. 생성 후 손 도구로 복귀
-        setActiveTool('hand')
-
-        // 생성 후 고스트 UI 제거
-        setCursorPos(null)
-      }
     }
   }
 
@@ -132,36 +93,30 @@ export default function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanva
         </div>
       </div>
 
-      {/* 디버깅용 정보 (좌측 상단) -> 추후 삭제하기 */}
-      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-white/80 backdrop-blur rounded-lg shadow-sm text-xs text-gray-500">
-        {roomId} / {categoryId}
-      </div>
-
       <Stage
         width={window.innerWidth}
         height={window.innerHeight}
         // 손 도구일 때만 캔버스 전체 드래그(Pan) 가능
         draggable={activeTool === 'hand'}
-        onClick={handleStageClick}
-        onMouseMove={handleMouseMove} // 마우스 이동 감지
-        onMouseLeave={handleMouseLeave} // 마우스 이탈 감지
+        // onClick={handleStageClick}
+        // onMouseMove={handleMouseMove} // 마우스 이동 감지
+        // onMouseLeave={handleMouseLeave} // 마우스 이탈 감지
       >
         <Layer>
-          {shapes.map(shape => (
+          {rectangles.map(shape => (
             <Rect
               key={shape.id}
               x={shape.x}
               y={shape.y}
               width={100}
               height={100}
-              fill={shape.color}
               shadowBlur={5}
               cornerRadius={8}
               // 손 도구일 때만 개별 객체 드래그 가능하도록 제어 (선택 사항)
               draggable={activeTool === 'hand'}
-              onDragEnd={e => {
-                updateShapePosition(shape.id, e.target.x(), e.target.y())
-              }}
+              // onDragEnd={e => {
+              //   updateShapePosition(shape.id, e.target.x(), e.target.y())
+              // }}
             />
           ))}
 
@@ -186,11 +141,13 @@ export default function WhiteboardCanvas({ roomId, categoryId }: WhiteboardCanva
             </Group>
           )}
 
-          {shapes.length === 0 && (
+          {/* {shapes.length === 0 && (
             <Text text="도구를 선택해 보세요!" x={window.innerWidth / 2 - 100} y={window.innerHeight / 2} fontSize={20} fill="gray" />
-          )}
+          )} */}
         </Layer>
       </Stage>
     </div>
   )
 }
+
+export default WhiteboardCanvas

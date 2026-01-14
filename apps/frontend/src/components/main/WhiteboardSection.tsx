@@ -101,9 +101,7 @@ function WhiteboardSection() {
       {/* Whiteboard Canvas */}
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
-          // activeCategoryId가 바뀔 때마다 WhiteboardCanvas에 새로운 props가 전달됨.
-          // WhiteboardCanvas 내부의 useEffect가 이를 감지하여 소켓 재연결(join_category)을 수행함.
-          <WhiteboardCanvas roomId={roomId} categoryId={activeCategoryId} />
+          <WhiteboardCanvas roomId={roomId} canvasId={activeCategoryId} />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
             <KakaoMap />
