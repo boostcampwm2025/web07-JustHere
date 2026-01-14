@@ -35,3 +35,9 @@ export type ParticipantNameUpdatedPayload = {
   userId: string
   name: string
 }
+
+// [S->C] room:owner_transferred
+export type RoomOwnerTransferredPayload = {
+  previousOwnerId: string
+  newOwnerId: string
+}

@@ -13,6 +13,7 @@ import {
   ParticipantDisconnectedPayload,
   ParticipantNameUpdatedPayload,
   RoomJoinedPayload,
+  RoomOwnerTransferredPayload,
 } from './dto/room.s2c.dto'
 
 @Injectable()
@@ -147,6 +148,44 @@ export class RoomService {
   }
 
   /**
+   * 방장 권한 위임
+   */
+  transferOwner(client: Socket, targetUserId: string): void {
+    const session = this.users.getSession(client.id)
+    if (!session) {
+      client.emit('error', { message: '세션을 찾을 수 없습니다.' })
+      return
+    }
+
+    // 방장 권한 확인
+    if (!session.isOwner) {
+      client.emit('error', { code: 'NOT_ONWER', message: '방장만 권한을 위임할 수 있습니다.' })
+      return
+    }
+
+    // 대상 유저 존재 확인
+    const targetSession = this.users.getSessionByUserIdInRoom(session.roomId, targetUserId)
+    if (!targetSession) {
+      client.emit('error', { code: 'TARGET_NOT_FOUND', message: '대상 유저를 찾을 수 없습니다.' })
+      return
+    }
+
+    // 권한 이전
+    const success = this.users.transferOwnership(session.roomId, session.userId, targetUserId)
+    if (!success) {
+      client.emit('error', { message: '권한 위임에 실패했습니다.' })
+      return
+    }
+
+    // 방의 모든 참여자에게 브로드캐스트
+    const payload: RoomOwnerTransferredPayload = {
+      previousOwnerId: session.userId,
+      newOwnerId: targetUserId,
+    }
+    this.broadcaster.emitToRoom(session.roomId, 'room:owner_transferred', payload)
+  }
+
+  /**
    * 방의 전체 참여자 목록 조회
    */
   private getAllParticipants(roomId: string): Participant[] {
@@ -163,12 +202,17 @@ export class RoomService {
   }
 
   /**
-   * 방장 ID 조회 (가장 먼저 들어온 유저)
+   * 방장 ID 조회 (isOwner가 true인 유저, 없으면 가장 먼저 들어온 유저)
    */
   private getOwnerId(roomId: string): string {
     const sessions = this.users.getSessionsByRoom(roomId)
     if (sessions.length === 0) return ''
 
+    // isOwner가 true인 유저 찾기
+    const owner = sessions.find(s => s.isOwner)
+    if (owner) return owner.userId
+
+    // 없으면 가장 먼저 들어온 유저
     const oldest = sessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
     return oldest.userId
   }

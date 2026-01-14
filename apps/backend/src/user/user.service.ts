@@ -75,4 +75,30 @@ export class UserService {
     this.sessions.set(socketId, session)
     return session
   }
+
+  /**
+   * 방장 권한 이전
+   */
+  transferOwnership(roomId: string, currentOwnerId: string, newOwnerId: string): boolean {
+    const currentOwnerSession = this.sessions.findByUserIdInRoom(roomId, currentOwnerId)
+    const newOwnerSession = this.sessions.findByUserIdInRoom(roomId, newOwnerId)
+
+    if (!currentOwnerSession || !newOwnerSession) return false
+    if (!currentOwnerSession.isOwner) return false
+
+    currentOwnerSession.isOwner = false
+    newOwnerSession.isOwner = true
+
+    this.sessions.set(currentOwnerSession.socketId, currentOwnerSession)
+    this.sessions.set(newOwnerSession.socketId, newOwnerSession)
+
+    return true
+  }
+
+  /**
+   * 특정 방에서 userId로 세션 조회
+   */
+  getSessionByUserIdInRoom(roomId: string, userId: string): UserSession | undefined {
+    return this.sessions.findByUserIdInRoom(roomId, userId)
+  }
 }

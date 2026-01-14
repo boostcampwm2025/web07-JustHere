@@ -36,3 +36,10 @@ export class ParticipantUpdateNamePayload {
   @MaxLength(20, { message: 'name은 최대 20자 이하여야 합니다' })
   name: string
 }
+
+// [C->S] room:transfer_owner
+export class RoomTransferOwnerPayload {
+  @IsString({ message: 'targetUserId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'targetUserId는 비어있을 수 없습니다' })
+  targetUserId: string
+}
