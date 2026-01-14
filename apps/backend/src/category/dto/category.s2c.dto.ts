@@ -1,14 +1,16 @@
 // [S->C] category:created
 export type CategoryCreatedPayload = {
-  category_id: string
-  room_id: string
+  categoryId: string
   name: string
-  order: number
-  created_at: Date
 }
 
 // [S->C] category:deleted
 export type CategoryDeletedPayload = {
-  category_id: string
-  deleted_at: Date
+  categoryId: string
+}
+
+// [S->C] category:error
+export type CategoryErrorPayload = {
+  code: string
+  message: string
 }

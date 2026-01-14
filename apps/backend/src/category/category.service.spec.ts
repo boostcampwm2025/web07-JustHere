@@ -87,7 +87,8 @@ describe('CategoryService (socket handlers only)', () => {
       await service.createCategory(mockClient, '음식')
 
       expect(getSessionMock).toHaveBeenCalledWith(socketId)
-      expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'NOT_IN_ROOM',
         message: '방에 참여하지 않았습니다.',
       })
       expect(categoryRepositoryMock.findByRoomId).not.toHaveBeenCalled()
@@ -111,11 +112,8 @@ describe('CategoryService (socket handlers only)', () => {
         orderIndex: 0,
       })
       expect(emitToRoomMock).toHaveBeenCalledWith(roomId, 'category:created', {
-        category_id: categoryId,
-        room_id: roomId,
+        categoryId,
         name,
-        order: 0,
-        created_at: now,
       })
       expect(clientEmitMock).not.toHaveBeenCalled()
     })
@@ -139,11 +137,8 @@ describe('CategoryService (socket handlers only)', () => {
         orderIndex: 3,
       })
       expect(emitToRoomMock).toHaveBeenCalledWith(roomId, 'category:created', {
-        category_id: categoryId,
-        room_id: roomId,
+        categoryId,
         name,
-        order: 3,
-        created_at: now,
       })
     })
 
@@ -159,7 +154,8 @@ describe('CategoryService (socket handlers only)', () => {
 
       await service.createCategory(mockClient, '음식')
 
-      expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'BAD_REQUEST',
         message: '카테고리 개수 제한을 초과했습니다. (최대 10개)',
       })
       expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
@@ -173,7 +169,8 @@ describe('CategoryService (socket handlers only)', () => {
 
       await service.createCategory(mockClient, '음식')
 
-      expect(clientEmitMock).toHaveBeenCalledWith('category:create:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'INTERNAL_ERROR',
         message: 'DB down',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()
@@ -187,7 +184,8 @@ describe('CategoryService (socket handlers only)', () => {
       await service.deleteCategory(mockClient, categoryId)
 
       expect(getSessionMock).toHaveBeenCalledWith(socketId)
-      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'NOT_IN_ROOM',
         message: '방에 참여하지 않았습니다.',
       })
       expect(categoryRepositoryMock.findByRoomId).not.toHaveBeenCalled()
@@ -209,8 +207,7 @@ describe('CategoryService (socket handlers only)', () => {
       expect(categoryRepositoryMock.delete).toHaveBeenCalledWith(categoryId)
 
       expect(emitToRoomMock).toHaveBeenCalledWith(roomId, 'category:deleted', {
-        category_id: categoryId,
-        deleted_at: expect.any(Date) as Date,
+        categoryId,
       })
       expect(clientEmitMock).not.toHaveBeenCalled()
     })
@@ -221,7 +218,8 @@ describe('CategoryService (socket handlers only)', () => {
 
       await service.deleteCategory(mockClient, categoryId)
 
-      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'BAD_REQUEST',
         message: '최소 1개의 카테고리는 유지해야 합니다.',
       })
       expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()
@@ -243,7 +241,8 @@ describe('CategoryService (socket handlers only)', () => {
 
       await service.deleteCategory(mockClient, categoryId)
 
-      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'NOT_FOUND',
         message: '카테고리를 찾을 수 없습니다.',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()
@@ -259,7 +258,8 @@ describe('CategoryService (socket handlers only)', () => {
 
       await service.deleteCategory(mockClient, categoryId)
 
-      expect(clientEmitMock).toHaveBeenCalledWith('category:delete:error', {
+      expect(clientEmitMock).toHaveBeenCalledWith('category:error', {
+        code: 'INTERNAL_ERROR',
         message: '카테고리 삭제에 실패했습니다.',
       })
       expect(emitToRoomMock).not.toHaveBeenCalled()

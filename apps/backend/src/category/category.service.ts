@@ -4,7 +4,7 @@ import type { Socket } from 'socket.io'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { CategoryRepository } from './category.repository'
-import { CategoryCreatedPayload, CategoryDeletedPayload } from './dto/category.s2c.dto'
+import { CategoryCreatedPayload, CategoryDeletedPayload, CategoryErrorPayload } from './dto/category.s2c.dto'
 
 @Injectable()
 export class CategoryService {
@@ -21,7 +21,11 @@ export class CategoryService {
   async createCategory(client: Socket, name: string) {
     const session = this.userService.getSession(client.id)
     if (!session) {
-      client.emit('category:create:error', { message: '방에 참여하지 않았습니다.' })
+      const errorPayload: CategoryErrorPayload = {
+        code: 'NOT_IN_ROOM',
+        message: '방에 참여하지 않았습니다.',
+      }
+      client.emit('category:error', errorPayload)
       return
     }
 
@@ -41,24 +45,46 @@ export class CategoryService {
       })
 
       const response: CategoryCreatedPayload = {
-        category_id: category.id,
-        room_id: category.roomId,
+        categoryId: category.id,
         name: category.title,
-        order: category.orderIndex,
-        created_at: category.createdAt,
       }
 
       this.broadcaster.emitToRoom(category.roomId, 'category:created', response)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '카테고리 생성에 실패했습니다.'
-      client.emit('category:create:error', { message: errorMessage })
+      if (error instanceof BadRequestException) {
+        const errorPayload: CategoryErrorPayload = {
+          code: 'BAD_REQUEST',
+          message: error.message,
+        }
+        client.emit('category:error', errorPayload)
+        return
+      }
+
+      if (error instanceof NotFoundException) {
+        const errorPayload: CategoryErrorPayload = {
+          code: 'NOT_FOUND',
+          message: error.message,
+        }
+        client.emit('category:error', errorPayload)
+        return
+      }
+
+      const errorPayload: CategoryErrorPayload = {
+        code: 'INTERNAL_ERROR',
+        message: '카테고리 생성에 실패했습니다.',
+      }
+      client.emit('category:error', errorPayload)
     }
   }
 
   async deleteCategory(client: Socket, categoryId: string) {
     const session = this.userService.getSession(client.id)
     if (!session) {
-      client.emit('category:delete:error', { message: '방에 참여하지 않았습니다.' })
+      const errorPayload: CategoryErrorPayload = {
+        code: 'NOT_IN_ROOM',
+        message: '방에 참여하지 않았습니다.',
+      }
+      client.emit('category:error', errorPayload)
       return
     }
 
@@ -79,14 +105,34 @@ export class CategoryService {
       }
 
       const response: CategoryDeletedPayload = {
-        category_id: category.id,
-        deleted_at: new Date(),
+        categoryId: category.id,
       }
 
       this.broadcaster.emitToRoom(category.roomId, 'category:deleted', response)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '카테고리 삭제에 실패했습니다.'
-      client.emit('category:delete:error', { message: errorMessage })
+      if (error instanceof BadRequestException) {
+        const errorPayload: CategoryErrorPayload = {
+          code: 'BAD_REQUEST',
+          message: error.message,
+        }
+        client.emit('category:error', errorPayload)
+        return
+      }
+
+      if (error instanceof NotFoundException) {
+        const errorPayload: CategoryErrorPayload = {
+          code: 'NOT_FOUND',
+          message: error.message,
+        }
+        client.emit('category:error', errorPayload)
+        return
+      }
+
+      const errorPayload: CategoryErrorPayload = {
+        code: 'INTERNAL_ERROR',
+        message: '카테고리 삭제에 실패했습니다.',
+      }
+      client.emit('category:error', errorPayload)
     }
   }
 }
