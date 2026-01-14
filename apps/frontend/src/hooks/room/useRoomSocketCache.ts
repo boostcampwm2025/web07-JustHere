@@ -14,6 +14,7 @@ export function useRoomSocketCache() {
   })
 
   const [isReady, setIsReady] = useState(false)
+  const [roomId, setRoomId] = useState<string | null>(null)
   const roomIdRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export function useRoomSocketCache() {
 
     const onReady = ({ roomId, me, participants, categories, ownerId }: RoomJoinedPayload) => {
       roomIdRef.current = roomId
+      setRoomId(roomId)
       setIsReady(true)
 
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, me, ownerId })
@@ -49,6 +51,7 @@ export function useRoomSocketCache() {
     const onDisconnect = () => {
       const roomId = roomIdRef.current
       roomIdRef.current = null
+      setRoomId(null)
       setIsReady(false)
 
       if (!roomId) return
@@ -94,6 +97,7 @@ export function useRoomSocketCache() {
     if (socket?.connected) socket.emit('room:leave')
 
     roomIdRef.current = null
+    setRoomId(null)
     setIsReady(false)
 
     if (!roomId) return
@@ -102,5 +106,5 @@ export function useRoomSocketCache() {
 
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
 
-  return { ready, joinRoom, leaveRoom }
+  return { ready, roomId, joinRoom, leaveRoom }
 }
