@@ -44,7 +44,7 @@ export class RoomService {
       // slug면 DB에서 UUID 조회
       const room = await this.roomRepository.findBySlug(roomId)
       if (!room) {
-        client.emit('error', { message: '방을 찾을 수 없습니다.' })
+        client.emit('room:error', { message: '방을 찾을 수 없습니다.' })
         return
       }
       actualRoomId = room.id
@@ -150,7 +150,7 @@ export class RoomService {
   updateParticipantName(client: Socket, name: string): void {
     const session = this.users.getSession(client.id)
     if (!session) {
-      client.emit('error', { message: '세션을 찾을 수 없습니다.' })
+      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
       return
     }
 
@@ -171,27 +171,27 @@ export class RoomService {
   transferOwner(client: Socket, targetUserId: string): void {
     const session = this.users.getSession(client.id)
     if (!session) {
-      client.emit('error', { message: '세션을 찾을 수 없습니다.' })
+      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
       return
     }
 
     // 방장 권한 확인
     if (!session.isOwner) {
-      client.emit('error', { code: 'NOT_OWNER', message: '방장만 권한을 위임할 수 있습니다.' })
+      client.emit('room:error', { code: 'NOT_OWNER', message: '방장만 권한을 위임할 수 있습니다.' })
       return
     }
 
     // 대상 유저 존재 확인
     const targetSession = this.users.getSessionByUserIdInRoom(session.roomId, targetUserId)
     if (!targetSession) {
-      client.emit('error', { code: 'TARGET_NOT_FOUND', message: '대상 유저를 찾을 수 없습니다.' })
+      client.emit('room:error', { code: 'TARGET_NOT_FOUND', message: '대상 유저를 찾을 수 없습니다.' })
       return
     }
 
     // 권한 이전
     const success = this.users.transferOwnership(session.roomId, session.userId, targetUserId)
     if (!success) {
-      client.emit('error', { message: '권한 위임에 실패했습니다.' })
+      client.emit('room:error', { message: '권한 위임에 실패했습니다.' })
       return
     }
 

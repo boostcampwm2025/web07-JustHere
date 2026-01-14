@@ -318,7 +318,7 @@ describe('RoomService', () => {
 
       await service.joinRoom(client, payload)
 
-      expect(client.emit).toHaveBeenCalledWith('error', { message: '방을 찾을 수 없습니다.' })
+      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '방을 찾을 수 없습니다.' })
       expect(client.join).not.toHaveBeenCalled()
       expect(users.createSession).not.toHaveBeenCalled()
     })
@@ -423,7 +423,7 @@ describe('RoomService', () => {
 
       service.updateParticipantName(client, 'newName')
 
-      expect(client.emit).toHaveBeenCalledWith('error', { message: '세션을 찾을 수 없습니다.' })
+      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '세션을 찾을 수 없습니다.' })
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
 
@@ -468,7 +468,7 @@ describe('RoomService', () => {
 
       service.transferOwner(client, 'user-2')
 
-      expect(client.emit).toHaveBeenCalledWith('error', { message: '세션을 찾을 수 없습니다.' })
+      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '세션을 찾을 수 없습니다.' })
     })
 
     it('방장이 아니면 NOT_OWNER 에러를 emit한다', () => {
@@ -479,7 +479,7 @@ describe('RoomService', () => {
 
       service.transferOwner(client, 'user-1')
 
-      expect(client.emit).toHaveBeenCalledWith('error', {
+      expect(client.emit).toHaveBeenCalledWith('room:error', {
         code: 'NOT_OWNER',
         message: '방장만 권한을 위임할 수 있습니다.',
       })
@@ -493,7 +493,7 @@ describe('RoomService', () => {
 
       service.transferOwner(client, 'non-existent')
 
-      expect(client.emit).toHaveBeenCalledWith('error', {
+      expect(client.emit).toHaveBeenCalledWith('room:error', {
         code: 'TARGET_NOT_FOUND',
         message: '대상 유저를 찾을 수 없습니다.',
       })
@@ -508,7 +508,7 @@ describe('RoomService', () => {
 
       service.transferOwner(client, 'user-2')
 
-      expect(client.emit).toHaveBeenCalledWith('error', { message: '권한 위임에 실패했습니다.' })
+      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '권한 위임에 실패했습니다.' })
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })
