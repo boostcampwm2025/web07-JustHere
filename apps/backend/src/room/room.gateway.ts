@@ -55,7 +55,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
     const errors = validateSync(updatedNamePayload)
     if (errors.length > 0) return
 
-    this.roomService.updateParticipantName(client, updatedNamePayload.name)
+    await this.roomService.updateParticipantName(client, updatedNamePayload.name)
   }
 
   @SubscribeMessage('room:transfer_owner')
@@ -64,6 +64,6 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
     const errors = validateSync(transferPayload)
     if (errors.length > 0) return
 
-    this.roomService.transferOwner(client, transferPayload.targetUserId)
+    await this.roomService.transferOwner(client, transferPayload.targetUserId)
   }
 }

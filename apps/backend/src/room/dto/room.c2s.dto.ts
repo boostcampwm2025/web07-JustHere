@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Max, MaxLength, maxLength, MinLength, ValidateNested } from 'class-validator'
+import { IsNotEmpty, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
 
 class RoomJoinUserDto {

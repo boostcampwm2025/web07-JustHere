@@ -6,7 +6,7 @@ import { CategoryRepository } from '@/category/category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
-import type { ParticipantUpdateNamePayload, RoomJoinPayload } from './dto/room.c2s.dto'
+import type { RoomJoinPayload } from './dto/room.c2s.dto'
 import {
   Participant,
   ParticipantConnectedPayload,
