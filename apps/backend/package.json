@@ -27,8 +27,12 @@
     "@nestjs/core": "^11.1.9",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^8.0.0",
+    "@nestjs/websockets": "^11.1.11",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
+    "axios": "^1.13.2",
+    "class-transformer": "^0.5.1",
+    "nanoid": "^3.3.11",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -46,12 +50,14 @@
     "@types/node": "^22.10.7",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^6.0.2",
+    "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^30.0.0",
+    "jest-mock-extended": "^4.0.0",
     "prettier": "^3.4.2",
     "prisma": "^7.2.0",
     "source-map-support": "^0.5.21",
@@ -78,6 +84,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   }
 }
