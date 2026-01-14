@@ -39,4 +39,10 @@ export class RoomRepository {
     }
     throw new Error(`최대 재시도 횟수 ${maxRetries} 회를 초과하였습니다: ${lastError ? lastError.message : '알 수 없는 오류'}`)
   }
+
+  async findBySlug(slug: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({
+      where: { slug },
+    })
+  }
 }

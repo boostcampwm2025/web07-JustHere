@@ -27,30 +27,46 @@ export class RoomService {
    * 이미 다른 방에 참여 중이면 먼저 나간 후 새 방에 참여
    */
   async joinRoom(client: Socket, { roomId, user }: RoomJoinPayload) {
+    // roomId가 UUID인지 slug인지 판별
+    let actualRoomId: string
+
+    if (this.isUUID(roomId)) {
+      // UUID면 바로 사용
+      actualRoomId = roomId
+    } else {
+      // slug면 DB에서 UUID 조회
+      const room = await this.roomRepository.findBySlug(roomId)
+      if (!room) {
+        client.emit('error', { message: '방을 찾을 수 없습니다.' })
+        return
+      }
+      actualRoomId = room.id
+    }
+
     // 이미 다른 방에 참여 중이면 먼저 나가기
     const existing = this.users.getSession(client.id)
     if (existing) await this.leaveRoom(client)
 
-    await client.join(`room:${roomId}`)
+    await client.join(`room:${actualRoomId}`)
 
     const session = this.users.createSession({
       socketId: client.id,
       userId: user.userId,
       name: user.name,
-      roomId,
+      roomId: actualRoomId,
     })
 
     // 본인을 제외한 다른 참여자 목록
-    const otherParticipants = this.getOtherParticipants(roomId, client.id)
-    const categories = await this.categories.findByRoomId(roomId)
+    const otherParticipants = this.getOtherParticipants(actualRoomId, client.id)
+    const categories = await this.categories.findByRoomId(actualRoomId)
 
     // 본인에게 room:joined 이벤트 전송
     const joinedPayload: RoomJoinedPayload = {
-      roomId,
+      roomId: actualRoomId,
       me: this.sessionToParticipant(session),
       participants: otherParticipants,
       categories,
-      ownerId: this.getOwnerId(roomId),
+      ownerId: this.getOwnerId(actualRoomId),
     }
     client.emit('room:joined', joinedPayload)
 
@@ -138,5 +154,13 @@ export class RoomService {
       userId: session.userId,
       name: session.name,
     }
+  }
+
+  /**
+   * 문자열이 UUID 형식인지 확인
+   */
+  private isUUID(str: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    return uuidRegex.test(str)
   }
 }

@@ -74,6 +74,7 @@ describe('RoomService', () => {
           provide: RoomRepository,
           useValue: {
             createRoom: jest.fn(),
+            findBySlug: jest.fn(),
           },
         },
         { provide: UserService, useValue: users },
@@ -158,6 +159,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA, sessionB])
       categories.findByRoomId.mockResolvedValue([mockCategory])
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -207,6 +209,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA])
       categories.findByRoomId.mockResolvedValue([])
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -241,6 +244,70 @@ describe('RoomService', () => {
       expect(joinedOptions).toEqual({ exceptSocketId: 'socket-1' })
 
       expect(joinedPayload.userId).toBe('user-1')
+    })
+
+    it('UUID로 방에 참여하면 findBySlug를 호출하지 않음', async () => {
+      const client = createMockSocket('socket-1')
+      const uuidRoomId = '550e8400-e29b-41d4-a716-446655440000'
+
+      users.getSession.mockReturnValue(null)
+      users.createSession.mockReturnValue({ ...sessionA, roomId: uuidRoomId })
+      users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
+      categories.findByRoomId.mockResolvedValue([])
+
+      const findBySlugSpy = jest.spyOn(repository, 'findBySlug')
+
+      const payload: RoomJoinPayload = {
+        roomId: uuidRoomId,
+        user: { userId: 'user-1', name: 'ajin' },
+      }
+
+      await service.joinRoom(client, payload)
+
+      expect(findBySlugSpy).not.toHaveBeenCalled()
+      expect(client.join).toHaveBeenCalledWith(`room:${uuidRoomId}`)
+    })
+
+    it('slug로 방에 참여하면 findBySlug로 UUID를 조회함', async () => {
+      const client = createMockSocket('socket-1')
+      const slug = 'a3k9m2x7'
+      const uuidRoomId = '550e8400-e29b-41d4-a716-446655440000'
+
+      users.getSession.mockReturnValue(null)
+      users.createSession.mockReturnValue({ ...sessionA, roomId: uuidRoomId })
+      users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
+      categories.findByRoomId.mockResolvedValue([])
+
+      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as any)
+
+      const payload: RoomJoinPayload = {
+        roomId: slug,
+        user: { userId: 'user-1', name: 'ajin' },
+      }
+
+      await service.joinRoom(client, payload)
+
+      expect(findBySlugSpy).toHaveBeenCalledWith(slug)
+      expect(client.join).toHaveBeenCalledWith(`room:${uuidRoomId}`)
+    })
+
+    it('slug로 방을 찾지 못하면 error 이벤트를 emit함', async () => {
+      const client = createMockSocket('socket-1')
+      const slug = 'invalid-slug'
+
+      users.getSession.mockReturnValue(null)
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue(null)
+
+      const payload: RoomJoinPayload = {
+        roomId: slug,
+        user: { userId: 'user-1', name: 'ajin' },
+      }
+
+      await service.joinRoom(client, payload)
+
+      expect(client.emit).toHaveBeenCalledWith('error', { message: '방을 찾을 수 없습니다.' })
+      expect(client.join).not.toHaveBeenCalled()
+      expect(users.createSession).not.toHaveBeenCalled()
     })
   })
 
