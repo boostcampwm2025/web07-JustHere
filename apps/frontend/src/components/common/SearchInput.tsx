@@ -1,4 +1,4 @@
-import type { ChangeEvent, InputHTMLAttributes } from 'react'
+import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent } from 'react'
 import { MagnifyIcon, CloseIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn'
 
@@ -6,17 +6,33 @@ interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
   value: string
   onChange: (e: ChangeEvent<HTMLInputElement>) => void
   onClear: () => void
+  onSearch?: () => void
   containerClassName?: string
 }
 
-export function SearchInput({ value, onChange, onClear, className, containerClassName, ...props }: SearchInputProps) {
+export function SearchInput({ value, onChange, onClear, onSearch, onKeyDown, className, containerClassName, ...props }: SearchInputProps) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown?.(event)
+    if (!event.defaultPrevented && event.key === 'Enter') {
+      onSearch?.()
+    }
+  }
+
   return (
     <div className={cn('relative', containerClassName)}>
-      <MagnifyIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
+      <button
+        type="button"
+        onClick={onSearch}
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black"
+        aria-label="검색"
+      >
+        <MagnifyIcon className="w-5 h-5" />
+      </button>
       <input
         type="text"
         value={value}
         onChange={onChange}
+        onKeyDown={handleKeyDown}
         className={cn(
           'w-full h-12 pl-12 pr-12 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary',
           className,

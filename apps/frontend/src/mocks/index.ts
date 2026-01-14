@@ -21,7 +21,6 @@ export const MOCK_PARTICIPANTS: Participant[] = [
   { id: '5', name: '류건', initial: 'S', color: '#E1F5FE' },
 ]
 
-// Mock 데이터
 export const MOCK_ROOM_ID = '550e8400-e29b-41d4-a716-446655440001'
 export const MOCK_USER = {
   userId: crypto.randomUUID(),

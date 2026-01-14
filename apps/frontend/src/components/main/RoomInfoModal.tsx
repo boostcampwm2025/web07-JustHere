@@ -1,21 +1,16 @@
-import { CloseIcon, PencilIcon, ContentCopyIcon } from "@/components/Icons";
-import { MOCK_PARTICIPANTS } from "@/mocks";
-import { Button } from "@/components/common/Button";
+import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
+import { MOCK_PARTICIPANTS } from '@/mocks'
+import { Button } from '@/components/common/Button'
 
 interface RoomInfoModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  userName?: string;
-  roomLink?: string;
+  isOpen: boolean
+  onClose: () => void
+  userName?: string
+  roomLink?: string
 }
 
-export default function RoomInfoModal({
-  isOpen,
-  onClose,
-  userName = "김아진",
-  roomLink = "www.justhere.p-e.kr/abxbfdff..",
-}: RoomInfoModalProps) {
-  if (!isOpen) return null;
+export default function RoomInfoModal({ isOpen, onClose, userName = '김아진', roomLink = 'www.justhere.p-e.kr/abxbfdff..' }: RoomInfoModalProps) {
+  if (!isOpen) return null
 
   return (
     <>
@@ -31,11 +26,9 @@ export default function RoomInfoModal({
         </Button>
 
         <div className="px-6 py-6">
-          <h3 className="text-xl font-bold text-black text-center mb-6">
-            참여자
-          </h3>
+          <h3 className="text-xl font-bold text-black text-center mb-6">참여자</h3>
           <div className="flex flex-col gap-2">
-            {MOCK_PARTICIPANTS.map((p) => (
+            {MOCK_PARTICIPANTS.map(p => (
               <div key={p.id} className="flex items-center gap-4 px-2 py-1">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[18px] font-bold text-black shadow-sm"
@@ -50,9 +43,7 @@ export default function RoomInfoModal({
         </div>
 
         <div className="px-6 pb-6">
-          <h2 className="text-lg font-bold text-black mb-4">
-            내 정보 수정하기
-          </h2>
+          <h2 className="text-lg font-bold text-black mb-4">내 정보 수정하기</h2>
 
           <div className="mb-4">
             <label className="block text-sm text-gray mb-1.5">이름</label>
@@ -76,9 +67,7 @@ export default function RoomInfoModal({
             <label className="block text-sm text-gray mb-2">방 초대 링크</label>
             <div className="flex flex-col gap-3">
               <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-[46px] flex items-center overflow-hidden">
-                <span className="text-[18px] text-black truncate w-full">
-                  {roomLink}
-                </span>
+                <span className="text-[18px] text-black truncate w-full">{roomLink}</span>
               </div>
               <Button
                 variant="primary"
@@ -95,5 +84,5 @@ export default function RoomInfoModal({
         <div className="h-2 bg-gray-bg border-t border-b border-gray-200" />
       </div>
     </>
-  );
+  )
 }
