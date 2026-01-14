@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import type { Socket } from 'socket.io'
+import { Room } from '@prisma/client'
+import { RoomRepository } from './room.repository'
 import { CategoryRepository } from '@/category/category.repository'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
@@ -10,10 +12,15 @@ import { Participant, ParticipantConnectedPayload, ParticipantDisconnectedPayloa
 @Injectable()
 export class RoomService {
   constructor(
+    private readonly roomRepository: RoomRepository,
     private readonly users: UserService,
     private readonly categories: CategoryRepository,
     private readonly broadcaster: SocketBroadcaster,
   ) {}
+
+  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
+    return this.roomRepository.createRoom(data)
+  }
 
   /**
    * 클라이언트를 방에 참여시킴

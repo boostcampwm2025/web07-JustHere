@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState } from 'react'
 import { MapMarker } from 'react-kakao-maps-sdk'
+import { searchKeyword } from '@/api/kakao'
 import { Button } from '@/components/common/Button'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResultsList } from '@/components/onboarding/SearchResultsList'
 import KakaoMap from '@/components/KakaoMap'
 import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { KakaoPlace } from '@/types/kakao'
-import { useDebounce } from '@/hooks/useDebounce'
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string }) => void
@@ -20,8 +20,6 @@ function LocationStep({ onNext }: LocationStepProps) {
 
   const listContainerRef = useRef<HTMLDivElement>(null)
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
-
   const defaultCenter = { lat: 37.498095, lng: 127.02761 }
 
   const getCenter = () => {
@@ -31,18 +29,22 @@ function LocationStep({ onNext }: LocationStepProps) {
     return defaultCenter
   }
 
-  useEffect(() => {
-    if (!debouncedSearchQuery.trim() || !window.kakao || !window.kakao.maps.services || !isMapLoaded) return
+  const handleSearch = async () => {
+    const trimmedQuery = searchQuery.trim()
+    if (!trimmedQuery) {
+      setSearchResults([])
+      setSelectedPlace(null)
+      return
+    }
 
-    const places = new window.kakao.maps.services.Places()
-    places.keywordSearch(debouncedSearchQuery, (result, status) => {
-      if (status === 'OK') {
-        setSearchResults(result)
-      } else if (status === 'ZERO_RESULT') {
-        setSearchResults([])
-      }
-    })
-  }, [debouncedSearchQuery, isMapLoaded])
+    try {
+      const result = await searchKeyword(trimmedQuery)
+      setSearchResults(result)
+    } catch (error) {
+      console.error('키워드 검색 실패', error)
+      setSearchResults([])
+    }
+  }
 
   useEffect(() => {
     if (listContainerRef.current) {
@@ -82,7 +84,12 @@ function LocationStep({ onNext }: LocationStepProps) {
         <SearchInput
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          onClear={() => setSearchQuery('')}
+          onClear={() => {
+            setSearchQuery('')
+            setSearchResults([])
+            setSelectedPlace(null)
+          }}
+          onSearch={handleSearch}
           placeholder="장소를 검색하세요"
           containerClassName="mb-2"
         />
