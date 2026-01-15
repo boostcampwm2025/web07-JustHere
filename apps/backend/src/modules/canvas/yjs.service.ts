@@ -177,7 +177,6 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
   // 업데이트 로그 저장 (Uint8Array -> DB)
   private async saveUpdateLog(canvasId: string, update: Uint8Array) {
-    console.log('DB에 log 저장')
     await this.prisma.categoryUpdateLog.create({
       data: {
         categoryId: canvasId,
