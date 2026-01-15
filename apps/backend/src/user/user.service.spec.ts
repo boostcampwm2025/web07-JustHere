@@ -21,6 +21,7 @@ describe('UserService', () => {
     roomId: 'room-1',
     color: 'hsl(100, 70%, 50%)',
     joinedAt: now,
+    isOwner: true,
   }
 
   beforeEach(() => {
@@ -58,6 +59,28 @@ describe('UserService', () => {
       const result = service.createSession(createParams)
 
       expect(store.get(createParams.socketId)).toEqual(result)
+    })
+
+    it('방에 첫 번째로 입장하면 isOwner가 true이다', () => {
+      const result = service.createSession(createParams)
+
+      expect(result.isOwner).toBe(true)
+    })
+
+    it('방에 두 번째로 입장하면 isOwner가 false이다', () => {
+      // 첫 번째 유저 입장
+      service.createSession(createParams)
+
+      // 두 번째 유저 입장
+      const secondParams: CreateSessionParams = {
+        socketId: 'socket-2',
+        userId: 'user-2',
+        name: 'user2',
+        roomId: 'room-1',
+      }
+      const result = service.createSession(secondParams)
+
+      expect(result.isOwner).toBe(false)
     })
   })
 
@@ -100,18 +123,21 @@ describe('UserService', () => {
         ...existingSession,
         socketId: 'socket-1',
         roomId: 'room-1',
+        isOwner: true,
       }
       const sessionB: UserSession = {
         ...existingSession,
         socketId: 'socket-2',
         userId: 'user-2',
         roomId: 'room-1',
+        isOwner: false,
       }
       const sessionC: UserSession = {
         ...existingSession,
         socketId: 'socket-3',
         userId: 'user-3',
         roomId: 'room-2',
+        isOwner: true,
       }
 
       store.set(sessionA.socketId, sessionA)
@@ -129,6 +155,93 @@ describe('UserService', () => {
       const result = service.getSessionsByRoom('non-existent-room')
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('updateSessionName', () => {
+    it('세션 이름을 업데이트하고 업데이트된 세션을 반환한다', () => {
+      store.set(existingSession.socketId, existingSession)
+
+      const result = service.updateSessionName(existingSession.socketId, 'newName')
+
+      expect(result).toBeDefined()
+      expect(result!.name).toBe('newName')
+      expect(store.get(existingSession.socketId)!.name).toBe('newName')
+    })
+
+    it('존재하지 않는 socketId로 업데이트하면 undefined를 반환한다', () => {
+      const result = service.updateSessionName('non-existent', 'newName')
+
+      expect(result).toBeUndefined()
+    })
+  })
+
+  describe('transferOwnership', () => {
+    const ownerSession: UserSession = {
+      ...existingSession,
+      socketId: 'socket-1',
+      userId: 'user-1',
+      isOwner: true,
+    }
+
+    const memberSession: UserSession = {
+      ...existingSession,
+      socketId: 'socket-2',
+      userId: 'user-2',
+      isOwner: false,
+    }
+
+    it('방장 권한을 다른 유저에게 이전한다', () => {
+      store.set(ownerSession.socketId, ownerSession)
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(true)
+      expect(store.get('socket-1')!.isOwner).toBe(false)
+      expect(store.get('socket-2')!.isOwner).toBe(true)
+    })
+
+    it('현재 방장이 아니면 false를 반환한다', () => {
+      const notOwner = { ...ownerSession, isOwner: false }
+      store.set(notOwner.socketId, notOwner)
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+
+    it('현재 방장 세션이 없으면 false를 반환한다', () => {
+      store.set(memberSession.socketId, memberSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+
+    it('새 방장 세션이 없으면 false를 반환한다', () => {
+      store.set(ownerSession.socketId, ownerSession)
+
+      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('getSessionByUserIdInRoom', () => {
+    it('특정 방에서 userId로 세션을 조회한다', () => {
+      store.set(existingSession.socketId, existingSession)
+
+      const result = service.getSessionByUserIdInRoom('room-1', 'user-1')
+
+      expect(result).toEqual(existingSession)
+    })
+
+    it('해당 유저가 없으면 undefined를 반환한다', () => {
+      const result = service.getSessionByUserIdInRoom('room-1', 'non-existent')
+
+      expect(result).toBeUndefined()
     })
   })
 })

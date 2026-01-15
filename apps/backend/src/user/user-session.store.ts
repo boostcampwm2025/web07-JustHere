@@ -24,4 +24,8 @@ export class UserSessionStore {
   listByRoom(roomId: string): UserSession[] {
     return this.list().filter(s => s.roomId === roomId)
   }
+
+  findByUserIdInRoom(roomId: string, userId: string): UserSession | undefined {
+    return this.listByRoom(roomId).find(s => s.userId === userId)
+  }
 }

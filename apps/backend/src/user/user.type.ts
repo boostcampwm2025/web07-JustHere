@@ -5,6 +5,7 @@ export type UserSession = {
   name: string
   color: string
   joinedAt: Date
+  isOwner: boolean
 }
 
 export type CreateSessionParams = {

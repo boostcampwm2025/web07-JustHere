@@ -11,7 +11,7 @@ import { Server, Socket } from 'socket.io'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
-import { RoomJoinPayload } from './dto/room.c2s.dto'
+import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
 
 @WebSocketGateway({
@@ -47,5 +47,23 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('room:leave')
   async onRoomLeave(@ConnectedSocket() client: Socket) {
     await this.roomService.leaveRoomBySession(client)
+  }
+
+  @SubscribeMessage('participant:update_name')
+  onUpdateName(@ConnectedSocket() client: Socket, @MessageBody() payload: ParticipantUpdateNamePayload) {
+    const updatedNamePayload = plainToInstance(ParticipantUpdateNamePayload, payload)
+    const errors = validateSync(updatedNamePayload)
+    if (errors.length > 0) return
+
+    this.roomService.updateParticipantName(client, updatedNamePayload.name)
+  }
+
+  @SubscribeMessage('room:transfer_owner')
+  onTransferOwner(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomTransferOwnerPayload) {
+    const transferPayload = plainToInstance(RoomTransferOwnerPayload, payload)
+    const errors = validateSync(transferPayload)
+    if (errors.length > 0) return
+
+    this.roomService.transferOwner(client, transferPayload.targetUserId)
   }
 }
