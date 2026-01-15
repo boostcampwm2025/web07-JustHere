@@ -9,7 +9,7 @@ import { getOrCreateStoredUser } from '@/utils/userStorage'
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
@@ -32,7 +32,7 @@ function MainPage() {
   const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
   const roomLink = `${baseUrl}/room/${slug}`
 
-  if (!ready) {
+  if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
         <Header
@@ -63,7 +63,7 @@ function MainPage() {
         onTransferOwner={transferOwner}
       />
       <div className="flex flex-1 overflow-hidden">
-        <WhiteboardSection />
+        <WhiteboardSection roomId={roomId} onCreateCategory={createCategory} />
         <LocationListSection />
       </div>
     </div>
