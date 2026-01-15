@@ -4,30 +4,30 @@
       "operationId": "",
       "path": "room:join",
       "event": "room:join",
+      "namespace": "/room",
       "tags": ["Socket.IO Events - Room"],
-      "description": "사용자가 특정 방(Room)에 참여합니다. 방에 참여하면 해당 방의 참여자 목록과 카테고리 정보를 받게 됩니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:join', {\n  roomId: 'room-123',\n  user: {\n    userId: 'user-456',\n    name: '홍길동'\n  }\n})\n```\n\n**인증:** 소켓 연결 필요\n**응답 이벤트:** room:joined (본인에게), participant:connected (방의 다른 참여자들에게 브로드캐스트)",
+      "description": "방에 참여합니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:join', {\n  roomId: 'room-uuid',\n  user: { userId: 'user-123', name: '홍길동' }\n})\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** room:joined (본인에게), participant:connected (방의 다른 참여자들에게 브로드캐스트)",
       "request": {
         "type": "object",
         "required": ["roomId", "user"],
         "properties": {
           "roomId": {
             "type": "string",
-            "description": "참여할 방의 고유 ID",
-            "example": "room-123"
+            "description": "참여할 방의 고유 ID (UUID)",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
           },
           "user": {
             "type": "object",
-            "description": "참여하는 사용자 정보",
             "required": ["userId", "name"],
             "properties": {
               "userId": {
                 "type": "string",
-                "description": "사용자 고유 ID (최소 1자)",
-                "example": "user-456"
+                "description": "사용자 고유 ID",
+                "example": "user-123"
               },
               "name": {
                 "type": "string",
-                "description": "사용자 이름 (최소 1자)",
+                "description": "사용자 표시 이름",
                 "example": "홍길동"
               }
             }
@@ -36,71 +36,43 @@
       },
       "response": {
         "type": "object",
-        "description": "방 참여 완료 시 본인에게 전송되는 이벤트 (room:joined)",
-        "required": ["roomId", "me", "participants", "categories", "ownerId"],
+        "description": "방 참여 성공 시 전체 방 상태 (room:joined 이벤트)",
+        "required": ["roomId", "participants", "categories", "ownerId"],
         "properties": {
           "roomId": {
             "type": "string",
             "description": "참여한 방의 ID",
-            "example": "room-123"
-          },
-          "me": {
-            "type": "object",
-            "description": "본인의 참여자 정보",
-            "properties": {
-              "userId": {
-                "type": "string",
-                "example": "user-456"
-              },
-              "name": {
-                "type": "string",
-                "example": "홍길동"
-              }
-            }
+            "example": "550e8400-e29b-41d4-a716-446655440000"
           },
           "participants": {
             "type": "array",
-            "description": "방의 모든 참여자 목록 (본인 포함)",
+            "description": "현재 방에 참여 중인 모든 사용자 목록",
             "items": {
               "type": "object",
               "properties": {
-                "userId": {
-                  "type": "string",
-                  "example": "user-123"
-                },
-                "name": {
-                  "type": "string",
-                  "example": "김철수"
-                }
+                "userId": { "type": "string", "example": "user-123" },
+                "name": { "type": "string", "example": "홍길동" }
               }
             }
           },
           "categories": {
             "type": "array",
-            "description": "방의 카테고리(캔버스) 목록",
+            "description": "방의 카테고리 목록",
             "items": {
               "type": "object",
-              "description": "Prisma Category 엔티티",
               "properties": {
-                "id": {
-                  "type": "string",
-                  "example": "category-789"
-                },
-                "name": {
-                  "type": "string",
-                  "example": "기획"
-                },
-                "roomId": {
-                  "type": "string",
-                  "example": "room-123"
-                }
+                "id": { "type": "string", "description": "카테고리 UUID" },
+                "roomId": { "type": "string" },
+                "title": { "type": "string", "example": "할 일" },
+                "orderIndex": { "type": "number", "example": 0 },
+                "createdAt": { "type": "string", "format": "date-time" }
               }
             }
           },
           "ownerId": {
             "type": "string",
             "description": "방 소유자의 userId",
-            "example": "user-001"
+            "example": "user-123"
           }
         }
       }
@@ -109,21 +81,165 @@
       "operationId": "",
       "path": "room:leave",
       "event": "room:leave",
+      "namespace": "/room",
       "tags": ["Socket.IO Events - Room"],
-      "description": "현재 참여 중인 방에서 나갑니다. 세션 정보를 통해 자동으로 방 정보를 조회합니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:leave')\n```\n\n**인증:** 소켓 연결 및 세션 필요\n**응답 이벤트:** participant:disconnected (방의 다른 참여자들에게 브로드캐스트)",
+      "description": "현재 참여 중인 방에서 나갑니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:leave')\n```\n\n**네임스페이스:** /room\n**세션 필요:** 세션에서 roomId를 조회하므로 별도 payload 불필요\n**응답 이벤트:** participant:disconnected (방의 다른 참여자들에게 브로드캐스트)",
       "request": {
         "type": "object",
-        "description": "요청 페이로드 없음 (세션에서 roomId와 userId 자동 조회)"
+        "description": "요청 페이로드 없음 (세션에서 자동 조회)"
       },
       "response": {
         "type": "object",
-        "description": "다른 참여자들에게 브로드캐스트되는 이벤트 (participant:disconnected)",
+        "description": "나간 사용자 정보를 다른 참여자들에게 전송 (participant:disconnected 이벤트)",
         "required": ["userId"],
         "properties": {
           "userId": {
             "type": "string",
             "description": "방을 나간 사용자의 ID",
+            "example": "user-123"
+          }
+        }
+      }
+    },
+    {
+      "operationId": "",
+      "path": "participant:update_name",
+      "event": "participant:update_name",
+      "namespace": "/room",
+      "tags": ["Socket.IO Events - Room"],
+      "description": "참여자의 표시 이름을 변경합니다.\n\n**사용법:**\n```javascript\nsocket.emit('participant:update_name', { name: '새이름' })\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** participant:name_updated (방의 모든 참여자들에게 브로드캐스트)",
+      "request": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "변경할 새 이름 (1-20자)",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "김철수"
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "이름 변경 알림 (participant:name_updated 이벤트)",
+        "required": ["userId", "name"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "이름을 변경한 사용자 ID",
+            "example": "user-123"
+          },
+          "name": {
+            "type": "string",
+            "description": "변경된 새 이름",
+            "example": "김철수"
+          }
+        }
+      }
+    },
+    {
+      "operationId": "",
+      "path": "room:transfer_owner",
+      "event": "room:transfer_owner",
+      "namespace": "/room",
+      "tags": ["Socket.IO Events - Room"],
+      "description": "방 소유권을 다른 참여자에게 이전합니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:transfer_owner', { targetUserId: 'user-456' })\n```\n\n**네임스페이스:** /room\n**권한:** 현재 방 소유자만 실행 가능\n**응답 이벤트:** room:owner_transferred (방의 모든 참여자들에게 브로드캐스트)",
+      "request": {
+        "type": "object",
+        "required": ["targetUserId"],
+        "properties": {
+          "targetUserId": {
+            "type": "string",
+            "description": "소유권을 받을 대상 사용자 ID",
             "example": "user-456"
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "소유권 이전 알림 (room:owner_transferred 이벤트)",
+        "required": ["previousOwnerId", "newOwnerId"],
+        "properties": {
+          "previousOwnerId": {
+            "type": "string",
+            "description": "이전 소유자 ID",
+            "example": "user-123"
+          },
+          "newOwnerId": {
+            "type": "string",
+            "description": "새 소유자 ID",
+            "example": "user-456"
+          }
+        }
+      }
+    },
+    {
+      "operationId": "",
+      "path": "category:create",
+      "event": "category:create",
+      "namespace": "/room",
+      "tags": ["Socket.IO Events - Category"],
+      "description": "새 카테고리를 생성합니다.\n\n**사용법:**\n```javascript\nsocket.emit('category:create', { name: '진행 중' })\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** category:created (방의 모든 참여자들에게 브로드캐스트)",
+      "request": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "카테고리 이름 (1-100자)",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "진행 중"
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "생성된 카테고리 정보 (category:created 이벤트)",
+        "required": ["categoryId", "name"],
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "생성된 카테고리의 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
+          },
+          "name": {
+            "type": "string",
+            "description": "카테고리 이름",
+            "example": "진행 중"
+          }
+        }
+      }
+    },
+    {
+      "operationId": "",
+      "path": "category:delete",
+      "event": "category:delete",
+      "namespace": "/room",
+      "tags": ["Socket.IO Events - Category"],
+      "description": "카테고리를 삭제합니다.\n\n**사용법:**\n```javascript\nsocket.emit('category:delete', { categoryId: 'cat-uuid' })\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** category:deleted (방의 모든 참여자들에게 브로드캐스트)",
+      "request": {
+        "type": "object",
+        "required": ["categoryId"],
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "삭제할 카테고리 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "삭제된 카테고리 정보 (category:deleted 이벤트)",
+        "required": ["categoryId"],
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "삭제된 카테고리 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           }
         }
       }
@@ -132,41 +248,40 @@
       "operationId": "",
       "path": "canvas:attach",
       "event": "canvas:attach",
-      "tags": ["Socket.IO Events - Canvas (Yjs)"],
-      "description": "특정 캔버스에 연결하여 실시간 협업을 시작합니다. 캔버스의 현재 상태(Yjs 문서)를 초기 동기화합니다.\n\n**사용법:**\n```javascript\nsocket.emit('canvas:attach', {\n  roomId: 'room-123',\n  canvasId: 'canvas-456'\n})\n```\n\n**인증:** 소켓 연결 필요\n**응답 이벤트:** canvas:attached (본인에게)",
+      "namespace": "/canvas",
+      "tags": ["Socket.IO Events - Canvas"],
+      "description": "캔버스에 참여하여 Yjs 문서를 초기화합니다.\n\n**사용법:**\n```javascript\nsocket.emit('canvas:attach', {\n  roomId: 'room-uuid',\n  canvasId: 'cat-uuid'\n})\n```\n\n**네임스페이스:** /canvas\n**응답 이벤트:** canvas:attached (본인에게만)",
       "request": {
         "type": "object",
         "required": ["roomId", "canvasId"],
         "properties": {
           "roomId": {
             "type": "string",
-            "description": "방 ID",
-            "example": "room-123"
+            "description": "방 UUID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
           },
           "canvasId": {
             "type": "string",
-            "description": "연결할 캔버스(카테고리) ID",
-            "example": "canvas-456"
+            "description": "캔버스(카테고리) UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           }
         }
       },
       "response": {
         "type": "object",
-        "description": "캔버스 연결 완료 시 현재 문서 상태를 전송하는 이벤트 (canvas:attached)",
+        "description": "초기 동기화 데이터 (canvas:attached 이벤트)",
         "required": ["docKey"],
         "properties": {
           "docKey": {
             "type": "string",
-            "description": "Yjs 문서 키 (roomId-canvasId 형식)",
-            "example": "room-123-canvas-456"
+            "description": "Yjs 문서 키",
+            "example": "canvas:cat-550e8400"
           },
           "update": {
             "type": "array",
-            "description": "Yjs 문서의 현재 상태 벡터 (Uint8Array를 number[]로 변환). 초기 동기화에 사용됩니다.",
-            "items": {
-              "type": "number"
-            },
-            "example": [1, 2, 3, 4, 5]
+            "description": "초기 Yjs 상태 (Uint8Array를 number[]로 직렬화)",
+            "items": { "type": "number" },
+            "nullable": true
           }
         }
       }
@@ -175,67 +290,63 @@
       "operationId": "",
       "path": "canvas:detach",
       "event": "canvas:detach",
-      "tags": ["Socket.IO Events - Canvas (Yjs)"],
-      "description": "현재 연결된 캔버스에서 연결을 해제합니다.\n\n**사용법:**\n```javascript\nsocket.emit('canvas:detach', {\n  canvasId: 'canvas-456'\n})\n```\n\n**인증:** 소켓 연결 필요\n**응답 이벤트:** canvas:detached (본인에게)",
+      "namespace": "/canvas",
+      "tags": ["Socket.IO Events - Canvas"],
+      "description": "캔버스에서 나갑니다.\n\n**사용법:**\n```javascript\nsocket.emit('canvas:detach', { canvasId: 'cat-uuid' })\n```\n\n**네임스페이스:** /canvas\n**응답 이벤트:** canvas:detached (본인에게만)",
       "request": {
         "type": "object",
         "required": ["canvasId"],
         "properties": {
           "canvasId": {
             "type": "string",
-            "description": "연결 해제할 캔버스 ID",
-            "example": "canvas-456"
+            "description": "나갈 캔버스(카테고리) UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           }
         }
       },
       "response": {
         "type": "object",
-        "description": "캔버스 연결 해제 완료 이벤트 (canvas:detached)",
-        "properties": {}
+        "description": "빈 응답 (canvas:detached 이벤트)"
       }
     },
     {
       "operationId": "",
       "path": "y:update",
       "event": "y:update",
-      "tags": ["Socket.IO Events - Canvas (Yjs)"],
-      "description": "Yjs 문서의 변경사항을 서버로 전송하고, 같은 캔버스에 연결된 다른 클라이언트들에게 브로드캐스트합니다. 포스트잇 추가/수정, 드래그 등 모든 캔버스 변경사항이 이 이벤트로 동기화됩니다.\n\n**사용법:**\n```javascript\n// Yjs Doc의 update 이벤트에서 자동 발생\ndoc.on('update', (update, origin) => {\n  if (origin !== socket) {\n    socket.emit('y:update', {\n      canvasId: 'canvas-456',\n      update: Array.from(update)\n    })\n  }\n})\n```\n\n**인증:** 소켓 연결 필요\n**응답 이벤트:** y:update (같은 캔버스의 다른 클라이언트들에게 브로드캐스트, 본인 제외)",
+      "namespace": "/canvas",
+      "tags": ["Socket.IO Events - Yjs"],
+      "description": "Yjs 문서 업데이트를 서버로 전송하고 다른 클라이언트들에게 브로드캐스트합니다.\n\n**사용법:**\n```javascript\ndoc.on('update', (update, origin) => {\n  if (origin !== socket) {\n    socket.emit('y:update', {\n      canvasId: 'cat-uuid',\n      update: Array.from(update)\n    })\n  }\n})\n```\n\n**네임스페이스:** /canvas\n**응답 이벤트:** y:update (같은 캔버스의 다른 클라이언트들에게 브로드캐스트)\n**부가 효과:** 서버에서 5초마다 배치로 DB 저장",
       "request": {
         "type": "object",
         "required": ["canvasId", "update"],
         "properties": {
           "canvasId": {
             "type": "string",
-            "description": "업데이트가 발생한 캔버스 ID",
-            "example": "canvas-456"
+            "description": "업데이트가 발생한 캔버스 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           },
           "update": {
             "type": "array",
-            "description": "Yjs 업데이트 데이터 (Uint8Array를 number[]로 변환)",
-            "items": {
-              "type": "number"
-            },
-            "example": [1, 3, 5, 7, 9]
+            "description": "Yjs update (Uint8Array를 number[]로 직렬화)",
+            "items": { "type": "number" },
+            "example": [1, 2, 3, 4, 5]
           }
         }
       },
       "response": {
         "type": "object",
-        "description": "다른 클라이언트들에게 브로드캐스트되는 업데이트 이벤트 (y:update)",
+        "description": "동일한 업데이트를 다른 클라이언트들에게 브로드캐스트 (y:update 이벤트)",
         "required": ["canvasId", "update"],
         "properties": {
           "canvasId": {
             "type": "string",
-            "description": "업데이트가 발생한 캔버스 ID",
-            "example": "canvas-456"
+            "description": "업데이트가 발생한 캔버스 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           },
           "update": {
             "type": "array",
-            "description": "Yjs 업데이트 데이터",
-            "items": {
-              "type": "number"
-            },
-            "example": [1, 3, 5, 7, 9]
+            "description": "Yjs update (number[])",
+            "items": { "type": "number" }
           }
         }
       }
@@ -244,35 +355,28 @@
       "operationId": "",
       "path": "y:awareness",
       "event": "y:awareness",
-      "tags": ["Socket.IO Events - Canvas (Yjs)"],
-      "description": "Yjs Awareness 정보(커서 위치, 선택 상태 등)를 실시간으로 동기화합니다. 현재는 커서 위치(x, y)를 전송하며, 서버는 저장하지 않고 바로 브로드캐스트합니다.\n\n**사용법:**\n```javascript\nsocket.emit('y:awareness', {\n  canvasId: 'canvas-456',\n  state: {\n    cursor: { x: 100, y: 200 }\n  }\n})\n```\n\n**인증:** 소켓 연결 필요\n**응답 이벤트:** y:awareness (같은 캔버스의 다른 클라이언트들에게 브로드캐스트, 본인 제외)\n**참고:** 현재는 서버 메모리에 저장하지 않아, 나중에 참여한 사용자는 기존 참여자의 커서를 즉시 볼 수 없습니다. (TODO: 메모리 캐시 추가 예정)",
+      "namespace": "/canvas",
+      "tags": ["Socket.IO Events - Yjs"],
+      "description": "사용자의 커서 위치 등 일시적인 상태를 다른 참여자들에게 브로드캐스트합니다. (DB에 저장하지 않음)\n\n**사용법:**\n```javascript\nsocket.emit('y:awareness', {\n  canvasId: 'cat-uuid',\n  state: {\n    cursor: { x: 100, y: 200 }\n  }\n})\n```\n\n**네임스페이스:** /canvas\n**응답 이벤트:** y:awareness (같은 캔버스의 다른 클라이언트들에게 브로드캐스트)\n**특징:** 서버 메모리/DB에 저장하지 않음 (일시적 상태)",
       "request": {
         "type": "object",
         "required": ["canvasId", "state"],
         "properties": {
           "canvasId": {
             "type": "string",
-            "description": "커서 위치를 업데이트할 캔버스 ID",
-            "example": "canvas-456"
+            "description": "상태 업데이트가 발생한 캔버스 UUID",
+            "example": "cat-550e8400-e29b-41d4-a716-446655440000"
           },
           "state": {
             "type": "object",
-            "description": "Awareness 상태 정보",
             "properties": {
               "cursor": {
                 "type": "object",
-                "description": "커서 위치 (선택적)",
+                "nullable": true,
                 "properties": {
-                  "x": {
-                    "type": "number",
-                    "description": "캔버스 좌표계의 X 위치",
-                    "example": 100
-                  },
-                  "y": {
-                    "type": "number",
-                    "description": "캔버스 좌표계의 Y 위치",
-                    "example": 200
-                  }
+                  "x": { "type": "number", "example": 100 },
+                  "y": { "type": "number", "example": 200 },
+                  "timestamp": { "type": "number", "description": "타임스탬프 (ms)", "nullable": true }
                 }
               }
             }
@@ -281,85 +385,27 @@
       },
       "response": {
         "type": "object",
-        "description": "다른 클라이언트들에게 브로드캐스트되는 Awareness 이벤트 (y:awareness)",
+        "description": "다른 클라이언트들에게 커서 위치 브로드캐스트 (y:awareness 이벤트)",
         "required": ["socketId", "state"],
         "properties": {
           "socketId": {
             "type": "string",
-            "description": "커서를 움직인 클라이언트의 소켓 ID",
-            "example": "socket-abc123"
+            "description": "상태를 보낸 클라이언트의 소켓 ID",
+            "example": "abc123def456"
           },
           "state": {
             "type": "object",
-            "description": "Awareness 상태 정보",
             "properties": {
               "cursor": {
                 "type": "object",
-                "description": "커서 위치 (선택적, null이면 커서 제거)",
                 "nullable": true,
                 "properties": {
-                  "x": {
-                    "type": "number",
-                    "example": 100
-                  },
-                  "y": {
-                    "type": "number",
-                    "example": 200
-                  }
+                  "x": { "type": "number", "example": 100 },
+                  "y": { "type": "number", "example": 200 },
+                  "timestamp": { "type": "number", "nullable": true }
                 }
               }
             }
-          }
-        }
-      }
-    },
-    {
-      "operationId": "",
-      "path": "participant:connected",
-      "event": "participant:connected",
-      "tags": ["Socket.IO Events - Room (Server Broadcast)"],
-      "description": "새로운 참여자가 방에 입장했을 때 기존 참여자들에게 브로드캐스트되는 서버 이벤트입니다. (클라이언트가 직접 emit하지 않음)\n\n**수신 예시:**\n```javascript\nsocket.on('participant:connected', (payload) => {\n  console.log(`${payload.name}님이 입장했습니다.`)\n})\n```",
-      "request": {
-        "type": "object",
-        "description": "서버가 발송하는 이벤트이므로 클라이언트 요청 없음"
-      },
-      "response": {
-        "type": "object",
-        "description": "새로 입장한 참여자 정보",
-        "required": ["userId", "name"],
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "입장한 사용자 ID",
-            "example": "user-789"
-          },
-          "name": {
-            "type": "string",
-            "description": "입장한 사용자 이름",
-            "example": "이영희"
-          }
-        }
-      }
-    },
-    {
-      "operationId": "",
-      "path": "participant:disconnected",
-      "event": "participant:disconnected",
-      "tags": ["Socket.IO Events - Room (Server Broadcast)"],
-      "description": "참여자가 방을 나가거나 연결이 끊어졌을 때 남은 참여자들에게 브로드캐스트되는 서버 이벤트입니다. (클라이언트가 직접 emit하지 않음)\n\n**수신 예시:**\n```javascript\nsocket.on('participant:disconnected', (payload) => {\n  console.log(`${payload.userId}님이 퇴장했습니다.`)\n})\n```",
-      "request": {
-        "type": "object",
-        "description": "서버가 발송하는 이벤트이므로 클라이언트 요청 없음"
-      },
-      "response": {
-        "type": "object",
-        "description": "퇴장한 참여자 정보",
-        "required": ["userId"],
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "퇴장한 사용자 ID",
-            "example": "user-456"
           }
         }
       }

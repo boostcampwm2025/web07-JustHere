@@ -1,7 +1,6 @@
 import { INestApplication, Injectable } from '@nestjs/common'
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger'
 
-// tsconfig.json에서 "resolveJsonModule": true 설정이 필요합니다.
 import * as socketDocs from './swagger-socket.json'
 
 // JSON 파일 내부 구조에 맞춘 타입 정의

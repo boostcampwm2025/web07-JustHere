@@ -2,7 +2,7 @@ import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayInit, Mes
 import { Server, Socket } from 'socket.io'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
-import { RoomBroadcaster } from '@/socket/room.broadcaster'
+import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { CategoryService } from './category.service'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
 

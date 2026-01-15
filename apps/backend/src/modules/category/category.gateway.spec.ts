@@ -5,7 +5,7 @@ import * as classValidator from 'class-validator'
 
 import { CategoryGateway } from './category.gateway'
 import { CategoryService } from './category.service'
-import { RoomBroadcaster } from '@/socket/room.broadcaster'
+import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
 
 describe('CategoryGateway', () => {

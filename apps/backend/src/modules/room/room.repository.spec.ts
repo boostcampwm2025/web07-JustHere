@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import type { Room } from '@prisma/client'
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended'
 import { RoomRepository } from './room.repository'
-import { PrismaService } from '@/prisma/prisma.service'
+import { PrismaService } from '@/lib/prisma/prisma.service'
 
 describe('RoomRepository', () => {
   let repository: RoomRepository
