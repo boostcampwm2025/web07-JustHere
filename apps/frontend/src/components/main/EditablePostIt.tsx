@@ -65,10 +65,8 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
         <Html
           transform
           divProps={{
+            className: 'absolute top-0 left-0',
             style: {
-              position: 'absolute',
-              top: '0px',
-              left: '0px',
               width: `${postit.width}px`,
               height: `${postit.height - 30}px`, // 하단 작성자 이름 공간 제외
             },
@@ -80,19 +78,13 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
             onChange={handleTextChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              background: 'transparent',
-              resize: 'none',
-              outline: 'none',
-              fontFamily: 'Arial, sans-serif',
-              fontSize: '14px',
-              padding: '10px',
-              color: '#333',
-              lineHeight: '1.4',
-            }}
+            className={`
+              w-full h-full 
+              border-none bg-transparent 
+              resize-none outline-none 
+              font-sans text-sm text-[#333] 
+              p-[10px] leading-[1.4]
+            `}
           />
         </Html>
       ) : (
