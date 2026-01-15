@@ -1,24 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
-import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
-import { MOCK_ROOM_ID, MOCK_USER } from '@/mocks'
+import { useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
+import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 function MainPage() {
+  const { slug } = useParams<{ slug: string }>()
   const { joinRoom, leaveRoom, ready, roomId } = useRoomSocketCache()
-  const { data: participants } = useRoomParticipants(roomId)
-  const { data: roomMeta } = useRoomMeta(roomId)
+  const { data: participants = [] } = useRoomParticipants(roomId)
+  const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
 
   useEffect(() => {
-    joinRoom(MOCK_ROOM_ID, MOCK_USER)
+    if (!slug || !user) return
+    joinRoom(slug, user)
     return () => leaveRoom()
-  }, [leaveRoom, joinRoom])
+  }, [leaveRoom, joinRoom, slug, user])
+
+  if (!slug) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
+  const roomLink = `${baseUrl}/room/${slug}`
 
   if (!ready) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Header participants={participants} me={roomMeta?.me} />
+        <Header participants={participants} currentUserId={user.userId} userName={user.name} roomLink={roomLink} />
         <div className="p-6 text-gray">loading...</div>
       </div>
     )
@@ -26,7 +40,7 @@ function MainPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header participants={participants} me={roomMeta?.me} />
+      <Header participants={participants} currentUserId={user.userId} userName={user.name} roomLink={roomLink} />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection />
         <LocationListSection />

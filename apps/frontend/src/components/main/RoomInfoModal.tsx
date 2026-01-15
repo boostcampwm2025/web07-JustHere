@@ -6,24 +6,25 @@ import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 interface RoomInfoModalProps {
   isOpen: boolean
   onClose: () => void
-  userName?: string
-  roomLink?: string
-  participants?: Participant[]
-  me?: Participant
+  userName: string
+  roomLink: string
+  participants: Participant[]
+  currentUserId: string
 }
 
-export default function RoomInfoModal({
-  isOpen,
-  onClose,
-  userName = 'A',
-  roomLink = 'www.justhere.p-e.kr/abxbfdff..',
-  participants,
-  me,
-}: RoomInfoModalProps) {
-  if (!isOpen) return null
+export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, participants, currentUserId }: RoomInfoModalProps) {
+  const hasCurrentUser = participants.some(p => p.userId === currentUserId)
+  const visibleParticipants = hasCurrentUser ? participants : [...participants, { userId: currentUserId, name: userName }]
 
-  const participantList = participants ?? []
-  const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(roomLink)
+    } catch (error) {
+      console.error('링크 복사에 실패했습니다.', error)
+    }
+  }
+
+  if (!isOpen) return null
 
   return (
     <>
@@ -51,11 +52,10 @@ export default function RoomInfoModal({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[18px] text-black">{p.name}</span>
-                  {me && p.userId === me.userId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
+                  {p.userId === currentUserId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
                 </div>
               </div>
             ))}
-            {visibleParticipants.length === 0 && <span className="text-sm text-gray">표시할 참여자가 없습니다.</span>}
           </div>
         </div>
 
@@ -91,6 +91,7 @@ export default function RoomInfoModal({
                 size="lg"
                 className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
                 icon={<ContentCopyIcon className="w-[18px] h-[18px]" />}
+                onClick={handleCopyLink}
               >
                 링크 복사
               </Button>

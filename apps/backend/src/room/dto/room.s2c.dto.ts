@@ -13,7 +13,6 @@ export class Participant {
 // [S->C] room:joined - 기존 room:state 대체
 export type RoomJoinedPayload = {
   roomId: string
-  me: Participant
   participants: Participant[]
   categories: Category[]
   ownerId: string

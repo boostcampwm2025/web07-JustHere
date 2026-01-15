@@ -12,7 +12,6 @@ export type RoomJoinPayload = {
 // [S->C] room:joined
 export type RoomJoinedPayload = {
   roomId: string
-  me: Participant
   participants: Participant[]
   categories: Category[]
   ownerId: string
