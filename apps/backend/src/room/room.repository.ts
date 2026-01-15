@@ -13,7 +13,7 @@ export class RoomRepository {
     return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
   }
 
-  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
+  async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
     const maxRetries = 3
     let lastError: Error | undefined
 
@@ -22,7 +22,6 @@ export class RoomRepository {
         const slug = nanoid()
         return await this.prisma.room.create({
           data: {
-            title: data.title,
             slug,
             x: data.x,
             y: data.y,
@@ -38,5 +37,11 @@ export class RoomRepository {
       }
     }
     throw new Error(`최대 재시도 횟수 ${maxRetries} 회를 초과하였습니다: ${lastError ? lastError.message : '알 수 없는 오류'}`)
+  }
+
+  async findBySlug(slug: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({
+      where: { slug },
+    })
   }
 }

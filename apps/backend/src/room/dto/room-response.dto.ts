@@ -14,12 +14,9 @@ export class RoomResponseDto {
   slug: string
 
   @ApiProperty({
-    description: '방 제목',
-    example: '우리 팀 모임',
+    description: '경도 (x)',
+    example: 127.027621,
   })
-  title: string
-
-  @ApiProperty({ description: '경도 (x)', example: 127.027621 })
   x: number
 
   @ApiProperty({ description: '위도 (y)', example: 37.497952 })

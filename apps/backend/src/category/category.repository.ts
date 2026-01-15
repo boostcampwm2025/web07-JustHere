@@ -12,4 +12,20 @@ export class CategoryRepository {
       orderBy: { orderIndex: 'asc' },
     })
   }
+
+  async create(data: { roomId: string; title: string; orderIndex?: number }): Promise<Category> {
+    return this.prisma.category.create({
+      data: {
+        roomId: data.roomId,
+        title: data.title,
+        orderIndex: data.orderIndex ?? 0,
+      },
+    })
+  }
+
+  async delete(id: string): Promise<Category> {
+    return this.prisma.category.delete({
+      where: { id },
+    })
+  }
 }

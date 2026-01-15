@@ -6,7 +6,7 @@ import * as classValidator from 'class-validator'
 import { RoomGateway } from './room.gateway'
 import { RoomService } from './room.service'
 import { RoomBroadcaster } from '@/socket/room.broadcaster'
-import { RoomJoinPayload } from './dto/room.c2s.dto'
+import { RoomJoinPayload, ParticipantUpdateNamePayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 
 describe('RoomGateway', () => {
   let gateway: RoomGateway
@@ -15,6 +15,8 @@ describe('RoomGateway', () => {
     leaveByDisconnect: jest.fn(),
     joinRoom: jest.fn(),
     leaveRoomBySession: jest.fn(),
+    updateParticipantName: jest.fn(),
+    transferOwner: jest.fn(),
   }
 
   const broadcaster = {
@@ -251,6 +253,79 @@ describe('RoomGateway', () => {
       const [calledClient] = calls[0] as [Socket]
 
       expect(calledClient).toBe(client)
+    })
+  })
+
+  describe('onUpdateName', () => {
+    it('유효한 payload가 전달되면 RoomService.updateParticipantName을 호출한다', () => {
+      const client = {} as Socket
+      const payload: ParticipantUpdateNamePayload = { name: 'newName' }
+
+      jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
+
+      gateway.onUpdateName(client, payload)
+
+      expect(roomService.updateParticipantName).toHaveBeenCalledTimes(1)
+      expect(roomService.updateParticipantName).toHaveBeenCalledWith(client, 'newName')
+    })
+
+    it('name이 비어있으면 updateParticipantName을 호출하지 않는다', () => {
+      const client = {} as Socket
+      const payload: ParticipantUpdateNamePayload = { name: '' }
+
+      const validationError: ValidationError = {
+        property: 'name',
+        constraints: { isNotEmpty: 'name은 비어있을 수 없습니다' },
+      }
+      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
+
+      gateway.onUpdateName(client, payload)
+
+      expect(roomService.updateParticipantName).not.toHaveBeenCalled()
+    })
+
+    it('name이 20자를 초과하면 updateParticipantName을 호출하지 않는다', () => {
+      const client = {} as Socket
+      const payload: ParticipantUpdateNamePayload = { name: 'a'.repeat(21) }
+
+      const validationError: ValidationError = {
+        property: 'name',
+        constraints: { maxLength: 'name은 최대 20자 이하여야 합니다' },
+      }
+      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
+
+      gateway.onUpdateName(client, payload)
+
+      expect(roomService.updateParticipantName).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('onTransferOwner', () => {
+    it('유효한 payload가 전달되면 RoomService.transferOwner를 호출한다', () => {
+      const client = {} as Socket
+      const payload: RoomTransferOwnerPayload = { targetUserId: 'user-2' }
+
+      jest.spyOn(classValidator, 'validateSync').mockReturnValue([])
+
+      gateway.onTransferOwner(client, payload)
+
+      expect(roomService.transferOwner).toHaveBeenCalledTimes(1)
+      expect(roomService.transferOwner).toHaveBeenCalledWith(client, 'user-2')
+    })
+
+    it('targetUserId가 비어있으면 transferOwner를 호출하지 않는다', () => {
+      const client = {} as Socket
+      const payload: RoomTransferOwnerPayload = { targetUserId: '' }
+
+      const validationError: ValidationError = {
+        property: 'targetUserId',
+        constraints: { isNotEmpty: 'targetUserId는 비어있을 수 없습니다' },
+      }
+      jest.spyOn(classValidator, 'validateSync').mockReturnValue([validationError])
+
+      gateway.onTransferOwner(client, payload)
+
+      expect(roomService.transferOwner).not.toHaveBeenCalled()
     })
   })
 })
