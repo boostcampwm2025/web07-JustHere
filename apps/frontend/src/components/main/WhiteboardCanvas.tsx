@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react'
-import { Stage, Layer, Circle, Text, Rect, Group } from 'react-konva'
+import { Stage, Layer, Circle, Text, Rect, Group, Line } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt } from '@/types/canvas.types'
+import type { PostIt, Line as LineType } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
@@ -19,13 +19,19 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
-  const { cursors, rectangles, postits, socketId, updateCursor, updateRectangle, addPostIt, updatePostIt } = useYjsSocket({
-    roomId,
-    canvasId,
-  })
+  const { cursors, rectangles, postits, lines, socketId, updateCursor, updateRectangle, addPostIt, updatePostIt, addLine, updateLine } = useYjsSocket(
+    {
+      roomId,
+      canvasId,
+    },
+  )
 
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+
+  // 펜 드로잉 관련 상태
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [currentLineId, setCurrentLineId] = useState<string | null>(null)
 
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
@@ -42,18 +48,34 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       if (activeTool === 'postit') {
         setCursorPos(canvasPos)
       }
+
+      // 펜 드로잉 중이면 포인트 추가
+      if (activeTool === 'pencil' && isDrawing && currentLineId) {
+        // 현재 그리고 있는 선 찾기
+        const currentLine = lines.find(line => line.id === currentLineId)
+        if (currentLine) {
+          // 기존 points 배열에 새 좌표 추가
+          const newPoints = [...currentLine.points, canvasPos.x, canvasPos.y]
+          updateLine(currentLineId, { points: newPoints })
+        }
+      }
     }
   }
 
-  // 마우스 나갈 때 포스트잇 고스트 제거
+  // 마우스 나갈 때 포스트잇 고스트 제거 및 드로잉 종료
   const handleMouseLeave = () => {
     if (activeTool === 'postit') {
       setCursorPos(null)
     }
+    // 캔버스 밖으로 나가면 드로잉 종료
+    if (isDrawing) {
+      setIsDrawing(false)
+      setCurrentLineId(null)
+    }
   }
 
-  // 마우스 클릭 이벤트
-  const handleStageClick = () => {
+  // 마우스 다운 이벤트 (드로잉 시작, 포스트잇 추가)
+  const handleMouseDown = () => {
     const stage = stageRef.current
     if (!stage) return
 
@@ -74,6 +96,33 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         authorName: `User ${socketId.substring(0, 4)}`,
       }
       addPostIt(newPostIt)
+    }
+
+    // 펜 드로잉 시작
+    if (activeTool === 'pencil') {
+      setIsDrawing(true)
+      const newLineId = `line-${Date.now()}`
+      setCurrentLineId(newLineId)
+
+      const newLine: LineType = {
+        id: newLineId,
+        points: [canvasPos.x, canvasPos.y], // 시작점
+        stroke: '#000000', // 검은색
+        strokeWidth: 2,
+        tension: 0.5, // 부드러운 곡선
+        lineCap: 'round',
+        lineJoin: 'round',
+        tool: 'pen',
+      }
+      addLine(newLine)
+    }
+  }
+
+  // 마우스 업 이벤트 (드로잉 종료)
+  const handleMouseUp = () => {
+    if (activeTool === 'pencil' && isDrawing) {
+      setIsDrawing(false)
+      setCurrentLineId(null)
     }
   }
 
@@ -175,14 +224,30 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         height={window.innerHeight}
         // 손 도구일 때만 캔버스 전체 드래그(Pan) 가능
         draggable={activeTool === 'hand'}
-        onClick={handleStageClick}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onWheel={handleWheel}
+        onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
-        onTouchStart={handleStageClick}
+        onTouchEnd={handleMouseUp}
       >
         <Layer>
+          {/* 펜으로 그린 선 렌더링 */}
+          {lines.map(line => (
+            <Line
+              key={line.id}
+              points={line.points}
+              stroke={line.stroke}
+              strokeWidth={line.strokeWidth}
+              tension={line.tension}
+              lineCap={line.lineCap}
+              lineJoin={line.lineJoin}
+              globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
+            />
+          ))}
+
           {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
           {rectangles.map(shape => (
             <Rect
