@@ -12,14 +12,13 @@ interface HeaderProps {
   me?: Participant
 }
 
-export default function Header({ participants, me }: HeaderProps) {
+export default function Header({ participants = [], me }: HeaderProps) {
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
   const { pathname } = useLocation()
   const isOnboarding = pathname.startsWith('/onboarding')
 
   const MAX_DISPLAY_AVATARS = 3
-  const participantList = participants ?? []
-  const combinedParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
+  const combinedParticipants = me ? [me, ...participants.filter(p => p.userId !== me.userId)] : participants
   const hasParticipants = combinedParticipants.length > 0
   const displayCount = Math.min(MAX_DISPLAY_AVATARS, combinedParticipants.length)
   const extraCount = Math.max(combinedParticipants.length - displayCount, 0)
