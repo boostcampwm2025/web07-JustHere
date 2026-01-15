@@ -63,7 +63,7 @@ jobs:
         run: |
           # 1) 백엔드용 환경변수 파일 생성
           echo "${{ secrets.BACKEND_ENV }}" > .env.backend
-          
+
           # 2) docker-compose 변수 치환용 .env 파일 생성 (NCP_CR_ENDPOINT)
           echo "NCP_CR_ENDPOINT=${{ secrets.NCP_CR_ENDPOINT }}" > .env
 
@@ -87,8 +87,8 @@ jobs:
           username: ${{ secrets.NCP_USERNAME }}
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_SSH_PORT }}
-          source: "docker-compose.yml, .env.backend, .env"
-          target: "/root/my-project"
+          source: 'docker-compose.yml, .env.backend, .env'
+          target: '/root/my-project'
           overwrite: true
 
       # 4. 배포 실행 (SSH)
