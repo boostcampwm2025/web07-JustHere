@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { BellIcon, CogIcon, ShareVariantIcon } from '@/components/Icons'
 import Logo from '@/assets/images/logo.svg?react'
 import { AVATARS } from '@/mocks'
@@ -7,6 +8,8 @@ import { Button } from '@/components/common/Button'
 
 export default function Header() {
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
+  const { pathname } = useLocation()
+  const isOnboarding = pathname.startsWith('/onboarding')
 
   const MAX_DISPLAY_AVATARS = 3
   const displayAvatars = AVATARS.slice(0, MAX_DISPLAY_AVATARS)
@@ -19,33 +22,39 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-5">
-        <div className="flex items-center -space-x-2">
-          {displayAvatars.map((src, i) => (
-            <div key={i} className="overflow-hidden border-2 border-white rounded-full w-9 h-9 bg-gray-200">
-              <img src={src} alt="User" className="object-cover w-full h-full" />
+        {!isOnboarding && (
+          <>
+            <div className="flex items-center -space-x-2">
+              {displayAvatars.map((src, i) => (
+                <div key={i} className="overflow-hidden border-2 border-white rounded-full w-9 h-9 bg-gray-200">
+                  <img src={src} alt="User" className="object-cover w-full h-full" />
+                </div>
+              ))}
+              {extraCount > 0 && (
+                <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
+                  <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
+                </div>
+              )}
             </div>
-          ))}
-          {extraCount > 0 && (
-            <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
-              <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
-            </div>
-          )}
-        </div>
 
-        <div className="w-[1px] h-6 bg-gray-200" />
+            <div className="w-[1px] h-6 bg-gray-200" />
+          </>
+        )}
 
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<ShareVariantIcon className="w-[18px] h-[18px]" />}
-              onClick={() => setIsRoomInfoModalOpen(true)}
-            >
-              Share
-            </Button>
-            <RoomInfoModal isOpen={isRoomInfoModalOpen} onClose={() => setIsRoomInfoModalOpen(false)} />
-          </div>
+          {!isOnboarding && (
+            <div className="relative">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<ShareVariantIcon className="w-[18px] h-[18px]" />}
+                onClick={() => setIsRoomInfoModalOpen(true)}
+              >
+                Share
+              </Button>
+              <RoomInfoModal isOpen={isRoomInfoModalOpen} onClose={() => setIsRoomInfoModalOpen(false)} />
+            </div>
+          )}
 
           <Button variant="gray" size="icon" className="w-9 h-9">
             <BellIcon className="w-5 h-5" />

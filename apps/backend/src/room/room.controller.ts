@@ -29,6 +29,6 @@ export class RoomController {
     description: '서버 내부 오류',
   })
   async createRoom(@Body() dto: CreateRoomDto): Promise<RoomResponseDto> {
-    return await this.roomService.createRoom({ title: dto.title, x: dto.x, y: dto.y, place_name: dto.place_name })
+    return await this.roomService.createRoom({ x: dto.x, y: dto.y, place_name: dto.place_name })
   }
 }

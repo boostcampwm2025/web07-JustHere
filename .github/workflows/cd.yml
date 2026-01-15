@@ -27,8 +27,8 @@ jobs:
           password: ${{ secrets.NCP_SECRET_KEY }}
 
       # 빌드 전 Vite env 등록
-      - name: Create Frontend .env
-        run: echo "${{ secrets.FRONTEND_ENV }}" > .env
+      - name: Create Frontend .env.production
+        run: echo "${{ secrets.FRONTEND_ENV }}" > .env.production
 
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5

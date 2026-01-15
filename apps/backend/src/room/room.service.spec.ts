@@ -92,7 +92,6 @@ describe('RoomService', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -101,7 +100,6 @@ describe('RoomService', () => {
       }
 
       const inputData = {
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -120,7 +118,6 @@ describe('RoomService', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '',
@@ -129,7 +126,6 @@ describe('RoomService', () => {
       }
 
       const inputData = {
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
       }

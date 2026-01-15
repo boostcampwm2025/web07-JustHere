@@ -9,7 +9,6 @@ datasource db {
 model Room {
   id        String   @id @default(uuid()) @db.Uuid
   slug      String   @unique @db.VarChar(50) 
-  title     String   @db.VarChar(100)
   x         Float    @default(0)
   y         Float    @default(0)
   place_name String   @db.VarChar(255)
