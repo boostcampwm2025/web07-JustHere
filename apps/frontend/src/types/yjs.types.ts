@@ -17,6 +17,7 @@ export interface YjsUpdatePayload {
 export interface CursorPosition {
   x: number
   y: number
+  timestamp?: number // 커서 위치 업데이트 시간 (ms)
 }
 
 export interface AwarenessState {

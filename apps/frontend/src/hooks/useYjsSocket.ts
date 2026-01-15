@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import * as Y from 'yjs'
 import type {
@@ -11,7 +11,8 @@ import type {
   YjsAwarenessBroadcast,
   CursorPositionWithId,
 } from '@/types/yjs.types'
-import type { Rectangle, PostIt } from '@/types/canvas.types'
+import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
+import { throttle } from '@/utils/throttle'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -24,6 +25,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
   const [postits, setPostits] = useState<PostIt[]>([])
+  const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
 
   const socketRef = useRef<Socket | null>(null)
@@ -37,6 +39,7 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     // Yjs SharedTypes 생성
     const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const yLines = doc.getArray<Y.Map<unknown>>('lines')
 
     // Yjs 변경사항을 React state에 반영하는 함수
     const syncRectanglesToState = () => {
@@ -65,15 +68,31 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
       setPostits(items)
     }
 
+    const syncLinesToState = () => {
+      const items: Line[] = yLines.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        points: yMap.get('points') as number[],
+        stroke: yMap.get('stroke') as string,
+        strokeWidth: yMap.get('strokeWidth') as number,
+        tension: yMap.get('tension') as number,
+        lineCap: yMap.get('lineCap') as 'round' | 'butt' | 'square',
+        lineJoin: yMap.get('lineJoin') as 'round' | 'bevel' | 'miter',
+        tool: yMap.get('tool') as 'pen',
+      }))
+      setLines(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yRectangles.observeDeep(syncRectanglesToState)
     yPostits.observeDeep(syncPostitsToState)
+    yLines.observeDeep(syncLinesToState)
 
     // 초기 동기화
     syncRectanglesToState()
     syncPostitsToState()
+    syncLinesToState()
 
     // Socket.io 연결
     const socket = io(`${serverUrl}/canvas`, {
@@ -155,23 +174,33 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
       doc.off('update', updateHandler)
       yRectangles.unobserveDeep(syncRectanglesToState)
       yPostits.unobserveDeep(syncPostitsToState)
+      yLines.unobserveDeep(syncLinesToState)
       socket.disconnect()
       doc.destroy()
     }
   }, [roomId, canvasId, serverUrl])
 
-  // 커서 위치 업데이트 함수
-  const updateCursor = (x: number, y: number) => {
-    if (socketRef.current?.connected) {
-      const awarenessPayload: YjsAwarenessPayload = {
-        canvasId,
-        state: {
-          cursor: { x, y },
-        },
+  // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
+  const updateCursorThrottled = useRef(
+    throttle((canvasId: string, socketRef: React.MutableRefObject<Socket | null>, x: number, y: number) => {
+      if (socketRef.current?.connected) {
+        const awarenessPayload: YjsAwarenessPayload = {
+          canvasId,
+          state: {
+            cursor: { x, y },
+          },
+        }
+        socketRef.current.emit('y:awareness', awarenessPayload)
       }
-      socketRef.current.emit('y:awareness', awarenessPayload)
-    }
-  }
+    }, 100),
+  ).current
+
+  const updateCursor = useCallback(
+    (x: number, y: number) => {
+      updateCursorThrottled(canvasId, socketRef, x, y)
+    },
+    [canvasId, updateCursorThrottled],
+  )
 
   // 네모 추가 함수
   const addRectangle = (rect: Rectangle) => {
@@ -243,16 +272,56 @@ export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3
     })
   }
 
+  // 선 추가 함수
+  const addLine = (line: Line) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const yMap = new Y.Map()
+    yMap.set('id', line.id)
+    yMap.set('points', line.points)
+    yMap.set('stroke', line.stroke)
+    yMap.set('strokeWidth', line.strokeWidth)
+    yMap.set('tension', line.tension)
+    yMap.set('lineCap', line.lineCap)
+    yMap.set('lineJoin', line.lineJoin)
+    yMap.set('tool', line.tool)
+    yLines.push([yMap])
+  }
+
+  // 선 업데이트 함수 (주로 points 배열 업데이트)
+  const updateLine = (id: string, updates: Partial<Omit<Line, 'id'>>) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index === -1) return
+
+    // Yjs 트랜잭션으로 명시적으로 감싸기
+    doc.transact(() => {
+      const yMap = yLines.get(index)
+      Object.entries(updates).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+    })
+  }
+
   return {
     isConnected,
     cursors,
     rectangles,
     postits,
+    lines,
     socketId,
     updateCursor,
     addRectangle,
     updateRectangle,
     addPostIt,
     updatePostIt,
+    addLine,
+    updateLine,
   }
 }

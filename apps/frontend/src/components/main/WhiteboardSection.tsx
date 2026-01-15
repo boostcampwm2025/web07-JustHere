@@ -21,17 +21,17 @@ function WhiteboardSection() {
   // TODO: 실제로는 API를 통해 방(Room) 정보를 불러올 때 카테고리 리스트도 받아와야 함.
   const [categories] = useState<CategoryTab[]>([
     {
-      id: 'cat-uuid-1', // 예: 실제 UUID
+      id: '9c49cff8-1d4f-4e47-bb99-aa8aca2a1796', // 예: 실제 UUID
       type: 'restaurant',
       label: '음식점',
     },
     {
-      id: 'cat-uuid-2',
+      id: 'aeeb9756-e746-4bb0-8749-8ec34aaed338',
       type: 'cafe',
       label: '카페',
     },
     {
-      id: 'cat-uuid-3',
+      id: 'e91f0e18-044a-4bfc-a0d6-0b2f48e08f83',
       type: 'bar',
       label: '술집',
     },
