@@ -10,8 +10,12 @@ import type {
   ParticipantUpdateNamePayload,
   RoomOwnerTransferredPayload,
   RoomTransferOwnerPayload,
+  CategoryDeletedPayload,
+  CategoryCreatedPayload,
+  CategoryCreatePayload,
+  CategoryDeletePayload,
 } from '@/types/socket'
-import type { Participant } from '@/types/domain'
+import type { Category, Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { roomQueryKeys } from './useRoomQueries'
 
@@ -90,6 +94,27 @@ export function useRoomSocketCache() {
       })
     }
 
+    const onCategoryCreated = (c: CategoryCreatedPayload) => {
+      const roomId = roomIdRef.current
+      if (!roomId) return
+
+      queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => [
+        ...prev,
+        { id: c.categoryId, roomId, title: c.name, orderIndex: 0, createdAt: new Date().toISOString() },
+      ])
+    }
+
+    const onCategoryDeleted = (c: CategoryDeletedPayload) => {
+      const roomId = roomIdRef.current
+      if (!roomId) return
+
+      queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => prev.filter(x => x.id !== c.categoryId))
+    }
+
+    const onCategoryError = () => {
+      // TODO: 사용자에게 에러 메시지 표시 (토스트 등)
+    }
+
     const onDisconnect = (reason: Socket.DisconnectReason) => {
       setRoomId(null)
       setIsReady(false)
@@ -113,6 +138,9 @@ export function useRoomSocketCache() {
     socket.on('participant:disconnected', onDisconnected)
     socket.on('participant:name_updated', onNameUpdated)
     socket.on('room:owner_transferred', onOwnerTransferred)
+    socket.on('category:created', onCategoryCreated)
+    socket.on('category:deleted', onCategoryDeleted)
+    socket.on('category:error', onCategoryError)
     socket.on('disconnect', onDisconnect)
     socket.on('connect', onConnect)
 
@@ -122,6 +150,9 @@ export function useRoomSocketCache() {
       socket.off('participant:disconnected', onDisconnected)
       socket.off('participant:name_updated', onNameUpdated)
       socket.off('room:owner_transferred', onOwnerTransferred)
+      socket.off('category:created', onCategoryCreated)
+      socket.off('category:deleted', onCategoryDeleted)
+      socket.off('category:error', onCategoryError)
       socket.off('disconnect', onDisconnect)
       socket.off('connect', onConnect)
     }
@@ -197,5 +228,35 @@ export function useRoomSocketCache() {
 
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
 
-  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName, transferOwner }
+  const createCategory = useCallback(
+    (name: string) => {
+      const socket = getSocket()
+      const currentRoomId = roomIdRef.current
+
+      if (!socket?.connected) {
+        console.warn('소켓이 연결되지 않았습니다. 카테고리를 생성할 수 없습니다.')
+        return
+      }
+
+      if (!currentRoomId) {
+        console.warn('방에 참여하지 않았습니다. 카테고리를 생성할 수 없습니다.')
+        return
+      }
+
+      socket.emit('category:create', { name } satisfies CategoryCreatePayload)
+    },
+    [getSocket],
+  )
+
+  const deleteCategory = useCallback(
+    (categoryId: string) => {
+      const socket = getSocket()
+      if (!socket?.connected) return
+
+      socket.emit('category:delete', { categoryId } satisfies CategoryDeletePayload)
+    },
+    [getSocket],
+  )
+
+  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory }
 }
