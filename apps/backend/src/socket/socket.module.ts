@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common'
-import { SocketBroadcaster } from './socket.broadcaster'
+import { RoomBroadcaster } from './room.broadcaster'
 import { CanvasBroadcaster } from './canvas.broadcaster'
 
 @Module({
-  providers: [SocketBroadcaster, CanvasBroadcaster],
-  exports: [SocketBroadcaster, CanvasBroadcaster],
+  providers: [RoomBroadcaster, CanvasBroadcaster],
+  exports: [RoomBroadcaster, CanvasBroadcaster],
 })
 export class SocketModule {}

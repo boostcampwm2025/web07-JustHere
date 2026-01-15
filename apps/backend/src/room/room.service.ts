@@ -3,7 +3,7 @@ import type { Socket } from 'socket.io'
 import { Room } from '@prisma/client'
 import { RoomRepository } from './room.repository'
 import { CategoryRepository } from '@/category/category.repository'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
@@ -15,7 +15,7 @@ export class RoomService {
     private readonly roomRepository: RoomRepository,
     private readonly users: UserService,
     private readonly categories: CategoryRepository,
-    private readonly broadcaster: SocketBroadcaster,
+    private readonly broadcaster: RoomBroadcaster,
   ) {}
 
   async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {

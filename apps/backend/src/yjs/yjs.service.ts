@@ -1,4 +1,3 @@
-// yjs/yjs.service.ts
 import { CanvasService } from '@/yjs/canvas.service'
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import * as Y from 'yjs'
@@ -28,7 +27,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
     // 5초마다 버퍼에 쌓인 데이터를 DB에 저장
     // 트래픽이 많아지면 시간을 더 줄여야 할 듯
     this.saveInterval = setInterval(() => {
-      return this.flushBufferToDB()
+      void this.flushBufferToDB().catch()
     }, 5000)
   }
 
@@ -120,6 +119,52 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    */
   getConnectionCount(categoryId: string): number {
     return this.documents.get(categoryId)?.connections.size ?? 0
+  }
+
+  /**
+   * 캔버스 접속 초기화 로직 통합
+   * 1. 문서 가져오기 (DB or Memory)
+   * 2. 클라이언트 접속 등록
+   * 3. 초기 동기화 데이터(StateVector) 반환
+   */
+  async initializeConnection(roomId: string, categoryId: string, socketId: string) {
+    // 1. 문서 확보
+    const doc = await this.getOrCreateDocument(roomId, categoryId)
+
+    // 2. 접속자 등록
+    this.connectClient(categoryId, socketId)
+
+    // 3. 응답 데이터 생성
+    const stateVector = encodeStateAsUpdate(doc)
+    const docKey = `${roomId}-${categoryId}`
+
+    return {
+      docKey,
+      update: stateVector ? Array.from(stateVector) : undefined,
+    }
+  }
+
+  /**
+   * [Refactor] 업데이트 처리 로직
+   * 1. 메모리 문서에 적용
+   * 2. 버퍼에 담기 (배치 저장용)
+   */
+  processUpdate(categoryId: string, update: Uint8Array): boolean {
+    const yjsDoc = this.documents.get(categoryId)
+    if (!yjsDoc) return false
+
+    try {
+      // 1. 메모리 적용
+      applyUpdate(yjsDoc.doc, update)
+
+      // 2. 업데이트 로그 버퍼링
+      this.bufferUpdate(categoryId, update)
+
+      return true
+    } catch (error) {
+      console.error('Failed to apply Yjs update:', error)
+      return false
+    }
   }
 
   /**

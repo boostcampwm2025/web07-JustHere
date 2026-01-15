@@ -43,19 +43,9 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     // Socket.io room에 참여
     await client.join(`canvas:${canvasId}`)
 
-    // Yjs 문서 생성 및 클라이언트 연결
-    await this.yjsService.getOrCreateDocument(roomId, canvasId)
-    this.yjsService.connectClient(canvasId, client.id)
+    const response = await this.yjsService.initializeConnection(roomId, canvasId, client.id)
 
-    // 현재 문서 전체 상태를 클라이언트에게 전송 (동기화)
-    const stateVector = this.yjsService.getStateVector(canvasId)
-
-    const docKey = `${roomId}-${canvasId}`
-
-    client.emit('canvas:attached', {
-      docKey,
-      update: stateVector ? Array.from(stateVector) : undefined,
-    })
+    client.emit('canvas:attached', response)
   }
 
   /**
@@ -81,22 +71,13 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     // number[] -> Uint8Array
     const updateArray = new Uint8Array(update)
 
-    // Yjs 문서에 업데이트 적용
-    const applied = this.yjsService.applyUpdate(canvasId, updateArray)
-    if (!applied) return
+    // Yjs 문서에 업데이트 적용 & 버퍼링
+    const isSuccess = this.yjsService.processUpdate(canvasId, updateArray)
 
     // 다른 클라이언트들에게 업데이트 브로드캐스트
-    this.broadcaster.emitToCanvas(
-      canvasId,
-      'y:update',
-      {
-        canvasId,
-        update,
-      },
-      {
-        exceptSocketId: client.id, // 본인 제외
-      },
-    )
+    if (isSuccess) {
+      this.broadcaster.emitToCanvas(canvasId, 'y:update', payload, { exceptSocketId: client.id })
+    }
   }
 
   /**
@@ -108,16 +89,6 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
 
     // Awareness는 서버에 저장하지 않고 바로 브로드캐스트
     // TODO 메모리 캐시에 저장하여 뒤늦게 들어온 참여자도 정보를 바로 볼 수 있게해야함
-    this.broadcaster.emitToCanvas(
-      canvasId,
-      'y:awareness',
-      {
-        socketId: client.id,
-        state,
-      },
-      {
-        exceptSocketId: client.id,
-      },
-    )
+    this.broadcaster.emitToCanvas(canvasId, 'y:awareness', { socketId: client.id, state }, { exceptSocketId: client.id })
   }
 }
