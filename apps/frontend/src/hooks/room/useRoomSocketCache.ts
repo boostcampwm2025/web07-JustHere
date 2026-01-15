@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { Socket } from 'socket.io-client'
 import type { RoomJoinPayload, RoomJoinedPayload, ParticipantConnectedPayload, ParticipantDisconnectedPayload } from '@/types/socket'
 import type { Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
@@ -15,6 +16,8 @@ export function useRoomSocketCache() {
 
   const [isReady, setIsReady] = useState(false)
   const roomIdRef = useRef<string | null>(null)
+  const userInfoRef = useRef<{ userId: string; name: string } | null>(null)
+  const shouldRejoinRef = useRef(false)
 
   useEffect(() => {
     const socket = getSocket()
@@ -27,6 +30,17 @@ export function useRoomSocketCache() {
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, me, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
       queryClient.setQueryData(roomQueryKeys.categories(roomId), categories)
+    }
+
+    const onConnect = () => {
+      if (!shouldRejoinRef.current) return
+
+      const roomId = roomIdRef.current
+      const user = userInfoRef.current
+      if (!roomId || !user) return
+
+      socket.emit('room:join', { roomId, user } satisfies RoomJoinPayload)
+      shouldRejoinRef.current = false
     }
 
     const onConnected = (p: ParticipantConnectedPayload) => {
@@ -46,25 +60,35 @@ export function useRoomSocketCache() {
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.userId !== p.userId))
     }
 
-    const onDisconnect = () => {
-      const roomId = roomIdRef.current
-      roomIdRef.current = null
+    const onDisconnect = (reason: Socket.DisconnectReason) => {
       setIsReady(false)
 
-      if (!roomId) return
-      queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        shouldRejoinRef.current = false
+
+        const roomId = roomIdRef.current
+        roomIdRef.current = null
+        userInfoRef.current = null
+
+        if (roomId) queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
+        return
+      }
+
+      shouldRejoinRef.current = true
     }
 
     socket.on('room:joined', onReady)
     socket.on('participant:connected', onConnected)
     socket.on('participant:disconnected', onDisconnected)
     socket.on('disconnect', onDisconnect)
+    socket.on('connect', onConnect)
 
     return () => {
       socket.off('room:joined', onReady)
       socket.off('participant:connected', onConnected)
       socket.off('participant:disconnected', onDisconnected)
       socket.off('disconnect', onDisconnect)
+      socket.off('connect', onConnect)
     }
   }, [getSocket, queryClient])
 
@@ -74,6 +98,11 @@ export function useRoomSocketCache() {
 
       const socket = getSocket()
       if (!socket) return
+
+      roomIdRef.current = nextRoomId
+      userInfoRef.current = user
+
+      shouldRejoinRef.current = false
 
       const payload: RoomJoinPayload = { roomId: nextRoomId, user }
 
@@ -91,13 +120,14 @@ export function useRoomSocketCache() {
     const socket = getSocket()
     const roomId = roomIdRef.current
 
+    shouldRejoinRef.current = false
     if (socket?.connected) socket.emit('room:leave')
 
     roomIdRef.current = null
+    userInfoRef.current = null
     setIsReady(false)
 
-    if (!roomId) return
-    queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
+    if (roomId) queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
   }, [getSocket, queryClient])
 
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
