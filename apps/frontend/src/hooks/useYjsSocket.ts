@@ -20,13 +20,15 @@ interface UseYjsSocketOptions {
   serverUrl?: string
 }
 
-export function useYjsSocket({ roomId, canvasId, serverUrl = 'http://localhost:3000' }: UseYjsSocketOptions) {
+export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   const [isConnected, setIsConnected] = useState(false)
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
   const [postits, setPostits] = useState<PostIt[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
+
+  const serverUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
