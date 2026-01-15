@@ -3,14 +3,17 @@ import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
-import { useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
+import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
-  const { joinRoom, leaveRoom, ready, roomId } = useRoomSocketCache()
-  const { data: participants = [] } = useRoomParticipants(roomId)
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
+  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
+  const { data: participants = [] } = useRoomParticipants(roomId)
+  const { data: roomMeta } = useRoomMeta(roomId)
+  const ownerId = roomMeta?.ownerId
+  const isOwner = !!user && ownerId === user.userId
 
   useEffect(() => {
     if (!slug || !user) return
@@ -32,7 +35,16 @@ function MainPage() {
   if (!ready) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Header participants={participants} currentUserId={user.userId} userName={user.name} roomLink={roomLink} />
+        <Header
+          participants={participants}
+          currentUserId={user.userId}
+          userName={user.name}
+          roomLink={roomLink}
+          onUpdateName={updateParticipantName}
+          isOwner={isOwner}
+          ownerId={ownerId}
+          onTransferOwner={transferOwner}
+        />
         <div className="p-6 text-gray">loading...</div>
       </div>
     )
@@ -40,7 +52,16 @@ function MainPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header participants={participants} currentUserId={user.userId} userName={user.name} roomLink={roomLink} />
+      <Header
+        participants={participants}
+        currentUserId={user.userId}
+        userName={user.name}
+        roomLink={roomLink}
+        onUpdateName={updateParticipantName}
+        isOwner={isOwner}
+        ownerId={ownerId}
+        onTransferOwner={transferOwner}
+      />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection />
         <LocationListSection />

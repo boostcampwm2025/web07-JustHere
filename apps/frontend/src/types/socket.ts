@@ -27,3 +27,25 @@ export type ParticipantConnectedPayload = {
 export type ParticipantDisconnectedPayload = {
   userId: string
 }
+
+// [C->S] participant:update_name
+export type ParticipantUpdateNamePayload = {
+  name: string
+}
+
+// [S->C] participant:name_updated
+export type ParticipantNameUpdatedPayload = {
+  userId: string
+  name: string
+}
+
+// [C->S] room:transfer_owner
+export type RoomTransferOwnerPayload = {
+  targetUserId: string
+}
+
+// [S->C] room:owner_transferred
+export type RoomOwnerTransferredPayload = {
+  previousOwnerId: string
+  newOwnerId: string
+}

@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
-import type { RoomJoinPayload, RoomJoinedPayload, ParticipantConnectedPayload, ParticipantDisconnectedPayload } from '@/types/socket'
+import type {
+  RoomJoinPayload,
+  RoomJoinedPayload,
+  ParticipantConnectedPayload,
+  ParticipantDisconnectedPayload,
+  ParticipantNameUpdatedPayload,
+  ParticipantUpdateNamePayload,
+  RoomOwnerTransferredPayload,
+  RoomTransferOwnerPayload,
+} from '@/types/socket'
 import type { Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { roomQueryKeys } from './useRoomQueries'
@@ -62,6 +71,25 @@ export function useRoomSocketCache() {
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.userId !== p.userId))
     }
 
+    const onNameUpdated = (p: ParticipantNameUpdatedPayload) => {
+      const roomId = roomIdRef.current
+      if (!roomId) return
+
+      queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) =>
+        prev.map(participant => (participant.userId === p.userId ? { ...participant, name: p.name } : participant)),
+      )
+    }
+
+    const onOwnerTransferred = ({ newOwnerId }: RoomOwnerTransferredPayload) => {
+      const roomId = roomIdRef.current
+      if (!roomId) return
+
+      queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; ownerId: string } | undefined) => {
+        if (!prev) return prev
+        return { ...prev, ownerId: newOwnerId }
+      })
+    }
+
     const onDisconnect = (reason: Socket.DisconnectReason) => {
       setRoomId(null)
       setIsReady(false)
@@ -83,6 +111,8 @@ export function useRoomSocketCache() {
     socket.on('room:joined', onReady)
     socket.on('participant:connected', onConnected)
     socket.on('participant:disconnected', onDisconnected)
+    socket.on('participant:name_updated', onNameUpdated)
+    socket.on('room:owner_transferred', onOwnerTransferred)
     socket.on('disconnect', onDisconnect)
     socket.on('connect', onConnect)
 
@@ -90,6 +120,8 @@ export function useRoomSocketCache() {
       socket.off('room:joined', onReady)
       socket.off('participant:connected', onConnected)
       socket.off('participant:disconnected', onDisconnected)
+      socket.off('participant:name_updated', onNameUpdated)
+      socket.off('room:owner_transferred', onOwnerTransferred)
       socket.off('disconnect', onDisconnect)
       socket.off('connect', onConnect)
     }
@@ -133,7 +165,37 @@ export function useRoomSocketCache() {
     if (roomId) queryClient.removeQueries({ queryKey: roomQueryKeys.base(roomId) })
   }, [getSocket, queryClient])
 
+  const updateParticipantName = useCallback(
+    (name: string) => {
+      const socket = getSocket()
+      if (!socket?.connected) return
+
+      const trimmed = name.trim()
+      if (!trimmed) return
+
+      if (userInfoRef.current) {
+        userInfoRef.current = { ...userInfoRef.current, name: trimmed }
+      }
+
+      socket.emit('participant:update_name', { name: trimmed } satisfies ParticipantUpdateNamePayload)
+    },
+    [getSocket],
+  )
+
+  const transferOwner = useCallback(
+    (targetUserId: string) => {
+      const socket = getSocket()
+      if (!socket?.connected) return
+
+      const trimmed = targetUserId.trim()
+      if (!trimmed) return
+
+      socket.emit('room:transfer_owner', { targetUserId: trimmed } satisfies RoomTransferOwnerPayload)
+    },
+    [getSocket],
+  )
+
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
 
-  return { ready, roomId, joinRoom, leaveRoom }
+  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName, transferOwner }
 }

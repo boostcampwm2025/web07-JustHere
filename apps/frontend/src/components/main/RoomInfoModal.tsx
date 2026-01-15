@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
@@ -10,11 +11,35 @@ interface RoomInfoModalProps {
   roomLink: string
   participants: Participant[]
   currentUserId: string
+  onUpdateName?: (name: string) => void
+  isOwner?: boolean
+  ownerId?: string
+  onTransferOwner?: (targetUserId: string) => void
 }
 
-export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, participants, currentUserId }: RoomInfoModalProps) {
+export default function RoomInfoModal({
+  isOpen,
+  onClose,
+  userName,
+  roomLink,
+  participants,
+  currentUserId,
+  onUpdateName,
+  isOwner = false,
+  ownerId,
+  onTransferOwner,
+}: RoomInfoModalProps) {
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+
+  if (!isOpen) return null
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
-  const visibleParticipants = hasCurrentUser ? participants : [...participants, { userId: currentUserId, name: userName }]
+  const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
+
+  const handleSubmit = () => {
+    const nextName = nameInputRef.current?.value.trim() ?? ''
+    if (!nextName || nextName === userName) return
+    onUpdateName?.(nextName)
+  }
 
   const handleCopyLink = async () => {
     try {
@@ -23,8 +48,6 @@ export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, par
       console.error('링크 복사에 실패했습니다.', error)
     }
   }
-
-  if (!isOpen) return null
 
   return (
     <>
@@ -50,10 +73,23 @@ export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, par
                 >
                   {getParticipantInitial(p.name)}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
                   <span className="text-[18px] text-black">{p.name}</span>
+                  {ownerId && p.userId === ownerId && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">방장</span>
+                  )}
                   {p.userId === currentUserId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
                 </div>
+                {isOwner && p.userId !== currentUserId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs border border-gray-200 text-gray-700 hover:bg-gray-100"
+                    onClick={() => onTransferOwner?.(p.userId)}
+                  >
+                    방장 넘기기
+                  </Button>
+                )}
               </div>
             ))}
           </div>
@@ -68,11 +104,19 @@ export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, par
               <input
                 type="text"
                 defaultValue={userName}
+                ref={nameInputRef}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    handleSubmit()
+                  }
+                }}
                 className="w-full h-[50px] px-4 border border-gray-200 rounded-lg text-gray text-base focus:outline-none focus:border-primary transition-colors"
               />
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={handleSubmit}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-0 text-gray-disable hover:bg-transparent group-focus-within:text-primary"
               >
                 <PencilIcon className="w-[18px] h-[18px]" />
