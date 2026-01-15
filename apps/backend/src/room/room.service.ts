@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { Socket } from 'socket.io'
 import { Room } from '@prisma/client'
 import { RoomRepository } from './room.repository'
-import { CategoryRepository } from '@/category/category.repository'
+import { CategoryService } from '@/category/category.service'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import { UserSession } from '@/user/user.type'
@@ -21,11 +21,11 @@ export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly users: UserService,
-    private readonly categories: CategoryRepository,
+    private readonly categoryService: CategoryService,
     private readonly broadcaster: SocketBroadcaster,
   ) {}
 
-  async createRoom(data: { title: string; x: number; y: number; place_name?: string }): Promise<Room> {
+  async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
     return this.roomRepository.createRoom(data)
   }
 
@@ -65,7 +65,7 @@ export class RoomService {
 
     // 본인을 포함한 전체 참여자 목록
     const allParticipants = this.getAllParticipants(actualRoomId)
-    const categories = await this.categories.findByRoomId(actualRoomId)
+    const categories = await this.categoryService.findByRoomId(actualRoomId)
 
     // 본인에게 room:joined 이벤트 전송
     const joinedPayload: RoomJoinedPayload = {

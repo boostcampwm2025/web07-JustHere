@@ -1,16 +1,29 @@
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
-import { MOCK_PARTICIPANTS } from '@/mocks'
 import { Button } from '@/components/common/Button'
+import type { Participant } from '@/types/domain'
+import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 
 interface RoomInfoModalProps {
   isOpen: boolean
   onClose: () => void
   userName?: string
   roomLink?: string
+  participants?: Participant[]
+  me?: Participant
 }
 
-export default function RoomInfoModal({ isOpen, onClose, userName = '김아진', roomLink = 'www.justhere.p-e.kr/abxbfdff..' }: RoomInfoModalProps) {
+export default function RoomInfoModal({
+  isOpen,
+  onClose,
+  userName = 'A',
+  roomLink = 'www.justhere.p-e.kr/abxbfdff..',
+  participants,
+  me,
+}: RoomInfoModalProps) {
   if (!isOpen) return null
+
+  const participantList = participants ?? []
+  const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
 
   return (
     <>
@@ -28,17 +41,21 @@ export default function RoomInfoModal({ isOpen, onClose, userName = '김아진',
         <div className="px-6 py-6">
           <h3 className="text-xl font-bold text-black text-center mb-6">참여자</h3>
           <div className="flex flex-col gap-2">
-            {MOCK_PARTICIPANTS.map(p => (
-              <div key={p.id} className="flex items-center gap-4 px-2 py-1">
+            {visibleParticipants.map(p => (
+              <div key={p.userId} className="flex items-center gap-4 px-2 py-1">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-[18px] font-bold text-black shadow-sm"
-                  style={{ backgroundColor: p.color }}
+                  style={{ backgroundColor: getParticipantColor(p.name) }}
                 >
-                  {p.initial}
+                  {getParticipantInitial(p.name)}
                 </div>
-                <span className="text-[18px] text-black">{p.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[18px] text-black">{p.name}</span>
+                  {me && p.userId === me.userId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
+                </div>
               </div>
             ))}
+            {visibleParticipants.length === 0 && <span className="text-sm text-gray">표시할 참여자가 없습니다.</span>}
           </div>
         </div>
 

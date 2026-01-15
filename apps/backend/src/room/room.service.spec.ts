@@ -3,7 +3,7 @@ import type { Socket } from 'socket.io'
 import type { Category, Room } from '@prisma/client'
 import { RoomService } from './room.service'
 import { RoomRepository } from './room.repository'
-import { CategoryRepository } from '@/category/category.repository'
+import { CategoryService } from '@/category/category.service'
 import { SocketBroadcaster } from '@/socket/socket.broadcaster'
 import { UserService } from '@/user/user.service'
 import type { UserSession } from '@/user/user.type'
@@ -67,7 +67,7 @@ describe('RoomService', () => {
     transferOwnership: jest.fn(),
   }
 
-  const categories = {
+  const categoryService = {
     findByRoomId: jest.fn(),
   }
 
@@ -89,7 +89,7 @@ describe('RoomService', () => {
           },
         },
         { provide: UserService, useValue: users },
-        { provide: CategoryRepository, useValue: categories },
+        { provide: CategoryService, useValue: categoryService },
         { provide: SocketBroadcaster, useValue: broadcaster },
       ],
     }).compile()
@@ -103,7 +103,6 @@ describe('RoomService', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -112,7 +111,6 @@ describe('RoomService', () => {
       }
 
       const inputData = {
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '강남역',
@@ -131,7 +129,6 @@ describe('RoomService', () => {
       const mockRoom: Room = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         slug: 'a3k9m2x7',
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
         place_name: '',
@@ -140,7 +137,6 @@ describe('RoomService', () => {
       }
 
       const inputData = {
-        title: '우리 팀 모임',
         x: 127.027621,
         y: 37.497952,
       }
@@ -169,8 +165,8 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(null)
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA, sessionB])
-      categories.findByRoomId.mockResolvedValue([mockCategory])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
+      categoryService.findByRoomId.mockResolvedValue([mockCategory])
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -221,8 +217,8 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(nonOwnerSession)
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA])
-      categories.findByRoomId.mockResolvedValue([])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
+      categoryService.findByRoomId.mockResolvedValue([])
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -266,7 +262,7 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(null)
       users.createSession.mockReturnValue({ ...sessionA, roomId: uuidRoomId })
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
-      categories.findByRoomId.mockResolvedValue([])
+      categoryService.findByRoomId.mockResolvedValue([])
 
       const findBySlugSpy = jest.spyOn(repository, 'findBySlug')
 
@@ -289,9 +285,9 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(null)
       users.createSession.mockReturnValue({ ...sessionA, roomId: uuidRoomId })
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
-      categories.findByRoomId.mockResolvedValue([])
+      categoryService.findByRoomId.mockResolvedValue([])
 
-      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as any)
+      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId: slug,
