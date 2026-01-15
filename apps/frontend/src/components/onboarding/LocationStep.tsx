@@ -9,11 +9,11 @@ import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { KakaoPlace } from '@/types/kakao'
 
 interface LocationStepProps {
-  onNext: (location: { name: string; address: string }) => void
+  onNext: (location: { name: string; address: string; x: number; y: number }) => void
 }
 
 function LocationStep({ onNext }: LocationStepProps) {
-  const [searchQuery, setSearchQuery] = useState('강남역')
+  const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -57,6 +57,8 @@ function LocationStep({ onNext }: LocationStepProps) {
       onNext({
         name: selectedPlace.place_name,
         address: selectedPlace.road_address_name || selectedPlace.address_name,
+        x: Number(selectedPlace.x),
+        y: Number(selectedPlace.y),
       })
     }
   }
@@ -91,15 +93,15 @@ function LocationStep({ onNext }: LocationStepProps) {
           }}
           onSearch={handleSearch}
           placeholder="장소를 검색하세요"
-          containerClassName="mb-2"
+          containerClassName="mb-4"
         />
 
-        <p className="text-sm text-gray mb-3">검색 결과 ({searchResults.length})</p>
+        {searchResults.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({searchResults.length})</p>}
 
         <SearchResultsList ref={listContainerRef} results={searchResults} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
 
         <Button onClick={handleNext} disabled={!selectedPlace} size="lg" className="py-4 text-base font-bold">
-          참여자 초대하기
+          장소 선택하기
         </Button>
       </div>
     </main>
