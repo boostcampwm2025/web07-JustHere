@@ -12,18 +12,21 @@ interface RoomInfoModalProps {
   me?: Participant
 }
 
-export default function RoomInfoModal({
-  isOpen,
-  onClose,
-  userName = 'A',
-  roomLink = 'www.justhere.p-e.kr/abxbfdff..',
-  participants,
-  me,
-}: RoomInfoModalProps) {
-  if (!isOpen) return null
-
+export default function RoomInfoModal({ isOpen, onClose, userName = 'A', roomLink, participants, me }: RoomInfoModalProps) {
   const participantList = participants ?? []
   const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
+  const displayRoomLink = roomLink ?? '초대 링크를 불러올 수 없습니다.'
+
+  const handleCopyLink = async () => {
+    if (!roomLink) return
+    try {
+      await navigator.clipboard.writeText(roomLink)
+    } catch (error) {
+      console.error('링크 복사에 실패했습니다.', error)
+    }
+  }
+
+  if (!isOpen) return null
 
   return (
     <>
@@ -84,13 +87,15 @@ export default function RoomInfoModal({
             <label className="block text-sm text-gray mb-2">방 초대 링크</label>
             <div className="flex flex-col gap-3">
               <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-[46px] flex items-center overflow-hidden">
-                <span className="text-[18px] text-black truncate w-full">{roomLink}</span>
+                <span className="text-[18px] text-black truncate w-full">{displayRoomLink}</span>
               </div>
               <Button
                 variant="primary"
                 size="lg"
                 className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
                 icon={<ContentCopyIcon className="w-[18px] h-[18px]" />}
+                onClick={handleCopyLink}
+                disabled={!roomLink}
               >
                 링크 복사
               </Button>

@@ -10,9 +10,10 @@ import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 interface HeaderProps {
   participants?: Participant[]
   me?: Participant
+  roomLink?: string
 }
 
-export default function Header({ participants = [], me }: HeaderProps) {
+export default function Header({ participants = [], me, roomLink }: HeaderProps) {
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
   const { pathname } = useLocation()
   const isOnboarding = pathname.startsWith('/onboarding')
@@ -71,6 +72,7 @@ export default function Header({ participants = [], me }: HeaderProps) {
                 isOpen={isRoomInfoModalOpen}
                 onClose={() => setIsRoomInfoModalOpen(false)}
                 userName={me?.name}
+                roomLink={roomLink}
                 participants={participants}
                 me={me}
               />

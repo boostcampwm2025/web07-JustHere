@@ -12,6 +12,8 @@ function MainPage() {
   const { data: participants } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const [user] = useState<StoredUser>(() => getOrCreateStoredUser())
+  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
+  const roomLink = slug && baseUrl ? `${baseUrl}/room/${slug}` : undefined
 
   useEffect(() => {
     if (!slug || !user) return
@@ -26,7 +28,7 @@ function MainPage() {
   if (!ready) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Header participants={participants} me={roomMeta?.me} />
+        <Header participants={participants} me={roomMeta?.me} roomLink={roomLink} />
         <div className="p-6 text-gray">loading...</div>
       </div>
     )
@@ -34,7 +36,7 @@ function MainPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header participants={participants} me={roomMeta?.me} />
+      <Header participants={participants} me={roomMeta?.me} roomLink={roomLink} />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection />
         <LocationListSection />
