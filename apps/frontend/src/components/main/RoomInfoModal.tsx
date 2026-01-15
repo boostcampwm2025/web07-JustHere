@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
@@ -10,6 +11,7 @@ interface RoomInfoModalProps {
   roomLink?: string
   participants?: Participant[]
   me?: Participant
+  onUpdateName?: (name: string) => void
 }
 
 export default function RoomInfoModal({
@@ -19,11 +21,24 @@ export default function RoomInfoModal({
   roomLink = 'www.justhere.p-e.kr/abxbfdff..',
   participants,
   me,
+  onUpdateName,
 }: RoomInfoModalProps) {
+  const [nameInput, setNameInput] = useState(userName)
+
+  useEffect(() => {
+    setNameInput(userName)
+  }, [userName, isOpen])
+
   if (!isOpen) return null
 
   const participantList = participants ?? []
   const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
+
+  const handleSubmit = () => {
+    const nextName = nameInput.trim()
+    if (!nextName || nextName === userName) return
+    onUpdateName?.(nextName)
+  }
 
   return (
     <>
@@ -67,12 +82,20 @@ export default function RoomInfoModal({
             <div className="relative group">
               <input
                 type="text"
-                defaultValue={userName}
+                value={nameInput}
+                onChange={event => setNameInput(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    handleSubmit()
+                  }
+                }}
                 className="w-full h-[50px] px-4 border border-gray-200 rounded-lg text-gray text-base focus:outline-none focus:border-primary transition-colors"
               />
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={handleSubmit}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-0 text-gray-disable hover:bg-transparent group-focus-within:text-primary"
               >
                 <PencilIcon className="w-[18px] h-[18px]" />

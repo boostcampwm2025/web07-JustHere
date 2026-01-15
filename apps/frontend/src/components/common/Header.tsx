@@ -10,9 +10,10 @@ import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 interface HeaderProps {
   participants?: Participant[]
   me?: Participant
+  onUpdateName?: (name: string) => void
 }
 
-export default function Header({ participants = [], me }: HeaderProps) {
+export default function Header({ participants = [], me, onUpdateName }: HeaderProps) {
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
   const { pathname } = useLocation()
   const isOnboarding = pathname.startsWith('/onboarding')
@@ -73,6 +74,7 @@ export default function Header({ participants = [], me }: HeaderProps) {
                 userName={me?.name}
                 participants={participants}
                 me={me}
+                onUpdateName={onUpdateName}
               />
             </div>
           )}
