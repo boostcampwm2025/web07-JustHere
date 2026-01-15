@@ -6,19 +6,17 @@ import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 interface RoomInfoModalProps {
   isOpen: boolean
   onClose: () => void
-  userName?: string
-  roomLink?: string
-  participants?: Participant[]
-  me?: Participant
+  userName: string
+  roomLink: string
+  participants: Participant[]
+  currentUserId: string
 }
 
-export default function RoomInfoModal({ isOpen, onClose, userName = 'A', roomLink, participants, me }: RoomInfoModalProps) {
-  const participantList = participants ?? []
-  const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
-  const displayRoomLink = roomLink ?? '초대 링크를 불러올 수 없습니다.'
+export default function RoomInfoModal({ isOpen, onClose, userName, roomLink, participants, currentUserId }: RoomInfoModalProps) {
+  const hasCurrentUser = participants.some(p => p.userId === currentUserId)
+  const visibleParticipants = hasCurrentUser ? participants : [...participants, { userId: currentUserId, name: userName }]
 
   const handleCopyLink = async () => {
-    if (!roomLink) return
     try {
       await navigator.clipboard.writeText(roomLink)
     } catch (error) {
@@ -54,11 +52,10 @@ export default function RoomInfoModal({ isOpen, onClose, userName = 'A', roomLin
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[18px] text-black">{p.name}</span>
-                  {me && p.userId === me.userId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
+                  {p.userId === currentUserId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
                 </div>
               </div>
             ))}
-            {visibleParticipants.length === 0 && <span className="text-sm text-gray">표시할 참여자가 없습니다.</span>}
           </div>
         </div>
 
@@ -87,7 +84,7 @@ export default function RoomInfoModal({ isOpen, onClose, userName = 'A', roomLin
             <label className="block text-sm text-gray mb-2">방 초대 링크</label>
             <div className="flex flex-col gap-3">
               <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-[46px] flex items-center overflow-hidden">
-                <span className="text-[18px] text-black truncate w-full">{displayRoomLink}</span>
+                <span className="text-[18px] text-black truncate w-full">{roomLink}</span>
               </div>
               <Button
                 variant="primary"
@@ -95,7 +92,6 @@ export default function RoomInfoModal({ isOpen, onClose, userName = 'A', roomLin
                 className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
                 icon={<ContentCopyIcon className="w-[18px] h-[18px]" />}
                 onClick={handleCopyLink}
-                disabled={!roomLink}
               >
                 링크 복사
               </Button>

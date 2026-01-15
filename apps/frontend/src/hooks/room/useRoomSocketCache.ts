@@ -24,12 +24,12 @@ export function useRoomSocketCache() {
     const socket = getSocket()
     if (!socket) return
 
-    const onReady = ({ roomId, me, participants, categories, ownerId }: RoomJoinedPayload) => {
+    const onReady = ({ roomId, participants, categories, ownerId }: RoomJoinedPayload) => {
       roomIdRef.current = roomId
       setRoomId(roomId)
       setIsReady(true)
 
-      queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, me, ownerId })
+      queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
       queryClient.setQueryData(roomQueryKeys.categories(roomId), categories)
     }

@@ -5,12 +5,14 @@ export interface StoredUser {
   name: string
 }
 
-const USER_STORAGE_KEY = 'justhere.user'
+const USER_STORAGE_KEY_PREFIX = 'justhere.user'
 
-const loadStoredUser = (): StoredUser | null => {
+const getUserStorageKey = (roomSlug: string) => `${USER_STORAGE_KEY_PREFIX}.${roomSlug}`
+
+const loadStoredUser = (roomSlug: string): StoredUser | null => {
   if (typeof window === 'undefined') return null
 
-  const raw = localStorage.getItem(USER_STORAGE_KEY)
+  const raw = localStorage.getItem(getUserStorageKey(roomSlug))
   if (!raw) return null
 
   try {
@@ -22,15 +24,15 @@ const loadStoredUser = (): StoredUser | null => {
   }
 }
 
-const saveStoredUser = (user: StoredUser) => {
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+const saveStoredUser = (roomSlug: string, user: StoredUser) => {
+  localStorage.setItem(getUserStorageKey(roomSlug), JSON.stringify(user))
 }
 
-export const getOrCreateStoredUser = (): StoredUser => {
-  const stored = loadStoredUser()
+export const getOrCreateStoredUser = (roomSlug: string): StoredUser => {
+  const stored = loadStoredUser(roomSlug)
   if (stored) return stored
 
   const created = createRandomUser()
-  saveStoredUser(created)
+  saveStoredUser(roomSlug, created)
   return created
 }
