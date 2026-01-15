@@ -2,7 +2,7 @@ import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayInit, Mes
 import { Server, Socket } from 'socket.io'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { CategoryService } from './category.service'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
 
@@ -16,7 +16,7 @@ export class CategoryGateway implements OnGatewayInit {
 
   constructor(
     private readonly categoryService: CategoryService,
-    private readonly broadcaster: SocketBroadcaster,
+    private readonly broadcaster: RoomBroadcaster,
   ) {}
 
   afterInit(server: Server) {

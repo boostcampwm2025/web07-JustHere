@@ -5,7 +5,7 @@ import * as classValidator from 'class-validator'
 
 import { CategoryGateway } from './category.gateway'
 import { CategoryService } from './category.service'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
 
 describe('CategoryGateway', () => {
@@ -24,7 +24,7 @@ describe('CategoryGateway', () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CategoryGateway, { provide: CategoryService, useValue: categoryService }, { provide: SocketBroadcaster, useValue: broadcaster }],
+      providers: [CategoryGateway, { provide: CategoryService, useValue: categoryService }, { provide: RoomBroadcaster, useValue: broadcaster }],
     }).compile()
 
     gateway = module.get(CategoryGateway)
