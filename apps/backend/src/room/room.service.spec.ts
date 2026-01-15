@@ -159,7 +159,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA, sessionB])
       categoryService.findByRoomId.mockResolvedValue([mockCategory])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -209,7 +209,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA])
       categoryService.findByRoomId.mockResolvedValue([])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as any)
+      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -278,7 +278,7 @@ describe('RoomService', () => {
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
       categoryService.findByRoomId.mockResolvedValue([])
 
-      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as any)
+      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId: slug,
