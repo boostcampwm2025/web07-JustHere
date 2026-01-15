@@ -73,10 +73,6 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
       }
     }
 
-    const handleReconnectError = (error: Error) => {
-      onError?.(error)
-    }
-
     const handleError = (error: Error) => {
       onError?.(error)
     }
@@ -85,7 +81,7 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
     socket.on('disconnect', handleDisconnect)
     socket.on('connect_error', handleConnectError)
     socket.on('reconnect_attempt', handleReconnectAttempt)
-    socket.on('reconnect_error', handleReconnectError)
+    socket.on('reconnect_error', handleError)
     socket.on('error', handleError)
 
     if (autoConnect) socket.connect()
@@ -95,7 +91,7 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
       socket.off('disconnect', handleDisconnect)
       socket.off('connect_error', handleConnectError)
       socket.off('reconnect_attempt', handleReconnectAttempt)
-      socket.off('reconnect_error', handleReconnectError)
+      socket.off('reconnect_error', handleError)
       socket.off('error', handleError)
       socket.disconnect()
       socketRef.current = null
