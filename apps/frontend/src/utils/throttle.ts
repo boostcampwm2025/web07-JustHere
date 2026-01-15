@@ -4,11 +4,11 @@
  * @param delay 최소 실행 간격 (ms)
  * @returns 쓰로틀링된 함수
  */
-export function throttle<T extends (...args: any[]) => void>(func: T, delay: number): T {
+export function throttle<TArgs extends unknown[], TReturn = void>(func: (...args: TArgs) => TReturn, delay: number): (...args: TArgs) => void {
   let lastCall = 0
-  let timeoutId: NodeJS.Timeout | null = null
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
 
-  return ((...args: Parameters<T>) => {
+  return (...args: TArgs): void => {
     const now = Date.now()
     const timeSinceLastCall = now - lastCall
 
@@ -18,7 +18,7 @@ export function throttle<T extends (...args: any[]) => void>(func: T, delay: num
       func(...args)
     } else {
       // 그렇지 않으면 pending 중인 호출을 취소하고 새로 예약
-      if (timeoutId) {
+      if (timeoutId !== null) {
         clearTimeout(timeoutId)
       }
       timeoutId = setTimeout(() => {
@@ -26,5 +26,5 @@ export function throttle<T extends (...args: any[]) => void>(func: T, delay: num
         func(...args)
       }, delay - timeSinceLastCall)
     }
-  }) as T
+  }
 }
