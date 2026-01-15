@@ -1,6 +1,5 @@
 export type RoomMeta = {
   roomId: string
-  me: Participant
   ownerId: string
 }
 

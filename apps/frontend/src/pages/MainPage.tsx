@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
-import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
-import { MOCK_ROOM_ID, MOCK_USER } from '@/mocks'
+import { useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
+import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 function MainPage() {
   const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
@@ -13,9 +14,21 @@ function MainPage() {
   const ownerId = roomMeta?.ownerId
 
   useEffect(() => {
-    joinRoom(MOCK_ROOM_ID, MOCK_USER)
+    if (!slug || !user) return
+    joinRoom(slug, user)
     return () => leaveRoom()
-  }, [leaveRoom, joinRoom])
+  }, [leaveRoom, joinRoom, slug, user])
+
+  if (!slug) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
+  const roomLink = `${baseUrl}/room/${slug}`
 
   if (!ready) {
     return (

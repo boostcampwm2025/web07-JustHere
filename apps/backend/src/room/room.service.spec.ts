@@ -186,8 +186,6 @@ describe('RoomService', () => {
 
       const joinedPayload = emitPayload as RoomJoinedPayload
       expect(joinedPayload.roomId).toBe(roomId)
-      expect(joinedPayload.me.userId).toBe('user-1')
-      expect(joinedPayload.me.name).toBe('ajin')
       expect(Array.isArray(joinedPayload.participants)).toBe(true)
       // 본인 포함 전체 참여자
       expect(joinedPayload.participants).toHaveLength(2)

@@ -7,7 +7,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/onboarding" replace />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route path="/main" element={<MainPage />} />
+      <Route path="/room/:slug" element={<MainPage />} />
     </Routes>
   )
 }

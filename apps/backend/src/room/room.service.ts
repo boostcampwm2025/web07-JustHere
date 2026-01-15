@@ -70,7 +70,6 @@ export class RoomService {
     // 본인에게 room:joined 이벤트 전송
     const joinedPayload: RoomJoinedPayload = {
       roomId: actualRoomId,
-      me: this.sessionToParticipant(session),
       participants: allParticipants,
       categories,
       ownerId: this.getOwnerId(actualRoomId),

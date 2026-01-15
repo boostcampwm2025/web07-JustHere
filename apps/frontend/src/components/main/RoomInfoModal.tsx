@@ -33,8 +33,7 @@ export default function RoomInfoModal({
 
   if (!isOpen) return null
 
-  const participantList = participants ?? []
-  const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
+  if (!isOpen) return null
 
   const handleSubmit = () => {
     const nextName = nameInputRef.current?.value.trim() ?? ''
@@ -85,7 +84,6 @@ export default function RoomInfoModal({
                 )}
               </div>
             ))}
-            {visibleParticipants.length === 0 && <span className="text-sm text-gray">표시할 참여자가 없습니다.</span>}
           </div>
         </div>
 
@@ -129,6 +127,7 @@ export default function RoomInfoModal({
                 size="lg"
                 className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
                 icon={<ContentCopyIcon className="w-[18px] h-[18px]" />}
+                onClick={handleCopyLink}
               >
                 링크 복사
               </Button>
