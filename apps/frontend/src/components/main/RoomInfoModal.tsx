@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
@@ -12,6 +12,9 @@ interface RoomInfoModalProps {
   participants?: Participant[]
   me?: Participant
   onUpdateName?: (name: string) => void
+  isOwner?: boolean
+  ownerId?: string
+  onTransferOwner?: (targetUserId: string) => void
 }
 
 export default function RoomInfoModal({
@@ -22,12 +25,11 @@ export default function RoomInfoModal({
   participants,
   me,
   onUpdateName,
+  isOwner = false,
+  ownerId,
+  onTransferOwner,
 }: RoomInfoModalProps) {
-  const [nameInput, setNameInput] = useState(userName)
-
-  useEffect(() => {
-    setNameInput(userName)
-  }, [userName, isOpen])
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
 
   if (!isOpen) return null
 
@@ -35,7 +37,7 @@ export default function RoomInfoModal({
   const visibleParticipants = me ? [me, ...participantList.filter(p => p.userId !== me.userId)] : participantList
 
   const handleSubmit = () => {
-    const nextName = nameInput.trim()
+    const nextName = nameInputRef.current?.value.trim() ?? ''
     if (!nextName || nextName === userName) return
     onUpdateName?.(nextName)
   }
@@ -64,10 +66,23 @@ export default function RoomInfoModal({
                 >
                   {getParticipantInitial(p.name)}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1">
                   <span className="text-[18px] text-black">{p.name}</span>
+                  {ownerId && p.userId === ownerId && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">방장</span>
+                  )}
                   {me && p.userId === me.userId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
                 </div>
+                {isOwner && (!me || p.userId !== me.userId) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs border border-gray-200 text-gray-700 hover:bg-gray-100"
+                    onClick={() => onTransferOwner?.(p.userId)}
+                  >
+                    방장 넘기기
+                  </Button>
+                )}
               </div>
             ))}
             {visibleParticipants.length === 0 && <span className="text-sm text-gray">표시할 참여자가 없습니다.</span>}
@@ -82,8 +97,8 @@ export default function RoomInfoModal({
             <div className="relative group">
               <input
                 type="text"
-                value={nameInput}
-                onChange={event => setNameInput(event.target.value)}
+                defaultValue={userName}
+                ref={nameInputRef}
                 onKeyDown={event => {
                   if (event.key === 'Enter') {
                     event.preventDefault()

@@ -8,6 +8,8 @@ import type {
   ParticipantDisconnectedPayload,
   ParticipantNameUpdatedPayload,
   ParticipantUpdateNamePayload,
+  RoomOwnerTransferredPayload,
+  RoomTransferOwnerPayload,
 } from '@/types/socket'
 import type { Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
@@ -82,6 +84,16 @@ export function useRoomSocketCache() {
       })
     }
 
+    const onOwnerTransferred = ({ newOwnerId }: RoomOwnerTransferredPayload) => {
+      const roomId = roomIdRef.current
+      if (!roomId) return
+
+      queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; me: Participant; ownerId: string } | undefined) => {
+        if (!prev) return prev
+        return { ...prev, ownerId: newOwnerId }
+      })
+    }
+
     const onDisconnect = (reason: Socket.DisconnectReason) => {
       setRoomId(null)
       setIsReady(false)
@@ -104,6 +116,7 @@ export function useRoomSocketCache() {
     socket.on('participant:connected', onConnected)
     socket.on('participant:disconnected', onDisconnected)
     socket.on('participant:name_updated', onNameUpdated)
+    socket.on('room:owner_transferred', onOwnerTransferred)
     socket.on('disconnect', onDisconnect)
     socket.on('connect', onConnect)
 
@@ -112,6 +125,7 @@ export function useRoomSocketCache() {
       socket.off('participant:connected', onConnected)
       socket.off('participant:disconnected', onDisconnected)
       socket.off('participant:name_updated', onNameUpdated)
+      socket.off('room:owner_transferred', onOwnerTransferred)
       socket.off('disconnect', onDisconnect)
       socket.off('connect', onConnect)
     }
@@ -172,7 +186,20 @@ export function useRoomSocketCache() {
     [getSocket],
   )
 
+  const transferOwner = useCallback(
+    (targetUserId: string) => {
+      const socket = getSocket()
+      if (!socket?.connected) return
+
+      const trimmed = targetUserId.trim()
+      if (!trimmed) return
+
+      socket.emit('room:transfer_owner', { targetUserId: trimmed } satisfies RoomTransferOwnerPayload)
+    },
+    [getSocket],
+  )
+
   const ready = useMemo(() => status === 'connected' && isReady, [status, isReady])
 
-  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName }
+  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName, transferOwner }
 }

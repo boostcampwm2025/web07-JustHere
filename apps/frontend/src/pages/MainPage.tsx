@@ -6,9 +6,11 @@ import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/ro
 import { MOCK_ROOM_ID, MOCK_USER } from '@/mocks'
 
 function MainPage() {
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
   const { data: participants } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
+  const isOwner = !!roomMeta?.me && roomMeta.ownerId === roomMeta.me.userId
+  const ownerId = roomMeta?.ownerId
 
   useEffect(() => {
     joinRoom(MOCK_ROOM_ID, MOCK_USER)
@@ -18,7 +20,14 @@ function MainPage() {
   if (!ready) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Header participants={participants} me={roomMeta?.me} onUpdateName={updateParticipantName} />
+        <Header
+          participants={participants}
+          me={roomMeta?.me}
+          onUpdateName={updateParticipantName}
+          isOwner={isOwner}
+          ownerId={ownerId}
+          onTransferOwner={transferOwner}
+        />
         <div className="p-6 text-gray">loading...</div>
       </div>
     )
@@ -26,7 +35,14 @@ function MainPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header participants={participants} me={roomMeta?.me} onUpdateName={updateParticipantName} />
+      <Header
+        participants={participants}
+        me={roomMeta?.me}
+        onUpdateName={updateParticipantName}
+        isOwner={isOwner}
+        ownerId={ownerId}
+        onTransferOwner={transferOwner}
+      />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection />
         <LocationListSection />

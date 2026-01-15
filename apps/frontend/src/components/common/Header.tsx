@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { BellIcon, CogIcon, ShareVariantIcon } from '@/components/Icons'
+import { BellIcon, CogIcon, ShareVariantIcon, StarIcon } from '@/components/Icons'
 import Logo from '@/assets/images/logo.svg?react'
 import RoomInfoModal from '@/components/main/RoomInfoModal'
 import { Button } from '@/components/common/Button'
@@ -11,9 +11,12 @@ interface HeaderProps {
   participants?: Participant[]
   me?: Participant
   onUpdateName?: (name: string) => void
+  isOwner?: boolean
+  ownerId?: string
+  onTransferOwner?: (targetUserId: string) => void
 }
 
-export default function Header({ participants = [], me, onUpdateName }: HeaderProps) {
+export default function Header({ participants = [], me, onUpdateName, isOwner = false, ownerId, onTransferOwner }: HeaderProps) {
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
   const { pathname } = useLocation()
   const isOnboarding = pathname.startsWith('/onboarding')
@@ -36,13 +39,18 @@ export default function Header({ participants = [], me, onUpdateName }: HeaderPr
             {hasParticipants && (
               <div className="flex items-center -space-x-2">
                 {combinedParticipants.slice(0, displayCount).map(p => (
-                  <div key={p.userId} className="overflow-hidden border-2 border-white rounded-full w-9 h-9">
+                  <div key={p.userId} className="relative w-9 h-9 overflow-visible">
                     <div
-                      className="w-full h-full flex items-center justify-center text-sm font-bold text-black"
+                      className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-black overflow-hidden"
                       style={{ backgroundColor: getParticipantColor(p.name) }}
                     >
                       {getParticipantInitial(p.name)}
                     </div>
+                    {ownerId && p.userId === ownerId && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-300 border border-yellow-500 shadow-sm">
+                        <StarIcon className="w-2.5 h-2.5 text-yellow-900 fill-yellow-900" />
+                      </span>
+                    )}
                   </div>
                 ))}
                 {extraCount > 0 && (
@@ -75,6 +83,9 @@ export default function Header({ participants = [], me, onUpdateName }: HeaderPr
                 participants={participants}
                 me={me}
                 onUpdateName={onUpdateName}
+                isOwner={isOwner}
+                ownerId={ownerId}
+                onTransferOwner={onTransferOwner}
               />
             </div>
           )}
