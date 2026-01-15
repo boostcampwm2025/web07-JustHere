@@ -75,6 +75,7 @@ export class SwaggerService {
             content: {
               'application/json': {
                 // JSON 파일의 request 객체를 그대로 스키마로 사용
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 schema: event.request as any,
               },
             },
@@ -87,6 +88,7 @@ export class SwaggerService {
               content: {
                 'application/json': {
                   // JSON 파일의 response 객체를 그대로 스키마로 사용
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                   schema: event.response as any,
                 },
               },
