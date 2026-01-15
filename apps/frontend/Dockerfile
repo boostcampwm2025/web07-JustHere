@@ -34,8 +34,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=builder /app/out/full/ .
 
 # 4) 빌드 시점에 필요한 VITE 환경 변수 주입
-ARG FRONTEND_ENV_FILE=.env.production
-COPY apps/frontend/${FRONTEND_ENV_FILE} apps/frontend/.env
+COPY .env.production .
 
 # 5) 빌드 실행
 RUN turbo run build --filter=frontend
