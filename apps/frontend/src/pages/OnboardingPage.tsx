@@ -19,6 +19,7 @@ function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('location')
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [roomSlug, setRoomSlug] = useState<string | null>(null)
 
   const handleLocationSelect = async (location: SelectedLocation) => {
     setSelectedLocation(location)
@@ -30,7 +31,8 @@ function OnboardingPage() {
         place_name: location.name,
       })
       const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
-      setInviteLink(`${baseUrl}/invite/${room.slug}`)
+      setRoomSlug(room.slug)
+      setInviteLink(`${baseUrl}/room/${room.slug}`)
       setCurrentStep('invite')
     } catch (error) {
       console.error('방 생성 실패', error)
@@ -38,7 +40,8 @@ function OnboardingPage() {
   }
 
   const handleInviteComplete = () => {
-    navigate('/main')
+    if (!roomSlug) return
+    navigate(`/room/${roomSlug}`)
   }
 
   return (

@@ -1,19 +1,27 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
-import { MOCK_ROOM_ID, MOCK_USER } from '@/mocks'
+import { getOrCreateStoredUser, type StoredUser } from '@/utils/userStorage'
 
 function MainPage() {
+  const { slug } = useParams<{ slug: string }>()
   const { joinRoom, leaveRoom, ready, roomId } = useRoomSocketCache()
   const { data: participants } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
+  const [user] = useState<StoredUser>(() => getOrCreateStoredUser())
 
   useEffect(() => {
-    joinRoom(MOCK_ROOM_ID, MOCK_USER)
+    if (!slug || !user) return
+    joinRoom(slug, user)
     return () => leaveRoom()
-  }, [leaveRoom, joinRoom])
+  }, [leaveRoom, joinRoom, slug, user])
+
+  if (!slug) {
+    return <Navigate to="/onboarding" replace />
+  }
 
   if (!ready) {
     return (
