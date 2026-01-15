@@ -1,3 +1,4 @@
+import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AppController } from '@/app.controller'
@@ -19,6 +20,7 @@ import { YjsModule } from '@/yjs/yjs.module'
     CategoryModule,
     RoomModule,
     YjsModule,
+    SwaggerConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
