@@ -78,17 +78,13 @@ export function useRoomSocketCache() {
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) =>
         prev.map(participant => (participant.userId === p.userId ? { ...participant, name: p.name } : participant)),
       )
-      queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; me: Participant; ownerId: string } | undefined) => {
-        if (!prev || prev.me.userId !== p.userId) return prev
-        return { ...prev, me: { ...prev.me, name: p.name } }
-      })
     }
 
     const onOwnerTransferred = ({ newOwnerId }: RoomOwnerTransferredPayload) => {
       const roomId = roomIdRef.current
       if (!roomId) return
 
-      queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; me: Participant; ownerId: string } | undefined) => {
+      queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; ownerId: string } | undefined) => {
         if (!prev) return prev
         return { ...prev, ownerId: newOwnerId }
       })

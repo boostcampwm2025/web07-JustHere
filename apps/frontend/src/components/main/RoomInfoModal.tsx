@@ -7,10 +7,10 @@ import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 interface RoomInfoModalProps {
   isOpen: boolean
   onClose: () => void
-  userName?: string
-  roomLink?: string
-  participants?: Participant[]
-  me?: Participant
+  userName: string
+  roomLink: string
+  participants: Participant[]
+  currentUserId: string
   onUpdateName?: (name: string) => void
   isOwner?: boolean
   ownerId?: string
@@ -20,10 +20,10 @@ interface RoomInfoModalProps {
 export default function RoomInfoModal({
   isOpen,
   onClose,
-  userName = 'A',
-  roomLink = 'www.justhere.p-e.kr/abxbfdff..',
+  userName,
+  roomLink,
   participants,
-  me,
+  currentUserId,
   onUpdateName,
   isOwner = false,
   ownerId,
@@ -32,13 +32,21 @@ export default function RoomInfoModal({
   const nameInputRef = useRef<HTMLInputElement | null>(null)
 
   if (!isOpen) return null
-
-  if (!isOpen) return null
+  const hasCurrentUser = participants.some(p => p.userId === currentUserId)
+  const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
 
   const handleSubmit = () => {
     const nextName = nameInputRef.current?.value.trim() ?? ''
     if (!nextName || nextName === userName) return
     onUpdateName?.(nextName)
+  }
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(roomLink)
+    } catch (error) {
+      console.error('링크 복사에 실패했습니다.', error)
+    }
   }
 
   return (
@@ -70,9 +78,9 @@ export default function RoomInfoModal({
                   {ownerId && p.userId === ownerId && (
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">방장</span>
                   )}
-                  {me && p.userId === me.userId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
+                  {p.userId === currentUserId && <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">나</span>}
                 </div>
-                {isOwner && (!me || p.userId !== me.userId) && (
+                {isOwner && p.userId !== currentUserId && (
                   <Button
                     variant="ghost"
                     size="sm"
