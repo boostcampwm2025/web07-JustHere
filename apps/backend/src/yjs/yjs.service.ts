@@ -34,7 +34,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     // 서버 종료 시 남은 데이터 강제 저장
     clearInterval(this.saveInterval)
-    this.flushBufferToDB()
+    void this.flushBufferToDB().catch()
   }
 
   /**
@@ -82,43 +82,6 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
         yjsDoc.connections.delete(socketId)
       }
     }
-  }
-
-  /**
-   * 현재 문서 상태를 전체 업데이트로 인코딩
-   */
-  getStateVector(categoryId: string): Uint8Array | null {
-    const yjsDoc = this.documents.get(categoryId)
-    if (!yjsDoc) return null
-
-    return encodeStateAsUpdate(yjsDoc.doc)
-  }
-
-  /**
-   * 클라이언트로부터 받은 업데이트 적용
-   */
-  applyUpdate(categoryId: string, update: Uint8Array): boolean {
-    const yjsDoc = this.documents.get(categoryId)
-    if (!yjsDoc) return false
-
-    try {
-      applyUpdate(yjsDoc.doc, update)
-
-      // DB에 비동기 저장 (await 없이 적용해야 함)
-      this.canvasService.saveUpdateLog(categoryId, update).catch(err => console.error('DB Save Error:', err))
-
-      return true
-    } catch (error) {
-      console.error('Failed to apply Yjs update:', error)
-      return false
-    }
-  }
-
-  /**
-   * Category에 연결된 클라이언트 수
-   */
-  getConnectionCount(categoryId: string): number {
-    return this.documents.get(categoryId)?.connections.size ?? 0
   }
 
   /**
