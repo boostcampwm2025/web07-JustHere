@@ -1,11 +1,12 @@
-import React, { useRef, useState } from 'react'
-import { Stage, Layer, Circle, Text, Rect, Group, Line } from 'react-konva'
+import { useRef, useState } from 'react'
+import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
 import type { PostIt, Line as LineType } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
+import AnimatedCursor from './AnimatedCursor'
 
 type ToolType = 'hand' | 'pencil' | 'postit'
 
@@ -306,14 +307,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             </Group>
           )}
 
-          {/* 다른 사용자의 커서 렌더링 */}
+          {/* 다른 사용자의 커서 렌더링 (애니메이션 적용) */}
           {Array.from(cursors.values()).map(cursor => (
-            <React.Fragment key={cursor.socketId}>
-              {/* 커서 원 */}
-              <Circle x={cursor.x} y={cursor.y} radius={8} fill="#3b82f6" stroke="#ffffff" strokeWidth={2} />
-              {/* 사용자 ID 텍스트 */}
-              <Text x={cursor.x + 12} y={cursor.y - 8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
-            </React.Fragment>
+            <AnimatedCursor key={cursor.socketId} cursor={cursor} />
           ))}
         </Layer>
       </Stage>
