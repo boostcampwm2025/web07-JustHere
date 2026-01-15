@@ -1,6 +1,6 @@
 import type { Server, BroadcastOperator, DefaultEventsMap } from 'socket.io'
 
-import { SocketBroadcaster } from './socket.broadcaster'
+import { RoomBroadcaster } from './room.broadcaster'
 
 type MockBroadcastOperator = BroadcastOperator<DefaultEventsMap, unknown> & {
   emit: jest.Mock
@@ -23,10 +23,10 @@ function createMockServer() {
 }
 
 describe('SocketBroadcaster', () => {
-  let broadcaster: SocketBroadcaster
+  let broadcaster: RoomBroadcaster
 
   beforeEach(() => {
-    broadcaster = new SocketBroadcaster()
+    broadcaster = new RoomBroadcaster()
   })
 
   describe('emitToRoom', () => {

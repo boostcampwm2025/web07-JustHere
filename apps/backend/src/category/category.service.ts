@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { Category, Prisma } from '@prisma/client'
 import type { Socket } from 'socket.io'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { UserService } from '@/user/user.service'
 import { CategoryRepository } from './category.repository'
 import { CategoryCreatedPayload, CategoryDeletedPayload, CategoryErrorPayload } from './dto/category.s2c.dto'
@@ -10,7 +10,7 @@ import { CategoryCreatedPayload, CategoryDeletedPayload, CategoryErrorPayload } 
 export class CategoryService {
   constructor(
     private readonly categoryRepository: CategoryRepository,
-    private readonly broadcaster: SocketBroadcaster,
+    private readonly broadcaster: RoomBroadcaster,
     private readonly userService: UserService,
   ) {}
 

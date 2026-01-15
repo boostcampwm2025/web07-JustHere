@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { Prisma } from '@prisma/client'
 import type { Socket } from 'socket.io'
 import { CategoryRepository } from './category.repository'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { UserService } from '@/user/user.service'
 import type { UserSession } from '@/user/user.type'
 import { CategoryService } from './category.service'
@@ -30,6 +30,7 @@ describe('CategoryService (socket handlers only)', () => {
     color: 'hsl(120, 70%, 50%)',
     roomId,
     joinedAt: now,
+    isOwner: false,
   }
 
   const categoryRepositoryMock = {
@@ -61,7 +62,7 @@ describe('CategoryService (socket handlers only)', () => {
       providers: [
         CategoryService,
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
-        { provide: SocketBroadcaster, useValue: broadcasterMock },
+        { provide: RoomBroadcaster, useValue: broadcasterMock },
         { provide: UserService, useValue: userServiceMock },
       ],
     }).compile()

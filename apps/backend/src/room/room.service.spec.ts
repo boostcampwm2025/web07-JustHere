@@ -4,7 +4,7 @@ import type { Category, Room } from '@prisma/client'
 import { RoomService } from './room.service'
 import { RoomRepository } from './room.repository'
 import { CategoryService } from '@/category/category.service'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { UserService } from '@/user/user.service'
 import type { UserSession } from '@/user/user.type'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
@@ -89,8 +89,9 @@ describe('RoomService', () => {
           },
         },
         { provide: UserService, useValue: users },
+
         { provide: CategoryService, useValue: categoryService },
-        { provide: SocketBroadcaster, useValue: broadcaster },
+        { provide: RoomBroadcaster, useValue: broadcaster },
       ],
     }).compile()
 

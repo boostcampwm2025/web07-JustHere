@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
 
@@ -24,7 +24,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   constructor(
     private readonly roomService: RoomService,
-    private readonly broadcaster: SocketBroadcaster,
+    private readonly broadcaster: RoomBroadcaster,
   ) {}
 
   afterInit(server: Server) {

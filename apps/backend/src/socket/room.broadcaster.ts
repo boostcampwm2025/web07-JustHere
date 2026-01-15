@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { Server } from 'socket.io'
 
 @Injectable()
-export class SocketBroadcaster {
+export class RoomBroadcaster {
   private server: Server | null = null
 
   setServer(server: Server) {

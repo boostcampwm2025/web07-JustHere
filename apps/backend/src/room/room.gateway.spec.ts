@@ -5,7 +5,7 @@ import * as classValidator from 'class-validator'
 
 import { RoomGateway } from './room.gateway'
 import { RoomService } from './room.service'
-import { SocketBroadcaster } from '@/socket/socket.broadcaster'
+import { RoomBroadcaster } from '@/socket/room.broadcaster'
 import { RoomJoinPayload, ParticipantUpdateNamePayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 
 describe('RoomGateway', () => {
@@ -27,7 +27,7 @@ describe('RoomGateway', () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RoomGateway, { provide: RoomService, useValue: roomService }, { provide: SocketBroadcaster, useValue: broadcaster }],
+      providers: [RoomGateway, { provide: RoomService, useValue: roomService }, { provide: RoomBroadcaster, useValue: broadcaster }],
     }).compile()
 
     gateway = module.get(RoomGateway)
