@@ -3,13 +3,10 @@ import { io, type Socket, type ManagerOptions, type SocketOptions } from 'socket
 
 type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
-const SOCKET_CONFIG = {
-  url: import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3000',
-  reconnection: {
-    maxAttempts: 5,
-    delay: 1000,
-    delayMax: 5000,
-  },
+const SOCKET_RECONNECTION_CONFIG = {
+  maxAttempts: 5,
+  delay: 1000,
+  delayMax: 5000,
 } as const
 
 interface UseSocketClientProps {
@@ -25,7 +22,7 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
   const reconnectAttemptsRef = useRef(0)
 
   const fullUrl = useMemo(() => {
-    return `${SOCKET_CONFIG.url}${namespace ? `/${namespace}` : ''}`
+    return `${window.location.origin}${namespace ? `/${namespace}` : ''}`
   }, [namespace])
 
   const [status, setStatus] = useState<SocketStatus>(autoConnect ? 'connecting' : 'disconnected')
@@ -35,9 +32,9 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
       autoConnect: false,
       transports: ['websocket'],
       reconnection: autoReconnect,
-      reconnectionAttempts: SOCKET_CONFIG.reconnection.maxAttempts,
-      reconnectionDelay: SOCKET_CONFIG.reconnection.delay,
-      reconnectionDelayMax: SOCKET_CONFIG.reconnection.delayMax,
+      reconnectionAttempts: SOCKET_RECONNECTION_CONFIG.maxAttempts,
+      reconnectionDelay: SOCKET_RECONNECTION_CONFIG.delay,
+      reconnectionDelayMax: SOCKET_RECONNECTION_CONFIG.delayMax,
       ...ioOptions,
     })
 
@@ -67,9 +64,9 @@ export function useSocketClient({ namespace, autoConnect = true, autoReconnect =
       reconnectAttemptsRef.current = attemptNumber
       setStatus('reconnecting')
 
-      if (attemptNumber >= SOCKET_CONFIG.reconnection.maxAttempts) {
+      if (attemptNumber >= SOCKET_RECONNECTION_CONFIG.maxAttempts) {
         setStatus('disconnected')
-        onError?.(new Error(`연결 실패: 최대 재연결 시도 횟수(${SOCKET_CONFIG.reconnection.maxAttempts})를 초과했습니다.`))
+        onError?.(new Error(`연결 실패: 최대 재연결 시도 횟수(${SOCKET_RECONNECTION_CONFIG.maxAttempts})를 초과했습니다.`))
       }
     }
 
