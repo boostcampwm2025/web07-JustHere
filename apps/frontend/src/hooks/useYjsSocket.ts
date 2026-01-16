@@ -169,6 +169,15 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     doc.on('update', updateHandler)
 
     return () => {
+      // 캔버스 변경 시 커서 사라짐 이벤트 브로드캐스트
+      if (socket.connected) {
+        const awarenessPayload: YjsAwarenessPayload = {
+          canvasId,
+          state: {},
+        }
+        socket.emit('y:awareness', awarenessPayload)
+      }
+
       // 캔버스 나가기
       const detachPayload: CanvasDetachPayload = { canvasId }
       socket.emit('canvas:detach', detachPayload)

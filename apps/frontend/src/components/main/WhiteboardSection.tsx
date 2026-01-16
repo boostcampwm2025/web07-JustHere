@@ -1,58 +1,45 @@
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/common/Button'
 import KakaoMap from '@/components/KakaoMap'
 import WhiteboardCanvas from '@/components/main/WhiteboardCanvas.tsx'
+import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn.ts'
-import { useState } from 'react'
-import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon } from '@/components/Icons'
+import { useRoomCategories } from '@/hooks/room'
+import AddCategoryModal from './AddCategoryModal'
+import type { Category } from '@/types/domain'
 
 // 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
-type CategoryType = 'restaurant' | 'cafe' | 'bar' | 'custom'
 type ToggleType = 'map' | 'canvas'
 
-// 실제 카테고리 데이터 구조 (DB/Y.js와 연동될 구조)
-interface CategoryTab {
-  id: string // UUID (socket room 접속용)
-  type: CategoryType // 아이콘 타입
-  label: string
+interface WhiteboardSectionProps {
+  roomId: string
+  onCreateCategory: (name: string) => void
 }
 
-function WhiteboardSection() {
-  // 카테고리 더미 데이터
-  // TODO: 실제로는 API를 통해 방(Room) 정보를 불러올 때 카테고리 리스트도 받아와야 함.
-  const [categories] = useState<CategoryTab[]>([
-    {
-      id: '9c49cff8-1d4f-4e47-bb99-aa8aca2a1796', // 예: 실제 UUID
-      type: 'restaurant',
-      label: '음식점',
-    },
-    {
-      id: 'aeeb9756-e746-4bb0-8749-8ec34aaed338',
-      type: 'cafe',
-      label: '카페',
-    },
-    {
-      id: 'e91f0e18-044a-4bfc-a0d6-0b2f48e08f83',
-      type: 'bar',
-      label: '술집',
-    },
-  ])
+function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps) {
+  const [isCategoryModalOpen, setCategoryModalOpen] = useState(false)
+  const { data: categories } = useRoomCategories(roomId)
 
-  // 현재 활성화된 카테고리 ID (초기값: 첫 번째 카테고리)
-  const [activeCategoryId, setActiveCategoryId] = useState<string>(categories[0].id)
-
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
 
+  useEffect(() => {
+    setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
+  }, [categories, activeCategoryId])
+
   // 아이콘 맵퍼 (Type에 따라 아이콘 반환)
-  const getIconByType = (type: CategoryType) => {
+  const getIconByType = (type: string) => {
     switch (type) {
-      case 'restaurant':
+      case '음식점':
         return <SilverwareForkKnifeIcon className="w-4 h-4" />
-      case 'cafe':
+      case '카페':
         return <CoffeeIcon className="w-4 h-4" />
-      case 'bar':
+      case '술집':
         return <LiquorIcon className="w-4 h-4" />
+      case '가볼만한곳':
+        return <CompassIcon className="w-4 h-4" />
       default:
-        return <SilverwareForkKnifeIcon className="w-4 h-4" />
+        return <PencilIcon className="w-4 h-4" />
     }
   }
 
@@ -65,9 +52,6 @@ function WhiteboardSection() {
 
   // 토글 비활성화 스타일
   const inactiveClass = 'text-gray hover:bg-gray-bg hover:text-black bg-transparent'
-
-  // TODO: URL params의 room UUID 가져오기
-  const roomId = 'room1'
 
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
@@ -85,23 +69,39 @@ function WhiteboardSection() {
                 activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150'
               }`}
             >
-              {getIconByType(category.type)}
-              <span className="font-bold text-gray-800 text-sm">{category.label}</span>
+              {getIconByType(category.title)}
+              <span className="font-bold text-gray-800 text-sm">{category.title}</span>
             </button>
           ))}
         </nav>
 
         {/* Add Tab Button */}
-        {/* TODO: 클릭 시 카테고리 추가 모달 오픈 -> API 호출 -> setCategories 업데이트 */}
-        <button className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-slate-200 transition-colors mb-1" aria-label="새 탭 추가">
-          <PlusIcon className="w-5 h-5 text-gray-800" />
-        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-slate-200 transition-colors mb-1"
+          aria-label="새 탭 추가"
+          onClick={() => setCategoryModalOpen(true)}
+        >
+          <PlusIcon className="size-5 text-gray-800" />
+        </Button>
+
+        <AddCategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} onComplete={onCreateCategory} />
       </header>
 
       {/* Whiteboard Canvas */}
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
-          <WhiteboardCanvas roomId={roomId} canvasId={activeCategoryId} />
+          activeCategoryId ? (
+            <WhiteboardCanvas roomId={roomId} canvasId={activeCategoryId} />
+          ) : (
+            <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <div className="text-center">
+                <p className="text-lg font-semibold mb-2">카테고리가 없습니다</p>
+                <p className="text-sm">새 카테고리를 추가해주세요</p>
+              </div>
+            </div>
+          )
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
             <KakaoMap />
@@ -138,3 +138,10 @@ function WhiteboardSection() {
 }
 
 export default WhiteboardSection
+
+function resolveActiveCategoryId(categories: Category[], currentId: string) {
+  if (!categories || categories.length === 0) return ''
+
+  const exists = categories.some(c => c.id === currentId)
+  return exists ? currentId : categories[0].id
+}
