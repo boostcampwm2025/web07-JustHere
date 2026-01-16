@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { Prisma } from '@prisma/client'
 import type { Socket } from 'socket.io'
 import { CategoryRepository } from './category.repository'
-import { RoomBroadcaster } from '@/socket/room.broadcaster'
-import { UserService } from '@/user/user.service'
-import type { UserSession } from '@/user/user.type'
+import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
+import { UserService } from '@/modules/user/user.service'
+import type { UserSession } from '@/modules/user/user.type'
 import { CategoryService } from './category.service'
 
 describe('CategoryService (socket handlers only)', () => {

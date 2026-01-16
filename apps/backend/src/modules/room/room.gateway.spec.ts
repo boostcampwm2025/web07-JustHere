@@ -5,7 +5,7 @@ import * as classValidator from 'class-validator'
 
 import { RoomGateway } from './room.gateway'
 import { RoomService } from './room.service'
-import { RoomBroadcaster } from '@/socket/room.broadcaster'
+import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { RoomJoinPayload, ParticipantUpdateNamePayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 
 describe('RoomGateway', () => {

@@ -1,18 +1,12 @@
-import { CanvasService } from '@/yjs/canvas.service'
+import { PrismaService } from '@/lib/prisma/prisma.service'
+import { YjsDocument } from './yjs.type'
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import * as Y from 'yjs'
 import { encodeStateAsUpdate, applyUpdate } from 'yjs'
 
-interface YjsDocument {
-  doc: Y.Doc
-  roomId: string
-  categoryId: string
-  connections: Set<string> // socketId들
-}
-
 @Injectable()
 export class YjsService implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly canvasService: CanvasService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // categoryId -> YjsDocument 매핑
   private documents = new Map<string, YjsDocument>()
@@ -48,7 +42,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
     const doc = new Y.Doc()
 
     // DB에서 기존 데이터 불러와서 병합
-    const initialUpdate = await this.canvasService.getMergedUpdate(categoryId)
+    const initialUpdate = await this.getMergedUpdate(categoryId)
     if (initialUpdate.byteLength > 0) {
       Y.applyUpdate(doc, initialUpdate)
     }
@@ -158,7 +152,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
         const mergedUpdate = Y.mergeUpdates(updates)
 
         // 병합된 하나만 DB에 저장
-        await this.canvasService.saveUpdateLog(categoryId, mergedUpdate)
+        await this.saveUpdateLog(categoryId, mergedUpdate)
 
         console.log(`[Yjs] Flushed ${updates.length} updates for category ${categoryId}`)
       } catch (err) {
@@ -166,5 +160,28 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
         // TODO: 만약 flush 실패 시 다시 버퍼에 넣거나, 재시도 큐에 넣는 로직 필요
       }
     }
+  }
+
+  // 초기 데이터 로드 (DB -> Merged Uint8Array)
+  private async getMergedUpdate(categoryId: string): Promise<Uint8Array> {
+    const logs = await this.prisma.categoryUpdateLog.findMany({
+      where: { categoryId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    if (logs.length === 0) return new Uint8Array()
+
+    const updates = logs.map(log => new Uint8Array(log.updateData))
+    return Y.mergeUpdates(updates)
+  }
+
+  // 업데이트 로그 저장 (Uint8Array -> DB)
+  private async saveUpdateLog(canvasId: string, update: Uint8Array) {
+    await this.prisma.categoryUpdateLog.create({
+      data: {
+        categoryId: canvasId,
+        updateData: Buffer.from(update),
+      },
+    })
   }
 }

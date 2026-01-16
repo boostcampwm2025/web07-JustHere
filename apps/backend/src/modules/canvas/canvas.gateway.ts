@@ -8,8 +8,8 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { YjsService } from '@/yjs/yjs.service'
-import { CanvasBroadcaster } from '@/socket/canvas.broadcaster'
+import { YjsService } from './yjs.service'
+import { CanvasBroadcaster } from '@/modules/socket/canvas.broadcaster'
 import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenessPayload } from './dto/yjs.dto'
 
 @WebSocketGateway({

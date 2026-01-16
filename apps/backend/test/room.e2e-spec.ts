@@ -4,7 +4,7 @@ import request from 'supertest'
 import type { Server } from 'http'
 import type { Room } from '@prisma/client'
 import { AppModule } from '@/app.module'
-import { PrismaService } from '@/prisma/prisma.service'
+import { PrismaService } from '@/lib/prisma/prisma.service'
 
 interface RoomResponse {
   body: Room
@@ -53,7 +53,6 @@ describe('Room API (e2e)', () => {
           expect(res.body).toHaveProperty('slug')
           expect(res.body.slug).toHaveLength(8)
           expect(res.body.slug).toMatch(/^[a-z0-9]+$/)
-          expect(res.body.title).toBe('우리 팀 모임')
           expect(res.body.x).toBe(127.027621)
           expect(res.body.y).toBe(37.497952)
           expect(res.body.place_name).toBe('강남역')

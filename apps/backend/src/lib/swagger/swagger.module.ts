@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 
-import { SwaggerService } from '@/lib/swagger/swagger.service'
+import { SwaggerService } from './swagger.service'
 
 @Module({
   imports: [],

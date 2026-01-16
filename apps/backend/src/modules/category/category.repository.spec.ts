@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Category } from '@prisma/client'
 
-import { PrismaService } from '@/prisma/prisma.service'
+import { PrismaService } from '@/lib/prisma/prisma.service'
 import { CategoryRepository } from './category.repository'
 
 describe('CategoryRepository', () => {
