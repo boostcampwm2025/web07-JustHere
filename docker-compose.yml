@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: backend
+    image: ${NCP_CR_ENDPOINT}/my-backend:latest
+    expose:
+      - '3000' # 호스트(외부)에는 포트를 노출하지 않고, 내부 도커 네트워크끼리만 통신함.
+    env_file:
+      - .env.backend
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    container_name: frontend
+    image: ${NCP_CR_ENDPOINT}/my-frontend:latest
+    ports:
+      - '80:80' # 외부 80번 포트를 컨테이너 Nginx 80번으로 연결
+      - '443:443'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: always
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - ./data/certbot/www:/var/www/certbot:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    networks:
+      - app-network
+    restart: always
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+             while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet;
+               sleep 12h & wait $${!};
+             done"
+
+networks:
+  app-network:
+    driver: bridge

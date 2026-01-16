@@ -1,0 +1,41 @@
+{
+  "name": "web07-boostcamp",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,json}\"",
+    "prepare": "husky",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.6.3"
+  },
+  "dependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "zod": "^4.3.5"
+  },
+  "lint-staged": {
+    "apps/**/*.{ts,tsx,js,json}": [
+      "prettier --write"
+    ],
+
+    "apps/frontend/**/*.{ts,tsx}": [
+      "pnpm --filter frontend eslint --fix"
+    ],
+    "apps/backend/**/*.ts": [
+      "pnpm --filter backend eslint --fix"
+    ]
+  }
+}

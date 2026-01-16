@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Room {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique @db.VarChar(50) 
+  x         Float    @default(0)
+  y         Float    @default(0)
+  place_name String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  categories Category[]
+
+  @@index([slug])
+  @@map("rooms")
+}
+
+model Category {
+  id         String   @id @default(uuid()) @db.Uuid
+  roomId     String   @map("room_id") @db.Uuid
+  title      String   @db.VarChar(100) 
+  orderIndex Int      @default(0) @map("order_index") 
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  room              Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  updateLogs        CategoryUpdateLog[]
+  snapshot          CategorySnapshot?
+
+  @@index([roomId])
+  @@index([roomId, orderIndex])
+  @@map("categories")
+}
+
+model CategoryUpdateLog {
+  id         BigInt   @id @default(autoincrement())
+  categoryId String   @map("category_id") @db.Uuid
+  updateData Bytes    @map("update_data") 
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, createdAt])
+  @@map("category_update_logs")
+}
+
+model CategorySnapshot {
+  categoryId  String   @id @map("category_id") @db.Uuid
+  stateVector Bytes    @map("state_vector") 
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("category_snapshots")
+}
