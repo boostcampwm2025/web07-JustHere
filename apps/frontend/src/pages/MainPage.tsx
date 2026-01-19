@@ -1,21 +1,23 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
-import { getOrCreateStoredUser, updateStoredUserName } from '@/utils/userStorage'
+import { getOrCreateStoredUser, updateStoredUserName, type StoredUser } from '@/utils/userStorage'
 
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
-  const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
 
+  const [user, setUser] = useState<StoredUser | null>(() => (slug ? getOrCreateStoredUser(slug) : null))
+
   const handleUpdateName = (name: string) => {
-    if (!slug) return
+    if (!slug || !user) return
 
     updateParticipantName(name)
     updateStoredUserName(slug, name)
+    setUser(prev => (prev ? { ...prev, name } : prev))
   }
 
   const { data: participants = [] } = useRoomParticipants(roomId)
