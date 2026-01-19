@@ -90,18 +90,19 @@ export default function Header({ participants, currentUserId, roomLink, onUpdate
                 Share
               </Button>
 
-              <RoomInfoModal
-                onClose={() => setIsRoomInfoModalOpen(false)}
-                userName={userName}
-                roomLink={roomLink}
-                participants={participants}
-                currentUserId={currentUserId}
-                onUpdateName={handleUpdateName}
-                isOwner={isOwner}
-                ownerId={ownerId}
-                onTransferOwner={onTransferOwner}
-                isOpen={isRoomInfoModalOpen}
-              />
+              {isRoomInfoModalOpen && (
+                <RoomInfoModal
+                  onClose={() => setIsRoomInfoModalOpen(false)}
+                  userName={userName}
+                  roomLink={roomLink}
+                  participants={participants}
+                  currentUserId={currentUserId}
+                  onUpdateName={handleUpdateName}
+                  isOwner={isOwner}
+                  ownerId={ownerId}
+                  onTransferOwner={onTransferOwner}
+                />
+              )}
             </div>
           )}
 

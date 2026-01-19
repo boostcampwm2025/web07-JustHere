@@ -14,7 +14,6 @@ interface RoomInfoModalProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
-  isOpen: boolean
 }
 
 export default function RoomInfoModal({
@@ -27,16 +26,14 @@ export default function RoomInfoModal({
   isOwner = false,
   ownerId,
   onTransferOwner,
-  isOpen,
 }: RoomInfoModalProps) {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    if (!isOpen) return
     if (!nameInputRef.current) return
 
     nameInputRef.current.value = userName
-  }, [isOpen, userName])
+  }, [userName])
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
