@@ -14,11 +14,11 @@ import { YjsService } from './yjs.service'
 import { CanvasBroadcaster } from '@/modules/socket/canvas.broadcaster'
 import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenessPayload } from './dto/yjs.dto'
 
-@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway({
   namespace: '/canvas',
   cors: { origin: '*' },
 })
+@UseFilters(new WebsocketExceptionsFilter('canvas'))
 export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server

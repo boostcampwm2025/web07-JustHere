@@ -16,11 +16,11 @@ import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
 
-@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway({
   namespace: '/room',
   cors: { origin: '*' },
 })
+@UseFilters(new WebsocketExceptionsFilter('room'))
 export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server

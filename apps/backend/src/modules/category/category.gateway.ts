@@ -8,11 +8,11 @@ import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { CategoryService } from './category.service'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
 
-@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway({
   namespace: '/room',
   cors: { origin: '*' },
 })
+@UseFilters(new WebsocketExceptionsFilter('category'))
 export class CategoryGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server
