@@ -33,8 +33,10 @@ export default function Header({
   const isOnboarding = pathname.startsWith('/onboarding')
 
   const MAX_DISPLAY_AVATARS = 3
-  const currentUser = participants.find(p => p.userId === currentUserId) ?? { userId: currentUserId, name: userName }
-  const combinedParticipants = [currentUser, ...participants.filter(p => p.userId !== currentUser.userId)]
+  // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
+  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
+  const currentUser = uniqueParticipants.find(p => p.userId === currentUserId) ?? { userId: currentUserId, name: userName }
+  const combinedParticipants = [currentUser, ...uniqueParticipants.filter(p => p.userId !== currentUser.userId)]
   const hasParticipants = combinedParticipants.length > 0
   const displayCount = Math.min(MAX_DISPLAY_AVATARS, combinedParticipants.length)
   const extraCount = Math.max(combinedParticipants.length - displayCount, 0)
