@@ -56,7 +56,15 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { canvasId } = payload
 
     await client.leave(`canvas:${canvasId}`)
-    this.yjsService.disconnectClient(client.id)
+    const canvasIds = this.yjsService.disconnectClient(client.id)
+
+    // 참여 중이던 캔버스들에 커서 삭제 브로드캐스트
+    for (const canvasId of canvasIds) {
+      this.broadcaster.emitToCanvas(canvasId, 'y:awareness', {
+        socketId: client.id,
+        state: [],
+      })
+    }
 
     client.emit('canvas:detached', {})
   }
