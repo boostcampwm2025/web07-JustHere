@@ -7,6 +7,13 @@ export interface CreateRoomRequest {
 }
 
 export interface CreateRoomResponse {
+  status: string
+  statusCode: 200
+  data: RoomData
+  timestamp: Date
+}
+
+export interface RoomData {
   id: string
   slug: string
   x: number
@@ -16,7 +23,7 @@ export interface CreateRoomResponse {
   updatedAt: string
 }
 
-export const createRoom = async (payload: CreateRoomRequest): Promise<CreateRoomResponse> => {
+export const createRoom = async (payload: CreateRoomRequest): Promise<RoomData> => {
   const response = await axios.post<CreateRoomResponse>('/api/room/create', payload)
-  return response.data
+  return response.data.data
 }
