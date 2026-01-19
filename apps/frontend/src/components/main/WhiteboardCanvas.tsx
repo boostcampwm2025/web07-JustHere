@@ -8,7 +8,7 @@ import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
 
-type ToolType = 'hand' | 'pencil' | 'postit'
+type ToolType = 'hand' | 'pencil' | 'postIt'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -20,12 +20,22 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
-  const { cursors, rectangles, postits, lines, socketId, updateCursor, updateRectangle, addPostIt, updatePostIt, addLine, updateLine } = useYjsSocket(
-    {
-      roomId,
-      canvasId,
-    },
-  )
+  const {
+    cursors,
+    rectangles,
+    postits: postIts,
+    lines,
+    socketId,
+    updateCursor,
+    updateRectangle,
+    addPostIt,
+    updatePostIt,
+    addLine,
+    updateLine,
+  } = useYjsSocket({
+    roomId,
+    canvasId,
+  })
 
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
@@ -46,7 +56,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       updateCursor(canvasPos.x, canvasPos.y)
 
       // 포스트잇 고스트 UI 업데이트 (캔버스 좌표)
-      if (activeTool === 'postit') {
+      if (activeTool === 'postIt') {
         setCursorPos(canvasPos)
       }
 
@@ -65,7 +75,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
   // 마우스 나갈 때 포스트잇 고스트 제거 및 드로잉 종료
   const handleMouseLeave = () => {
-    if (activeTool === 'postit') {
+    if (activeTool === 'postIt') {
       setCursorPos(null)
     }
     // 캔버스 밖으로 나가면 드로잉 종료
@@ -85,9 +95,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     if (!canvasPos) return
 
     // 포스트잇 추가 (커서를 중앙으로)
-    if (activeTool === 'postit') {
+    if (activeTool === 'postIt') {
       const newPostIt: PostIt = {
-        id: `postit-${Date.now()}`,
+        id: `postIt-${Date.now()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
         y: canvasPos.y - 75, // 중앙 정렬 (height / 2)
         width: 150,
@@ -172,7 +182,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         return 'cursor-grab active:cursor-grabbing'
       case 'pencil':
         return 'cursor-crosshair' // 십자 커서
-      case 'postit':
+      case 'postIt':
         return 'cursor-pointer' // 포인터 커서
       default:
         return 'cursor-default'
@@ -213,7 +223,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             <PencilIcon className="w-5 h-5" />
           </button>
 
-          <button onClick={() => setActiveTool('postit')} className={getButtonStyle('postit')} title="포스트잇 추가">
+          <button onClick={() => setActiveTool('postIt')} className={getButtonStyle('postIt')} title="포스트잇 추가">
             <NoteTextIcon className="w-5 h-5" />
           </button>
         </div>
@@ -272,22 +282,22 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           ))}
 
           {/* 포스트잇 렌더링 */}
-          {postits.map(postit => (
+          {postIts.map(postIt => (
             <EditablePostIt
-              key={postit.id}
-              postit={postit}
+              key={postIt.id}
+              postIt={postIt}
               draggable={activeTool === 'hand'}
               onDragEnd={(x, y) => {
-                updatePostIt(postit.id, { x, y })
+                updatePostIt(postIt.id, { x, y })
               }}
               onChange={updates => {
-                updatePostIt(postit.id, updates)
+                updatePostIt(postIt.id, updates)
               }}
             />
           ))}
 
           {/* 고스트 포스트잇 (미리보기) */}
-          {activeTool === 'postit' && cursorPos && (
+          {activeTool === 'postIt' && cursorPos && (
             <Group
               x={cursorPos.x - 75} // 마우스 중앙 정렬 (150 / 2)
               y={cursorPos.y - 75}

@@ -5,16 +5,16 @@ import type Konva from 'konva'
 import type { PostIt } from '@/types/canvas.types'
 
 interface EditablePostItProps {
-  postit: PostIt
+  postIt: PostIt
   draggable: boolean
   onDragEnd: (x: number, y: number) => void
   onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
 }
 
-function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePostItProps) {
+function EditablePostIt({ postIt, draggable, onDragEnd, onChange }: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
-  const draftRef = useRef(postit.text)
+  const draftRef = useRef(postIt.text)
 
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -29,7 +29,7 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
 
   // 더블클릭 → 편집 모드
   const handleDblClick = () => {
-    draftRef.current = postit.text
+    draftRef.current = postIt.text
     setIsEditing(true)
   }
 
@@ -43,7 +43,7 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
-    if (value !== postit.text) onChange({ text: value })
+    if (value !== postIt.text) onChange({ text: value })
   }
 
   // 편집 종료
@@ -66,15 +66,15 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
   return (
     <Group
       ref={groupRef}
-      x={postit.x}
-      y={postit.y}
+      x={postIt.x}
+      y={postIt.y}
       draggable={draggable && !isEditing} // 편집 중에는 드래그 불가
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
       }}
     >
       {/* 배경 사각형 */}
-      <Rect width={postit.width} height={postit.height} fill={postit.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
+      <Rect width={postIt.width} height={postIt.height} fill={postIt.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
 
       {/* 편집 모드: HTML textarea */}
       {isEditing ? (
@@ -83,14 +83,14 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
           divProps={{
             className: 'absolute top-0 left-0',
             style: {
-              width: `${postit.width}px`,
-              height: `${postit.height - 30}px`, // 하단 작성자 이름 공간 제외
+              width: `${postIt.width}px`,
+              height: `${postIt.height - 30}px`, // 하단 작성자 이름 공간 제외
             },
           }}
         >
           <textarea
             ref={textareaRef}
-            defaultValue={postit.text}
+            defaultValue={postIt.text}
             onChange={handleTextChange}
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
@@ -105,11 +105,11 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
       ) : (
         /* 일반 모드: Konva Text */
         <Text
-          text={postit.text}
+          text={postIt.text}
           x={10}
           y={10}
-          width={postit.width - 20}
-          height={postit.height - 40}
+          width={postIt.width - 20}
+          height={postIt.height - 40}
           fontSize={14}
           fontFamily="Arial, sans-serif"
           fill="#333"
@@ -120,7 +120,7 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
       )}
 
       {/* 작성자 이름 (항상 표시) */}
-      <Text text={postit.authorName} x={10} y={postit.height - 25} fontSize={10} fontFamily="Arial, sans-serif" fill="#888" />
+      <Text text={postIt.authorName} x={10} y={postIt.height - 25} fontSize={10} fontFamily="Arial, sans-serif" fill="#888" />
     </Group>
   )
 }
