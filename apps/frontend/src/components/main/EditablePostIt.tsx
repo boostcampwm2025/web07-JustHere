@@ -84,7 +84,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange }: EditablePost
             className: 'absolute top-0 left-0',
             style: {
               width: `${postIt.width}px`,
-              height: `${postIt.height - 30}px`, // 하단 작성자 이름 공간 제외
+              height: `${postIt.height}px`,
             },
           }}
         >
@@ -118,9 +118,6 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange }: EditablePost
           onDblClick={handleDblClick}
         />
       )}
-
-      {/* 작성자 이름 (항상 표시) */}
-      <Text text={postIt.authorName} x={10} y={postIt.height - 25} fontSize={10} fontFamily="Arial, sans-serif" fill="#888" />
     </Group>
   )
 }
