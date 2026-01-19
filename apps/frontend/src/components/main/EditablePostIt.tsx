@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import type Konva from 'konva'
@@ -34,7 +34,7 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
   }
 
   // 텍스트 변경 → 실시간 동기화
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     draftRef.current = e.target.value
     if (!isComposingRef.current) {
       onChange({ text: e.target.value })
@@ -53,7 +53,7 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
   }
 
   // Enter 키 (Shift 없이) → 편집 종료
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposingRef.current) return
 
     if (e.key === 'Enter' && !e.shiftKey) {
