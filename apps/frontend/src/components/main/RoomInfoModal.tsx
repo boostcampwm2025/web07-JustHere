@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
@@ -14,6 +14,7 @@ interface RoomInfoModalProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
+  isOpen: boolean
 }
 
 export default function RoomInfoModal({
@@ -26,14 +27,22 @@ export default function RoomInfoModal({
   isOwner = false,
   ownerId,
   onTransferOwner,
+  isOpen,
 }: RoomInfoModalProps) {
-  const [name, setName] = useState(userName)
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (!nameInputRef.current) return
+
+    nameInputRef.current.value = userName
+  }, [isOpen, userName])
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
 
   const handleSubmit = () => {
-    const nextName = name.trim()
+    const nextName = (nameInputRef.current?.value ?? '').trim()
     if (!nextName || nextName === userName) return
     onUpdateName?.(nextName)
   }
@@ -100,8 +109,8 @@ export default function RoomInfoModal({
             <div className="relative group">
               <input
                 type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
+                defaultValue={userName}
+                ref={nameInputRef}
                 onKeyDown={event => {
                   if (event.key === 'Enter') {
                     event.preventDefault()
