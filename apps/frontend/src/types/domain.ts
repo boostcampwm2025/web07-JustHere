@@ -4,6 +4,7 @@ export type RoomMeta = {
 }
 
 export type Participant = {
+  socketId: string
   userId: string
   name: string
 }

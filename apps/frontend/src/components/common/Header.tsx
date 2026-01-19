@@ -35,7 +35,7 @@ export default function Header({
   const MAX_DISPLAY_AVATARS = 3
   // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
   const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
-  const currentUser = uniqueParticipants.find(p => p.userId === currentUserId) ?? { userId: currentUserId, name: userName }
+  const currentUser = uniqueParticipants.find(p => p.userId === currentUserId) ?? { socketId: '', userId: currentUserId, name: userName }
   const combinedParticipants = [currentUser, ...uniqueParticipants.filter(p => p.userId !== currentUser.userId)]
   const hasParticipants = combinedParticipants.length > 0
   const displayCount = Math.min(MAX_DISPLAY_AVATARS, combinedParticipants.length)

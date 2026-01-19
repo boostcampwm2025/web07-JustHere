@@ -204,6 +204,7 @@ describe('RoomService', () => {
       expect(event).toBe('participant:connected')
       expect(options).toEqual({ exceptSocketId: 'socket-1' })
 
+      expect(payloadArg.socketId).toBe('socket-1')
       expect(payloadArg.userId).toBe('user-1')
       expect(payloadArg.name).toBe('ajin')
     })
@@ -237,6 +238,7 @@ describe('RoomService', () => {
       expect(leftRoomId).toBe(roomId)
       expect(leftEvent).toBe('participant:disconnected')
 
+      expect(leftPayload.socketId).toBe('socket-1')
       expect(leftPayload.userId).toBe('user-1')
 
       expect(users.removeSession).toHaveBeenCalledWith('socket-1')
@@ -251,6 +253,7 @@ describe('RoomService', () => {
       expect(joinedEvent).toBe('participant:connected')
       expect(joinedOptions).toEqual({ exceptSocketId: 'socket-1' })
 
+      expect(joinedPayload.socketId).toBe('socket-1')
       expect(joinedPayload.userId).toBe('user-1')
     })
 
@@ -348,6 +351,7 @@ describe('RoomService', () => {
       expect(calledRoomId).toBe(roomId)
       expect(event).toBe('participant:disconnected')
 
+      expect(payloadArg.socketId).toBe('socket-1')
       expect(payloadArg.userId).toBe('user-1')
 
       expect(users.removeSession).toHaveBeenCalledWith('socket-1')
@@ -383,8 +387,10 @@ describe('RoomService', () => {
 
       expect(participants).toHaveLength(2)
 
+      expect(participants[0].socketId).toBe('socket-1')
       expect(participants[0].userId).toBe('user-1')
       expect(participants[0].name).toBe('ajin')
+      expect(participants[1].socketId).toBe('socket-2')
       expect(participants[1].userId).toBe('user-2')
       expect(participants[1].name).toBe('kim')
     })

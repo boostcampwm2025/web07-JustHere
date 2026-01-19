@@ -3,6 +3,9 @@ import { IsString } from 'class-validator'
 
 // 단순화된 Participant 구조
 export class Participant {
+  @IsString({ message: 'socketId는 문자열이어야 합니다' })
+  socketId: string
+
   @IsString({ message: 'userId는 문자열이어야 합니다' })
   userId: string
 
@@ -20,12 +23,14 @@ export type RoomJoinedPayload = {
 
 // [S->C] participant:connected
 export type ParticipantConnectedPayload = {
+  socketId: string
   userId: string
   name: string
 }
 
 // [S->C] participant:disconnected
 export type ParticipantDisconnectedPayload = {
+  socketId: string
   userId: string
 }
 
