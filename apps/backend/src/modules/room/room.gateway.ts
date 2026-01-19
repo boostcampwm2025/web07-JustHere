@@ -1,3 +1,5 @@
+import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -14,6 +16,7 @@ import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
 
+@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway({
   namespace: '/room',
   cors: { origin: '*' },

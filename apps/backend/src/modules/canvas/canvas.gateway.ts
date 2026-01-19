@@ -1,3 +1,5 @@
+import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -12,6 +14,7 @@ import { YjsService } from './yjs.service'
 import { CanvasBroadcaster } from '@/modules/socket/canvas.broadcaster'
 import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenessPayload } from './dto/yjs.dto'
 
+@UseFilters(new WebsocketExceptionsFilter())
 @WebSocketGateway({
   namespace: '/canvas',
   cors: { origin: '*' },
