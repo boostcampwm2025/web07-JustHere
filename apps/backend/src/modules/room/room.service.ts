@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common'
-import type { Socket } from 'socket.io'
-import { Room } from '@prisma/client'
-import { RoomRepository } from './room.repository'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import { CategoryService } from '@/modules/category/category.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import { UserSession } from '@/modules/user/user.type'
+import { Injectable } from '@nestjs/common'
+import { Room } from '@prisma/client'
+import type { Socket } from 'socket.io'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
 import {
   Participant,
@@ -15,6 +16,7 @@ import {
   RoomJoinedPayload,
   RoomOwnerTransferredPayload,
 } from './dto/room.s2c.dto'
+import { RoomRepository } from './room.repository'
 
 @Injectable()
 export class RoomService {
@@ -43,10 +45,8 @@ export class RoomService {
     } else {
       // slug면 DB에서 UUID 조회
       const room = await this.roomRepository.findBySlug(roomId)
-      if (!room) {
-        client.emit('room:error', { message: '방을 찾을 수 없습니다.' })
-        return
-      }
+
+      if (!room) throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
       actualRoomId = room.id
     }
 
@@ -148,13 +148,13 @@ export class RoomService {
    */
   updateParticipantName(client: Socket, name: string): void {
     const session = this.users.getSession(client.id)
-    if (!session) {
-      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
-      return
-    }
+
+    if (!session) throw new CustomException(ErrorType.NotFound, '세션을 찾을 수 없습니다.')
 
     const updatedSession = this.users.updateSessionName(client.id, name)
-    if (!updatedSession) return
+    if (!updatedSession) {
+      throw new CustomException(ErrorType.InternalServerError, '이름 변경에 실패했습니다.')
+    }
 
     // 방의 모든 참여자에게 브로드 캐스트 (본인 포함)
     const payload: ParticipantNameUpdatedPayload = {
@@ -169,30 +169,18 @@ export class RoomService {
    */
   transferOwner(client: Socket, targetUserId: string): void {
     const session = this.users.getSession(client.id)
-    if (!session) {
-      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
-      return
-    }
+    if (!session) throw new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.')
 
     // 방장 권한 확인
-    if (!session.isOwner) {
-      client.emit('room:error', { code: 'NOT_OWNER', message: '방장만 권한을 위임할 수 있습니다.' })
-      return
-    }
+    if (!session.isOwner) throw new CustomException(ErrorType.NotOwner, '방장만 권한을 위임할 수 있습니다.')
 
     // 대상 유저 존재 확인
     const targetSession = this.users.getSessionByUserIdInRoom(session.roomId, targetUserId)
-    if (!targetSession) {
-      client.emit('room:error', { code: 'TARGET_NOT_FOUND', message: '대상 유저를 찾을 수 없습니다.' })
-      return
-    }
+    if (!targetSession) throw new CustomException(ErrorType.TargetNotFound, '대상 유저를 찾을 수 없습니다.')
 
     // 권한 이전
     const success = this.users.transferOwnership(session.roomId, session.userId, targetUserId)
-    if (!success) {
-      client.emit('room:error', { message: '권한 위임에 실패했습니다.' })
-      return
-    }
+    if (!success) throw new CustomException(ErrorType.InternalServerError, '권한 위임에 실패했습니다.')
 
     // 방의 모든 참여자에게 브로드캐스트
     const payload: RoomOwnerTransferredPayload = {

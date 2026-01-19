@@ -1,11 +1,15 @@
+import { CustomException } from '@/lib/exceptions/custom.exception'
 import { PrismaService } from '@/lib/prisma/prisma.service'
+import { ErrorType } from '@/lib/types/response.type'
 import { YjsDocument } from './yjs.type'
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import * as Y from 'yjs'
 import { encodeStateAsUpdate, applyUpdate } from 'yjs'
 
 @Injectable()
 export class YjsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(YjsService.name)
+
   constructor(private readonly prisma: PrismaService) {}
 
   // categoryId -> YjsDocument 매핑
@@ -19,32 +23,40 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     // 5초마다 버퍼에 쌓인 데이터를 DB에 저장
-    // 트래픽이 많아지면 시간을 더 줄여야 할 듯
     this.saveInterval = setInterval(() => {
-      void this.flushBufferToDB().catch()
+      void this.flushBufferToDB().catch(err => {
+        this.logger.error('Background Flush Failed', err instanceof Error ? err.stack : err)
+      })
     }, 5000)
   }
 
   onModuleDestroy() {
     // 서버 종료 시 남은 데이터 강제 저장
     clearInterval(this.saveInterval)
-    void this.flushBufferToDB().catch()
+    void this.flushBufferToDB().catch(err => {
+      this.logger.error('Final Flush Failed', err instanceof Error ? err.stack : err)
+    })
   }
 
   /**
    * Category용 Yjs 문서 생성 또는 가져오기
    * Y.Doc이 메모리에 없다면, DB에서 조회해서 메모리 초기화.
    */
-  async getOrCreateDocument(roomId: string, categoryId: string): Promise<Y.Doc> {
+  private async getOrCreateDocument(roomId: string, categoryId: string): Promise<Y.Doc> {
     const existing = this.documents.get(categoryId)
     if (existing) return existing.doc
 
     const doc = new Y.Doc()
 
-    // DB에서 기존 데이터 불러와서 병합
-    const initialUpdate = await this.getMergedUpdate(categoryId)
-    if (initialUpdate.byteLength > 0) {
-      Y.applyUpdate(doc, initialUpdate)
+    try {
+      // DB에서 기존 데이터 불러와서 병합
+      const initialUpdate = await this.getMergedUpdate(categoryId)
+      if (initialUpdate.byteLength > 0) {
+        Y.applyUpdate(doc, initialUpdate)
+      }
+    } catch (error) {
+      this.logger.error(`Failed to load document from DB: ${categoryId}`, error)
+      throw new CustomException(ErrorType.InternalServerError, '캔버스 데이터를 불러오는데 실패했습니다.')
     }
 
     this.documents.set(categoryId, {
@@ -62,9 +74,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    */
   connectClient(categoryId: string, socketId: string) {
     const yjsDoc = this.documents.get(categoryId)
-    if (!yjsDoc) return
-
-    yjsDoc.connections.add(socketId)
+    if (yjsDoc) yjsDoc.connections.add(socketId)
   }
 
   /**
@@ -85,19 +95,24 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    * 3. 초기 동기화 데이터(StateVector) 반환
    */
   async initializeConnection(roomId: string, categoryId: string, socketId: string) {
-    // 1. 문서 확보
-    const doc = await this.getOrCreateDocument(roomId, categoryId)
+    try {
+      // 1. 문서 확보
+      const doc = await this.getOrCreateDocument(roomId, categoryId)
 
-    // 2. 접속자 등록
-    this.connectClient(categoryId, socketId)
+      // 2. 접속자 등록
+      this.connectClient(categoryId, socketId)
 
-    // 3. 응답 데이터 생성
-    const stateVector = encodeStateAsUpdate(doc)
-    const docKey = `${roomId}-${categoryId}`
+      // 3. 응답 데이터 생성
+      const stateVector = encodeStateAsUpdate(doc)
+      const docKey = `${roomId}-${categoryId}`
 
-    return {
-      docKey,
-      update: stateVector ? Array.from(stateVector) : undefined,
+      return {
+        docKey,
+        update: stateVector ? Array.from(stateVector) : undefined,
+      }
+    } catch (error) {
+      this.logger.error(`Failed to initialize connection for ${categoryId}`, error)
+      throw new CustomException(ErrorType.InternalServerError, '캔버스 연결 초기화에 실패했습니다.')
     }
   }
 
@@ -106,9 +121,12 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    * 1. 메모리 문서에 적용
    * 2. 버퍼에 담기 (배치 저장용)
    */
-  processUpdate(categoryId: string, update: Uint8Array): boolean {
+  processUpdate(categoryId: string, update: Uint8Array): void {
     const yjsDoc = this.documents.get(categoryId)
-    if (!yjsDoc) return false
+
+    if (!yjsDoc) {
+      throw new CustomException(ErrorType.NotFound, '활성화된 캔버스 세션을 찾을 수 없습니다. 다시 접속해주세요.')
+    }
 
     try {
       // 1. 메모리 적용
@@ -116,11 +134,10 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
       // 2. 업데이트 로그 버퍼링
       this.bufferUpdate(categoryId, update)
-
-      return true
     } catch (error) {
-      console.error('Failed to apply Yjs update:', error)
-      return false
+      // Yjs 바이너리 형식이 깨진 경우 등
+      this.logger.error(`Yjs Update Error [${categoryId}]`, error)
+      throw new CustomException(ErrorType.BadRequest, '잘못된 캔버스 데이터 형식입니다.')
     }
   }
 
@@ -154,9 +171,9 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
         // 병합된 하나만 DB에 저장
         await this.saveUpdateLog(categoryId, mergedUpdate)
 
-        console.log(`[Yjs] Flushed ${updates.length} updates for category ${categoryId}`)
+        this.logger.log(`[Yjs] Flushed ${updates.length} updates for category ${categoryId}`)
       } catch (err) {
-        console.error(`[Yjs] Failed to flush buffer for ${categoryId}`, err)
+        this.logger.error(`[Yjs] Failed to flush buffer for ${categoryId}`, err)
         // TODO: 만약 flush 실패 시 다시 버퍼에 넣거나, 재시도 큐에 넣는 로직 필요
       }
     }

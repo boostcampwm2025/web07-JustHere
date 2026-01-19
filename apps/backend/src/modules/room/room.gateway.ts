@@ -40,11 +40,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('room:join')
   async onRoomJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomJoinPayload) {
-    const roomJoinPayload = plainToInstance(RoomJoinPayload, payload)
-    const errors = validateSync(roomJoinPayload)
-    if (errors.length > 0) return
-
-    await this.roomService.joinRoom(client, roomJoinPayload)
+    await this.roomService.joinRoom(client, payload)
   }
 
   @SubscribeMessage('room:leave')
@@ -54,19 +50,11 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('participant:update_name')
   onUpdateName(@ConnectedSocket() client: Socket, @MessageBody() payload: ParticipantUpdateNamePayload) {
-    const updatedNamePayload = plainToInstance(ParticipantUpdateNamePayload, payload)
-    const errors = validateSync(updatedNamePayload)
-    if (errors.length > 0) return
-
-    this.roomService.updateParticipantName(client, updatedNamePayload.name)
+    this.roomService.updateParticipantName(client, payload.name)
   }
 
   @SubscribeMessage('room:transfer_owner')
   onTransferOwner(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomTransferOwnerPayload) {
-    const transferPayload = plainToInstance(RoomTransferOwnerPayload, payload)
-    const errors = validateSync(transferPayload)
-    if (errors.length > 0) return
-
-    this.roomService.transferOwner(client, transferPayload.targetUserId)
+    this.roomService.transferOwner(client, payload.targetUserId)
   }
 }

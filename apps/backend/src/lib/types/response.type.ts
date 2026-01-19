@@ -13,9 +13,14 @@ export enum ErrorType {
   Forbidden = 'FORBIDDEN',
   NotFound = 'NOT_FOUND',
   Conflict = 'CONFLICT',
+  TooManyRequests = 'TOO_MANY_REQUESTS',
+  BadGateway = 'BAD_GATEWAY',
 
   // custom
   CategoryOverFlowException = 'CATEGORY_OVERFLOW_EXCEPTION',
+  NotOwner = 'NOT_OWNER',
+  TargetNotFound = 'TARGET_NOT_FOUND',
+  NotInRoom = 'NOT_IN_ROOM',
 }
 
 export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
@@ -26,9 +31,14 @@ export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
   [ErrorType.Forbidden]: HttpStatus.FORBIDDEN,
   [ErrorType.NotFound]: HttpStatus.NOT_FOUND,
   [ErrorType.Conflict]: HttpStatus.CONFLICT,
+  [ErrorType.TooManyRequests]: HttpStatus.TOO_MANY_REQUESTS,
+  [ErrorType.BadGateway]: HttpStatus.BAD_GATEWAY,
 
   // custom
-  [ErrorType.CategoryOverFlowException]: HttpStatus.CONFLICT,
+  [ErrorType.CategoryOverFlowException]: HttpStatus.BAD_REQUEST,
+  [ErrorType.NotOwner]: HttpStatus.FORBIDDEN,
+  [ErrorType.TargetNotFound]: HttpStatus.NOT_FOUND,
+  [ErrorType.NotInRoom]: HttpStatus.UNAUTHORIZED,
 }
 
 export interface BaseResponse {
