@@ -121,8 +121,10 @@ pnpm run dev
 ## 아키텍처 다이어그램
 
 ### 서비스 아키텍처
-<img width="3852" height="2392" alt="image" src="https://github.com/user-attachments/assets/65fe9e60-8fe9-4a21-9ca8-a22e204df05a" />
+
+<img width="4164" height="2724" alt="image" src="https://github.com/user-attachments/assets/ae862b8b-bfa8-44e0-a9da-b6e08d211235" />
+
 
 ### CI / CD 파이프라인
 
-<img width="2556" height="1764" alt="image" src="https://github.com/user-attachments/assets/b54656b5-80b9-4e28-955a-4366f9d7db1f" />
+<img width="3364" height="2284" alt="image" src="https://github.com/user-attachments/assets/dac3ac8c-e8a4-4ac7-9de1-5659c7b81c5a" />
