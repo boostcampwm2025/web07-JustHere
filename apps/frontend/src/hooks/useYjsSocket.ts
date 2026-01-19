@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { io, Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client'
 import * as Y from 'yjs'
 import type {
   CanvasAttachPayload,
@@ -13,6 +13,7 @@ import type {
 } from '@/types/yjs.types'
 import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
+import { useSocketClient } from '@/hooks/useSocketClient'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -32,6 +33,13 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
+  const { getSocket } = useSocketClient({
+    namespace: 'canvas',
+    baseUrl: serverUrl,
+    onError: error => {
+      console.error('[canvas] socket error:', error)
+    },
+  })
 
   useEffect(() => {
     // Yjs 문서 초기화
@@ -96,10 +104,8 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     syncPostitsToState()
     syncLinesToState()
 
-    // Socket.io 연결
-    const socket = io(`${serverUrl}/canvas`, {
-      transports: ['websocket'],
-    })
+    const socket = getSocket()
+    if (!socket) return
     socketRef.current = socket
 
     socket.on('connect', () => {
@@ -186,10 +192,10 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       yRectangles.unobserveDeep(syncRectanglesToState)
       yPostits.unobserveDeep(syncPostitsToState)
       yLines.unobserveDeep(syncLinesToState)
-      socket.disconnect()
+      socketRef.current = null
       doc.destroy()
     }
-  }, [roomId, canvasId, serverUrl])
+  }, [roomId, canvasId, getSocket])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
   const updateCursorThrottled = useRef(
