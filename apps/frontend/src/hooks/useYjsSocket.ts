@@ -32,12 +32,14 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
+  const handleSocketError = useCallback((error: Error) => {
+    console.error('[canvas] socket error:', error)
+  }, [])
+
   const { getSocket, status } = useSocketClient({
     namespace: 'canvas',
     baseUrl: serverUrl,
-    onError: error => {
-      console.error('[canvas] socket error:', error)
-    },
+    onError: handleSocketError,
   })
   const isConnected = status === 'connected'
 
