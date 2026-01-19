@@ -7,7 +7,7 @@ type KakaoKeywordResponse = {
   data: {
     documents: KakaoPlace[]
   }
-  timestamp: Date
+  timestamp: string
 }
 
 export const searchKeyword = async (keyword: string): Promise<KakaoPlace[]> => {

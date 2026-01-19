@@ -10,7 +10,7 @@ export interface CreateRoomResponse {
   status: string
   statusCode: 200
   data: RoomData
-  timestamp: Date
+  timestamp: string
 }
 
 export interface RoomData {
