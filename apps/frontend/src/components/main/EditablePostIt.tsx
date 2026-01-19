@@ -13,6 +13,9 @@ interface EditablePostItProps {
 
 function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const isComposingRef = useRef(false)
+  const draftRef = useRef(postit.text)
+
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -26,23 +29,36 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
 
   // 더블클릭 → 편집 모드
   const handleDblClick = () => {
+    draftRef.current = postit.text
     setIsEditing(true)
   }
 
   // 텍스트 변경 → 실시간 동기화
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange({ text: e.target.value })
+    draftRef.current = e.target.value
+    if (!isComposingRef.current) {
+      onChange({ text: e.target.value })
+    }
+  }
+
+  const commit = (nextText?: string) => {
+    const value = nextText ?? draftRef.current
+    if (value !== postit.text) onChange({ text: value })
   }
 
   // 편집 종료
   const handleBlur = () => {
+    commit()
     setIsEditing(false)
   }
 
   // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isComposingRef.current) return
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      commit((e.target as HTMLTextAreaElement).value)
       setIsEditing(false)
     }
   }
@@ -74,17 +90,16 @@ function EditablePostIt({ postit, draggable, onDragEnd, onChange }: EditablePost
         >
           <textarea
             ref={textareaRef}
-            value={postit.text}
+            defaultValue={postit.text}
             onChange={handleTextChange}
+            onCompositionStart={() => (isComposingRef.current = true)}
+            onCompositionEnd={e => {
+              isComposingRef.current = false
+              onChange({ text: (e.target as HTMLTextAreaElement).value })
+            }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className={`
-              w-full h-full 
-              border-none bg-transparent 
-              resize-none outline-none 
-              font-sans text-sm text-[#333] 
-              p-[10px] leading-[1.4]
-            `}
+            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-[10px] leading-[1.4]"
           />
         </Html>
       ) : (
