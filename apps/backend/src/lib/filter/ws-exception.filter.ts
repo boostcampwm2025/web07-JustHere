@@ -10,9 +10,9 @@ export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
     super()
   }
 
-  catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const client = host.switchToWs().getClient<Socket>()
-    const data = host.switchToWs().getData()
+    const data = host.switchToWs().getData<unknown>()
 
     let errorType = ErrorType.InternalServerError
     let message = 'Internal server error'

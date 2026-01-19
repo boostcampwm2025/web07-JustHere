@@ -13,7 +13,7 @@ export interface ResponseType<T> {
 
 @Injectable()
 export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, ResponseType<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<ResponseType<T>> {
+  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ResponseType<T>> {
     const now = new Date().toISOString()
 
     // 1. HTTP 요청 처리

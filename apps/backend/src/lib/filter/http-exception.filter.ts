@@ -26,7 +26,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     else if (exception instanceof HttpException) {
       status = exception.getStatus()
       const res = exception.getResponse()
-      message = typeof res === 'string' ? res : (res as any).message
+
+      if (typeof res === 'string') {
+        message = res
+      } else {
+        const msg = (res as { message: string | string[] }).message
+        message = Array.isArray(msg) ? msg.join(', ') : msg
+      }
       errorType = ErrorType.BadRequest
     } else {
       message = exception.message

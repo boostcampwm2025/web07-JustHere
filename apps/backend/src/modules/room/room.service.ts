@@ -149,7 +149,7 @@ export class RoomService {
   updateParticipantName(client: Socket, name: string): void {
     const session = this.users.getSession(client.id)
 
-    if (!session) throw new CustomException(ErrorType.NotFound, '세션을 찾을 수 없습니다.')
+    if (!session) throw new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.')
 
     const updatedSession = this.users.updateSessionName(client.id, name)
     if (!updatedSession) {

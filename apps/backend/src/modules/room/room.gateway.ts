@@ -10,8 +10,6 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { plainToInstance } from 'class-transformer'
-import { validateSync } from 'class-validator'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'

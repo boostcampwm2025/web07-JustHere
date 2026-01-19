@@ -14,7 +14,7 @@ export class RoomRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private isPrismaUniqueConstraintError(error: unknown): boolean {
-    return typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'P2002'
+    return typeof error === 'object' && error !== null && 'code' in error && (error as { code: unknown }).code === 'P2002'
   }
 
   async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
