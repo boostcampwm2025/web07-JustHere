@@ -4,12 +4,20 @@ import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
-import { getOrCreateStoredUser } from '@/utils/userStorage'
+import { getOrCreateStoredUser, updateStoredUserName } from '@/utils/userStorage'
 
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+
+  const handleUpdateName = (name: string) => {
+    if (!slug) return
+
+    updateParticipantName(name)
+    updateStoredUserName(slug, name)
+  }
+
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
@@ -40,7 +48,7 @@ function MainPage() {
           currentUserId={user.userId}
           userName={user.name}
           roomLink={roomLink}
-          onUpdateName={updateParticipantName}
+          onUpdateName={handleUpdateName}
           isOwner={isOwner}
           ownerId={ownerId}
           onTransferOwner={transferOwner}
@@ -57,7 +65,7 @@ function MainPage() {
         currentUserId={user.userId}
         userName={user.name}
         roomLink={roomLink}
-        onUpdateName={updateParticipantName}
+        onUpdateName={handleUpdateName}
         isOwner={isOwner}
         ownerId={ownerId}
         onTransferOwner={transferOwner}
