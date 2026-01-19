@@ -20,7 +20,6 @@ interface UseSocketClientProps {
 
 export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoReconnect = true, ioOptions, onError }: UseSocketClientProps) {
   const socketRef = useRef<Socket | null>(null)
-  const [socket, setSocket] = useState<Socket | null>(null)
   const reconnectAttemptsRef = useRef(0)
 
   const fullUrl = useMemo(() => {
@@ -42,7 +41,6 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
     })
 
     socketRef.current = socket
-    setSocket(socket)
 
     const handleConnect = () => {
       setStatus('connected')
@@ -96,7 +94,6 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
       socket.off('error', handleError)
       socket.disconnect()
       socketRef.current = null
-      setSocket(null)
       reconnectAttemptsRef.current = 0
     }
   }, [fullUrl, autoConnect, autoReconnect, ioOptions, onError])
@@ -129,7 +126,6 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
 
   return {
     status,
-    socket,
     connect,
     disconnect,
     emit,

@@ -22,7 +22,6 @@ interface UseYjsSocketOptions {
 }
 
 export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
-  const [isConnected, setIsConnected] = useState(false)
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
   const [postits, setPostits] = useState<PostIt[]>([])
@@ -33,13 +32,14 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
-  const { getSocket } = useSocketClient({
+  const { getSocket, status } = useSocketClient({
     namespace: 'canvas',
     baseUrl: serverUrl,
     onError: error => {
       console.error('[canvas] socket error:', error)
     },
   })
+  const isConnected = status === 'connected'
 
   useEffect(() => {
     // Yjs 문서 초기화
@@ -104,61 +104,70 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     syncPostitsToState()
     syncLinesToState()
 
+    return () => {
+      yRectangles.unobserveDeep(syncRectanglesToState)
+      yPostits.unobserveDeep(syncPostitsToState)
+      yLines.unobserveDeep(syncLinesToState)
+      doc.destroy()
+    }
+  }, [roomId, canvasId])
+
+  useEffect(() => {
     const socket = getSocket()
     if (!socket) return
+
+    const doc = docRef.current
+    if (!doc) return
+
     socketRef.current = socket
 
-    socket.on('connect', () => {
-      setIsConnected(true)
+    const handleConnect = () => {
       setSocketId(socket.id || 'unknown')
 
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
       socket.emit('canvas:attach', attachPayload)
-    })
+    }
 
-    socket.on('disconnect', () => {
-      setIsConnected(false)
-    })
+    const handleDisconnect = () => {
+      // 연결 상태는 useSocketClient의 status로 관리
+    }
 
-    // 캔버스 참여 완료 (초기 동기화)
-    socket.on('canvas:attached', (payload: CanvasAttachedPayload) => {
-      if (payload.update) {
-        const updateArray = new Uint8Array(payload.update)
-        // origin을 socket으로 명시하여 재전송 방지
-        Y.applyUpdate(doc, updateArray, socket)
-      }
-    })
+    const handleCanvasAttached = (payload: CanvasAttachedPayload) => {
+      if (!payload.update) return
 
-    // 캔버스 나가기 완료
-    socket.on('canvas:detached', () => {
-      // TODO: 카테고리 나갔을 때 처리 로직
-    })
-
-    // Yjs 업데이트 수신
-    socket.on('y:update', (payload: YjsUpdateBroadcast) => {
       const updateArray = new Uint8Array(payload.update)
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
-    })
+    }
 
-    // Awareness 업데이트 (커서 위치)
-    socket.on('y:awareness', (payload: YjsAwarenessBroadcast) => {
+    const handleCanvasDetached = () => {
+      // TODO: 카테고리 나갔을 때 처리 로직
+    }
+
+    const handleYjsUpdate = (payload: YjsUpdateBroadcast) => {
+      const updateArray = new Uint8Array(payload.update)
+      // origin을 socket으로 명시하여 재전송 방지
+      Y.applyUpdate(doc, updateArray, socket)
+    }
+
+    const handleAwareness = (payload: YjsAwarenessBroadcast) => {
       if (payload.state.cursor) {
         setCursors(prev => {
           const next = new Map(prev)
           next.set(payload.socketId, { ...payload.state.cursor!, socketId: payload.socketId })
           return next
         })
-      } else {
-        // 커서가 없으면 제거 (사용자가 나간 경우)
-        setCursors(prev => {
-          const next = new Map(prev)
-          next.delete(payload.socketId)
-          return next
-        })
+        return
       }
-    })
+
+      // 커서가 없으면 제거 (사용자가 나간 경우)
+      setCursors(prev => {
+        const next = new Map(prev)
+        next.delete(payload.socketId)
+        return next
+      })
+    }
 
     // Yjs 문서 변경 시 서버로 전송
     const updateHandler = (update: Uint8Array, origin: unknown) => {
@@ -172,7 +181,17 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       }
     }
 
+    socket.on('connect', handleConnect)
+    socket.on('disconnect', handleDisconnect)
+    socket.on('canvas:attached', handleCanvasAttached)
+    socket.on('canvas:detached', handleCanvasDetached)
+    socket.on('y:update', handleYjsUpdate)
+    socket.on('y:awareness', handleAwareness)
     doc.on('update', updateHandler)
+
+    if (socket.connected) {
+      handleConnect()
+    }
 
     return () => {
       // 캔버스 변경 시 커서 사라짐 이벤트 브로드캐스트
@@ -189,13 +208,15 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       socket.emit('canvas:detach', detachPayload)
 
       doc.off('update', updateHandler)
-      yRectangles.unobserveDeep(syncRectanglesToState)
-      yPostits.unobserveDeep(syncPostitsToState)
-      yLines.unobserveDeep(syncLinesToState)
+      socket.off('connect', handleConnect)
+      socket.off('disconnect', handleDisconnect)
+      socket.off('canvas:attached', handleCanvasAttached)
+      socket.off('canvas:detached', handleCanvasDetached)
+      socket.off('y:update', handleYjsUpdate)
+      socket.off('y:awareness', handleAwareness)
       socketRef.current = null
-      doc.destroy()
     }
-  }, [roomId, canvasId, getSocket])
+  }, [roomId, canvasId, getSocket, status])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
   const updateCursorThrottled = useRef(
