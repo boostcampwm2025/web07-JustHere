@@ -131,10 +131,6 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       socket.emit('canvas:attach', attachPayload)
     }
 
-    const handleDisconnect = () => {
-      // 연결 상태는 useSocketClient의 status로 관리
-    }
-
     const handleCanvasAttached = (payload: CanvasAttachedPayload) => {
       if (!payload.update) return
 
@@ -184,7 +180,6 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     }
 
     socket.on('connect', handleConnect)
-    socket.on('disconnect', handleDisconnect)
     socket.on('canvas:attached', handleCanvasAttached)
     socket.on('canvas:detached', handleCanvasDetached)
     socket.on('y:update', handleYjsUpdate)
@@ -211,7 +206,6 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
       doc.off('update', updateHandler)
       socket.off('connect', handleConnect)
-      socket.off('disconnect', handleDisconnect)
       socket.off('canvas:attached', handleCanvasAttached)
       socket.off('canvas:detached', handleCanvasDetached)
       socket.off('y:update', handleYjsUpdate)
