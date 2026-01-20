@@ -26,9 +26,11 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
   // 커서챗 관련 상태
   const [isChatActive, setIsChatActive] = useState(false)
+  const [isChatFading, setIsChatFading] = useState(false)
   const [chatMessage, setChatMessage] = useState('')
   const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
   const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
@@ -58,28 +60,51 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
 
-  // 커서챗 비활성화 함수
+  // 커서챗 완전 비활성화 함수 (fade-out 애니메이션 후 호출)
   const deactivateCursorChat = useCallback(() => {
     // 타이머 정리
     if (chatInactivityTimerRef.current) {
       clearTimeout(chatInactivityTimerRef.current)
       chatInactivityTimerRef.current = null
     }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    setIsChatFading(false)
     setIsChatActive(false)
     setChatMessage('')
     setChatInputPosition(null)
     sendCursorChat(false, '')
   }, [sendCursorChat])
 
-  // 커서챗 비활성화 타이머 리셋 (3초 후 자동 비활성화)
-  const resetInactivityTimer = useCallback(() => {
-    if (chatInactivityTimerRef.current) {
-      clearTimeout(chatInactivityTimerRef.current)
-    }
-    chatInactivityTimerRef.current = setTimeout(() => {
+  // fade-out 애니메이션 시작 함수
+  const startFadeOut = useCallback(() => {
+    setIsChatFading(true)
+    // 3초간 fade-out 애니메이션 후 완전 비활성화
+    chatFadeTimerRef.current = setTimeout(() => {
       deactivateCursorChat()
     }, 3000)
   }, [deactivateCursorChat])
+
+  // 커서챗 비활성화 타이머 리셋 (3초 후 fade-out 시작)
+  const resetInactivityTimer = useCallback(() => {
+    // 기존 타이머들 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+    }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    // fade-out 중이었다면 즉시 다시 활성화 (opacity 복구)
+    setIsChatFading(false)
+
+    // 3초 후 fade-out 시작
+    chatInactivityTimerRef.current = setTimeout(() => {
+      startFadeOut()
+    }, 3000)
+  }, [startFadeOut])
 
   // 커서챗 활성화 함수
   const activateCursorChat = useCallback(() => {
@@ -343,10 +368,11 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       {/* 커서챗 입력 UI */}
       {isChatActive && chatInputPosition && (
         <div
-          className="absolute z-50 pointer-events-auto"
+          className={cn('absolute z-50 pointer-events-auto', isChatFading ? 'opacity-0' : 'opacity-100')}
           style={{
             left: chatInputPosition.x,
             top: chatInputPosition.y,
+            transition: isChatFading ? 'opacity 3s ease-out' : 'none',
           }}
         >
           <input
