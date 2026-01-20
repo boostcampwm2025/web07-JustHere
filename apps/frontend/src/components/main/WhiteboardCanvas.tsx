@@ -1,5 +1,5 @@
 import CanvasContextMenu from '@/components/main/CanvasContextMenu'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
@@ -51,6 +51,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 펜 드로잉 관련 상태
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
+
+  // 현재 드래그 중인지 여부
+  const [isDragging, setIsDragging] = useState(false)
 
   const {
     cursors,
@@ -281,27 +284,84 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     stage.position(newPos)
   }
 
+  // 드로잉 라인 객체 드래그 핸들러
+  const handleLineGroupDragEnd = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>, line: LineType) => {
+      setIsDragging(false)
+
+      const groupNode = e.target
+
+      // 그룹이 이동한 거리
+      // Group은 처음에 (0,0)에 렌더링되므로, dragEnd 시점의 x(), y()가 곧 이동 거리
+      const dx = groupNode.x()
+      const dy = groupNode.y()
+
+      // 2. 라인의 모든 점을 Delta만큼 이동
+      const newPoints = line.points.map((p, i) => {
+        // 짝수 인덱스(x), 홀수 인덱스(y)
+        return i % 2 === 0 ? p + dx : p + dy
+      })
+
+      updateLine(line.id, { points: newPoints })
+
+      // 4. [중요] Konva 노드 위치 리셋
+      groupNode.position({ x: 0, y: 0 })
+    },
+    [updateLine],
+  )
+
   // 드로잉 객체에 대한 Focus Box 렌더링
   const renderLineFocus = useMemo(() => {
+    // 1. 선택된 라인이 없으면 렌더링 X
     if (selectedType !== 'line' || !selectedId) return null
+
     const line = lines.find(l => l.id === selectedId)
     if (!line) return null
 
     const box = getLineBoundingBox(line.points)
+    const padding = 5
 
     return (
-      <Rect
-        x={box.x - 5}
-        y={box.y - 5}
-        width={box.width + 10}
-        height={box.height + 10}
-        stroke="#3b82f6" // Primary Blue
-        strokeWidth={1.5}
-        dash={[4, 4]} // 점선 처리
-        listening={false} // 클릭 통과
-      />
+      <Group
+        key={`focus-group-${line.id}`}
+        draggable={activeTool === 'hand'}
+        // 드래그 시작 시 원본 숨김 처리 시작
+        onDragStart={() => setIsDragging(true)}
+        // 드래그 종료 핸들러 연결
+        onDragEnd={e => handleLineGroupDragEnd(e, line)}
+        // 우클릭 메뉴 이벤트 전파
+        onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
+        // 초기 위치는 항상 (0,0) 절대 좌표 기준
+        x={0}
+        y={0}
+      >
+        {/* 드래그 시 시각적으로 따라올 Ghost Line */}
+        <Line
+          points={line.points}
+          stroke={line.stroke}
+          strokeWidth={line.strokeWidth}
+          tension={line.tension}
+          lineCap={line.lineCap}
+          lineJoin={line.lineJoin}
+          opacity={1}
+          listening={false} // 이벤트는 그룹이나 박스가 받음
+        />
+
+        {/* [Focus Box] 선택 테두리 */}
+        <Rect
+          x={box.x - padding}
+          y={box.y - padding}
+          width={box.width + padding * 2}
+          height={box.height + padding * 2}
+          stroke="#3b82f6" // Primary Blue
+          strokeWidth={1.5}
+          dash={[4, 4]} // 점선 처리
+          // 박스 내부를 투명색으로 채워야 마우스로 잡기 편함
+          fill="transparent"
+        />
+      </Group>
     )
-  }, [selectedId, selectedType, lines])
+  }, [selectedId, selectedType, lines, activeTool, handleLineGroupDragEnd, handleObjectSelect])
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -388,23 +448,31 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       >
         <Layer>
           {/* 펜으로 그린 선 렌더링 */}
-          {lines.map(line => (
-            <Line
-              key={line.id}
-              points={line.points}
-              stroke={line.stroke}
-              strokeWidth={line.strokeWidth}
-              tension={line.tension}
-              lineCap={line.lineCap}
-              lineJoin={line.lineJoin}
-              globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
-              // 라인 선택 (좌클릭/우클릭)
-              onClick={e => handleObjectSelect(line.id, 'line', e)}
-              onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
-              // 라인은 얇아서 클릭이 어려울 수 있으므로 hitStrokeWidth 추가
-              hitStrokeWidth={20}
-            />
-          ))}
+          {lines.map(line => {
+            // 현재 라인이 선택되었고, 드래그 중인가?
+            const isTargetLine = selectedId === line.id && selectedType === 'line'
+            const shouldDim = isTargetLine && isDragging
+
+            return (
+              <Line
+                key={line.id}
+                points={line.points}
+                stroke={line.stroke}
+                strokeWidth={line.strokeWidth}
+                tension={line.tension}
+                lineCap={line.lineCap}
+                lineJoin={line.lineJoin}
+                globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
+                // 드래그 중이면 투명도를 0.2로 낮춤 (흐리게)
+                opacity={shouldDim ? 0 : 1}
+                // 라인 선택 (좌클릭/우클릭)
+                onClick={e => handleObjectSelect(line.id, 'line', e)}
+                onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
+                // 라인은 얇아서 클릭이 어려울 수 있으므로 hitStrokeWidth 추가
+                hitStrokeWidth={20}
+              />
+            )
+          })}
 
           {/* 라인 선택 시 Focus Box 렌더링 */}
           {renderLineFocus}
