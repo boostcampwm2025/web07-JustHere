@@ -8,9 +8,3 @@ export type CategoryCreatedPayload = {
 export type CategoryDeletedPayload = {
   categoryId: string
 }
-
-// [S->C] category:error
-export type CategoryErrorPayload = {
-  code: string
-  message: string
-}
