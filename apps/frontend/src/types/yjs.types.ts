@@ -17,6 +17,7 @@ export interface YjsUpdatePayload {
 export interface CursorInfo {
   x: number
   y: number
+  name: string
   chatActive?: boolean
   chatMessage?: string
 }

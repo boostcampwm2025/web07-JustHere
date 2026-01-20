@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
@@ -7,6 +7,8 @@ import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
+import { useParams } from 'react-router-dom'
+import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 type ToolType = 'hand' | 'pencil' | 'postIt'
 
@@ -28,6 +30,10 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
   const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const { slug } = useParams<{ slug: string }>()
+  const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
+  const userName = user ? user.name : 'Unknown User'
+
   const {
     cursors,
     postits: postIts,
@@ -42,6 +48,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   } = useYjsSocket({
     roomId,
     canvasId,
+    userName,
   })
 
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태

@@ -20,9 +20,10 @@ interface UseYjsSocketOptions {
   roomId: string
   canvasId: string
   serverUrl?: string
+  userName: string
 }
 
-export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
+export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
   const [lines, setLines] = useState<Line[]>([])
@@ -143,6 +144,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
           next.set(payload.socketId, {
             x: cursor.x,
             y: cursor.y,
+            name: cursor.name,
             chatActive: cursor.chatActive,
             chatMessage: cursor.chatMessage,
             socketId: payload.socketId,
@@ -216,6 +218,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
         socketRef: React.MutableRefObject<Socket | null>,
         x: number,
         y: number,
+        name: string,
         cursorChatRef: React.MutableRefObject<{ chatActive: boolean; chatMessage: string }>,
       ) => {
         if (socketRef.current?.connected) {
@@ -226,6 +229,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
               cursor: {
                 x,
                 y,
+                name,
                 chatActive: chatState.chatActive,
                 chatMessage: chatState.chatMessage,
               },
@@ -242,9 +246,9 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     (x: number, y: number) => {
       // 현재 위치 저장 (커서챗 전송 시 사용)
       cursorPositionRef.current = { x, y }
-      updateCursorThrottled(canvasId, socketRef, x, y, cursorChatRef)
+      updateCursorThrottled(canvasId, socketRef, x, y, userName, cursorChatRef)
     },
-    [canvasId, updateCursorThrottled],
+    [canvasId, updateCursorThrottled, userName],
   )
 
   // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
@@ -259,12 +263,12 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       const awarenessPayload: YjsAwarenessPayload = {
         canvasId,
         state: {
-          cursor: { x, y, chatActive, chatMessage },
+          cursor: { x, y, name: userName, chatActive, chatMessage },
         },
       }
       socketRef.current.emit('y:awareness', awarenessPayload)
     },
-    [canvasId],
+    [canvasId, userName],
   )
 
   // 포스트잇 추가 함수

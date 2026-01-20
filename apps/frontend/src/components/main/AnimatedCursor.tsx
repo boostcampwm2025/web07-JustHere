@@ -76,8 +76,6 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // 컴포넌트 마운트 시 한 번만 실행
 
-  const mockUserName = `User ${cursor.socketId.substring(0, 4)}`
-
   return (
     <Group ref={groupRef}>
       <Html
@@ -92,19 +90,19 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         }}
       >
         <div className="relative flex flex-col items-start overflow-visible">
-          <CursorIcon className={`w-8 h-8 ${getCursorColor(mockUserName)} drop-shadow-md`} />
+          <CursorIcon className={`w-8 h-8 ${getCursorColor(cursor.name)} drop-shadow-md`} />
 
           {/* 사용자 이름 표시 (채팅 비활성화 시) */}
           {!cursor.chatActive && (
-            <div className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(mockUserName)} text-white text-xs rounded-md shadow-lg whitespace-nowrap`}>
-              {mockUserName}
+            <div className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(cursor.name)} text-white text-xs rounded-md shadow-lg whitespace-nowrap`}>
+              {cursor.name}
             </div>
           )}
 
           {/* 커서챗 말풍선 (채팅 활성화 시) */}
           {cursor.chatActive && (
             <div
-              className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(mockUserName)} text-white text-sm rounded-xl rounded-tl-none shadow-xl min-w-10 wrap-break-word max-w-[200px]`}
+              className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(cursor.name)} text-white text-sm rounded-xl rounded-tl-none shadow-xl min-w-10 wrap-break-word max-w-[200px]`}
             >
               {cursor.chatMessage || 'ㅤ'}
             </div>
