@@ -18,12 +18,14 @@ import type {
 import type { Category, Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { roomQueryKeys } from './useRoomQueries'
+import { socketBaseUrl } from '@/config/socket'
 
 export function useRoomSocketCache() {
   const queryClient = useQueryClient()
 
   const { status, connect, getSocket } = useSocketClient({
     namespace: 'room',
+    baseUrl: socketBaseUrl,
     autoConnect: false,
   })
 
