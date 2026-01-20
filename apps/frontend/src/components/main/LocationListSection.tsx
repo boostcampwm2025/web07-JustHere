@@ -149,16 +149,16 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
                       </div>
 
                       {/* Bottom Section */}
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 mt-[4px]">
                         <button
                           type="button"
                           onClick={() => handleAddPlaceCard(place)}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors ${
-                            isSelected ? 'bg-primary/10 border border-primary text-primary' : 'bg-primary-bg text-primary hover:bg-primary/20'
-                          }`}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors ${
+                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20'
+                          } text-primary`}
                         >
-                          <span className="font-bold text-xs">{isSelected ? '추가됨' : '캔버스'}</span>
-                          {!isSelected && <PlusIcon className="w-3 h-3" />}
+                          <span className="font-bold text-xs">캔버스</span>
+                          <PlusIcon className="w-3 h-3" />
                         </button>
                         <button
                           type="button"
