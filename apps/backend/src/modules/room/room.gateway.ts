@@ -1,3 +1,5 @@
+import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -8,8 +10,6 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { plainToInstance } from 'class-transformer'
-import { validateSync } from 'class-validator'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
 import { RoomService } from './room.service'
@@ -18,6 +18,7 @@ import { RoomService } from './room.service'
   namespace: '/room',
   cors: { origin: '*' },
 })
+@UseFilters(new WebsocketExceptionsFilter('room'))
 export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
@@ -37,11 +38,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('room:join')
   async onRoomJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomJoinPayload) {
-    const roomJoinPayload = plainToInstance(RoomJoinPayload, payload)
-    const errors = validateSync(roomJoinPayload)
-    if (errors.length > 0) return
-
-    await this.roomService.joinRoom(client, roomJoinPayload)
+    await this.roomService.joinRoom(client, payload)
   }
 
   @SubscribeMessage('room:leave')
@@ -51,19 +48,11 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('participant:update_name')
   onUpdateName(@ConnectedSocket() client: Socket, @MessageBody() payload: ParticipantUpdateNamePayload) {
-    const updatedNamePayload = plainToInstance(ParticipantUpdateNamePayload, payload)
-    const errors = validateSync(updatedNamePayload)
-    if (errors.length > 0) return
-
-    this.roomService.updateParticipantName(client, updatedNamePayload.name)
+    this.roomService.updateParticipantName(client, payload.name)
   }
 
   @SubscribeMessage('room:transfer_owner')
   onTransferOwner(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomTransferOwnerPayload) {
-    const transferPayload = plainToInstance(RoomTransferOwnerPayload, payload)
-    const errors = validateSync(transferPayload)
-    if (errors.length > 0) return
-
-    this.roomService.transferOwner(client, transferPayload.targetUserId)
+    this.roomService.transferOwner(client, payload.targetUserId)
   }
 }
