@@ -73,16 +73,10 @@ export type CategoryDeletedPayload = {
   categoryId: string
 }
 
-// [S->C] category:error
-export type CategoryErrorPayload = {
-  code: string
-  message: string
-}
-
 // 소켓 에러 타입
 export type SocketErrorType = 'NOT_FOUND' | 'NOT_IN_ROOM' | 'NOT_OWNER' | 'TARGET_NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'CATEGORY_OVERFLOW_EXCEPTION'
 
-// [S->C] room:error
+// [S->C] room:error / category:error
 export type ErrorPayload = {
   status: 'ERROR'
   statusCode: number

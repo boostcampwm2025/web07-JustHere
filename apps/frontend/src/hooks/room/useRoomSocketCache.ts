@@ -125,8 +125,15 @@ export function useRoomSocketCache() {
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => prev.filter(x => x.id !== c.categoryId))
     }
 
-    const onCategoryError = () => {
-      // TODO: 사용자에게 에러 메시지 표시 (토스트 등)
+    const onCategoryError = (errorPayload: ErrorPayload) => {
+      // NOT_IN_ROOM 에러는 새로고침으로 상태 복구
+      if (errorPayload.errorType === 'NOT_IN_ROOM') {
+        window.location.reload()
+        return
+      }
+
+      // 그 외 에러는 토스트로 표시
+      showToast(errorPayload.message, 'error')
     }
 
     const onRoomError = (errorPayload: ErrorPayload) => {
