@@ -157,6 +157,11 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   return (
     <Group ref={groupRef}>
       <Html
+        transformFunc={attrs => ({
+          ...attrs,
+          scaleX: 1,
+          scaleY: 1,
+        })}
         divProps={{
           style: {
             pointerEvents: 'none',
@@ -168,7 +173,7 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         }}
       >
         <div className="relative flex flex-col items-start overflow-visible">
-          <CursorIcon className={`w-8 h-8 ${getCursorColor(cursor.name)} drop-shadow-md`} />
+          <CursorIcon className={`w-7 h-7 ${getCursorColor(cursor.name)} drop-shadow-md`} />
 
           {/* 통합된 이름표/커서챗 말풍선 */}
           <div
