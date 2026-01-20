@@ -342,6 +342,36 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     })
   }
 
+  // 포스트잇 삭제 함수
+  const deletePostIt = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index !== -1) {
+      doc.transact(() => {
+        yPostits.delete(index, 1) // 해당 인덱스 삭제
+      })
+    }
+  }
+
+  // 선(드로잉) 삭제 함수
+  const deleteLine = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index !== -1) {
+      doc.transact(() => {
+        yLines.delete(index, 1)
+      })
+    }
+  }
+
   return {
     isConnected,
     cursors,
@@ -354,7 +384,9 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     updateRectangle,
     addPostIt,
     updatePostIt,
+    deletePostIt,
     addLine,
     updateLine,
+    deleteLine,
   }
 }
