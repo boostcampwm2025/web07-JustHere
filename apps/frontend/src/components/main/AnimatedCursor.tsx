@@ -1,7 +1,9 @@
 import React, { useRef, useEffect } from 'react'
-import { Circle, Text, Group, Rect } from 'react-konva'
+import { Text, Group, Rect } from 'react-konva'
+import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { CursorInfoWithId } from '@/types/yjs.types'
+import { CursorIcon } from '../Icons'
 
 interface AnimatedCursorProps {
   cursor: CursorInfoWithId
@@ -22,7 +24,6 @@ const CHAT_BUBBLE_CORNER_RADIUS = 8
  */
 const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   const groupRef = useRef<Konva.Group>(null)
-  const circleRef = useRef<Konva.Circle>(null)
   const textRef = useRef<Konva.Text>(null)
   const chatGroupRef = useRef<Konva.Group>(null)
 
@@ -92,7 +93,11 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   return (
     <Group ref={groupRef}>
       {/* 커서 원 */}
-      <Circle ref={circleRef} radius={8} fill="#3b82f6" stroke="#ffffff" strokeWidth={2} />
+      <Html>
+        <div className="w-16 h-16">
+          <CursorIcon />
+        </div>
+      </Html>
 
       {/* 사용자 ID 텍스트 */}
       <Text ref={textRef} x={12} y={-8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />

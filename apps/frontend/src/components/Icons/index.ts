@@ -17,6 +17,7 @@ import CompassIcon from '@/assets/icons/compass.svg?react'
 import ContentCopyIcon from '@/assets/icons/content-copy.svg?react'
 import CreationIcon from '@/assets/icons/creation.svg?react'
 import CrosshairsGpsIcon from '@/assets/icons/crosshairs-gps.svg?react'
+import CursorIcon from '@/assets/icons/cursor.svg?react'
 import ForumIcon from '@/assets/icons/forum.svg?react'
 import HandBackRightIcon from '@/assets/icons/hand-back-right.svg?react'
 import LiquorIcon from '@/assets/icons/liquor.svg?react'
@@ -50,6 +51,7 @@ export {
   ContentCopyIcon,
   CreationIcon,
   CrosshairsGpsIcon,
+  CursorIcon,
   ForumIcon,
   HandBackRightIcon,
   LiquorIcon,
