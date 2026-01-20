@@ -65,7 +65,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
   // 배치 중 마우스 따라다니는 카드 위치
-  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number } | null>(null)
+  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
 
   // 펜 드로잉 관련 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -88,7 +88,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       }
 
       if (pendingPlaceCard) {
-        setPlaceCardCursorPos(canvasPos)
+        setPlaceCardCursorPos({ ...canvasPos, cardId: pendingPlaceCard.id })
       }
 
       // 펜 드로잉 중이면 포인트 추가
@@ -380,7 +380,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           )}
 
           {/* 장소 카드 고스트 (미리보기) */}
-          {pendingPlaceCard && placeCardCursorPos && (
+          {pendingPlaceCard && placeCardCursorPos && placeCardCursorPos.cardId === pendingPlaceCard.id && (
             <Group x={placeCardCursorPos.x - PLACE_CARD_WIDTH / 2} y={placeCardCursorPos.y - PLACE_CARD_HEIGHT / 2} listening={false}>
               <Rect
                 width={PLACE_CARD_WIDTH}
