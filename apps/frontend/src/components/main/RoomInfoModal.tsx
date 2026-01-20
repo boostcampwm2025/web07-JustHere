@@ -71,8 +71,7 @@ export default function RoomInfoModal({
             {visibleParticipants.map(p => (
               <div key={p.userId} className="flex items-center gap-4 px-2 py-1">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[18px] font-bold text-black shadow-sm"
-                  style={{ backgroundColor: getParticipantColor(p.name) }}
+                  className={`w-8 h-8 rounded-full ${getParticipantColor(p.name)} flex items-center justify-center text-[18px] font-bold text-white shadow-sm`}
                 >
                   {getParticipantInitial(p.name)}
                 </div>

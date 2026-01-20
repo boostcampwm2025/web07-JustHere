@@ -56,8 +56,7 @@ export default function Header({ participants, currentUserId, roomLink, onUpdate
                 {combinedParticipants.slice(0, displayCount).map(p => (
                   <div key={p.userId} className="relative w-9 h-9 overflow-visible">
                     <div
-                      className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-black overflow-hidden"
-                      style={{ backgroundColor: getParticipantColor(p.name) }}
+                      className={`w-9 h-9 rounded-full border-2 ${getParticipantColor(p.name)} border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden`}
                     >
                       {getParticipantInitial(p.name)}
                     </div>

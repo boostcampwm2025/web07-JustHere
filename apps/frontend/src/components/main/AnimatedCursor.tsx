@@ -1,21 +1,14 @@
 import React, { useRef, useEffect } from 'react'
-import { Text, Group, Rect } from 'react-konva'
+import { Group } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { CursorInfoWithId } from '@/types/yjs.types'
-import { CursorIcon } from '../Icons'
+import { CursorIcon } from '@/components/Icons'
+import { getCursorColor, getParticipantColor } from '@/utils/participant'
 
 interface AnimatedCursorProps {
   cursor: CursorInfoWithId
 }
-
-// 말풍선 패딩 및 스타일 상수
-const CHAT_BUBBLE_PADDING_X = 10
-const CHAT_BUBBLE_PADDING_Y = 6
-const CHAT_BUBBLE_OFFSET_X = 15
-const CHAT_BUBBLE_OFFSET_Y = -25
-const CHAT_BUBBLE_FONT_SIZE = 13
-const CHAT_BUBBLE_CORNER_RADIUS = 8
 
 /**
  * 애니메이션이 적용된 커서 컴포넌트
@@ -24,8 +17,6 @@ const CHAT_BUBBLE_CORNER_RADIUS = 8
  */
 const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   const groupRef = useRef<Konva.Group>(null)
-  const textRef = useRef<Konva.Text>(null)
-  const chatGroupRef = useRef<Konva.Group>(null)
 
   // 목표 위치 저장
   const targetRef = useRef({ x: cursor.x, y: cursor.y })
@@ -82,44 +73,43 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
     return () => {
       animation.stop()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // 컴포넌트 마운트 시 한 번만 실행
+  }, [cursor.x, cursor.y]) // 컴포넌트 마운트 시 한 번만 실행
 
-  // 말풍선 텍스트 너비 계산
-  const chatMessage = cursor.chatMessage || ''
-  const estimatedTextWidth = chatMessage.length * CHAT_BUBBLE_FONT_SIZE * 0.6
-  const bubbleWidth = Math.max(estimatedTextWidth + CHAT_BUBBLE_PADDING_X * 2, 40)
+  const mockUserName = `User ${cursor.socketId.substring(0, 4)}`
 
   return (
     <Group ref={groupRef}>
-      {/* 커서 원 */}
-      <Html>
-        <div className="w-16 h-16">
-          <CursorIcon />
+      <Html
+        divProps={{
+          style: {
+            pointerEvents: 'none',
+            userSelect: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          },
+        }}
+      >
+        <div className="relative flex flex-col items-start overflow-visible">
+          <CursorIcon className={`w-8 h-8 ${getCursorColor(mockUserName)} drop-shadow-md`} />
+
+          {/* 사용자 이름 표시 (채팅 비활성화 시) */}
+          {!cursor.chatActive && (
+            <div className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(mockUserName)} text-white text-xs rounded-md shadow-lg whitespace-nowrap`}>
+              {mockUserName}
+            </div>
+          )}
+
+          {/* 커서챗 말풍선 (채팅 활성화 시) */}
+          {cursor.chatActive && (
+            <div
+              className={`ml-5 -mt-1 px-2 py-1 ${getParticipantColor(mockUserName)} text-white text-sm rounded-xl rounded-tl-none shadow-xl min-w-10 wrap-break-word max-w-[200px]`}
+            >
+              {cursor.chatMessage || 'ㅤ'}
+            </div>
+          )}
         </div>
       </Html>
-
-      {/* 사용자 ID 텍스트 */}
-      <Text ref={textRef} x={12} y={-8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
-
-      {/* 커서챗 말풍선 */}
-      {cursor.chatActive && (
-        <Group ref={chatGroupRef} x={CHAT_BUBBLE_OFFSET_X} y={CHAT_BUBBLE_OFFSET_Y}>
-          {/* 말풍선 배경 */}
-          <Rect
-            width={bubbleWidth}
-            height={CHAT_BUBBLE_FONT_SIZE + CHAT_BUBBLE_PADDING_Y * 2}
-            fill="#3b82f6"
-            cornerRadius={CHAT_BUBBLE_CORNER_RADIUS}
-            shadowColor="black"
-            shadowBlur={4}
-            shadowOpacity={0.2}
-            shadowOffsetY={2}
-          />
-          {/* 말풍선 텍스트 */}
-          <Text x={CHAT_BUBBLE_PADDING_X} y={CHAT_BUBBLE_PADDING_Y} text={chatMessage || '...'} fontSize={CHAT_BUBBLE_FONT_SIZE} fill="#ffffff" />
-        </Group>
-      )}
     </Group>
   )
 })
