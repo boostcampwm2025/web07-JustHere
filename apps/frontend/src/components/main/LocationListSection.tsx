@@ -136,7 +136,7 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
                   <article className="flex gap-3">
                     {/* Thumbnail */}
                     <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
+                      <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
                     </div>
 
                     {/* Content */}
@@ -149,7 +149,7 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
                       </div>
 
                       {/* Bottom Section */}
-                      <div className="flex items-center justify-end gap-2 mt-[4px]">
+                      <div className="flex items-center justify-end gap-2 mt-1">
                         <button
                           type="button"
                           onClick={() => handleAddPlaceCard(place)}
