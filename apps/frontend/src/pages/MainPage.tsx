@@ -10,6 +10,7 @@ function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
@@ -38,7 +39,6 @@ function MainPage() {
         <Header
           participants={participants}
           currentUserId={user.userId}
-          userName={user.name}
           roomLink={roomLink}
           onUpdateName={updateParticipantName}
           isOwner={isOwner}
@@ -55,7 +55,6 @@ function MainPage() {
       <Header
         participants={participants}
         currentUserId={user.userId}
-        userName={user.name}
         roomLink={roomLink}
         onUpdateName={updateParticipantName}
         isOwner={isOwner}

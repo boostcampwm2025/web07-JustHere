@@ -1,11 +1,10 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
 import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 
 interface RoomInfoModalProps {
-  isOpen: boolean
   onClose: () => void
   userName: string
   roomLink: string
@@ -18,7 +17,6 @@ interface RoomInfoModalProps {
 }
 
 export default function RoomInfoModal({
-  isOpen,
   onClose,
   userName,
   roomLink,
@@ -31,12 +29,17 @@ export default function RoomInfoModal({
 }: RoomInfoModalProps) {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
 
-  if (!isOpen) return null
+  useEffect(() => {
+    if (!nameInputRef.current) return
+
+    nameInputRef.current.value = userName
+  }, [userName])
+
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
 
   const handleSubmit = () => {
-    const nextName = nameInputRef.current?.value.trim() ?? ''
+    const nextName = (nameInputRef.current?.value ?? '').trim()
     if (!nextName || nextName === userName) return
     onUpdateName?.(nextName)
   }
