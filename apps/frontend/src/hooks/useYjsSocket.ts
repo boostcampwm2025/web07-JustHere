@@ -270,21 +270,27 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     yRectangles.push([yMap])
   }
 
-  // 네모 위치 업데이트 함수
-  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
+  // 공통 업데이트 헬퍼 함수
+  const updateItem = useCallback((arrayName: string, id: string, updates: Record<string, unknown>) => {
     const doc = docRef.current
     if (!doc) return
 
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const index = yRectangles.toArray().findIndex(yMap => yMap.get('id') === id)
+    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
+    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
 
-    // Yjs 트랜잭션으로 명시적으로 감싸기
+    if (index === -1) return
+
     doc.transact(() => {
-      const yMap = yRectangles.get(index)
+      const yMap = yArray.get(index)
       Object.entries(updates).forEach(([key, value]) => {
         yMap.set(key, value)
       })
     })
+  }, [])
+
+  // 네모 위치 업데이트 함수
+  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
+    updateItem('rectangles', id, updates)
   }
 
   // 포스트잇 추가 함수
@@ -307,21 +313,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   // 포스트잇 업데이트 함수 (위치, 텍스트 등)
   const updatePostIt = (id: string, updates: Partial<Omit<PostIt, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    // Yjs 트랜잭션으로 명시적으로 감싸기
-    doc.transact(() => {
-      const yMap = yPostits.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
+    updateItem('postits', id, updates)
   }
 
   // 장소 카드 추가 함수
@@ -344,20 +336,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   // 장소 카드 업데이트 함수
   const updatePlaceCard = (id: string, updates: Partial<Omit<PlaceCard, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    doc.transact(() => {
-      const yMap = yPlaceCards.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
+    updateItem('placeCards', id, updates)
   }
 
   const removePlaceCard = (id: string) => {
@@ -394,21 +373,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   // 선 업데이트 함수 (주로 points 배열 업데이트)
   const updateLine = (id: string, updates: Partial<Omit<Line, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    // Yjs 트랜잭션으로 명시적으로 감싸기
-    doc.transact(() => {
-      const yMap = yLines.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
+    updateItem('lines', id, updates)
   }
 
   return {
