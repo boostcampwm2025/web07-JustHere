@@ -147,6 +147,12 @@ export function useRoomSocketCache() {
         return
       }
 
+      // NOT_IN_ROOM 에러는 새로고침으로 상태 복구
+      if (errorPayload.errorType === 'NOT_IN_ROOM') {
+        window.location.reload()
+        return
+      }
+
       // 그 외 에러는 토스트로 표시
       showToast(errorPayload.message, 'error')
     }
