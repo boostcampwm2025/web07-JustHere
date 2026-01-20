@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import CanvasContextMenu from '@/components/main/CanvasContextMenu'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
@@ -15,10 +16,41 @@ interface WhiteboardCanvasProps {
   canvasId: string
 }
 
+// 드로잉 객체의 Bounding Box 계산 함수
+const getLineBoundingBox = (points: number[]) => {
+  if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
+  const xs = points.filter((_, i) => i % 2 === 0)
+  const ys = points.filter((_, i) => i % 2 === 1)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  }
+}
+
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
+
+  // 선택된 캔버스 UI 객체
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<'postit' | 'line' | null>(null)
+
+  // 컨텍스트 메뉴 (우클릭 팝오버)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+
+  // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+
+  // 펜 드로잉 관련 상태
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [currentLineId, setCurrentLineId] = useState<string | null>(null)
 
   const {
     cursors,
@@ -30,19 +62,85 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     updateRectangle,
     addPostIt,
     updatePostIt,
+    deletePostIt,
     addLine,
     updateLine,
+    deleteLine,
   } = useYjsSocket({
     roomId,
     canvasId,
   })
 
-  // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+  // Backspace 키를 통한 삭제 이벤트
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력 중일 때는 삭제 방지 (textarea 등)
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
 
-  // 펜 드로잉 관련 상태
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [currentLineId, setCurrentLineId] = useState<string | null>(null)
+      if (e.key === 'Backspace' && selectedId) {
+        if (selectedType === 'postit') deletePostIt(selectedId)
+        if (selectedType === 'line') deleteLine(selectedId)
+
+        // 삭제 후 선택 해제
+        setSelectedId(null)
+        setSelectedType(null)
+        setContextMenu(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId, selectedType, deletePostIt, deleteLine])
+
+  // 객체 선택 핸들러 (좌클릭/우클릭 공통)
+  const handleObjectSelect = (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
+    // 1. Hand 툴이 아니면 무시
+    if (activeTool !== 'hand') return
+
+    // 2. 이벤트 버블링 방지 (Stage 클릭 방지)
+    e.cancelBubble = true
+
+    // 3. 선택 상태 설정
+    setSelectedId(id)
+    setSelectedType(type)
+
+    // 4. 우클릭인 경우 컨텍스트 메뉴 표시
+    if (e.evt.button === 2) {
+      e.evt.preventDefault() // 브라우저 기본 우클릭 메뉴 방지
+      const stage = stageRef.current
+      if (stage) {
+        // Stage 내 좌표가 아닌 브라우저 화면 기준(Pointer) 좌표 사용 (HTML Overlay용)
+        const pointerPos = stage.getRelativePointerPosition()
+        if (pointerPos) {
+          // Stage의 위치와 스케일을 고려하지 않고, 화면 절대 좌표(Overlay)를 위해 Konva 이벤트의 clientX, clientY를 사용하거나 계산 필요.
+          setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
+        }
+      }
+    } else {
+      // 좌클릭이면 컨텍스트 메뉴 닫기
+      setContextMenu(null)
+    }
+  }
+
+  // 배경 클릭 시 선택 해제
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Stage 자체를 클릭했을 때만 (객체 클릭 제외)
+    if (e.target === e.target.getStage()) {
+      setSelectedId(null)
+      setSelectedType(null)
+      setContextMenu(null)
+    }
+  }
+
+  // 메뉴에서 삭제 클릭 시
+  const handleDeleteFromMenu = () => {
+    if (selectedId && selectedType) {
+      if (selectedType === 'postit') deletePostIt(selectedId)
+      if (selectedType === 'line') deleteLine(selectedId)
+    }
+    setSelectedId(null)
+    setSelectedType(null)
+    setContextMenu(null)
+  }
 
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
@@ -86,7 +184,17 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   }
 
   // 마우스 다운 이벤트 (드로잉 시작, 포스트잇 추가)
-  const handleMouseDown = () => {
+  const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Hand 모드일 때는 Stage 드래그 혹은 객체 선택이므로 패스
+    if (activeTool === 'hand') return
+
+    // 우클릭은 드로잉/생성 로직 실행 안 함
+    const isMouseEvent = e.evt.type.startsWith('mouse')
+    if (isMouseEvent) {
+      const mouseEvt = e.evt as MouseEvent
+      if (mouseEvt.button === 2) return
+    }
+
     const stage = stageRef.current
     if (!stage) return
 
@@ -173,6 +281,28 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     stage.position(newPos)
   }
 
+  // 드로잉 객체에 대한 Focus Box 렌더링
+  const renderLineFocus = useMemo(() => {
+    if (selectedType !== 'line' || !selectedId) return null
+    const line = lines.find(l => l.id === selectedId)
+    if (!line) return null
+
+    const box = getLineBoundingBox(line.points)
+
+    return (
+      <Rect
+        x={box.x - 5}
+        y={box.y - 5}
+        width={box.width + 10}
+        height={box.height + 10}
+        stroke="#3b82f6" // Primary Blue
+        strokeWidth={1.5}
+        dash={[4, 4]} // 점선 처리
+        listening={false} // 클릭 통과
+      />
+    )
+  }, [selectedId, selectedType, lines])
+
   /**
    * 도구에 따른 커서 스타일 반환
    */
@@ -197,7 +327,10 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   }
 
   return (
-    <div className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`}>
+    <div
+      className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`}
+      onContextMenu={e => e.preventDefault()} // 캔버스 전체 우클릭 메뉴 방지
+    >
       {/* 상단 중앙 도구 토글 UI */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
         <div className="flex items-center p-1.5 bg-white rounded-full shadow-xl border border-gray-200 gap-1">
@@ -229,6 +362,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         </div>
       </div>
 
+      {/* 우클릭 Context Menu (Popover) */}
+      {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteFromMenu} onClose={() => setContextMenu(null)} />}
+
       <Stage
         ref={stageRef}
         width={window.innerWidth}
@@ -243,6 +379,12 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
+        // Stage 클릭 시 선택 해제 (빈 공간 클릭)
+        onClick={handleStageClick}
+        // 모바일 터치 고려
+        onTap={handleStageClick}
+        // 캔버스 우클릭 기본 메뉴 방지
+        onContextMenu={e => e.evt.preventDefault()}
       >
         <Layer>
           {/* 펜으로 그린 선 렌더링 */}
@@ -256,8 +398,16 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               lineCap={line.lineCap}
               lineJoin={line.lineJoin}
               globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
+              // 라인 선택 (좌클릭/우클릭)
+              onClick={e => handleObjectSelect(line.id, 'line', e)}
+              onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
+              // 라인은 얇아서 클릭이 어려울 수 있으므로 hitStrokeWidth 추가
+              hitStrokeWidth={20}
             />
           ))}
+
+          {/* 라인 선택 시 Focus Box 렌더링 */}
+          {renderLineFocus}
 
           {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
           {rectangles.map(shape => (
@@ -287,12 +437,14 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               key={postIt.id}
               postIt={postIt}
               draggable={activeTool === 'hand'}
+              isSelected={selectedId === postIt.id && selectedType === 'postit'}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
               }}
               onChange={updates => {
                 updatePostIt(postIt.id, updates)
               }}
+              onSelect={e => handleObjectSelect(postIt.id, 'postit', e)}
             />
           ))}
 
