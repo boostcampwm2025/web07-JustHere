@@ -37,7 +37,7 @@ function ErrorPage({ errorType = 'unknown', onReset }: ErrorPageProps) {
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
       <Header minimal />
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-bg px-4">
+      <div className="flex flex-1 flex-col items-center justify-center bg-gray-bg px-4">
         <div className="flex flex-col items-center text-center max-w-md">
           <div className="size-24 mb-6 rounded-full bg-primary-bg flex items-center justify-center">
             <AlertCircleIcon className="size-24 text-primary" />
