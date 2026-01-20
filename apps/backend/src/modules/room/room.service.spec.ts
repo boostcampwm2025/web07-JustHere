@@ -1,3 +1,5 @@
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Socket } from 'socket.io'
 import type { Category, Room } from '@prisma/client'
@@ -302,7 +304,7 @@ describe('RoomService', () => {
       expect(client.join).toHaveBeenCalledWith(`room:${uuidRoomId}`)
     })
 
-    it('slug로 방을 찾지 못하면 error 이벤트를 emit함', async () => {
+    it('slug로 방을 찾지 못하면 NotFound 예외를 던진다', async () => {
       const client = createMockSocket('socket-1')
       const slug = 'invalid-slug'
 
@@ -314,9 +316,8 @@ describe('RoomService', () => {
         user: { userId: 'user-1', name: 'ajin' },
       }
 
-      await service.joinRoom(client, payload)
+      await expect(service.joinRoom(client, payload)).rejects.toThrow(new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.'))
 
-      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '방을 찾을 수 없습니다.' })
       expect(client.join).not.toHaveBeenCalled()
       expect(users.createSession).not.toHaveBeenCalled()
     })
@@ -417,24 +418,25 @@ describe('RoomService', () => {
       expect(payload.name).toBe('newName')
     })
 
-    it('세션이 없으면 error 이벤트를 emit한다', () => {
+    it('세션이 없으면 Unauthorized 예외를 던진다', () => {
       const client = createMockSocket('socket-1')
 
       users.getSession.mockReturnValue(null)
 
-      service.updateParticipantName(client, 'newName')
+      expect(() => service.updateParticipantName(client, 'newName')).toThrow(new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.'))
 
-      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '세션을 찾을 수 없습니다.' })
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
 
-    it('updateSessionName이 실패하면 브로드캐스트하지 않는다', () => {
+    it('updateSessionName이 실패하면 InternalServerError 예외를 던진다', () => {
       const client = createMockSocket('socket-1')
 
       users.getSession.mockReturnValue(sessionA)
       users.updateSessionName.mockReturnValue(undefined)
 
-      service.updateParticipantName(client, 'newName')
+      expect(() => service.updateParticipantName(client, 'newName')).toThrow(
+        new CustomException(ErrorType.InternalServerError, '이름 변경에 실패했습니다.'),
+      )
 
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
@@ -462,54 +464,43 @@ describe('RoomService', () => {
       expect(payload.newOwnerId).toBe('user-2')
     })
 
-    it('세션이 없으면 error 이벤트를 emit한다', () => {
+    it('세션이 없으면 NotInRoom 예외를 던진다', () => {
       const client = createMockSocket('socket-1')
 
       users.getSession.mockReturnValue(null)
 
-      service.transferOwner(client, 'user-2')
-
-      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '세션을 찾을 수 없습니다.' })
+      expect(() => service.transferOwner(client, 'user-2')).toThrow(new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.'))
     })
 
-    it('방장이 아니면 NOT_OWNER 에러를 emit한다', () => {
+    it('방장이 아니면 NotOwner 예외를 던진다', () => {
       const client = createMockSocket('socket-2')
       const notOwnerSession = { ...sessionB, isOwner: false }
 
       users.getSession.mockReturnValue(notOwnerSession)
 
-      service.transferOwner(client, 'user-1')
-
-      expect(client.emit).toHaveBeenCalledWith('room:error', {
-        code: 'NOT_OWNER',
-        message: '방장만 권한을 위임할 수 있습니다.',
-      })
+      expect(() => service.transferOwner(client, 'user-1')).toThrow(new CustomException(ErrorType.Forbidden, '방장만 권한을 위임할 수 있습니다.'))
     })
 
-    it('대상 유저가 없으면 TARGET_NOT_FOUND 에러를 emit한다', () => {
+    it('대상 유저가 없으면 NotFound 예외를 던진다', () => {
       const client = createMockSocket('socket-1')
 
       users.getSession.mockReturnValue(sessionA)
       users.getSessionByUserIdInRoom.mockReturnValue(null)
 
-      service.transferOwner(client, 'non-existent')
-
-      expect(client.emit).toHaveBeenCalledWith('room:error', {
-        code: 'TARGET_NOT_FOUND',
-        message: '대상 유저를 찾을 수 없습니다.',
-      })
+      expect(() => service.transferOwner(client, 'non-existent')).toThrow(
+        new CustomException(ErrorType.TargetNotFound, '대상 유저를 찾을 수 없습니다.'),
+      )
     })
 
-    it('transferOwnership이 실패하면 에러를 emit한다', () => {
+    it('transferOwnership이 실패하면 InternalServerError 예외를 던진다', () => {
       const client = createMockSocket('socket-1')
 
       users.getSession.mockReturnValue(sessionA)
       users.getSessionByUserIdInRoom.mockReturnValue(sessionB)
       users.transferOwnership.mockReturnValue(false)
 
-      service.transferOwner(client, 'user-2')
+      expect(() => service.transferOwner(client, 'user-2')).toThrow(new CustomException(ErrorType.InternalServerError, '권한 위임에 실패했습니다.'))
 
-      expect(client.emit).toHaveBeenCalledWith('room:error', { message: '권한 위임에 실패했습니다.' })
       expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })

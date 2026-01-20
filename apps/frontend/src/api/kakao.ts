@@ -2,12 +2,17 @@ import axios from 'axios'
 import type { KakaoPlace } from '@/types/kakao'
 
 type KakaoKeywordResponse = {
-  documents: KakaoPlace[]
+  status: string
+  statusCode: 200
+  data: {
+    documents: KakaoPlace[]
+  }
+  timestamp: string
 }
 
 export const searchKeyword = async (keyword: string): Promise<KakaoPlace[]> => {
   const response = await axios.get<KakaoKeywordResponse>('/api/kakao/keyword', {
     params: { keyword },
   })
-  return response.data.documents ?? []
+  return response.data.data.documents ?? []
 }

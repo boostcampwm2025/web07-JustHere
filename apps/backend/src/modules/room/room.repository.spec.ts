@@ -119,7 +119,7 @@ describe('RoomRepository', () => {
           y: 37.497952,
           place_name: '강남역',
         }),
-      ).rejects.toThrow('최대 재시도 횟수 3 회를 초과하였습니다')
+      ).rejects.toThrow('방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
 
       expect(createSpy).toHaveBeenCalledTimes(3)
     })
