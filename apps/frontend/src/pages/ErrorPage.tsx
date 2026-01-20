@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/common/Button'
 import { AlertCircleIcon } from '@/components/Icons'
+import Header from '@/components/common/Header'
 
 type ErrorType = 'room-not-found' | 'unknown'
 
@@ -30,34 +31,30 @@ function ErrorPage({ errorType = 'unknown', onReset }: ErrorPageProps) {
 
   const error = errorMessages[errorType ?? 'unknown']
 
-  const handleCreateRoom = () => {
-    onReset?.()
-    navigate('/onboarding')
-  }
-
-  const handleReset = () => {
-    onReset?.()
-    navigate(0)
-  }
+  const handleCreateRoom = () => navigate('/onboarding')
+  const handleReset = () => onReset?.()
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-bg px-4">
-      <div className="flex flex-col items-center text-center max-w-md">
-        <div className="size-24 mb-6 rounded-full bg-primary-bg flex items-center justify-center">
-          <AlertCircleIcon className="size-24 text-primary" />
-        </div>
-        <h1 className="text-3xl font-bold text-black mb-2">{error.title}</h1>
-        <h3 className="text-gray text-lg mb-8">{error.description}</h3>
+    <div className="flex flex-col h-screen bg-gray-bg">
+      <Header minimal />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-bg px-4">
+        <div className="flex flex-col items-center text-center max-w-md">
+          <div className="size-24 mb-6 rounded-full bg-primary-bg flex items-center justify-center">
+            <AlertCircleIcon className="size-24 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold text-black mb-2">{error.title}</h1>
+          <h3 className="text-gray text-lg mb-8">{error.description}</h3>
 
-        {errorType === 'room-not-found' ? (
-          <Button onClick={handleCreateRoom} size="lg">
-            새 방 만들기
-          </Button>
-        ) : (
-          <Button onClick={handleReset} size="lg">
-            새로고침
-          </Button>
-        )}
+          {errorType === 'room-not-found' ? (
+            <Button onClick={handleCreateRoom} size="lg">
+              새 방 만들기
+            </Button>
+          ) : (
+            <Button onClick={handleReset} size="lg">
+              새로고침
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   )

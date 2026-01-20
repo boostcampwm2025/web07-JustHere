@@ -46,7 +46,7 @@ function OnboardingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-bg">
-      <Header participants={[]} currentUserId="onboarding" roomLink="" />
+      <Header minimal />
 
       {currentStep === 'location' && <LocationStep onNext={handleLocationSelect} />}
 
