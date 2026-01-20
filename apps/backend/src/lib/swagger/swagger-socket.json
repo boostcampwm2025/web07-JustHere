@@ -6,7 +6,7 @@
       "event": "room:join",
       "namespace": "/room",
       "tags": ["Socket.IO Events - Room"],
-      "description": "방에 참여합니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:join', {\n  roomId: 'room-uuid',\n  user: { userId: 'user-123', name: '홍길동' }\n})\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** room:joined (본인에게), participant:connected (방의 다른 참여자들에게 브로드캐스트)",
+      "description": "방에 참여합니다.\n\n**사용법:**\n```javascript\nsocket.emit('room:join', {\n  roomId: 'room-uuid',\n  user: { userId: 'user-123', name: '홍길동' }\n})\n```\n\n**네임스페이스:** /room\n**응답 이벤트:** room:joined (본인에게), participant:connected (방의 다른 참여자들에게 브로드캐스트, socketId/userId/name 포함)",
       "request": {
         "type": "object",
         "required": ["roomId", "user"],
@@ -50,6 +50,7 @@
             "items": {
               "type": "object",
               "properties": {
+                "socketId": { "type": "string", "description": "소켓 연결 ID", "example": "abc123def456" },
                 "userId": { "type": "string", "example": "user-123" },
                 "name": { "type": "string", "example": "홍길동" }
               }
@@ -91,8 +92,13 @@
       "response": {
         "type": "object",
         "description": "나간 사용자 정보를 다른 참여자들에게 전송 (participant:disconnected 이벤트)",
-        "required": ["userId"],
+        "required": ["socketId", "userId"],
         "properties": {
+          "socketId": {
+            "type": "string",
+            "description": "나간 사용자의 소켓 연결 ID",
+            "example": "abc123def456"
+          },
           "userId": {
             "type": "string",
             "description": "방을 나간 사용자의 ID",

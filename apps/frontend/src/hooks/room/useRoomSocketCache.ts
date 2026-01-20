@@ -63,8 +63,9 @@ export function useRoomSocketCache() {
       if (!roomId) return
 
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => {
-        if (prev.some(x => x.userId === p.userId)) return prev
-        return [...prev, { userId: p.userId, name: p.name }]
+        // socketId 기준으로 중복 체크
+        if (prev.some(x => x.socketId === p.socketId)) return prev
+        return [...prev, { socketId: p.socketId, userId: p.userId, name: p.name }]
       })
     }
 
@@ -72,7 +73,8 @@ export function useRoomSocketCache() {
       const roomId = roomIdRef.current
       if (!roomId) return
 
-      queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.userId !== p.userId))
+      // socketId 기준으로 삭제 (같은 userId의 다른 세션은 유지)
+      queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.socketId !== p.socketId))
     }
 
     const onNameUpdated = (p: ParticipantNameUpdatedPayload) => {

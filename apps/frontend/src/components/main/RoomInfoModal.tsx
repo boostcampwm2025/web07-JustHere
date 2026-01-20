@@ -28,15 +28,15 @@ export default function RoomInfoModal({
   onTransferOwner,
 }: RoomInfoModalProps) {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
-
+  // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
+  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
+  const hasCurrentUser = uniqueParticipants.some(p => p.userId === currentUserId)
+  const visibleParticipants = hasCurrentUser ? uniqueParticipants : [{ socketId: '', userId: currentUserId, name: userName }, ...uniqueParticipants]
   useEffect(() => {
     if (!nameInputRef.current) return
 
     nameInputRef.current.value = userName
   }, [userName])
-
-  const hasCurrentUser = participants.some(p => p.userId === currentUserId)
-  const visibleParticipants = hasCurrentUser ? participants : [{ userId: currentUserId, name: userName }, ...participants]
 
   const handleSubmit = () => {
     const nextName = (nameInputRef.current?.value ?? '').trim()
