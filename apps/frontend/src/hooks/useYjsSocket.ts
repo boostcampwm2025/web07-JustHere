@@ -11,7 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorPositionWithId,
 } from '@/types/yjs.types'
-import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
+import type { Rectangle, PostIt, Line, PlaceCard } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { socketBaseUrl } from '@/config/socket'
@@ -26,6 +26,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
   const [rectangles, setRectangles] = useState<Rectangle[]>([])
   const [postits, setPostits] = useState<PostIt[]>([])
+  const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
 
@@ -50,6 +51,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     // Yjs SharedTypes 생성
     const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
 
     // Yjs 변경사항을 React state에 반영하는 함수
@@ -79,6 +81,20 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
       setPostits(items)
     }
 
+    const syncPlaceCardsToState = () => {
+      const items: PlaceCard[] = yPlaceCards.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        placeId: yMap.get('placeId') as string,
+        name: yMap.get('name') as string,
+        address: yMap.get('address') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        createdAt: yMap.get('createdAt') as string,
+        image: (yMap.get('image') as string | null | undefined) ?? null,
+      }))
+      setPlaceCards(items)
+    }
+
     const syncLinesToState = () => {
       const items: Line[] = yLines.toArray().map(yMap => ({
         id: yMap.get('id') as string,
@@ -98,16 +114,19 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yRectangles.observeDeep(syncRectanglesToState)
     yPostits.observeDeep(syncPostitsToState)
+    yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
 
     // 초기 동기화
     syncRectanglesToState()
     syncPostitsToState()
+    syncPlaceCardsToState()
     syncLinesToState()
 
     return () => {
       yRectangles.unobserveDeep(syncRectanglesToState)
       yPostits.unobserveDeep(syncPostitsToState)
+      yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
       doc.destroy()
     }
@@ -305,6 +324,42 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     })
   }
 
+  // 장소 카드 추가 함수
+  const addPlaceCard = (card: PlaceCard) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const yMap = new Y.Map()
+    yMap.set('id', card.id)
+    yMap.set('placeId', card.placeId)
+    yMap.set('name', card.name)
+    yMap.set('address', card.address)
+    yMap.set('x', card.x)
+    yMap.set('y', card.y)
+    yMap.set('createdAt', card.createdAt)
+    yMap.set('image', card.image ?? null)
+    yPlaceCards.push([yMap])
+  }
+
+  // 장소 카드 업데이트 함수
+  const updatePlaceCard = (id: string, updates: Partial<Omit<PlaceCard, 'id'>>) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index === -1) return
+
+    doc.transact(() => {
+      const yMap = yPlaceCards.get(index)
+      Object.entries(updates).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+    })
+  }
+
   // 선 추가 함수
   const addLine = (line: Line) => {
     const doc = docRef.current
@@ -347,6 +402,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     cursors,
     rectangles,
     postits,
+    placeCards,
     lines,
     socketId,
     updateCursor,
@@ -354,6 +410,8 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     updateRectangle,
     addPostIt,
     updatePostIt,
+    addPlaceCard,
+    updatePlaceCard,
     addLine,
     updateLine,
   }
