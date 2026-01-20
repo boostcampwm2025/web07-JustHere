@@ -73,7 +73,8 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
     return () => {
       animation.stop()
     }
-  }, [cursor.x, cursor.y]) // 컴포넌트 마운트 시 한 번만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // 컴포넌트 마운트 시 한 번만 실행
 
   const mockUserName = `User ${cursor.socketId.substring(0, 4)}`
 
