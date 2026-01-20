@@ -12,13 +12,15 @@ export class YjsUpdatePayload {
   update!: number[]
 }
 
-export class CursorPosition {
+export class CursorInfo {
   x!: number
   y!: number
+  chatActive?: boolean
+  chatMessage?: string
 }
 
 export class AwarenessState {
-  cursor?: CursorPosition
+  cursor?: CursorInfo
 }
 
 export class YjsAwarenessPayload {

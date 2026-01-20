@@ -1,19 +1,30 @@
 import React, { useRef, useEffect } from 'react'
-import { Circle, Text } from 'react-konva'
+import { Circle, Text, Group, Rect } from 'react-konva'
 import Konva from 'konva'
-import type { CursorPositionWithId } from '@/types/yjs.types'
+import type { CursorInfoWithId } from '@/types/yjs.types'
 
 interface AnimatedCursorProps {
-  cursor: CursorPositionWithId
+  cursor: CursorInfoWithId
 }
+
+// 말풍선 패딩 및 스타일 상수
+const CHAT_BUBBLE_PADDING_X = 10
+const CHAT_BUBBLE_PADDING_Y = 6
+const CHAT_BUBBLE_OFFSET_X = 15
+const CHAT_BUBBLE_OFFSET_Y = -25
+const CHAT_BUBBLE_FONT_SIZE = 13
+const CHAT_BUBBLE_CORNER_RADIUS = 8
 
 /**
  * 애니메이션이 적용된 커서 컴포넌트
  * requestAnimationFrame + Lerp을 사용하여 부드러운 추적 애니메이션 구현
+ * 커서챗 활성화 시 말풍선 UI 표시
  */
 const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
+  const groupRef = useRef<Konva.Group>(null)
   const circleRef = useRef<Konva.Circle>(null)
   const textRef = useRef<Konva.Text>(null)
+  const chatGroupRef = useRef<Konva.Group>(null)
 
   // 목표 위치 저장
   const targetRef = useRef({ x: cursor.x, y: cursor.y })
@@ -30,26 +41,23 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   }, [cursor.x, cursor.y])
 
   useEffect(() => {
-    if (!circleRef.current || !textRef.current) return
+    if (!groupRef.current) return
 
     // 초기 위치 설정
     const initialX = cursor.x
     const initialY = cursor.y
     currentRef.current = { x: initialX, y: initialY }
-    circleRef.current.x(initialX)
-    circleRef.current.y(initialY)
-    textRef.current.x(initialX + 12)
-    textRef.current.y(initialY - 8)
+    groupRef.current.x(initialX)
+    groupRef.current.y(initialY)
 
     // Konva.Animation으로 부드러운 추적 애니메이션
     const animation = new Konva.Animation(() => {
-      if (!circleRef.current || !textRef.current) return
+      if (!groupRef.current) return
 
       const current = currentRef.current
       const target = targetRef.current
 
       // Lerp (Linear Interpolation): 현재 위치에서 목표 위치로 20%씩 이동
-      // lerp factor가 클수록 빠르게 따라감 (0.1 = 느림, 0.3 = 빠름)
       const lerpFactor = 0.2
 
       current.x += (target.x - current.x) * lerpFactor
@@ -62,12 +70,10 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         current.y = target.y
       }
 
-      // 위치 업데이트
-      circleRef.current.x(current.x)
-      circleRef.current.y(current.y)
-      textRef.current.x(current.x + 12)
-      textRef.current.y(current.y - 8)
-    }, circleRef.current.getLayer())
+      // 그룹 위치 업데이트 (하위 요소들은 상대 좌표)
+      groupRef.current.x(current.x)
+      groupRef.current.y(current.y)
+    }, groupRef.current.getLayer())
 
     animation.start()
     animationRef.current = animation
@@ -76,15 +82,40 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
       animation.stop()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // 컴포넌트 마운트 시 한 번만 실행, cursor.x/y는 targetRef로 추적
+  }, []) // 컴포넌트 마운트 시 한 번만 실행
+
+  // 말풍선 텍스트 너비 계산
+  const chatMessage = cursor.chatMessage || ''
+  const estimatedTextWidth = chatMessage.length * CHAT_BUBBLE_FONT_SIZE * 0.6
+  const bubbleWidth = Math.max(estimatedTextWidth + CHAT_BUBBLE_PADDING_X * 2, 40)
 
   return (
-    <>
-      {/* 커서 원 - x, y를 제거하여 Lerp 애니메이션만 위치 제어 */}
+    <Group ref={groupRef}>
+      {/* 커서 원 */}
       <Circle ref={circleRef} radius={8} fill="#3b82f6" stroke="#ffffff" strokeWidth={2} />
-      {/* 사용자 ID 텍스트 - x, y를 제거하여 Lerp 애니메이션만 위치 제어 */}
-      <Text ref={textRef} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
-    </>
+
+      {/* 사용자 ID 텍스트 */}
+      <Text ref={textRef} x={12} y={-8} text={`User ${cursor.socketId.substring(0, 4)}`} fontSize={12} fill="#3b82f6" />
+
+      {/* 커서챗 말풍선 */}
+      {cursor.chatActive && (
+        <Group ref={chatGroupRef} x={CHAT_BUBBLE_OFFSET_X} y={CHAT_BUBBLE_OFFSET_Y}>
+          {/* 말풍선 배경 */}
+          <Rect
+            width={bubbleWidth}
+            height={CHAT_BUBBLE_FONT_SIZE + CHAT_BUBBLE_PADDING_Y * 2}
+            fill="#3b82f6"
+            cornerRadius={CHAT_BUBBLE_CORNER_RADIUS}
+            shadowColor="black"
+            shadowBlur={4}
+            shadowOpacity={0.2}
+            shadowOffsetY={2}
+          />
+          {/* 말풍선 텍스트 */}
+          <Text x={CHAT_BUBBLE_PADDING_X} y={CHAT_BUBBLE_PADDING_Y} text={chatMessage || '...'} fontSize={CHAT_BUBBLE_FONT_SIZE} fill="#ffffff" />
+        </Group>
+      )}
+    </Group>
   )
 })
 

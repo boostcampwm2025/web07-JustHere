@@ -14,13 +14,15 @@ export interface YjsUpdatePayload {
   update: number[]
 }
 
-export interface CursorPosition {
+export interface CursorInfo {
   x: number
   y: number
+  chatActive?: boolean
+  chatMessage?: string
 }
 
 export interface AwarenessState {
-  cursor?: CursorPosition
+  cursor?: CursorInfo
 }
 
 export interface YjsAwarenessPayload {
@@ -45,6 +47,6 @@ export interface YjsAwarenessBroadcast {
   state: AwarenessState
 }
 
-export interface CursorPositionWithId extends CursorPosition {
+export interface CursorInfoWithId extends CursorInfo {
   socketId: string
 }

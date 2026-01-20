@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
@@ -17,8 +17,16 @@ interface WhiteboardCanvasProps {
 
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
+
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
+
+  // 커서챗 관련 상태
+  const [isChatActive, setIsChatActive] = useState(false)
+  const [chatMessage, setChatMessage] = useState('')
+  const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
+  const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const {
     cursors,
@@ -26,6 +34,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     lines,
     socketId,
     updateCursor,
+    sendCursorChat,
     addPostIt,
     updatePostIt,
     addLine,
@@ -41,6 +50,95 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 펜 드로잉 관련 상태
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
+
+  // 커서챗 비활성화 함수
+  const deactivateCursorChat = useCallback(() => {
+    // 타이머 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+      chatInactivityTimerRef.current = null
+    }
+    setIsChatActive(false)
+    setChatMessage('')
+    setChatInputPosition(null)
+    sendCursorChat(false, '')
+  }, [sendCursorChat])
+
+  // 커서챗 비활성화 타이머 리셋 (3초 후 자동 비활성화)
+  const resetInactivityTimer = useCallback(() => {
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+    }
+    chatInactivityTimerRef.current = setTimeout(() => {
+      deactivateCursorChat()
+    }, 3000)
+  }, [deactivateCursorChat])
+
+  // 커서챗 활성화 함수
+  const activateCursorChat = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pointerPos = stage.getPointerPosition()
+    if (pointerPos) {
+      setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
+    }
+
+    setIsChatActive(true)
+    setChatMessage('')
+    sendCursorChat(true, '')
+
+    // 3초 비활성화 타이머 시작
+    resetInactivityTimer()
+  }, [sendCursorChat, resetInactivityTimer])
+
+  // 키보드 이벤트 핸들러
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 이미 커서챗이 활성화되어 있으면 무시
+      if (isChatActive) return
+
+      // 다른 입력 요소에 포커스가 있으면 무시
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
+      // / 키로 커서챗 활성화
+      if (e.key === '/') {
+        e.preventDefault()
+        activateCursorChat()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isChatActive, activateCursorChat])
+
+  // 커서챗 활성화 시 입력 필드에 포커스
+  useEffect(() => {
+    if (isChatActive && chatInputRef.current) {
+      chatInputRef.current.focus()
+    }
+  }, [isChatActive])
+
+  // 커서챗 입력 핸들러
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setChatMessage(value)
+    sendCursorChat(true, value)
+    // 타이핑할 때마다 비활성화 타이머 리셋
+    resetInactivityTimer()
+  }
+
+  // 커서챗 키 이벤트 핸들러
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      // Esc: 즉시 비활성화
+      e.preventDefault()
+      deactivateCursorChat()
+    }
+  }
 
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
@@ -66,6 +164,14 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           // 기존 points 배열에 새 좌표 추가
           const newPoints = [...currentLine.points, canvasPos.x, canvasPos.y]
           updateLine(currentLineId, { points: newPoints })
+        }
+      }
+
+      // 커서챗 입력창 위치 업데이트
+      if (isChatActive) {
+        const pointerPos = stage.getPointerPosition()
+        if (pointerPos) {
+          setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
         }
       }
     }
@@ -226,6 +332,27 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           </button>
         </div>
       </div>
+
+      {/* 커서챗 입력 UI */}
+      {isChatActive && chatInputPosition && (
+        <div
+          className="absolute z-50 pointer-events-auto"
+          style={{
+            left: chatInputPosition.x,
+            top: chatInputPosition.y,
+          }}
+        >
+          <input
+            ref={chatInputRef}
+            type="text"
+            value={chatMessage}
+            onChange={handleChatInputChange}
+            onKeyDown={handleChatKeyDown}
+            placeholder="메시지 입력..."
+            className="px-3 py-1.5 text-sm bg-blue-500 text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none min-w-[150px]"
+          />
+        </div>
+      )}
 
       <Stage
         ref={stageRef}
