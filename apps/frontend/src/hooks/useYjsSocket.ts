@@ -360,6 +360,20 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     })
   }
 
+  const removePlaceCard = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index === -1) return
+
+    doc.transact(() => {
+      yPlaceCards.delete(index, 1)
+    })
+  }
+
   // 선 추가 함수
   const addLine = (line: Line) => {
     const doc = docRef.current
@@ -412,6 +426,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     updatePostIt,
     addPlaceCard,
     updatePlaceCard,
+    removePlaceCard,
     addLine,
     updateLine,
   }

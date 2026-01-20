@@ -53,6 +53,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     addPostIt,
     updatePostIt,
     updatePlaceCard,
+    removePlaceCard,
     addPlaceCard,
     addLine,
     updateLine,
@@ -350,6 +351,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               draggable={activeTool === 'hand'}
               onDragEnd={(x, y) => {
                 updatePlaceCard(card.id, { x, y })
+              }}
+              onRemove={() => {
+                removePlaceCard(card.id)
               }}
             />
           ))}
