@@ -18,12 +18,16 @@ export class RoomErrorBoundary extends Component<Props, State> {
     return { error }
   }
 
-  handleReset = () => {
-    // 초기화 필요한 작업 수행
-    this.props.onResetCleanup?.()
-
-    // resetKey 증가 → children을 key로 감싸서 완전 재마운트
-    this.setState(prev => ({ error: null, resetKey: prev.resetKey + 1 }))
+  handleReset = async () => {
+    try {
+      // 초기화 필요한 작업 수행
+      await this.props.onResetCleanup?.()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      // resetKey 증가 → children을 key로 감싸서 완전 재마운트
+      this.setState(prev => ({ error: null, resetKey: prev.resetKey + 1 }))
+    }
   }
 
   render() {
