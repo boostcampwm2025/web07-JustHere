@@ -36,3 +36,10 @@ export const getOrCreateStoredUser = (roomSlug: string): StoredUser => {
   saveStoredUser(roomSlug, created)
   return created
 }
+
+export const updateStoredUserName = (roomSlug: string, name: string) => {
+  const stored = loadStoredUser(roomSlug)
+  if (!stored) return
+
+  saveStoredUser(roomSlug, { ...stored, name })
+}
