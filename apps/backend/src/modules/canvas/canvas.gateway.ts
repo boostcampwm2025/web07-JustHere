@@ -30,7 +30,15 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    this.yjsService.disconnectClient(client.id)
+    const canvasIds = this.yjsService.disconnectClient(client.id)
+
+    // 참여 중이던 캔버스들에 커서 삭제 브로드캐스트
+    for (const canvasId of canvasIds) {
+      this.broadcaster.emitToCanvas(canvasId, 'y:awareness', {
+        socketId: client.id,
+        state: {},
+      })
+    }
   }
 
   /**
@@ -54,6 +62,12 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('canvas:detach')
   async onCanvasDetach(@ConnectedSocket() client: Socket, @MessageBody() payload: CanvasDetachPayload) {
     const { canvasId } = payload
+
+    // 다른 클라이언트에게 커서 삭제 브로드캐스트
+    this.broadcaster.emitToCanvas(canvasId, 'y:awareness', {
+      socketId: client.id,
+      state: {},
+    })
 
     await client.leave(`canvas:${canvasId}`)
     this.yjsService.disconnectClient(client.id)
