@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon } from '../Icons'
 import { searchKeyword } from '@/api/kakao'
 import type { KakaoPlace } from '@/types/kakao'
+import PlaceDetailModal from './PlaceDetailModal'
 
 interface LocationListSectionProps {
   roomId: string
@@ -14,6 +15,7 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
@@ -110,16 +112,16 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
           <div className="flex flex-col gap-4">
             {searchResults.map((place, index) => (
               <div key={place.id}>
-                <article className="flex gap-3">
+                <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
                   {/* Thumbnail */}
-                  <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
+                  <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer" onClick={() => setSelectedPlace(place)}>
                     <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 flex flex-col justify-between py-0.5">
                     {/* Top Section */}
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setSelectedPlace(place)}>
                       <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
                       <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
                       <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
@@ -141,7 +143,7 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
                       </button>
                     </div>
                   </div>
-                </article>
+                </div>
 
                 {/* Divider between items */}
                 {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
@@ -160,6 +162,14 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
           장소 목록 뽑기~
         </button>
       </div>
+
+      {/* Place Detail Modal */}
+      <PlaceDetailModal
+        placeId={selectedPlace?.id ?? ''}
+        placeName={selectedPlace?.place_name ?? ''}
+        isOpen={selectedPlace !== null}
+        onClose={() => setSelectedPlace(null)}
+      />
     </div>
   )
 }
