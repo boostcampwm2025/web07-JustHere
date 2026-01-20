@@ -5,6 +5,7 @@
 
 import AccountCheckOutlineIcon from '@/assets/icons/account-check-outline.svg?react'
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg?react'
+import BackspaceIcon from '@/assets/icons/backspace.svg?react'
 import BellIcon from '@/assets/icons/bell.svg?react'
 import CheckCircleIcon from '@/assets/icons/check-circle.svg?react'
 import CheckIcon from '@/assets/icons/check.svg?react'
@@ -38,6 +39,7 @@ import VoteIcon from '@/assets/icons/vote.svg?react'
 export {
   AccountCheckOutlineIcon,
   ArrowLeftIcon,
+  BackspaceIcon,
   BellIcon,
   CheckCircleIcon,
   CheckIcon,
