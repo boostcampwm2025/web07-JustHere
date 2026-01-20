@@ -23,8 +23,7 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
   const reconnectAttemptsRef = useRef(0)
 
   const fullUrl = useMemo(() => {
-    const origin = baseUrl ?? window.location.origin
-    return `${origin}${namespace ? `/${namespace}` : ''}`
+    return `${baseUrl}${namespace ? `/${namespace}` : ''}`
   }, [baseUrl, namespace])
 
   const [status, setStatus] = useState<SocketStatus>(autoConnect ? 'connecting' : 'disconnected')

@@ -14,6 +14,7 @@ import type {
 import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
+import { socketBaseUrl } from '@/config/socket'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -28,8 +29,6 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
 
-  const serverUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
-
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
   const handleSocketError = useCallback((error: Error) => {
@@ -38,7 +37,7 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
 
   const { getSocket, status } = useSocketClient({
     namespace: 'canvas',
-    baseUrl: serverUrl,
+    baseUrl: socketBaseUrl,
     onError: handleSocketError,
   })
   const isConnected = status === 'connected'
