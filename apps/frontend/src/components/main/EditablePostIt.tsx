@@ -7,11 +7,13 @@ import type { PostIt } from '@/types/canvas.types'
 interface EditablePostItProps {
   postIt: PostIt
   draggable: boolean
+  isSelected: boolean
   onDragEnd: (x: number, y: number) => void
   onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
+  onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void
 }
 
-function EditablePostIt({ postIt, draggable, onDragEnd, onChange }: EditablePostItProps) {
+function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSelected }: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
@@ -72,9 +74,20 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange }: EditablePost
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
       }}
+      // 좌클릭 / 우클릭(contextmenu) 모두 Selection 핸들러 호출
+      onClick={onSelect}
+      onContextMenu={onSelect}
     >
-      {/* 배경 사각형 */}
-      <Rect width={postIt.width} height={postIt.height} fill={postIt.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
+      {/* focus box */}
+      <Rect
+        width={postIt.width}
+        height={postIt.height}
+        fill={postIt.fill}
+        shadowBlur={5}
+        cornerRadius={8}
+        onDblClick={handleDblClick}
+        stroke={isSelected ? '#3b82f6' : undefined}
+      />
 
       {/* 편집 모드: HTML textarea */}
       {isEditing ? (
