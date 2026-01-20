@@ -18,6 +18,7 @@ export class SearchKeywordDto {
 
   @ApiPropertyOptional({ description: '검색 반경 (미터)', example: 2000, default: 2000 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   radius?: number
 
