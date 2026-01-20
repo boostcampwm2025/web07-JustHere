@@ -77,7 +77,12 @@ function MainPage() {
           onPlaceCardPlaced={clearPendingPlaceCard}
           onPlaceCardCanceled={clearPendingPlaceCard}
         />
-        <LocationListSection pendingPlaceCard={pendingPlaceCard} onStartPlaceCard={handleStartPlaceCard} onCancelPlaceCard={clearPendingPlaceCard} />
+        <LocationListSection
+          roomId={roomId}
+          pendingPlaceCard={pendingPlaceCard}
+          onStartPlaceCard={handleStartPlaceCard}
+          onCancelPlaceCard={clearPendingPlaceCard}
+        />
       </div>
     </div>
   )

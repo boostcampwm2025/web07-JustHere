@@ -20,14 +20,12 @@ interface WhiteboardCanvasProps {
 }
 
 const PLACE_CARD_WIDTH = 240
-const PLACE_CARD_HEIGHT = 120
+const PLACE_CARD_HEIGHT = 180
 
 function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
-  const postItSeqRef = useRef(0)
-  const lineSeqRef = useRef(0)
 
   useEffect(() => {
     if (!pendingPlaceCard) return
@@ -141,7 +139,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
       const newPostIt: PostIt = {
-        id: `postIt-${postItSeqRef.current++}`,
+        id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
         y: canvasPos.y - 75, // 중앙 정렬 (height / 2)
         width: 150,
@@ -156,7 +154,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     // 펜 드로잉 시작
     if (activeTool === 'pencil') {
       setIsDrawing(true)
-      const newLineId = `line-${lineSeqRef.current++}`
+      const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
 
       const newLine: LineType = {
