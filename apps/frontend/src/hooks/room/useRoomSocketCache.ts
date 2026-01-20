@@ -14,14 +14,18 @@ import type {
   CategoryCreatedPayload,
   CategoryCreatePayload,
   CategoryDeletePayload,
+  ErrorPayload,
 } from '@/types/socket'
 import type { Category, Participant } from '@/types/domain'
 import { useSocketClient } from '@/hooks/useSocketClient'
-import { roomQueryKeys } from './useRoomQueries'
 import { socketBaseUrl } from '@/config/socket'
+import { useToast } from '@/hooks/useToast'
+import { RoomNotFoundError } from '@/types/socket-error.types'
+import { roomQueryKeys } from './useRoomQueries'
 
 export function useRoomSocketCache() {
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   const { status, connect, getSocket } = useSocketClient({
     namespace: 'room',
@@ -31,9 +35,15 @@ export function useRoomSocketCache() {
 
   const [isReady, setIsReady] = useState(false)
   const [roomId, setRoomId] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const roomIdRef = useRef<string | null>(null)
   const userInfoRef = useRef<{ userId: string; name: string } | null>(null)
   const shouldRejoinRef = useRef(false)
+
+  // Error Boundary로 에러 전파
+  if (error) {
+    throw error
+  }
 
   useEffect(() => {
     const socket = getSocket()
@@ -119,6 +129,21 @@ export function useRoomSocketCache() {
       // TODO: 사용자에게 에러 메시지 표시 (토스트 등)
     }
 
+    const onRoomError = (errorPayload: ErrorPayload) => {
+      // NOT_FOUND 에러는 Error Boundary로 전파
+      if (errorPayload.errorType === 'NOT_FOUND') {
+        roomIdRef.current = null
+        userInfoRef.current = null
+        setRoomId(null)
+        setIsReady(false)
+        setError(new RoomNotFoundError(errorPayload.message))
+        return
+      }
+
+      // 그 외 에러는 토스트로 표시
+      showToast(errorPayload.message, 'error')
+    }
+
     const onDisconnect = (reason: Socket.DisconnectReason) => {
       setRoomId(null)
       setIsReady(false)
@@ -138,6 +163,7 @@ export function useRoomSocketCache() {
     }
 
     socket.on('room:joined', onReady)
+    socket.on('room:error', onRoomError)
     socket.on('participant:connected', onConnected)
     socket.on('participant:disconnected', onDisconnected)
     socket.on('participant:name_updated', onNameUpdated)
@@ -150,6 +176,7 @@ export function useRoomSocketCache() {
 
     return () => {
       socket.off('room:joined', onReady)
+      socket.off('room:error', onRoomError)
       socket.off('participant:connected', onConnected)
       socket.off('participant:disconnected', onDisconnected)
       socket.off('participant:name_updated', onNameUpdated)
@@ -160,7 +187,7 @@ export function useRoomSocketCache() {
       socket.off('disconnect', onDisconnect)
       socket.off('connect', onConnect)
     }
-  }, [getSocket, queryClient])
+  }, [getSocket, queryClient, showToast])
 
   const joinRoom = useCallback(
     (nextRoomId: string, user: { userId: string; name: string }) => {
