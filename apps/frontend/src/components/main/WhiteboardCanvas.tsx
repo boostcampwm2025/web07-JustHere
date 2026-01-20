@@ -95,34 +95,37 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   }, [selectedId, selectedType, deletePostIt, deleteLine])
 
   // 객체 선택 핸들러 (좌클릭/우클릭 공통)
-  const handleObjectSelect = (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
-    // 1. Hand 툴이 아니면 무시
-    if (activeTool !== 'hand') return
+  const handleObjectSelect = useCallback(
+    (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
+      // 1. Hand 툴이 아니면 무시
+      if (activeTool !== 'hand') return
 
-    // 2. 이벤트 버블링 방지 (Stage 클릭 방지)
-    e.cancelBubble = true
+      // 2. 이벤트 버블링 방지 (Stage 클릭 방지)
+      e.cancelBubble = true
 
-    // 3. 선택 상태 설정
-    setSelectedId(id)
-    setSelectedType(type)
+      // 3. 선택 상태 설정
+      setSelectedId(id)
+      setSelectedType(type)
 
-    // 4. 우클릭인 경우 컨텍스트 메뉴 표시
-    if (e.evt.button === 2) {
-      e.evt.preventDefault() // 브라우저 기본 우클릭 메뉴 방지
-      const stage = stageRef.current
-      if (stage) {
-        // Stage 내 좌표가 아닌 브라우저 화면 기준(Pointer) 좌표 사용 (HTML Overlay용)
-        const pointerPos = stage.getRelativePointerPosition()
-        if (pointerPos) {
-          // Stage의 위치와 스케일을 고려하지 않고, 화면 절대 좌표(Overlay)를 위해 Konva 이벤트의 clientX, clientY를 사용하거나 계산 필요.
-          setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
+      // 4. 우클릭인 경우 컨텍스트 메뉴 표시
+      if (e.evt.button === 2) {
+        e.evt.preventDefault() // 브라우저 기본 우클릭 메뉴 방지
+        const stage = stageRef.current
+        if (stage) {
+          // Stage 내 좌표가 아닌 브라우저 화면 기준(Pointer) 좌표 사용 (HTML Overlay용)
+          const pointerPos = stage.getRelativePointerPosition()
+          if (pointerPos) {
+            // Stage의 위치와 스케일을 고려하지 않고, 화면 절대 좌표(Overlay)를 위해 Konva 이벤트의 clientX, clientY를 사용하거나 계산 필요.
+            setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
+          }
         }
+      } else {
+        // 좌클릭이면 컨텍스트 메뉴 닫기
+        setContextMenu(null)
       }
-    } else {
-      // 좌클릭이면 컨텍스트 메뉴 닫기
-      setContextMenu(null)
-    }
-  }
+    },
+    [activeTool], // activeTool이 바뀔 때만 함수 재생성
+  )
 
   // 배경 클릭 시 선택 해제
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
