@@ -70,12 +70,17 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
   /**
    * 클라이언트 연결 해제
    */
-  disconnectClient(socketId: string) {
+  disconnectClient(socketId: string): string[] {
+    const canvasIds: string[] = []
+
     for (const [, yjsDoc] of this.documents.entries()) {
       if (yjsDoc.connections.has(socketId)) {
         yjsDoc.connections.delete(socketId)
+        canvasIds.push(yjsDoc.categoryId)
       }
     }
+
+    return canvasIds
   }
 
   /**

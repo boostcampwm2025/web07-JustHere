@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { BellIcon, CogIcon, ShareVariantIcon, StarIcon } from '@/components/Icons'
 import Logo from '@/assets/images/logo.svg?react'
 import RoomInfoModal from '@/components/main/RoomInfoModal'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
 import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
+import { getOrCreateStoredUser, updateStoredUserName } from '@/utils/userStorage'
 
 interface HeaderProps {
   participants: Participant[]
   currentUserId: string
-  userName: string
   roomLink: string
   onUpdateName?: (name: string) => void
   isOwner?: boolean
@@ -18,23 +18,26 @@ interface HeaderProps {
   onTransferOwner?: (targetUserId: string) => void
 }
 
-export default function Header({
-  participants,
-  currentUserId,
-  userName,
-  roomLink,
-  onUpdateName,
-  isOwner = false,
-  ownerId,
-  onTransferOwner,
-}: HeaderProps) {
+export default function Header({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner }: HeaderProps) {
+  const { slug } = useParams<{ slug: string }>()
+  const [userName, setUserName] = useState(() => (slug ? getOrCreateStoredUser(slug).name : ''))
+
+  const handleUpdateName = (name: string) => {
+    if (!slug) return
+
+    setUserName(name)
+    updateStoredUserName(slug, name)
+    onUpdateName?.(name)
+  }
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
   const { pathname } = useLocation()
   const isOnboarding = pathname.startsWith('/onboarding')
 
   const MAX_DISPLAY_AVATARS = 3
-  const currentUser = participants.find(p => p.userId === currentUserId) ?? { userId: currentUserId, name: userName }
-  const combinedParticipants = [currentUser, ...participants.filter(p => p.userId !== currentUser.userId)]
+  // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
+  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
+  const currentUser = uniqueParticipants.find(p => p.userId === currentUserId) ?? { socketId: '', userId: currentUserId, name: userName }
+  const combinedParticipants = [currentUser, ...uniqueParticipants.filter(p => p.userId !== currentUser.userId)]
   const hasParticipants = combinedParticipants.length > 0
   const displayCount = Math.min(MAX_DISPLAY_AVATARS, combinedParticipants.length)
   const extraCount = Math.max(combinedParticipants.length - displayCount, 0)
@@ -88,18 +91,20 @@ export default function Header({
               >
                 Share
               </Button>
-              <RoomInfoModal
-                isOpen={isRoomInfoModalOpen}
-                onClose={() => setIsRoomInfoModalOpen(false)}
-                userName={userName}
-                roomLink={roomLink}
-                participants={participants}
-                currentUserId={currentUserId}
-                onUpdateName={onUpdateName}
-                isOwner={isOwner}
-                ownerId={ownerId}
-                onTransferOwner={onTransferOwner}
-              />
+
+              {isRoomInfoModalOpen && (
+                <RoomInfoModal
+                  onClose={() => setIsRoomInfoModalOpen(false)}
+                  userName={userName}
+                  roomLink={roomLink}
+                  participants={participants}
+                  currentUserId={currentUserId}
+                  onUpdateName={handleUpdateName}
+                  isOwner={isOwner}
+                  ownerId={ownerId}
+                  onTransferOwner={onTransferOwner}
+                />
+              )}
             </div>
           )}
 

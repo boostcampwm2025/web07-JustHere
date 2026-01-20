@@ -5,11 +5,13 @@ import WhiteboardSection from '@/components/main/WhiteboardSection'
 import LocationListSection from '@/components/main/LocationListSection'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
+import { socketBaseUrl } from '@/config/socket'
 
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
@@ -29,8 +31,7 @@ function MainPage() {
     return null
   }
 
-  const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
-  const roomLink = `${baseUrl}/room/${slug}`
+  const roomLink = `${socketBaseUrl}/room/${slug}`
 
   if (!ready || !roomId) {
     return (
@@ -38,7 +39,6 @@ function MainPage() {
         <Header
           participants={participants}
           currentUserId={user.userId}
-          userName={user.name}
           roomLink={roomLink}
           onUpdateName={updateParticipantName}
           isOwner={isOwner}
@@ -55,7 +55,6 @@ function MainPage() {
       <Header
         participants={participants}
         currentUserId={user.userId}
-        userName={user.name}
         roomLink={roomLink}
         onUpdateName={updateParticipantName}
         isOwner={isOwner}

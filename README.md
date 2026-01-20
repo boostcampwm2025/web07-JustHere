@@ -37,3 +37,94 @@
 |                                                                                   김아진                                                                                   |                                                                                  지호준                                                                                  |                                                                    강민석                                                                    |                                                                                     류건                                                                                     |                                                                                    이혜린                                                                                     |
 
 </div>
+
+## 🚀 시작하기
+
+### 필수 요구사항
+
+- Node.js 18.x 이상
+- npm 또는 yarn
+- Docker (선택사항)
+
+### 설치 및 실행 방법
+
+**1. pnpm 설치**
+
+**2. 아래 명령어 수행**
+```
+# 저장소 클론
+git clone https://github.com/{your-org}/web07-justhere.git
+cd web07-justhere
+```
+
+**3. 로컬 환경 변수 등록**
+
+- `apps/backend/.env.local`
+```
+DATABASE_URL="postgresql://{myuser}:{mypassword}@localhost:5432/{mydatabase}?schema=public"
+KAKAO_API_BASE_URL=https://dapi.kakao.com
+KAKAO_REST_API_KEY={Kakao REST API Key}
+```
+
+- `apps/frontend/.env.local`
+```
+VITE_KAKAO_MAP_API_KEY={Kakao Javascript KEY}
+```
+
+**4. 서비스 실행**
+```
+# 의존성 설치
+pnpm install
+
+# 개발 서버 실행
+pnpm run dev
+```
+
+## 🛠 기술 스택
+
+### Package Manager & Build
+![Turborepo](https://img.shields.io/badge/Turborepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white)
+![pnpm](https://img.shields.io/badge/pnpm-%23F69220.svg?style=for-the-badge&logo=pnpm&logoColor=white)
+
+### Language
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+
+### Frontend
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![React Konva](https://img.shields.io/badge/React_Konva-0D86FF?style=for-the-badge&logo=react&logoColor=white)
+![Kakao Maps](https://img.shields.io/badge/Kakao_Maps_SDK-FFCD00?style=for-the-badge&logo=kakao&logoColor=black)
+
+### Backend
+![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)
+![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=Swagger&logoColor=black)
+
+### Real-time & Collaboration
+![Socket.io](https://img.shields.io/badge/Socket.io-black?style=for-the-badge&logo=socket.io&badgeColor=010101)
+![Y.js](https://img.shields.io/badge/Y.js-FCCB2C?style=for-the-badge&logoColor=white)
+
+### Database
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+
+### DevOps & Infra
+![Naver Cloud Platform](https://img.shields.io/badge/Naver_Cloud_Platform-03C75A?style=for-the-badge&logo=naver&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
+
+### Testing
+![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
+
+
+## 아키텍처 다이어그램
+
+### 서비스 아키텍처
+
+<img width="4164" height="2724" alt="image" src="https://github.com/user-attachments/assets/ae862b8b-bfa8-44e0-a9da-b6e08d211235" />
+
+
+### CI / CD 파이프라인
+
+<img width="3364" height="2284" alt="image" src="https://github.com/user-attachments/assets/dac3ac8c-e8a4-4ac7-9de1-5659c7b81c5a" />

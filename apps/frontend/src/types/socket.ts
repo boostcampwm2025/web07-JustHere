@@ -19,12 +19,14 @@ export type RoomJoinedPayload = {
 
 // [S->C] participant:connected
 export type ParticipantConnectedPayload = {
+  socketId: string
   userId: string
   name: string
 }
 
 // [S->C] participant:disconnected
 export type ParticipantDisconnectedPayload = {
+  socketId: string
   userId: string
 }
 

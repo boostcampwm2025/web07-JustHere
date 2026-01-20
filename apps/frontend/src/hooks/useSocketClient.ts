@@ -11,19 +11,20 @@ const SOCKET_RECONNECTION_CONFIG = {
 
 interface UseSocketClientProps {
   namespace?: 'room' | 'canvas'
+  baseUrl?: string
   autoConnect?: boolean
   autoReconnect?: boolean
   ioOptions?: Partial<ManagerOptions & SocketOptions>
   onError?: (error: Error) => void
 }
 
-export function useSocketClient({ namespace, autoConnect = true, autoReconnect = true, ioOptions, onError }: UseSocketClientProps) {
+export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoReconnect = true, ioOptions, onError }: UseSocketClientProps) {
   const socketRef = useRef<Socket | null>(null)
   const reconnectAttemptsRef = useRef(0)
 
   const fullUrl = useMemo(() => {
-    return `${window.location.origin}${namespace ? `/${namespace}` : ''}`
-  }, [namespace])
+    return `${baseUrl}${namespace ? `/${namespace}` : ''}`
+  }, [baseUrl, namespace])
 
   const [status, setStatus] = useState<SocketStatus>(autoConnect ? 'connecting' : 'disconnected')
 

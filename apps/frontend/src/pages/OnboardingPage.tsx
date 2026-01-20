@@ -4,6 +4,7 @@ import LocationStep from '@/components/onboarding/LocationStep'
 import InviteStep from '@/components/onboarding/InviteStep'
 import Header from '@/components/common/Header'
 import { createRoom } from '@/api/room'
+import { socketBaseUrl } from '@/config/socket'
 
 type OnboardingStep = 'location' | 'invite'
 
@@ -30,9 +31,8 @@ function OnboardingPage() {
         y: location.y,
         place_name: location.name,
       })
-      const baseUrl = import.meta.env.VITE_PUBLIC_BASE_URL ?? window.location.origin
       setRoomSlug(room.slug)
-      setInviteLink(`${baseUrl}/room/${room.slug}`)
+      setInviteLink(`${socketBaseUrl}/room/${room.slug}`)
       setCurrentStep('invite')
     } catch (error) {
       console.error('방 생성 실패', error)
@@ -46,7 +46,7 @@ function OnboardingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-bg">
-      <Header participants={[]} currentUserId="onboarding" userName="게스트" roomLink="" />
+      <Header participants={[]} currentUserId="onboarding" roomLink="" />
 
       {currentStep === 'location' && <LocationStep onNext={handleLocationSelect} />}
 

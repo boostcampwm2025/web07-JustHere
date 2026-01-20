@@ -78,6 +78,7 @@ export class RoomService {
 
     // 다른 클라이언트에게 participant:connected 브로드캐스트
     const connectedPayload: ParticipantConnectedPayload = {
+      socketId: session.socketId,
       userId: session.userId,
       name: session.name,
     }
@@ -119,6 +120,7 @@ export class RoomService {
 
     // 다른 클라이언트에게 participant:disconnected 브로드캐스트
     const payload: ParticipantDisconnectedPayload = {
+      socketId: session.socketId,
       userId: session.userId,
     }
     this.broadcaster.emitToRoom(session.roomId, 'participant:disconnected', payload)
@@ -239,6 +241,7 @@ export class RoomService {
    */
   private sessionToParticipant(session: UserSession): Participant {
     return {
+      socketId: session.socketId,
       userId: session.userId,
       name: session.name,
     }
