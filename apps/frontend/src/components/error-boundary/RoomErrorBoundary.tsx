@@ -2,34 +2,42 @@ import { Component, type ReactNode } from 'react'
 import { RoomNotFoundError } from '@/types/socket-error.types'
 import ErrorPage from '@/pages/ErrorPage'
 
-type Props = { children: ReactNode }
-type State = { error: Error | null }
+type Props = {
+  children: ReactNode
+  onResetCleanup?: () => void | Promise<void>
+}
+type State = { error: Error | null; resetKey: number }
 
 export class RoomErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, resetKey: 0 }
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Pick<State, 'error'> {
     return { error }
   }
 
   handleReset = () => {
-    this.setState({ error: null })
+    // 초기화 필요한 작업 수행
+    this.props.onResetCleanup?.()
+
+    // resetKey 증가 → children을 key로 감싸서 완전 재마운트
+    this.setState(prev => ({ error: null, resetKey: prev.resetKey + 1 }))
   }
 
   render() {
-    const { error } = this.state
+    const { error, resetKey } = this.state
 
     if (error instanceof RoomNotFoundError) {
-      return <ErrorPage errorType="room-not-found" onReset={this.handleReset} />
+      return <ErrorPage errorType="room-not-found" />
     }
 
     if (error) {
       return <ErrorPage onReset={this.handleReset} />
     }
 
-    return this.props.children
+    // key가 바뀌면 children 트리가 완전히 unmount → mount 됨
+    return <div key={resetKey}>{this.props.children}</div>
   }
 }
