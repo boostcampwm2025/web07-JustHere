@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { MagnifyIcon, CloseIcon, PlusIcon, ListBoxOutlineIcon, VoteIcon } from '../Icons'
+import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon } from '../Icons'
 import { searchKeyword } from '@/api/kakao'
 import type { KakaoPlace } from '@/types/kakao'
 
@@ -126,18 +126,18 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
                     </div>
 
                     {/* Bottom Section */}
-                    <div className="flex items-center justify-between">
-                      {place.distance && (
-                        <span className="text-gray-400 text-xs">
-                          {Number(place.distance) >= 1000 ? `${(Number(place.distance) / 1000).toFixed(1)}km` : `${place.distance}m`}
-                        </span>
-                      )}
+                    <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors ml-auto"
+                        className="px-3 py-1.5 bg-primary-bg text-primary font-bold text-xs rounded-md hover:bg-primary/20 transition-colors"
                       >
-                        <span className="font-bold text-gray-800 text-xs">추가</span>
-                        <PlusIcon className="w-3.5 h-3.5 text-gray-800" />
+                        캔버스
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 bg-gray-100 text-gray-800 font-bold text-xs rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        후보 등록
                       </button>
                     </div>
                   </div>
