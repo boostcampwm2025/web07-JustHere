@@ -15,7 +15,6 @@ export class YjsUpdatePayload {
 export class CursorPosition {
   x!: number
   y!: number
-  timestamp?: number // 커서 위치 업데이트 시간 (ms)
 }
 
 export class AwarenessState {

@@ -22,12 +22,10 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
   const {
     cursors,
-    rectangles,
     postits: postIts,
     lines,
     socketId,
     updateCursor,
-    updateRectangle,
     addPostIt,
     updatePostIt,
     addLine,
@@ -256,28 +254,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               lineCap={line.lineCap}
               lineJoin={line.lineJoin}
               globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
-            />
-          ))}
-
-          {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
-          {rectangles.map(shape => (
-            <Rect
-              key={shape.id}
-              x={shape.x}
-              y={shape.y}
-              width={shape.width}
-              height={shape.height}
-              fill={shape.fill}
-              shadowBlur={5}
-              cornerRadius={8}
-              // 손 도구일 때만 개별 객체 드래그 가능
-              draggable={activeTool === 'hand'}
-              onDragEnd={e => {
-                updateRectangle(shape.id, {
-                  x: e.target.x(),
-                  y: e.target.y(),
-                })
-              }}
             />
           ))}
 

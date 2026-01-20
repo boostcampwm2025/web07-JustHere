@@ -11,7 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorPositionWithId,
 } from '@/types/yjs.types'
-import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
+import type { PostIt, Line } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { socketBaseUrl } from '@/config/socket'
@@ -24,7 +24,6 @@ interface UseYjsSocketOptions {
 
 export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
-  const [rectangles, setRectangles] = useState<Rectangle[]>([])
   const [postits, setPostits] = useState<PostIt[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
@@ -48,23 +47,10 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     docRef.current = doc
 
     // Yjs SharedTypes 생성
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
 
     // Yjs 변경사항을 React state에 반영하는 함수
-    const syncRectanglesToState = () => {
-      const rects: Rectangle[] = yRectangles.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        x: yMap.get('x') as number,
-        y: yMap.get('y') as number,
-        width: yMap.get('width') as number,
-        height: yMap.get('height') as number,
-        fill: yMap.get('fill') as string,
-      }))
-      setRectangles(rects)
-    }
-
     const syncPostitsToState = () => {
       const items: PostIt[] = yPostits.toArray().map(yMap => ({
         id: yMap.get('id') as string,
@@ -96,17 +82,14 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
-    yRectangles.observeDeep(syncRectanglesToState)
     yPostits.observeDeep(syncPostitsToState)
     yLines.observeDeep(syncLinesToState)
 
     // 초기 동기화
-    syncRectanglesToState()
     syncPostitsToState()
     syncLinesToState()
 
     return () => {
-      yRectangles.unobserveDeep(syncRectanglesToState)
       yPostits.unobserveDeep(syncPostitsToState)
       yLines.unobserveDeep(syncLinesToState)
       doc.destroy()
@@ -235,39 +218,6 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     [canvasId, updateCursorThrottled],
   )
 
-  // 네모 추가 함수
-  const addRectangle = (rect: Rectangle) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const yMap = new Y.Map()
-    yMap.set('id', rect.id)
-    yMap.set('x', rect.x)
-    yMap.set('y', rect.y)
-    yMap.set('width', rect.width)
-    yMap.set('height', rect.height)
-    yMap.set('fill', rect.fill)
-    yRectangles.push([yMap])
-  }
-
-  // 네모 위치 업데이트 함수
-  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const index = yRectangles.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    // Yjs 트랜잭션으로 명시적으로 감싸기
-    doc.transact(() => {
-      const yMap = yRectangles.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
-  }
-
   // 포스트잇 추가 함수
   const addPostIt = (postit: PostIt) => {
     const doc = docRef.current
@@ -345,13 +295,10 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   return {
     isConnected,
     cursors,
-    rectangles,
     postits,
     lines,
     socketId,
     updateCursor,
-    addRectangle,
-    updateRectangle,
     addPostIt,
     updatePostIt,
     addLine,
