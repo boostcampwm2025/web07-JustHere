@@ -1,6 +1,12 @@
 import axios from 'axios'
 import type { KakaoPlace } from '@/types/kakao'
 
+export interface SearchKeywordParams {
+  keyword: string
+  roomId?: string
+  radius?: number
+}
+
 type KakaoKeywordResponse = {
   status: string
   statusCode: 200
@@ -10,9 +16,10 @@ type KakaoKeywordResponse = {
   timestamp: string
 }
 
-export const searchKeyword = async (keyword: string): Promise<KakaoPlace[]> => {
+export const searchKeyword = async (params: string | SearchKeywordParams): Promise<KakaoPlace[]> => {
+  const queryParams = typeof params === 'string' ? { keyword: params } : params
   const response = await axios.get<KakaoKeywordResponse>('/api/kakao/keyword', {
-    params: { keyword },
+    params: queryParams,
   })
   return response.data.data.documents ?? []
 }

@@ -39,6 +39,8 @@ export interface KakaoMarker {
 export type KakaoStatus = 'OK' | 'ZERO_RESULT' | 'ERROR'
 
 export interface KakaoPlace {
+  distance: string
+  category_group_name: string
   place_name: string
   road_address_name: string
   address_name: string
