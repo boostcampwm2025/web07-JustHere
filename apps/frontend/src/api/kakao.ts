@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { KakaoPlace } from '@/types/kakao'
 
-export interface SearchKeywordParams {
+export type SearchKeywordParams = {
   keyword: string
   roomId?: string
   radius?: number
