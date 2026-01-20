@@ -7,6 +7,7 @@ import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
+import CursorChatInput from './CursorChatInput'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 
@@ -19,7 +20,6 @@ interface WhiteboardCanvasProps {
 
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
-  const chatInputRef = useRef<HTMLInputElement>(null)
 
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
@@ -146,31 +146,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isChatActive, activateCursorChat])
-
-  // 커서챗 활성화 시 입력 필드에 포커스
-  useEffect(() => {
-    if (isChatActive && chatInputRef.current) {
-      chatInputRef.current.focus()
-    }
-  }, [isChatActive])
-
-  // 커서챗 입력 핸들러
-  const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setChatMessage(value)
-    sendCursorChat(true, value)
-    // 타이핑할 때마다 비활성화 타이머 리셋
-    resetInactivityTimer()
-  }
-
-  // 커서챗 키 이벤트 핸들러
-  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      // Esc: 즉시 비활성화
-      e.preventDefault()
-      deactivateCursorChat()
-    }
-  }
 
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
@@ -367,24 +342,18 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
       {/* 커서챗 입력 UI */}
       {isChatActive && chatInputPosition && (
-        <div
-          className={cn('absolute z-50 pointer-events-auto', isChatFading ? 'opacity-0' : 'opacity-100')}
-          style={{
-            left: chatInputPosition.x,
-            top: chatInputPosition.y,
-            transition: isChatFading ? 'opacity 3s ease-out' : 'none',
+        <CursorChatInput
+          position={chatInputPosition}
+          name={userName}
+          isFading={isChatFading}
+          message={chatMessage}
+          onMessageChange={value => {
+            setChatMessage(value)
+            sendCursorChat(true, value)
+            resetInactivityTimer()
           }}
-        >
-          <input
-            ref={chatInputRef}
-            type="text"
-            value={chatMessage}
-            onChange={handleChatInputChange}
-            onKeyDown={handleChatKeyDown}
-            placeholder="메시지 입력..."
-            className="px-3 py-1.5 text-sm bg-blue-500 text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none min-w-[150px]"
-          />
-        </div>
+          onEscape={deactivateCursorChat}
+        />
       )}
 
       <Stage
