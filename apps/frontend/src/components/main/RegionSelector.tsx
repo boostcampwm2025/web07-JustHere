@@ -86,7 +86,7 @@ export default function RegionSelector({ currentRegion, slug, onRegionChange }: 
         )}
       >
         <MapMarkerIcon className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium text-gray-700 max-w-32 truncate">{currentRegion || '지역 선택'}</span>
+        <span className="text-sm font-medium text-gray-700 max-w-32 truncate">지역 변경</span>
         <ChevronDownIcon className={cn('w-4 h-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
