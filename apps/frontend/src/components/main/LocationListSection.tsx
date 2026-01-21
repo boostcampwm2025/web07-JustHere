@@ -5,9 +5,13 @@ import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 import PlaceDetailModal from './PlaceDetailModal'
+import RegionSelector from './RegionSelector'
 
 interface LocationListSectionProps {
   roomId: string
+  slug: string
+  currentRegion?: string | null
+  onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
@@ -15,7 +19,15 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCancelPlaceCard }: LocationListSectionProps) {
+function LocationListSection({
+  roomId,
+  slug,
+  currentRegion,
+  onRegionChange,
+  pendingPlaceCard,
+  onStartPlaceCard,
+  onCancelPlaceCard,
+}: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
@@ -81,7 +93,7 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
       {/* Header Section */}
       <div className="flex flex-col gap-4 p-5 pb-4">
         {/* Tab Buttons */}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {tabs.map(tab => (
             <button
               type="button"
@@ -95,6 +107,11 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
               <span>{tab.label}</span>
             </button>
           ))}
+
+          {/* Region Selector */}
+          <div className="ml-auto">
+            <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
+          </div>
         </div>
 
         {/* Search Input */}
