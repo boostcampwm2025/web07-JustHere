@@ -381,8 +381,7 @@
                 "nullable": true,
                 "properties": {
                   "x": { "type": "number", "example": 100 },
-                  "y": { "type": "number", "example": 200 },
-                  "timestamp": { "type": "number", "description": "타임스탬프 (ms)", "nullable": true }
+                  "y": { "type": "number", "example": 200 }
                 }
               }
             }
@@ -407,8 +406,7 @@
                 "nullable": true,
                 "properties": {
                   "x": { "type": "number", "example": 100 },
-                  "y": { "type": "number", "example": 200 },
-                  "timestamp": { "type": "number", "nullable": true }
+                  "y": { "type": "number", "example": 200 }
                 }
               }
             }

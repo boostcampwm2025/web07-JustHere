@@ -1,16 +1,21 @@
 import { useState, useCallback } from 'react'
-import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon } from '../Icons'
+import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/components/Icons'
 import { searchKeyword } from '@/api/kakao'
+import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
+import type { PlaceCard } from '@/types/canvas.types'
 import PlaceDetailModal from './PlaceDetailModal'
 
 interface LocationListSectionProps {
   roomId: string
+  pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
+  onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
+  onCancelPlaceCard: () => void
 }
 
 type TabType = 'locations' | 'candidates'
 
-function LocationListSection({ roomId }: LocationListSectionProps) {
+function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCancelPlaceCard }: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
@@ -24,7 +29,7 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
     try {
       const results = await searchKeyword({
         keyword: searchQuery,
-        roomId,
+        roomId: roomId,
         radius: 2000,
       })
       setSearchResults(results)
@@ -39,6 +44,23 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
     if (e.key === 'Enter') {
       handleSearch()
     }
+  }
+
+  const handleAddPlaceCard = (place: KakaoPlace) => {
+    if (pendingPlaceCard?.placeId === String(place.id)) {
+      onCancelPlaceCard()
+      return
+    }
+
+    onStartPlaceCard({
+      id: `placeCard-${crypto.randomUUID()}`,
+      placeId: String(place.id),
+      name: place.place_name,
+      address: place.road_address_name || place.address_name,
+      createdAt: new Date().toISOString(),
+      image: null,
+      category: place.category_group_name,
+    })
   }
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -110,45 +132,54 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
           <div className="flex items-center justify-center h-32 text-gray text-sm">검색어를 입력하고 Enter를 눌러주세요</div>
         ) : (
           <div className="flex flex-col gap-4">
-            {searchResults.map((place, index) => (
-              <div key={place.id}>
-                <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                  {/* Thumbnail */}
-                  <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer" onClick={() => setSelectedPlace(place)}>
-                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
-                  </div>
+            {searchResults.map((place, index) => {
+              const isSelected = pendingPlaceCard?.placeId === String(place.id)
 
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col justify-between py-0.5">
-                    {/* Top Section */}
-                    <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setSelectedPlace(place)}>
-                      <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
-                      <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
-                      <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
+              return (
+                <div key={place.id}>
+                  <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                    {/* Thumbnail */}
+                    <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer" onClick={() => setSelectedPlace(place)}>
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                     </div>
 
-                    {/* Bottom Section */}
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-primary-bg text-primary font-bold text-xs rounded-md hover:bg-primary/20 transition-colors"
-                      >
-                        캔버스
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 bg-gray-100 text-gray-800 font-bold text-xs rounded-md hover:bg-gray-200 transition-colors"
-                      >
-                        후보 등록
-                      </button>
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col justify-between py-0.5">
+                      {/* Top Section */}
+                      <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setSelectedPlace(place)}>
+                        <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
+                        <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
+                        <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
+                      </div>
+
+                      {/* Bottom Section */}
+                      <div className="flex items-center justify-end gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAddPlaceCard(place)}
+                          className={cn(
+                            'flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-primary',
+                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20',
+                          )}
+                        >
+                          <span className="font-bold text-xs">캔버스</span>
+                          <PlusIcon className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 bg-gray-100 text-gray-800 font-bold text-xs rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          후보 등록
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Divider between items */}
+                  {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
                 </div>
-
-                {/* Divider between items */}
-                {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
