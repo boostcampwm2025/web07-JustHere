@@ -89,7 +89,7 @@ function LocationListSection({
   ]
 
   return (
-    <div className="flex flex-col w-96 h-full bg-white border-l border-gray-200">
+    <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200">
       {/* Header Section */}
       <div className="flex flex-col gap-4 p-5 pb-4">
         {/* Tab Buttons */}
@@ -99,7 +99,7 @@ function LocationListSection({
               type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors ${
+              className={`flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors shrink-0 ${
                 activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
               }`}
             >

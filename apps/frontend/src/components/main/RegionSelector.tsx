@@ -81,9 +81,8 @@ export default function RegionSelector({ currentRegion, slug, onRegionChange }: 
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg border transition-colors',
-          'hover:border-primary',
-          isOpen && 'border-primary',
+          'flex items-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors',
+          'bg-gray-100 text-gray-800 hover:bg-gray-200',
         )}
       >
         <MapMarkerIcon className="w-4 h-4 text-primary" />
