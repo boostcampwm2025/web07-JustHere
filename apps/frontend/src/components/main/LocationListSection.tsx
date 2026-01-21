@@ -164,12 +164,7 @@ function LocationListSection({ roomId }: LocationListSectionProps) {
       </div>
 
       {/* Place Detail Modal */}
-      <PlaceDetailModal
-        placeId={selectedPlace?.id ?? ''}
-        placeName={selectedPlace?.place_name ?? ''}
-        isOpen={selectedPlace !== null}
-        onClose={() => setSelectedPlace(null)}
-      />
+      <PlaceDetailModal place={selectedPlace} isOpen={selectedPlace !== null} onClose={() => setSelectedPlace(null)} />
     </div>
   )
 }
