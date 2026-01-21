@@ -56,6 +56,7 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
       address: place.road_address_name || place.address_name,
       createdAt: new Date().toISOString(),
       image: null,
+      category: place.category_group_name,
     })
   }
 

@@ -18,6 +18,7 @@ export interface PlaceCard {
   y: number
   createdAt: string
   image?: string | null
+  category: string
 }
 
 export interface Line {
