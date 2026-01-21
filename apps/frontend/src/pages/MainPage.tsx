@@ -18,11 +18,16 @@ function MainPage() {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
+  const [currentRegion, setCurrentRegion] = useState<string | null>(null)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
   const clearPendingPlaceCard = () => {
     setPendingPlaceCard(null)
+  }
+
+  const hanldeRegionChange = (region: { x: number; y: number; place_name: string }) => {
+    setCurrentRegion(region.place_name)
   }
 
   useEffect(() => {
@@ -68,6 +73,7 @@ function MainPage() {
         isOwner={isOwner}
         ownerId={ownerId}
         onTransferOwner={transferOwner}
+        currentRegion={currentRegion}
       />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
@@ -80,6 +86,8 @@ function MainPage() {
         <LocationListSection
           roomId={roomId}
           slug={slug}
+          currentRegion={currentRegion}
+          onRegionChange={hanldeRegionChange}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}
