@@ -22,6 +22,7 @@ interface HeaderProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
+  currentRegion?: string | null
 }
 
 export default function Header(props: MinimalHeaderProps | HeaderProps) {
@@ -50,7 +51,7 @@ export default function Header(props: MinimalHeaderProps | HeaderProps) {
   return <FullHeader {...props} />
 }
 
-function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner }: HeaderProps) {
+function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner, currentRegion }: HeaderProps) {
   const { slug } = useParams<{ slug: string }>()
   const [userName, setUserName] = useState(() => (slug ? getOrCreateStoredUser(slug).name : ''))
 
@@ -79,6 +80,17 @@ function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwn
       </div>
 
       <div className="flex items-center gap-5">
+        {currentRegion && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="relatvie flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-grenn-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+              </span>
+            </div>
+            <div className="w-px h-6 bg-gray-200" />
+          </>
+        )}
         {hasParticipants && (
           <div className="flex items-center -space-x-2">
             {combinedParticipants.slice(0, displayCount).map(p => (
