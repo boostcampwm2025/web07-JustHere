@@ -185,15 +185,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       // 이벤트 버블링 방지 (Stage mouseDown 방지)
       e.cancelBubble = true
 
-      // 우클릭이 아닌 경우에만 선택 전환 (우클릭은 기존 선택 유지)
-      if (e.evt.button !== 2) {
-        const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
-
-        // 이미 선택된 객체가 아니면 즉시 해당 객체만 선택
-        if (!isAlreadySelected) {
-          setSelectedItems([{ id, type }])
-        }
-        // 이미 선택된 객체면 선택 유지 (드래그 가능하도록)
+      const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
+      // 선택되지 않은 요소를 클릭하면 해당 요소만 선택 (기존 선택 해제)
+      if (!isAlreadySelected) {
+        setSelectedItems([{ id, type }])
       }
     },
     [activeTool, pendingPlaceCard, selectedItems],
@@ -1003,7 +998,19 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
           {/* 다중 선택 드래그 오버레이 */}
           {multiSelectionBoundingBox && selectedItems.length >= 2 && !isSelecting && (
-            <Group x={0} y={0} draggable={activeTool === 'cursor'} onDragEnd={handleMultiDragEnd}>
+            <Group
+              x={0}
+              y={0}
+              draggable={activeTool === 'cursor'}
+              onDragEnd={handleMultiDragEnd}
+              onContextMenu={e => {
+                // 다중 선택 요소에서 우클릭 시 컨텍스트 메뉴 표시
+                if (activeTool !== 'cursor') return
+                e.cancelBubble = true
+                e.evt.preventDefault()
+                setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
+              }}
+            >
               {/* 드래그 영역 (투명하지만 클릭 가능) */}
               <Rect
                 x={multiSelectionBoundingBox.x - 10}
