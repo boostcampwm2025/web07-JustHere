@@ -1,5 +1,12 @@
 export type Tool = 'cursor' | 'pen' | 'rectangle'
 
+export type CanvasItemType = 'postit' | 'line'
+
+export interface SelectedItem {
+  id: string
+  type: CanvasItemType
+}
+
 export interface Rectangle {
   id: string
   x: number

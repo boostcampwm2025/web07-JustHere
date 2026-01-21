@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt, Line as LineType } from '@/types/canvas.types'
+import type { PostIt, Line as LineType, SelectedItem } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
@@ -39,8 +39,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
   // 선택된 캔버스 UI 객체
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [selectedType, setSelectedType] = useState<'postit' | 'line' | null>(null)
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null)
 
   // 컨텍스트 메뉴 (우클릭 팝오버)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
@@ -80,19 +79,17 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       // 입력 중일 때는 삭제 방지 (textarea 등)
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
 
-      if (e.key === 'Backspace' && selectedId) {
-        if (selectedType === 'postit') deletePostIt(selectedId)
-        if (selectedType === 'line') deleteLine(selectedId)
+      if (e.key === 'Backspace' && selectedItem) {
+        if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
+        if (selectedItem.type === 'line') deleteLine(selectedItem.id)
 
-        // 삭제 후 선택 해제
-        setSelectedId(null)
-        setSelectedType(null)
+        setSelectedItem(null)
         setContextMenu(null)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId, selectedType, deletePostIt, deleteLine])
+  }, [selectedItem, deletePostIt, deleteLine])
 
   // 객체 선택 핸들러 (좌클릭/우클릭 공통)
   const handleObjectSelect = useCallback(
@@ -104,8 +101,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       e.cancelBubble = true
 
       // 3. 선택 상태 설정
-      setSelectedId(id)
-      setSelectedType(type)
+      setSelectedItem({ id, type })
 
       // 4. 우클릭인 경우 컨텍스트 메뉴 표시
       if (e.evt.button === 2) {
@@ -131,20 +127,18 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     // Stage 자체를 클릭했을 때만 (객체 클릭 제외)
     if (e.target === e.target.getStage()) {
-      setSelectedId(null)
-      setSelectedType(null)
+      setSelectedItem(null)
       setContextMenu(null)
     }
   }
 
   // 메뉴에서 삭제 클릭 시
   const handleDeleteFromMenu = () => {
-    if (selectedId && selectedType) {
-      if (selectedType === 'postit') deletePostIt(selectedId)
-      if (selectedType === 'line') deleteLine(selectedId)
+    if (selectedItem) {
+      if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
+      if (selectedItem.type === 'line') deleteLine(selectedItem.id)
     }
-    setSelectedId(null)
-    setSelectedType(null)
+    setSelectedItem(null)
     setContextMenu(null)
   }
 
@@ -316,9 +310,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 드로잉 객체에 대한 Focus Box 렌더링
   const renderLineFocus = useMemo(() => {
     // 1. 선택된 라인이 없으면 렌더링 X
-    if (selectedType !== 'line' || !selectedId) return null
+    if (selectedItem?.type !== 'line') return null
 
-    const line = lines.find(l => l.id === selectedId)
+    const line = lines.find(l => l.id === selectedItem.id)
     if (!line) return null
 
     const box = getLineBoundingBox(line.points)
@@ -364,7 +358,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         />
       </Group>
     )
-  }, [selectedId, selectedType, lines, activeTool, handleLineGroupDragEnd, handleObjectSelect])
+  }, [selectedItem, lines, activeTool, handleLineGroupDragEnd, handleObjectSelect])
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -453,7 +447,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           {/* 펜으로 그린 선 렌더링 */}
           {lines.map(line => {
             // 현재 라인이 선택되었고, 드래그 중인가?
-            const isTargetLine = selectedId === line.id && selectedType === 'line'
+            const isTargetLine = selectedItem?.id === line.id && selectedItem?.type === 'line'
             const shouldDim = isTargetLine && isDragging
 
             return (
@@ -466,7 +460,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
                 lineCap={line.lineCap}
                 lineJoin={line.lineJoin}
                 globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
-                // 드래그 중이면 투명도를 0.2로 낮춤 (흐리게)
+                // 드래그 중이면 투명도를 0로 낮춤 (위치 변경 전 드로잉 라인이 보이지 않게)
                 opacity={shouldDim ? 0 : 1}
                 // 라인 선택 (좌클릭/우클릭)
                 onClick={e => handleObjectSelect(line.id, 'line', e)}
@@ -508,7 +502,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               key={postIt.id}
               postIt={postIt}
               draggable={activeTool === 'hand'}
-              isSelected={selectedId === postIt.id && selectedType === 'postit'}
+              isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
               }}
