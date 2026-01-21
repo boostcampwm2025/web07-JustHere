@@ -46,7 +46,6 @@ describe('RoomActivitySchedulerService', () => {
       service.markAsActive('room-1') // 중복 추가 시도
 
       // Private 속성 접근
-
       const activeSet = (service as unknown as ServiceWithPrivate).activeRoomIds
 
       expect(activeSet.size).toBe(2)
@@ -81,7 +80,6 @@ describe('RoomActivitySchedulerService', () => {
       expect(dateArg).toBeInstanceOf(Date)
 
       // 3. 메모리 Set이 비워졌는지 확인
-
       expect((service as unknown as ServiceWithPrivate).activeRoomIds.size).toBe(0)
     })
 
@@ -100,8 +98,7 @@ describe('RoomActivitySchedulerService', () => {
       // Then
       expect(mockRoomRepository.updateManyLastActiveAt).toHaveBeenCalled()
 
-      // ✨ 핵심: 에러 발생 후 ID가 다시 Set에 복구되었는지 확인
-
+      // 에러 발생 후 ID가 다시 Set에 복구되었는지 확인
       const activeSet = (service as unknown as ServiceWithPrivate).activeRoomIds
       expect(activeSet.size).toBe(1)
       expect(activeSet.has('room-Fail')).toBe(true)
@@ -149,7 +146,7 @@ describe('RoomActivitySchedulerService', () => {
 
       await service.cleanUpGhostRooms()
 
-      expect(loggerSpy).toHaveBeenCalledWith('No ghost rooms found to delete.')
+      expect(loggerSpy).toHaveBeenCalledWith('[Error] No ghost rooms found to delete.')
     })
 
     it('에러 발생 시 예외를 적절히 처리해야 한다', async () => {
