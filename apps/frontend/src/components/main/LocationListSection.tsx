@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/components/Icons'
 import { searchKeyword } from '@/api/kakao'
+import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 
@@ -154,9 +155,10 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
                         <button
                           type="button"
                           onClick={() => handleAddPlaceCard(place)}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors ${
-                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20'
-                          } text-primary`}
+                          className={cn(
+                            'flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-primary',
+                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20',
+                          )}
                         >
                           <span className="font-bold text-xs">캔버스</span>
                           <PlusIcon className="w-3 h-3" />
