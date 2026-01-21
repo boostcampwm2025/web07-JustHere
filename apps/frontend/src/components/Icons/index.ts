@@ -4,6 +4,7 @@
  */
 
 import AccountCheckOutlineIcon from '@/assets/icons/account-check-outline.svg?react'
+import AlertCircleIcon from '@/assets/icons/alert-circle.svg?react'
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg?react'
 import BackspaceIcon from '@/assets/icons/backspace.svg?react'
 import BellIcon from '@/assets/icons/bell.svg?react'
@@ -18,6 +19,7 @@ import CompassIcon from '@/assets/icons/compass.svg?react'
 import ContentCopyIcon from '@/assets/icons/content-copy.svg?react'
 import CreationIcon from '@/assets/icons/creation.svg?react'
 import CrosshairsGpsIcon from '@/assets/icons/crosshairs-gps.svg?react'
+import CursorIcon from '@/assets/icons/cursor.svg?react'
 import ForumIcon from '@/assets/icons/forum.svg?react'
 import HandBackRightIcon from '@/assets/icons/hand-back-right.svg?react'
 import LiquorIcon from '@/assets/icons/liquor.svg?react'
@@ -38,6 +40,7 @@ import VoteIcon from '@/assets/icons/vote.svg?react'
 
 export {
   AccountCheckOutlineIcon,
+  AlertCircleIcon,
   ArrowLeftIcon,
   BackspaceIcon,
   BellIcon,
@@ -52,6 +55,7 @@ export {
   ContentCopyIcon,
   CreationIcon,
   CrosshairsGpsIcon,
+  CursorIcon,
   ForumIcon,
   HandBackRightIcon,
   LiquorIcon,

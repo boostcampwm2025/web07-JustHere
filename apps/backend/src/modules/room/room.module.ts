@@ -12,6 +12,6 @@ import { RoomGateway } from './room.gateway'
   imports: [PrismaModule, CategoryModule, SocketModule, UserModule],
   controllers: [RoomController],
   providers: [RoomRepository, RoomService, RoomGateway],
-  exports: [RoomService],
+  exports: [RoomService, RoomRepository],
 })
 export class RoomModule {}

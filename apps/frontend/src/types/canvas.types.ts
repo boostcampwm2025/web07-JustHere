@@ -7,15 +7,6 @@ export interface SelectedItem {
   type: CanvasItemType
 }
 
-export interface Rectangle {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-  fill: string
-}
-
 export interface PostIt {
   id: string
   x: number
@@ -25,6 +16,18 @@ export interface PostIt {
   fill: string
   text: string // 포스트잇 내용
   authorName: string // 작성자 이름
+}
+
+export interface PlaceCard {
+  id: string
+  placeId: string
+  name: string
+  address: string
+  x: number
+  y: number
+  createdAt: string
+  image?: string | null
+  category: string
 }
 
 export interface Line {

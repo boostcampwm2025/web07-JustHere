@@ -13,7 +13,7 @@ export class Participant {
   name: string
 }
 
-// [S->C] room:joined - 기존 room:state 대체
+// [S->C] room:joined
 export type RoomJoinedPayload = {
   roomId: string
   participants: Participant[]

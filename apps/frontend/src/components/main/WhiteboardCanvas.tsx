@@ -1,20 +1,31 @@
+
 import CanvasContextMenu from '@/components/main/CanvasContextMenu'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt, Line as LineType, SelectedItem } from '@/types/canvas.types'
+import type { PostIt, Line as LineType, PlaceCard, SelectedItem } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
+import PlaceCardItem from './PlaceCardItem'
+import CursorChatInput from './CursorChatInput'
+import { useParams } from 'react-router-dom'
+import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 type ToolType = 'hand' | 'pencil' | 'postIt'
 
 interface WhiteboardCanvasProps {
   roomId: string
   canvasId: string
+  pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
+  onPlaceCardPlaced: () => void
+  onPlaceCardCanceled: () => void
 }
+
+const PLACE_CARD_WIDTH = 240
+const PLACE_CARD_HEIGHT = 180
 
 // 드로잉 객체의 Bounding Box 계산 함수
 const getLineBoundingBox = (points: number[]) => {
@@ -33,8 +44,9 @@ const getLineBoundingBox = (points: number[]) => {
   }
 }
 
-function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
+function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
+
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
@@ -53,24 +65,55 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
   // 현재 드래그 중인지 여부
   const [isDragging, setIsDragging] = useState(false)
+  
+  // 배치 중 마우스 따라다니는 카드 위치
+  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
+  
+  useEffect(() => {
+    if (!pendingPlaceCard) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      onPlaceCardCanceled()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [pendingPlaceCard, onPlaceCardCanceled])
+  
+  // 커서챗 관련 상태
+  const [isChatActive, setIsChatActive] = useState(false)
+  const [isChatFading, setIsChatFading] = useState(false)
+  const [chatMessage, setChatMessage] = useState('')
+  const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
+  const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { slug } = useParams<{ slug: string }>()
+  const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
+  const userName = user ? user.name : 'Unknown User'
 
   const {
     cursors,
-    rectangles,
     postits: postIts,
+    placeCards,
     lines,
     socketId,
     updateCursor,
-    updateRectangle,
+    sendCursorChat,
     addPostIt,
     updatePostIt,
     deletePostIt,
+    updatePlaceCard,
+    removePlaceCard,
+    addPlaceCard,
     addLine,
     updateLine,
     deleteLine,
   } = useYjsSocket({
     roomId,
     canvasId,
+    userName,
   })
 
   // Backspace 키를 통한 삭제 이벤트
@@ -142,6 +185,93 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     setContextMenu(null)
   }
 
+  // 커서챗 완전 비활성화 함수 (fade-out 애니메이션 후 호출)
+  const deactivateCursorChat = useCallback(() => {
+    // 타이머 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+      chatInactivityTimerRef.current = null
+    }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    setIsChatFading(false)
+    setIsChatActive(false)
+    setChatMessage('')
+    setChatInputPosition(null)
+    sendCursorChat(false, '')
+  }, [sendCursorChat])
+
+  // fade-out 애니메이션 시작 함수
+  const startFadeOut = useCallback(() => {
+    setIsChatFading(true)
+    // 3초간 fade-out 애니메이션 후 완전 비활성화
+    chatFadeTimerRef.current = setTimeout(() => {
+      deactivateCursorChat()
+    }, 3000)
+  }, [deactivateCursorChat])
+
+  // 커서챗 비활성화 타이머 리셋 (3초 후 fade-out 시작)
+  const resetInactivityTimer = useCallback(() => {
+    // 기존 타이머들 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+    }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    // fade-out 중이었다면 즉시 다시 활성화 (opacity 복구)
+    setIsChatFading(false)
+
+    // 3초 후 fade-out 시작
+    chatInactivityTimerRef.current = setTimeout(() => {
+      startFadeOut()
+    }, 3000)
+  }, [startFadeOut])
+
+  // 커서챗 활성화 함수
+  const activateCursorChat = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pointerPos = stage.getPointerPosition()
+    if (pointerPos) {
+      setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
+    }
+
+    setIsChatActive(true)
+    setChatMessage('')
+    sendCursorChat(true, '')
+
+    // 3초 비활성화 타이머 시작
+    resetInactivityTimer()
+  }, [sendCursorChat, resetInactivityTimer])
+
+  // 키보드 이벤트 핸들러
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 이미 커서챗이 활성화되어 있으면 무시
+      if (isChatActive) return
+
+      // 다른 입력 요소에 포커스가 있으면 무시
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
+      // / 키로 커서챗 활성화
+      if (e.key === '/') {
+        e.preventDefault()
+        activateCursorChat()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isChatActive, activateCursorChat])
+
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
     const stage = stageRef.current
@@ -154,8 +284,12 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
       updateCursor(canvasPos.x, canvasPos.y)
 
       // 포스트잇 고스트 UI 업데이트 (캔버스 좌표)
-      if (activeTool === 'postIt') {
+      if (activeTool === 'postIt' && !pendingPlaceCard) {
         setCursorPos(canvasPos)
+      }
+
+      if (pendingPlaceCard) {
+        setPlaceCardCursorPos({ ...canvasPos, cardId: pendingPlaceCard.id })
       }
 
       // 펜 드로잉 중이면 포인트 추가
@@ -168,6 +302,14 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           updateLine(currentLineId, { points: newPoints })
         }
       }
+
+      // 커서챗 입력창 위치 업데이트
+      if (isChatActive) {
+        const pointerPos = stage.getPointerPosition()
+        if (pointerPos) {
+          setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
+        }
+      }
     }
   }
 
@@ -176,6 +318,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     if (activeTool === 'postIt') {
       setCursorPos(null)
     }
+    if (pendingPlaceCard) {
+      setPlaceCardCursorPos(null)
+    }
     // 캔버스 밖으로 나가면 드로잉 종료
     if (isDrawing) {
       setIsDrawing(false)
@@ -183,7 +328,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     }
   }
 
-  // 마우스 다운 이벤트 (드로잉 시작, 포스트잇 추가)
+  // 마우스 다운 이벤트 (드로잉 시작, 포스트잇 추가, 장소 카드 추가)
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     // Hand 모드일 때는 Stage 드래그 혹은 객체 선택이므로 패스
     if (activeTool === 'hand') return
@@ -202,10 +347,20 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     const canvasPos = stage.getRelativePointerPosition()
     if (!canvasPos) return
 
+    if (pendingPlaceCard) {
+      addPlaceCard({
+        ...pendingPlaceCard,
+        x: canvasPos.x - PLACE_CARD_WIDTH / 2,
+        y: canvasPos.y - PLACE_CARD_HEIGHT / 2,
+      })
+      onPlaceCardPlaced()
+      return
+    }
+
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
       const newPostIt: PostIt = {
-        id: `postIt-${Date.now()}`,
+        id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
         y: canvasPos.y - 75, // 중앙 정렬 (height / 2)
         width: 150,
@@ -220,7 +375,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
     // 펜 드로잉 시작
     if (activeTool === 'pencil') {
       setIsDrawing(true)
-      const newLineId = `line-${Date.now()}`
+      const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
 
       const newLine: LineType = {
@@ -364,6 +519,9 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
    * 도구에 따른 커서 스타일 반환
    */
   const getCursorStyle = () => {
+    if (pendingPlaceCard) {
+      return 'cursor-crosshair'
+    }
     switch (activeTool) {
       case 'hand':
         return 'cursor-grab active:cursor-grabbing'
@@ -421,13 +579,29 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
 
       {/* 우클릭 Context Menu (Popover) */}
       {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteFromMenu} onClose={() => setContextMenu(null)} />}
+      
+      {/* 커서챗 입력 UI */}
+      {isChatActive && chatInputPosition && (
+        <CursorChatInput
+          position={chatInputPosition}
+          name={userName}
+          isFading={isChatFading}
+          message={chatMessage}
+          onMessageChange={value => {
+            setChatMessage(value)
+            sendCursorChat(true, value)
+            resetInactivityTimer()
+          }}
+          onEscape={deactivateCursorChat}
+        />
+      )}
 
       <Stage
         ref={stageRef}
         width={window.innerWidth}
         height={window.innerHeight}
         // 손 도구일 때만 캔버스 전체 드래그(Pan) 가능
-        draggable={activeTool === 'hand'}
+        draggable={!pendingPlaceCard && activeTool === 'hand'}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -474,28 +648,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           {/* 라인 선택 시 Focus Box 렌더링 */}
           {renderLineFocus}
 
-          {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
-          {rectangles.map(shape => (
-            <Rect
-              key={shape.id}
-              x={shape.x}
-              y={shape.y}
-              width={shape.width}
-              height={shape.height}
-              fill={shape.fill}
-              shadowBlur={5}
-              cornerRadius={8}
-              // 손 도구일 때만 개별 객체 드래그 가능
-              draggable={activeTool === 'hand'}
-              onDragEnd={e => {
-                updateRectangle(shape.id, {
-                  x: e.target.x(),
-                  y: e.target.y(),
-                })
-              }}
-            />
-          ))}
-
           {/* 포스트잇 렌더링 */}
           {postIts.map(postIt => (
             <EditablePostIt
@@ -513,8 +665,23 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
             />
           ))}
 
+          {/* 장소 카드 렌더링 */}
+          {placeCards.map(card => (
+            <PlaceCardItem
+              key={card.id}
+              card={card}
+              draggable={activeTool === 'hand'}
+              onDragEnd={(x, y) => {
+                updatePlaceCard(card.id, { x, y })
+              }}
+              onRemove={() => {
+                removePlaceCard(card.id)
+              }}
+            />
+          ))}
+
           {/* 고스트 포스트잇 (미리보기) */}
-          {activeTool === 'postIt' && cursorPos && (
+          {activeTool === 'postIt' && !pendingPlaceCard && cursorPos && (
             <Group
               x={cursorPos.x - 75} // 마우스 중앙 정렬 (150 / 2)
               y={cursorPos.y - 75}
@@ -531,6 +698,43 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
                 dash={[5, 5]} // 점선 효과로 '임시'임을 강조
               />
               <Text x={0} y={65} width={150} text="Click to add" align="center" fill="#6B7280" fontSize={14} />
+            </Group>
+          )}
+
+          {/* 장소 카드 고스트 (미리보기) */}
+          {pendingPlaceCard && placeCardCursorPos && placeCardCursorPos.cardId === pendingPlaceCard.id && (
+            <Group x={placeCardCursorPos.x - PLACE_CARD_WIDTH / 2} y={placeCardCursorPos.y - PLACE_CARD_HEIGHT / 2} listening={false}>
+              <Rect
+                width={PLACE_CARD_WIDTH}
+                height={PLACE_CARD_HEIGHT}
+                fill="#FFFBE6"
+                opacity={0.6}
+                cornerRadius={10}
+                stroke="#9CA3AF"
+                strokeWidth={2}
+                dash={[6, 6]}
+              />
+              <Text
+                text={pendingPlaceCard.name}
+                x={12}
+                y={12}
+                width={PLACE_CARD_WIDTH - 24}
+                fontSize={14}
+                fontFamily="Arial, sans-serif"
+                fontStyle="bold"
+                fill="#6B7280"
+                wrap="word"
+              />
+              <Text
+                text={pendingPlaceCard.address}
+                x={12}
+                y={36}
+                width={PLACE_CARD_WIDTH - 24}
+                fontSize={12}
+                fontFamily="Arial, sans-serif"
+                fill="#9CA3AF"
+                wrap="word"
+              />
             </Group>
           )}
 

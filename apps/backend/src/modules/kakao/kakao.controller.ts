@@ -20,18 +20,7 @@ export class KakaoController {
     description: '검색할 키워드',
     example: '강남역 카페',
   })
-  @ApiQuery({
-    name: 'x',
-    required: false,
-    description: '중심 좌표 경도',
-    example: '127.027621',
-  })
-  @ApiQuery({
-    name: 'y',
-    required: false,
-    description: '중심 좌표 위도',
-    example: '37.497952',
-  })
+  @ApiQuery({ name: 'roomId', required: false, description: '주변 검색 시 Room ID' })
   @ApiQuery({
     name: 'radius',
     required: false,

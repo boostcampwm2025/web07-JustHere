@@ -112,7 +112,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-[10px] leading-[1.4]"
+            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4]"
           />
         </Html>
       ) : (
