@@ -54,7 +54,10 @@ const CursorChatInput = React.memo(({ position, name, isFading, message, onMessa
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="메시지 입력..."
-        className={`px-3 py-1.5 text-sm ${getParticipantColor(name)} text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-[200px]`}
+        className={cn(
+          'px-3 py-1.5 text-sm text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-[200px]',
+          getParticipantColor(name),
+        )}
       />
     </div>
   )

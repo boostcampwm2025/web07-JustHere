@@ -5,6 +5,7 @@ import Konva from 'konva'
 import type { CursorInfoWithId } from '@/types/yjs.types'
 import { CursorIcon } from '@/components/Icons'
 import { getCursorColor, getParticipantColor } from '@/utils/participant'
+import { cn } from '@/utils/cn'
 
 interface AnimatedCursorProps {
   cursor: CursorInfoWithId
@@ -173,11 +174,15 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         }}
       >
         <div className="relative flex flex-col items-start overflow-visible">
-          <CursorIcon className={`w-7 h-7 ${getCursorColor(cursor.name)} drop-shadow-md`} />
+          <CursorIcon className={cn('w-7 h-7 drop-shadow-md', getCursorColor(cursor.name))} />
 
           {/* 통합된 이름표/커서챗 말풍선 */}
           <div
-            className={`ml-5 -mt-1 ${cursor.chatActive && !isChatFaded ? 'px-3 py-2' : 'px-2 py-1'} ${getParticipantColor(cursor.name)} text-white shadow-lg whitespace-nowrap`}
+            className={cn(
+              'ml-5 -mt-1 text-white shadow-lg whitespace-nowrap',
+              getParticipantColor(cursor.name),
+              cursor.chatActive && !isChatFaded ? 'px-3 py-2' : 'px-2 py-1',
+            )}
             style={{
               borderRadius: cursor.chatActive && !isChatFaded ? '0 0.75rem 0.75rem 0.75rem' : '0.375rem',
               transition: 'border-radius 0.3s ease-out, padding 0.3s ease-out',
@@ -192,7 +197,6 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
                 className="text-sm wrap-break-word max-w-[200px] overflow-hidden"
                 style={{
                   opacity: isChatFading || isChatFaded ? 0 : 1,
-                  // maxHeight: isChatFaded ? 0 : '200px',
                   transition: isChatFading ? 'opacity 3s ease-out, max-height 0.3s ease-out 3s' : 'opacity 0.1s ease-out, max-height 0.3s ease-out',
                 }}
               >
