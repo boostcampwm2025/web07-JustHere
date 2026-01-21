@@ -33,14 +33,14 @@ export class RoomActivitySchedulerService {
     this.activeRoomIds.clear()
 
     const now = new Date()
-    this.logger.debug(`⏳ Hourly Flushing: Updating activity for ${idsToUpdate.length} rooms...`)
+    this.logger.debug(`Hourly Flushing: Updating activity for ${idsToUpdate.length} rooms...`)
 
     try {
       // Bulk Update
       await this.roomRepository.updateManyLastActiveAt(idsToUpdate, now)
-      // this.logger.log(`✅ Activity flush complete.`)
+      this.logger.log(`[Success] Activity flush complete.`)
     } catch (error) {
-      this.logger.error('❌ Failed to batch update room activity', error)
+      this.logger.error('[Error] Failed to batch update room activity', error)
       // 실패 시 다음 텀에 다시 시도하도록 복구
       idsToUpdate.forEach(id => this.activeRoomIds.add(id))
     }
@@ -63,7 +63,7 @@ export class RoomActivitySchedulerService {
       if (deletedCount > 0) {
         this.logger.log(`[Success] Deleted ${deletedCount} ghost rooms (inactive since ${thresholdDate.toISOString()}).`)
       } else {
-        this.logger.log('No ghost rooms found to delete.')
+        this.logger.log('[Error] No ghost rooms found to delete.')
       }
     } catch (error) {
       this.logger.error('[Error] Failed to cleanup ghost rooms', error)
