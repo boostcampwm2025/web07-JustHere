@@ -5,13 +5,17 @@ import { ConfigService } from '@nestjs/config'
 import axios, { AxiosInstance } from 'axios'
 import { SearchKeywordDto } from './dto/search-keyword.dto'
 import { KakaoLocalSearchResponse } from './dto/kakao-api.dto'
+import { RoomRepository } from '../room/room.repository'
 
 @Injectable()
 export class KakaoService {
   private readonly axiosInstance: AxiosInstance
   private readonly apiKey: string
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly roomRepository: RoomRepository,
+  ) {
     this.apiKey = this.configService.getOrThrow<string>('KAKAO_REST_API_KEY')
     const baseURL = this.configService.get<string>('KAKAO_API_BASE_URL')
 
@@ -26,12 +30,23 @@ export class KakaoService {
 
   async searchByKeyword(dto: SearchKeywordDto): Promise<KakaoLocalSearchResponse> {
     try {
+      let x: number | undefined
+      let y: number | undefined
+
+      if (dto.roomId) {
+        const room = await this.roomRepository.findById(dto.roomId)
+        if (!room) {
+          throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
+        }
+        x = room.x
+        y = room.y
+      }
       const { data } = await this.axiosInstance.get<KakaoLocalSearchResponse>('/v2/local/search/keyword.json', {
         params: {
           query: dto.keyword,
-          x: dto.x,
-          y: dto.y,
-          radius: dto.radius,
+          x,
+          y,
+          radius: x !== undefined && y !== undefined ? (dto.radius ?? 2000) : undefined,
           page: dto.page,
           size: dto.size,
         },

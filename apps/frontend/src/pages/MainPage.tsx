@@ -63,7 +63,7 @@ function MainPage() {
       />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection roomId={roomId} onCreateCategory={createCategory} />
-        <LocationListSection />
+        <LocationListSection roomId={roomId} />
       </div>
     </div>
   )

@@ -9,9 +9,9 @@ import type {
   CanvasAttachedPayload,
   YjsUpdateBroadcast,
   YjsAwarenessBroadcast,
-  CursorPositionWithId,
+  CursorInfoWithId,
 } from '@/types/yjs.types'
-import type { Rectangle, PostIt, Line } from '@/types/canvas.types'
+import type { PostIt, Line } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { socketBaseUrl } from '@/config/socket'
@@ -20,17 +20,21 @@ interface UseYjsSocketOptions {
   roomId: string
   canvasId: string
   serverUrl?: string
+  userName: string
 }
 
-export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
-  const [cursors, setCursors] = useState<Map<string, CursorPositionWithId>>(new Map())
-  const [rectangles, setRectangles] = useState<Rectangle[]>([])
+export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
+  const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
+  // 현재 커서 위치 저장 (커서챗 전송 시 사용)
+  const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
+  const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
   const handleSocketError = useCallback((error: Error) => {
     console.error('[canvas] socket error:', error)
   }, [])
@@ -48,23 +52,10 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     docRef.current = doc
 
     // Yjs SharedTypes 생성
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
 
     // Yjs 변경사항을 React state에 반영하는 함수
-    const syncRectanglesToState = () => {
-      const rects: Rectangle[] = yRectangles.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        x: yMap.get('x') as number,
-        y: yMap.get('y') as number,
-        width: yMap.get('width') as number,
-        height: yMap.get('height') as number,
-        fill: yMap.get('fill') as string,
-      }))
-      setRectangles(rects)
-    }
-
     const syncPostitsToState = () => {
       const items: PostIt[] = yPostits.toArray().map(yMap => ({
         id: yMap.get('id') as string,
@@ -96,17 +87,14 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
-    yRectangles.observeDeep(syncRectanglesToState)
     yPostits.observeDeep(syncPostitsToState)
     yLines.observeDeep(syncLinesToState)
 
     // 초기 동기화
-    syncRectanglesToState()
     syncPostitsToState()
     syncLinesToState()
 
     return () => {
-      yRectangles.unobserveDeep(syncRectanglesToState)
       yPostits.unobserveDeep(syncPostitsToState)
       yLines.unobserveDeep(syncLinesToState)
       doc.destroy()
@@ -149,10 +137,18 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
     }
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
-      if (payload.state.cursor) {
+      const cursor = payload.state.cursor
+      if (cursor) {
         setCursors(prev => {
           const next = new Map(prev)
-          next.set(payload.socketId, { ...payload.state.cursor!, socketId: payload.socketId })
+          next.set(payload.socketId, {
+            x: cursor.x,
+            y: cursor.y,
+            name: cursor.name,
+            chatActive: cursor.chatActive,
+            chatMessage: cursor.chatMessage,
+            socketId: payload.socketId,
+          })
           return next
         })
         return
@@ -214,59 +210,66 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   }, [roomId, canvasId, getSocket, status])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
+  // 커서 이동 시에도 현재 커서챗 상태를 함께 전송
   const updateCursorThrottled = useRef(
-    throttle((canvasId: string, socketRef: React.MutableRefObject<Socket | null>, x: number, y: number) => {
-      if (socketRef.current?.connected) {
-        const awarenessPayload: YjsAwarenessPayload = {
-          canvasId,
-          state: {
-            cursor: { x, y },
-          },
+    throttle(
+      (
+        canvasId: string,
+        socketRef: React.MutableRefObject<Socket | null>,
+        x: number,
+        y: number,
+        name: string,
+        cursorChatRef: React.MutableRefObject<{ chatActive: boolean; chatMessage: string }>,
+      ) => {
+        if (socketRef.current?.connected) {
+          const chatState = cursorChatRef.current
+          const awarenessPayload: YjsAwarenessPayload = {
+            canvasId,
+            state: {
+              cursor: {
+                x,
+                y,
+                name,
+                chatActive: chatState.chatActive,
+                chatMessage: chatState.chatMessage,
+              },
+            },
+          }
+          socketRef.current.emit('y:awareness', awarenessPayload)
         }
-        socketRef.current.emit('y:awareness', awarenessPayload)
-      }
-    }, 100),
+      },
+      100,
+    ),
   ).current
 
   const updateCursor = useCallback(
     (x: number, y: number) => {
-      updateCursorThrottled(canvasId, socketRef, x, y)
+      // 현재 위치 저장 (커서챗 전송 시 사용)
+      cursorPositionRef.current = { x, y }
+      updateCursorThrottled(canvasId, socketRef, x, y, userName, cursorChatRef)
     },
-    [canvasId, updateCursorThrottled],
+    [canvasId, updateCursorThrottled, userName],
   )
 
-  // 네모 추가 함수
-  const addRectangle = (rect: Rectangle) => {
-    const doc = docRef.current
-    if (!doc) return
+  // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
+  const sendCursorChat = useCallback(
+    (chatActive: boolean, chatMessage?: string) => {
+      // 커서챗 상태 저장 (커서 이동 시에도 상태 유지를 위해)
+      cursorChatRef.current = { chatActive, chatMessage: chatMessage ?? '' }
 
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const yMap = new Y.Map()
-    yMap.set('id', rect.id)
-    yMap.set('x', rect.x)
-    yMap.set('y', rect.y)
-    yMap.set('width', rect.width)
-    yMap.set('height', rect.height)
-    yMap.set('fill', rect.fill)
-    yRectangles.push([yMap])
-  }
+      if (!socketRef.current?.connected) return
 
-  // 네모 위치 업데이트 함수
-  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const index = yRectangles.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    // Yjs 트랜잭션으로 명시적으로 감싸기
-    doc.transact(() => {
-      const yMap = yRectangles.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
-  }
+      const { x, y } = cursorPositionRef.current
+      const awarenessPayload: YjsAwarenessPayload = {
+        canvasId,
+        state: {
+          cursor: { x, y, name: userName, chatActive, chatMessage },
+        },
+      }
+      socketRef.current.emit('y:awareness', awarenessPayload)
+    },
+    [canvasId, userName],
+  )
 
   // 포스트잇 추가 함수
   const addPostIt = (postit: PostIt) => {
@@ -345,13 +348,11 @@ export function useYjsSocket({ roomId, canvasId }: UseYjsSocketOptions) {
   return {
     isConnected,
     cursors,
-    rectangles,
     postits,
     lines,
     socketId,
     updateCursor,
-    addRectangle,
-    updateRectangle,
+    sendCursorChat,
     addPostIt,
     updatePostIt,
     addLine,
