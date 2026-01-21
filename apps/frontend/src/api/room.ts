@@ -1,12 +1,12 @@
 import axios from 'axios'
 
-export interface CreateRoomRequest {
+export interface RoomRegionPayload {
   x: number
   y: number
   place_name?: string
 }
 
-export interface CreateRoomResponse {
+export interface RoomResponse {
   status: string
   statusCode: 200
   data: RoomData
@@ -23,7 +23,12 @@ export interface RoomData {
   updatedAt: string
 }
 
-export const createRoom = async (payload: CreateRoomRequest): Promise<RoomData> => {
-  const response = await axios.post<CreateRoomResponse>('/api/room/create', payload)
+export const createRoom = async (payload: RoomRegionPayload): Promise<RoomData> => {
+  const response = await axios.post<RoomResponse>('/api/room/create', payload)
+  return response.data.data
+}
+
+export const updateRoom = async (payload: RoomRegionPayload): Promise<RoomData> => {
+  const response = await axios.patch<RoomResponse>('/api/room/${slug}', payload)
   return response.data.data
 }
