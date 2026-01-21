@@ -174,7 +174,7 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         }}
       >
         <div className="relative flex flex-col items-start overflow-visible">
-          <CursorIcon className={cn('w-7 h-7 drop-shadow-md', getCursorColor(cursor.name))} />
+          <CursorIcon className={cn('w-6 h-6 drop-shadow-md', getCursorColor(cursor.name))} />
 
           {/* 통합된 이름표/커서챗 말풍선 */}
           <div
