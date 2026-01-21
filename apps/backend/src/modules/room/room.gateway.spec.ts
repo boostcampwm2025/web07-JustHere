@@ -1,3 +1,4 @@
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Server, Socket } from 'socket.io'
 import { RoomGateway } from './room.gateway'
@@ -19,11 +20,22 @@ describe('RoomGateway', () => {
     setServer: jest.fn(),
   }
 
+  const roomScheduler = {
+    markAsActive: jest.fn(),
+    flushActivityToDb: jest.fn(),
+    cleanUpGhostRooms: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RoomGateway, { provide: RoomService, useValue: roomService }, { provide: RoomBroadcaster, useValue: broadcaster }],
+      providers: [
+        RoomGateway,
+        { provide: RoomService, useValue: roomService },
+        { provide: RoomBroadcaster, useValue: broadcaster },
+        { provide: RoomActivitySchedulerService, useValue: roomScheduler },
+      ],
     }).compile()
 
     gateway = module.get(RoomGateway)

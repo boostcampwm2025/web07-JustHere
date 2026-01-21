@@ -1,5 +1,6 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Socket } from 'socket.io'
 import type { Category, Room } from '@prisma/client'
@@ -77,6 +78,12 @@ describe('RoomService', () => {
     emitToRoom: jest.fn(),
   }
 
+  const mockRoomScheduler = {
+    markAsActive: jest.fn(),
+    flushActivityToDb: jest.fn(),
+    cleanUpGhostRooms: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
 
@@ -94,6 +101,7 @@ describe('RoomService', () => {
 
         { provide: CategoryService, useValue: categoryService },
         { provide: RoomBroadcaster, useValue: broadcaster },
+        { provide: RoomActivitySchedulerService, useValue: mockRoomScheduler },
       ],
     }).compile()
 
@@ -111,6 +119,7 @@ describe('RoomService', () => {
         place_name: '강남역',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const inputData = {
@@ -137,6 +146,7 @@ describe('RoomService', () => {
         place_name: '',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const inputData = {
