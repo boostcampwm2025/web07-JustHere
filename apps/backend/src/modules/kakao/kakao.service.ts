@@ -33,7 +33,7 @@ export class KakaoService {
       let x: number | undefined
       let y: number | undefined
 
-      if (dto.roomId && dto.roomId !== 'default') {
+      if (dto.roomId) {
         const room = await this.roomRepository.findById(dto.roomId)
         if (!room) {
           throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')

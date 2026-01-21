@@ -26,7 +26,7 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
     try {
       const results = await searchKeyword({
         keyword: searchQuery,
-        roomId: roomId || 'default',
+        roomId: roomId,
         radius: 2000,
       })
       setSearchResults(results)
