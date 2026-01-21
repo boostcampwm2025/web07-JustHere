@@ -9,6 +9,18 @@ export interface PostIt {
   authorName: string // 작성자 이름
 }
 
+export interface PlaceCard {
+  id: string
+  placeId: string
+  name: string
+  address: string
+  x: number
+  y: number
+  createdAt: string
+  image?: string | null
+  category: string
+}
+
 export interface Line {
   id: string
   points: number[] // [x1, y1, x2, y2, x3, y3, ...] 형식의 좌표 배열

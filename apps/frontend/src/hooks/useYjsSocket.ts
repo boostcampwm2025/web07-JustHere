@@ -11,7 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorInfoWithId,
 } from '@/types/yjs.types'
-import type { PostIt, Line } from '@/types/canvas.types'
+import type { PostIt, Line, PlaceCard } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { socketBaseUrl } from '@/config/socket'
@@ -26,6 +26,7 @@ interface UseYjsSocketOptions {
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
+  const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
 
@@ -53,6 +54,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     // Yjs SharedTypes 생성
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
 
     // Yjs 변경사항을 React state에 반영하는 함수
@@ -68,6 +70,21 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         authorName: yMap.get('authorName') as string,
       }))
       setPostits(items)
+    }
+
+    const syncPlaceCardsToState = () => {
+      const items: PlaceCard[] = yPlaceCards.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        placeId: yMap.get('placeId') as string,
+        name: yMap.get('name') as string,
+        address: yMap.get('address') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        createdAt: yMap.get('createdAt') as string,
+        image: (yMap.get('image') as string | null | undefined) ?? null,
+        category: (yMap.get('category') as string | undefined) ?? '',
+      }))
+      setPlaceCards(items)
     }
 
     const syncLinesToState = () => {
@@ -88,14 +105,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yPostits.observeDeep(syncPostitsToState)
+    yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
 
     // 초기 동기화
     syncPostitsToState()
+    syncPlaceCardsToState()
     syncLinesToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
+      yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
       doc.destroy()
     }
@@ -251,6 +271,24 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [canvasId, updateCursorThrottled, userName],
   )
 
+  // 공통 업데이트 헬퍼 함수
+  const updateItem = useCallback((arrayName: string, id: string, updates: Record<string, unknown>) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
+    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index === -1) return
+
+    doc.transact(() => {
+      const yMap = yArray.get(index)
+      Object.entries(updates).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+    })
+  }, [])
+
   // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
   const sendCursorChat = useCallback(
     (chatActive: boolean, chatMessage?: string) => {
@@ -291,20 +329,44 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
   // 포스트잇 업데이트 함수 (위치, 텍스트 등)
   const updatePostIt = (id: string, updates: Partial<Omit<PostIt, 'id'>>) => {
+    updateItem('postits', id, updates)
+  }
+
+  // 장소 카드 추가 함수
+  const addPlaceCard = (card: PlaceCard) => {
     const doc = docRef.current
     if (!doc) return
 
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const yMap = new Y.Map()
+    yMap.set('id', card.id)
+    yMap.set('placeId', card.placeId)
+    yMap.set('name', card.name)
+    yMap.set('address', card.address)
+    yMap.set('x', card.x)
+    yMap.set('y', card.y)
+    yMap.set('createdAt', card.createdAt)
+    yMap.set('image', card.image ?? null)
+    yMap.set('category', card.category ?? '')
+    yPlaceCards.push([yMap])
+  }
+
+  // 장소 카드 업데이트 함수
+  const updatePlaceCard = (id: string, updates: Partial<Omit<PlaceCard, 'id'>>) => {
+    updateItem('placeCards', id, updates)
+  }
+
+  const removePlaceCard = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
 
     if (index === -1) return
 
-    // Yjs 트랜잭션으로 명시적으로 감싸기
     doc.transact(() => {
-      const yMap = yPostits.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
+      yPlaceCards.delete(index, 1)
     })
   }
 
@@ -328,33 +390,23 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
   // 선 업데이트 함수 (주로 points 배열 업데이트)
   const updateLine = (id: string, updates: Partial<Omit<Line, 'id'>>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    // Yjs 트랜잭션으로 명시적으로 감싸기
-    doc.transact(() => {
-      const yMap = yLines.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    })
+    updateItem('lines', id, updates)
   }
 
   return {
     isConnected,
     cursors,
     postits,
+    placeCards,
     lines,
     socketId,
     updateCursor,
     sendCursorChat,
     addPostIt,
     updatePostIt,
+    addPlaceCard,
+    updatePlaceCard,
+    removePlaceCard,
     addLine,
     updateLine,
   }
