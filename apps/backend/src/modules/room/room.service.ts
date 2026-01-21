@@ -248,6 +248,6 @@ export class RoomService {
     if (!room) {
       throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
     }
-    return this.roomRepository.udpateBySlug(slug, data)
+    return this.roomRepository.updateBySlug(slug, data)
   }
 }
