@@ -24,7 +24,7 @@ export class RoomActivitySchedulerService {
   /**
    * [Scheduler 1] 매 시간 정각에 활동 기록을 DB에 일괄 반영 (Flush)
    */
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_HOUR, { timeZone: 'Asia/Seoul' })
   async flushActivityToDb() {
     if (this.activeRoomIds.size === 0) return
 
@@ -49,7 +49,7 @@ export class RoomActivitySchedulerService {
   /**
    * [Scheduler 2] 매일 새벽 4시 즈음에 유령 방(Ghost Room) 정리
    */
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Cron(CronExpression.EVERY_DAY_AT_4AM, { timeZone: 'Asia/Seoul' })
   async cleanUpGhostRooms() {
     this.logger.log('Starting Ghost Room Cleanup...')
 
