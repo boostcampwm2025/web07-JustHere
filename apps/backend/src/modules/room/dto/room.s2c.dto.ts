@@ -19,6 +19,7 @@ export type RoomJoinedPayload = {
   participants: Participant[]
   categories: Category[]
   ownerId: string
+  place_name: string | null
 }
 
 // [S->C] participant:connected

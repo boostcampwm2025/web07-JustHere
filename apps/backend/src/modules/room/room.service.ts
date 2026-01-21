@@ -39,13 +39,13 @@ export class RoomService {
     // roomId가 UUID인지 slug인지 판별
     let actualRoomId: string
 
-    if (this.isUUID(roomId)) {
-      // UUID면 바로 사용
-      actualRoomId = roomId
-    } else {
-      // slug면 DB에서 UUID 조회
-      const room = await this.roomRepository.findBySlug(roomId)
+    let room: Room | null = null
 
+    if (this.isUUID(roomId)) {
+      actualRoomId = roomId
+      room = await this.roomRepository.findById(roomId)
+    } else {
+      room = await this.roomRepository.findBySlug(roomId)
       if (!room) throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
       actualRoomId = room.id
     }
@@ -73,6 +73,7 @@ export class RoomService {
       participants: allParticipants,
       categories,
       ownerId: this.getOwnerId(actualRoomId),
+      place_name: room?.place_name ?? null,
     }
     client.emit('room:joined', joinedPayload)
 
@@ -248,6 +249,15 @@ export class RoomService {
     if (!room) {
       throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
     }
-    return this.roomRepository.updateBySlug(slug, data)
+    const updatedRoom = await this.roomRepository.updateBySlug(slug, data)
+
+    // 방의 모든 참여자에게 브로드캐스트
+    this.broadcaster.emitToRoom(room.id, 'room:region_updated', {
+      x: data.x,
+      y: data.y,
+      place_name: data.place_name ?? null,
+    })
+
+    return updatedRoom
   }
 }

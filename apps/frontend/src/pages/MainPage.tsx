@@ -11,23 +11,18 @@ import type { PlaceCard } from '@/types/canvas.types'
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
-  const [currentRegion, setCurrentRegion] = useState<string | null>(null)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
   const clearPendingPlaceCard = () => {
     setPendingPlaceCard(null)
-  }
-
-  const hanldeRegionChange = (region: { x: number; y: number; place_name: string }) => {
-    setCurrentRegion(region.place_name)
   }
 
   useEffect(() => {
@@ -87,7 +82,6 @@ function MainPage() {
           roomId={roomId}
           slug={slug}
           currentRegion={currentRegion}
-          onRegionChange={hanldeRegionChange}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}
