@@ -33,9 +33,11 @@ import PencilIcon from '@/assets/icons/pencil.svg?react'
 import PhoneIcon from '@/assets/icons/phone.svg?react'
 import PlusCircleIcon from '@/assets/icons/plus-circle.svg?react'
 import PlusIcon from '@/assets/icons/plus.svg?react'
+import RedoIcon from '@/assets/icons/redo.svg?react'
 import ShareVariantIcon from '@/assets/icons/share-variant.svg?react'
 import SilverwareForkKnifeIcon from '@/assets/icons/silverware-fork-knife.svg?react'
 import StarIcon from '@/assets/icons/star.svg?react'
+import UndoIcon from '@/assets/icons/undo.svg?react'
 import VoteIcon from '@/assets/icons/vote.svg?react'
 
 export {
@@ -69,8 +71,10 @@ export {
   PhoneIcon,
   PlusCircleIcon,
   PlusIcon,
+  RedoIcon,
   ShareVariantIcon,
   SilverwareForkKnifeIcon,
   StarIcon,
+  UndoIcon,
   VoteIcon,
 }
