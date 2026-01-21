@@ -73,12 +73,19 @@ function WhiteboardSection({
       <header className="flex items-end gap-1 px-4 pt-3 bg-slate-100 border-b border-gray-200">
         <nav className="flex items-end gap-1" role="tablist">
           {categories.map(category => (
-            <button
+            <div
               key={category.id}
               role="tab"
               // 활성화 여부를 ID로 비교
               aria-selected={activeCategoryId === category.id}
               onClick={() => setActiveCategoryId(category.id)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setActiveCategoryId(category.id)
+                }
+              }}
+              tabIndex={0}
               className={cn(
                 'flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
                 activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150',
@@ -99,7 +106,7 @@ function WhiteboardSection({
                   <CloseIcon className="size-4" />
                 </Button>
               )}
-            </button>
+            </div>
           ))}
         </nav>
 
