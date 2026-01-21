@@ -1,6 +1,6 @@
-export type Tool = 'cursor' | 'pen' | 'rectangle'
+export type ToolType = 'hand' | 'pencil' | 'postIt'
 
-export type CanvasItemType = 'postit' | 'line'
+export type CanvasItemType = 'postit' | 'line' | 'placeCard'
 
 export interface SelectedItem {
   id: string

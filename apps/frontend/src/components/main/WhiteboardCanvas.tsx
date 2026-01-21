@@ -3,7 +3,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt, Line as LineType, PlaceCard, SelectedItem } from '@/types/canvas.types'
+import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
@@ -12,8 +12,6 @@ import PlaceCardItem from './PlaceCardItem'
 import CursorChatInput from './CursorChatInput'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
-
-type ToolType = 'hand' | 'pencil' | 'postIt'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -124,6 +122,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       if (e.key === 'Backspace' && selectedItem) {
         if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
         if (selectedItem.type === 'line') deleteLine(selectedItem.id)
+        if (selectedItem.type === 'placeCard') removePlaceCard(selectedItem.id)
 
         setSelectedItem(null)
         setContextMenu(null)
@@ -131,11 +130,11 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItem, deletePostIt, deleteLine])
+  }, [selectedItem, deletePostIt, deleteLine, removePlaceCard])
 
   // 객체 선택 핸들러 (좌클릭/우클릭 공통)
   const handleObjectSelect = useCallback(
-    (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
+    (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
       // 장소 카드 배치 중에는 객체 선택/이벤트 차단하지 않음
       if (pendingPlaceCard) return
 
@@ -182,6 +181,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (selectedItem) {
       if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
       if (selectedItem.type === 'line') deleteLine(selectedItem.id)
+      if (selectedItem.type === 'placeCard') removePlaceCard(selectedItem.id)
     }
     setSelectedItem(null)
     setContextMenu(null)
@@ -673,12 +673,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               key={card.id}
               card={card}
               draggable={activeTool === 'hand' && !pendingPlaceCard}
+              isSelected={selectedItem?.id === card.id && selectedItem?.type === 'placeCard'}
               onDragEnd={(x, y) => {
                 updatePlaceCard(card.id, { x, y })
               }}
               onRemove={() => {
                 removePlaceCard(card.id)
               }}
+              onClick={e => handleObjectSelect(card.id, 'placeCard', e)}
+              onContextMenu={e => handleObjectSelect(card.id, 'placeCard', e)}
             />
           ))}
 
