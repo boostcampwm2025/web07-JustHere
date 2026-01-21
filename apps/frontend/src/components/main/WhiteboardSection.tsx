@@ -70,7 +70,7 @@ function WhiteboardSection({
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
       {/* Tab Header */}
-      <header className="flex items-end gap-1 px-4 pt-3 bg-slate-100 border-b border-gray-200">
+      <header className="flex items-end px-4 pt-3 bg-slate-100 border-b border-gray-200 overflow-x-auto">
         <nav className="flex items-end gap-1" role="tablist">
           {categories.map(category => (
             <div
@@ -87,7 +87,7 @@ function WhiteboardSection({
               }}
               tabIndex={0}
               className={cn(
-                'flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
+                'min-w-fit flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
                 activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150',
               )}
             >
@@ -108,18 +108,17 @@ function WhiteboardSection({
               )}
             </div>
           ))}
-        </nav>
 
-        {/* Add Tab Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full hover:bg-slate-200 transition-colors mb-1"
-          aria-label="새 탭 추가"
-          onClick={() => setIsAddCategoryModalOpen(true)}
-        >
-          <PlusIcon className="size-5 text-gray-800" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full hover:bg-slate-200 transition-colors mb-1 ml-1 shrink-0"
+            aria-label="새 탭 추가"
+            onClick={() => setIsAddCategoryModalOpen(true)}
+          >
+            <PlusIcon className="size-5 text-gray-800" />
+          </Button>
+        </nav>
 
         {isAddCategoryModalOpen && <AddCategoryModal onClose={() => setIsAddCategoryModalOpen(false)} onComplete={onCreateCategory} />}
         {categoryToDelete && (
