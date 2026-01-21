@@ -104,6 +104,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     sendCursorChat,
     undo,
     redo,
+    stopCapturing,
     addPostIt,
     updatePostIt,
     deletePostIt,
@@ -380,6 +381,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 펜 드로잉 시작
     if (activeTool === 'pencil') {
+      stopCapturing()
       setIsDrawing(true)
       const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
@@ -403,6 +405,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (activeTool === 'pencil' && isDrawing) {
       setIsDrawing(false)
       setCurrentLineId(null)
+      stopCapturing()
     }
   }
 
@@ -677,6 +680,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               postIt={postIt}
               draggable={activeTool === 'hand' && !pendingPlaceCard}
               isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
+              onEditStart={stopCapturing}
+              onEditEnd={stopCapturing}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
               }}
