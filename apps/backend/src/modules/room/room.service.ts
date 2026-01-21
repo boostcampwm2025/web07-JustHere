@@ -88,28 +88,9 @@ export class RoomService {
   }
 
   /**
-   * 클라이언트가 명시적으로 방을 나갈 때 호출
-   * 세션에서 roomId를 조회하여 처리
-   */
-  async leaveRoomBySession(client: Socket) {
-    const session = this.users.getSession(client.id)
-    if (!session) return
-
-    await this.leaveRoom(client)
-  }
-
-  /**
-   * 소켓 연결이 끊어졌을 때 자동으로 호출
-   * 세션 정보를 기반으로 방에서 나가고 세션 삭제
-   */
-  async leaveByDisconnect(client: Socket) {
-    await this.leaveRoom(client)
-  }
-
-  /**
    * 소켓을 방에서 나가고 세션 삭제
    */
-  private async leaveRoom(client: Socket) {
+  async leaveRoom(client: Socket) {
     const session = this.users.getSession(client.id)
     if (!session) return
 
@@ -195,15 +176,7 @@ export class RoomService {
   /**
    * 방의 전체 참여자 목록 조회
    */
-  private getAllParticipants(roomId: string): Participant[] {
-    const sessions = this.users.getSessionsByRoom(roomId)
-    return sessions.map(session => this.sessionToParticipant(session))
-  }
-
-  /**
-   * 방의 모든 유저 조회
-   */
-  getUsersByRoom(roomId: string): Participant[] {
+  getAllParticipants(roomId: string): Participant[] {
     const sessions = this.users.getSessionsByRoom(roomId)
     return sessions.map(session => this.sessionToParticipant(session))
   }
