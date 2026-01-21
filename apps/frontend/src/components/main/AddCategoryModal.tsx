@@ -31,7 +31,7 @@ export default function AddCategoryModal({ onClose, onComplete }: AddCategoryMod
   }
 
   const onSelectCategory = () => {
-    const categoryToSubmit = customCategory ? customCategory.trim() : selectedCategory
+    const categoryToSubmit = selectedCategory === '직접 입력' ? customCategory.trim() : selectedCategory
     if (categoryToSubmit && onComplete) {
       onComplete(categoryToSubmit)
     }
@@ -48,7 +48,7 @@ export default function AddCategoryModal({ onClose, onComplete }: AddCategoryMod
   return (
     <div className="fixed inset-0 z-60">
       <div className="fixed inset-0 bg-gray-500/50" onClick={onClickClose} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl w-full bg-white z-40 shadow-xl rounded-3xl border border-gray-100">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl w-full bg-white z-70 shadow-xl rounded-3xl border border-gray-100">
         <div className="flex flex-col gap-6 p-6">
           <div className="flex justify-between items-center">
             <div>
