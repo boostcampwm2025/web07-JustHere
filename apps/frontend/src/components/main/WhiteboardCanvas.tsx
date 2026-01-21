@@ -173,38 +173,51 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedItems, deletePostIt, deleteLine, removePlaceCard])
 
-  // 객체 선택 핸들러 (좌클릭/우클릭 공통)
-  const handleObjectSelect = useCallback(
+  // 객체 선택 핸들러 (mouseDown에서 호출 - 즉시 선택 전환)
+  const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
-      // 장소 카드 배치 중에는 객체 선택/이벤트 차단하지 않음
+      // 장소 카드 배치 중에는 객체 선택/이벤트 차단
       if (pendingPlaceCard) return
 
-      // 1. Cursor 툴이 아니면 무시
+      // Cursor 툴이 아니면 무시
       if (activeTool !== 'cursor') return
 
-      // 2. 이벤트 버블링 방지 (Stage 클릭 방지)
+      // 이벤트 버블링 방지 (Stage mouseDown 방지)
       e.cancelBubble = true
 
-      // 3. 선택 상태 설정
-      const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
+      // 우클릭이 아닌 경우에만 선택 전환 (우클릭은 기존 선택 유지)
+      if (e.evt.button !== 2) {
+        const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
 
-      // 이미 선택된 객체를 클릭한 경우 (다중 선택 유지)
-      if (isAlreadySelected && selectedItems.length > 1) {
-        // 다중 선택 상태 유지 (변경하지 않음)
-      } else {
-        // 새로운 객체 클릭 시 해당 객체만 선택
-        setSelectedItems([{ id, type }])
+        // 이미 선택된 객체가 아니면 즉시 해당 객체만 선택
+        if (!isAlreadySelected) {
+          setSelectedItems([{ id, type }])
+        }
+        // 이미 선택된 객체면 선택 유지 (드래그 가능하도록)
       }
+    },
+    [activeTool, pendingPlaceCard, selectedItems],
+  )
 
-      // 4. 우클릭인 경우 컨텍스트 메뉴 표시
+  // 객체 클릭 핸들러 (click/contextMenu에서 호출 - 우클릭 메뉴 처리)
+  const handleObjectClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      // 장소 카드 배치 중에는 객체 선택/이벤트 차단
+      if (pendingPlaceCard) return
+
+      // Cursor 툴이 아니면 무시
+      if (activeTool !== 'cursor') return
+
+      // 이벤트 버블링 방지 (Stage 클릭 방지)
+      e.cancelBubble = true
+
+      // 우클릭인 경우 컨텍스트 메뉴 표시
       if (e.evt.button === 2) {
-        e.evt.preventDefault() // 브라우저 기본 우클릭 메뉴 방지
+        e.evt.preventDefault()
         const stage = stageRef.current
         if (stage) {
-          // Stage 내 좌표가 아닌 브라우저 화면 기준(Pointer) 좌표 사용 (HTML Overlay용)
           const pointerPos = stage.getRelativePointerPosition()
           if (pointerPos) {
-            // Stage의 위치와 스케일을 고려하지 않고, 화면 절대 좌표(Overlay)를 위해 Konva 이벤트의 clientX, clientY를 사용하거나 계산 필요.
             setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
           }
         }
@@ -213,7 +226,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         setContextMenu(null)
       }
     },
-    [activeTool, pendingPlaceCard, selectedItems], // selectedItems 의존성 추가
+    [activeTool, pendingPlaceCard],
   )
 
   // 배경 클릭 시 선택 해제
@@ -683,8 +696,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           onDragStart={() => setIsDragging(true)}
           // 드래그 종료 핸들러 연결
           onDragEnd={e => handleLineGroupDragEnd(e, line)}
+          // mouseDown에서 즉시 선택 전환
+          onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
           // 우클릭 메뉴 이벤트 전파
-          onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
+          onContextMenu={e => handleObjectClick(e)}
           // 초기 위치는 항상 (0,0) 절대 좌표 기준
           x={0}
           y={0}
@@ -716,7 +731,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         </Group>
       )
     })
-  }, [selectedLineIds, selectedItems.length, lines, activeTool, handleLineGroupDragEnd, handleObjectSelect])
+  }, [selectedLineIds, selectedItems.length, lines, activeTool, handleLineGroupDragEnd, handleObjectMouseDown, handleObjectClick])
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -852,9 +867,11 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
                 // 드래그 중이면 투명도를 0로 낮춤 (위치 변경 전 드로잉 라인이 보이지 않게)
                 opacity={shouldDim ? 0 : 1}
-                // 라인 선택 (좌클릭/우클릭)
-                onClick={e => handleObjectSelect(line.id, 'line', e)}
-                onContextMenu={e => handleObjectSelect(line.id, 'line', e)}
+                // mouseDown에서 즉시 선택 전환
+                onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
+                // click/contextMenu에서 메뉴 처리
+                onClick={e => handleObjectClick(e)}
+                onContextMenu={e => handleObjectClick(e)}
                 // 라인은 얇아서 클릭이 어려울 수 있으므로 hitStrokeWidth 추가
                 hitStrokeWidth={20}
               />
@@ -881,7 +898,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 onChange={updates => {
                   updatePostIt(postIt.id, updates)
                 }}
-                onSelect={e => handleObjectSelect(postIt.id, 'postit', e)}
+                onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
+                onSelect={e => handleObjectClick(e)}
               />
             )
           })}
@@ -903,8 +921,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 onRemove={() => {
                   removePlaceCard(card.id)
                 }}
-                onClick={e => handleObjectSelect(card.id, 'placeCard', e)}
-                onContextMenu={e => handleObjectSelect(card.id, 'placeCard', e)}
+                onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
+                onClick={e => handleObjectClick(e)}
+                onContextMenu={e => handleObjectClick(e)}
               />
             )
           })}
