@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
@@ -7,6 +7,9 @@ import { cn } from '@/utils/cn'
 import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
+import CursorChatInput from './CursorChatInput'
+import { useParams } from 'react-router-dom'
+import { getOrCreateStoredUser } from '@/utils/userStorage'
 
 type ToolType = 'hand' | 'pencil' | 'postIt'
 
@@ -17,17 +20,29 @@ interface WhiteboardCanvasProps {
 
 function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
+
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('hand')
 
+  // 커서챗 관련 상태
+  const [isChatActive, setIsChatActive] = useState(false)
+  const [isChatFading, setIsChatFading] = useState(false)
+  const [chatMessage, setChatMessage] = useState('')
+  const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
+  const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { slug } = useParams<{ slug: string }>()
+  const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
+  const userName = user ? user.name : 'Unknown User'
+
   const {
     cursors,
-    rectangles,
     postits: postIts,
     lines,
     socketId,
     updateCursor,
-    updateRectangle,
+    sendCursorChat,
     addPostIt,
     updatePostIt,
     addLine,
@@ -35,6 +50,7 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   } = useYjsSocket({
     roomId,
     canvasId,
+    userName,
   })
 
   // 포스트잇 Ghost UI 용 마우스 커서 위치 상태
@@ -43,6 +59,93 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
   // 펜 드로잉 관련 상태
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
+
+  // 커서챗 완전 비활성화 함수 (fade-out 애니메이션 후 호출)
+  const deactivateCursorChat = useCallback(() => {
+    // 타이머 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+      chatInactivityTimerRef.current = null
+    }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    setIsChatFading(false)
+    setIsChatActive(false)
+    setChatMessage('')
+    setChatInputPosition(null)
+    sendCursorChat(false, '')
+  }, [sendCursorChat])
+
+  // fade-out 애니메이션 시작 함수
+  const startFadeOut = useCallback(() => {
+    setIsChatFading(true)
+    // 3초간 fade-out 애니메이션 후 완전 비활성화
+    chatFadeTimerRef.current = setTimeout(() => {
+      deactivateCursorChat()
+    }, 3000)
+  }, [deactivateCursorChat])
+
+  // 커서챗 비활성화 타이머 리셋 (3초 후 fade-out 시작)
+  const resetInactivityTimer = useCallback(() => {
+    // 기존 타이머들 정리
+    if (chatInactivityTimerRef.current) {
+      clearTimeout(chatInactivityTimerRef.current)
+    }
+    if (chatFadeTimerRef.current) {
+      clearTimeout(chatFadeTimerRef.current)
+      chatFadeTimerRef.current = null
+    }
+    // fade-out 중이었다면 즉시 다시 활성화 (opacity 복구)
+    setIsChatFading(false)
+
+    // 3초 후 fade-out 시작
+    chatInactivityTimerRef.current = setTimeout(() => {
+      startFadeOut()
+    }, 3000)
+  }, [startFadeOut])
+
+  // 커서챗 활성화 함수
+  const activateCursorChat = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const pointerPos = stage.getPointerPosition()
+    if (pointerPos) {
+      setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
+    }
+
+    setIsChatActive(true)
+    setChatMessage('')
+    sendCursorChat(true, '')
+
+    // 3초 비활성화 타이머 시작
+    resetInactivityTimer()
+  }, [sendCursorChat, resetInactivityTimer])
+
+  // 키보드 이벤트 핸들러
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 이미 커서챗이 활성화되어 있으면 무시
+      if (isChatActive) return
+
+      // 다른 입력 요소에 포커스가 있으면 무시
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
+      // / 키로 커서챗 활성화
+      if (e.key === '/') {
+        e.preventDefault()
+        activateCursorChat()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isChatActive, activateCursorChat])
 
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
@@ -68,6 +171,14 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
           // 기존 points 배열에 새 좌표 추가
           const newPoints = [...currentLine.points, canvasPos.x, canvasPos.y]
           updateLine(currentLineId, { points: newPoints })
+        }
+      }
+
+      // 커서챗 입력창 위치 업데이트
+      if (isChatActive) {
+        const pointerPos = stage.getPointerPosition()
+        if (pointerPos) {
+          setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
         }
       }
     }
@@ -229,6 +340,22 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
         </div>
       </div>
 
+      {/* 커서챗 입력 UI */}
+      {isChatActive && chatInputPosition && (
+        <CursorChatInput
+          position={chatInputPosition}
+          name={userName}
+          isFading={isChatFading}
+          message={chatMessage}
+          onMessageChange={value => {
+            setChatMessage(value)
+            sendCursorChat(true, value)
+            resetInactivityTimer()
+          }}
+          onEscape={deactivateCursorChat}
+        />
+      )}
+
       <Stage
         ref={stageRef}
         width={window.innerWidth}
@@ -256,28 +383,6 @@ function WhiteboardCanvas({ roomId, canvasId }: WhiteboardCanvasProps) {
               lineCap={line.lineCap}
               lineJoin={line.lineJoin}
               globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
-            />
-          ))}
-
-          {/* 기존 네모 렌더링 (레거시, 삭제 예정) */}
-          {rectangles.map(shape => (
-            <Rect
-              key={shape.id}
-              x={shape.x}
-              y={shape.y}
-              width={shape.width}
-              height={shape.height}
-              fill={shape.fill}
-              shadowBlur={5}
-              cornerRadius={8}
-              // 손 도구일 때만 개별 객체 드래그 가능
-              draggable={activeTool === 'hand'}
-              onDragEnd={e => {
-                updateRectangle(shape.id, {
-                  x: e.target.x(),
-                  y: e.target.y(),
-                })
-              }}
             />
           ))}
 

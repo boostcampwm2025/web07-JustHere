@@ -12,14 +12,16 @@ export class YjsUpdatePayload {
   update!: number[]
 }
 
-export class CursorPosition {
+export class CursorInfo {
   x!: number
   y!: number
-  timestamp?: number // 커서 위치 업데이트 시간 (ms)
+  name!: string
+  chatActive?: boolean
+  chatMessage?: string
 }
 
 export class AwarenessState {
-  cursor?: CursorPosition
+  cursor?: CursorInfo
 }
 
 export class YjsAwarenessPayload {
