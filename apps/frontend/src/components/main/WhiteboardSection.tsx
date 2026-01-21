@@ -19,7 +19,7 @@ interface WhiteboardSectionProps {
 }
 
 function WhiteboardSection({ roomId, onCreateCategory, onDeleteCategory }: WhiteboardSectionProps) {
-  const [isCategoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
 
@@ -98,12 +98,12 @@ function WhiteboardSection({ roomId, onCreateCategory, onDeleteCategory }: White
           size="icon"
           className="rounded-full hover:bg-slate-200 transition-colors mb-1"
           aria-label="새 탭 추가"
-          onClick={() => setCategoryModalOpen(true)}
+          onClick={() => setIsAddCategoryModalOpen(true)}
         >
           <PlusIcon className="size-5 text-gray-800" />
         </Button>
 
-        <AddCategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} onComplete={onCreateCategory} />
+        {isAddCategoryModalOpen && <AddCategoryModal onClose={() => setIsAddCategoryModalOpen(false)} onComplete={onCreateCategory} />}
         {categoryToDelete && (
           <DeleteCategoryModal
             categoryName={categoryToDelete.title}

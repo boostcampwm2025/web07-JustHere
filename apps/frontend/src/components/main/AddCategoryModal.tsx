@@ -11,12 +11,11 @@ const categories = [
 ]
 
 interface AddCategoryModalProps {
-  isOpen: boolean
   onClose: () => void
   onComplete: (category: string) => void
 }
 
-export default function AddCategoryModal({ isOpen, onClose, onComplete }: AddCategoryModalProps) {
+export default function AddCategoryModal({ onClose, onComplete }: AddCategoryModalProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
 
   const handleCategoryClick = (categoryName: string) => {
@@ -36,8 +35,6 @@ export default function AddCategoryModal({ isOpen, onClose, onComplete }: AddCat
     setSelectedCategory(undefined)
     onClose()
   }
-
-  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-60">
