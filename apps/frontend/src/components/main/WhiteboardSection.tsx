@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/common/Button'
 import KakaoMap from '@/components/KakaoMap'
 import WhiteboardCanvas from '@/components/main/WhiteboardCanvas.tsx'
-import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon } from '@/components/Icons'
+import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn.ts'
 import { useRoomCategories } from '@/hooks/room'
-import AddCategoryModal from './AddCategoryModal'
 import type { Category } from '@/types/domain'
+import AddCategoryModal from './AddCategoryModal'
+import DeleteCategoryModal from './DeleteCategoryModal'
 
 // 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
 type ToggleType = 'map' | 'canvas'
@@ -14,10 +15,12 @@ type ToggleType = 'map' | 'canvas'
 interface WhiteboardSectionProps {
   roomId: string
   onCreateCategory: (name: string) => void
+  onDeleteCategory: (categoryId: string) => void
 }
 
-function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps) {
+function WhiteboardSection({ roomId, onCreateCategory, onDeleteCategory }: WhiteboardSectionProps) {
   const [isCategoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
@@ -65,12 +68,26 @@ function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps)
               // 활성화 여부를 ID로 비교
               aria-selected={activeCategoryId === category.id}
               onClick={() => setActiveCategoryId(category.id)}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors ${
-                activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150'
-              }`}
+              className={cn(
+                'flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
+                activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150',
+              )}
             >
               {getIconByType(category.title)}
               <span className="font-bold text-gray-800 text-sm">{category.title}</span>
+              {activeCategoryId === category.id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-disable hover:text-gray rounded-full p-0"
+                  onClick={e => {
+                    e.stopPropagation()
+                    setCategoryToDelete(category)
+                  }}
+                >
+                  <CloseIcon className="size-4" />
+                </Button>
+              )}
             </button>
           ))}
         </nav>
@@ -87,6 +104,13 @@ function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps)
         </Button>
 
         <AddCategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} onComplete={onCreateCategory} />
+        {categoryToDelete && (
+          <DeleteCategoryModal
+            categoryName={categoryToDelete.title}
+            onClose={() => setCategoryToDelete(undefined)}
+            onConfirm={() => onDeleteCategory(categoryToDelete.id)}
+          />
+        )}
       </header>
 
       {/* Whiteboard Canvas */}

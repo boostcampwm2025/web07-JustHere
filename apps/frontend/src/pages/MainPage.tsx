@@ -10,7 +10,7 @@ import { socketBaseUrl } from '@/config/socket'
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory, deleteCategory } = useRoomSocketCache()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
@@ -62,7 +62,7 @@ function MainPage() {
         onTransferOwner={transferOwner}
       />
       <div className="flex flex-1 overflow-hidden">
-        <WhiteboardSection roomId={roomId} onCreateCategory={createCategory} />
+        <WhiteboardSection roomId={roomId} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
         <LocationListSection roomId={roomId} />
       </div>
     </div>
