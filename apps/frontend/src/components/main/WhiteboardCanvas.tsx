@@ -5,7 +5,7 @@ import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
-import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
 import PlaceCardItem from './PlaceCardItem'
@@ -13,7 +13,7 @@ import CursorChatInput from './CursorChatInput'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 
-type ToolType = 'hand' | 'pencil' | 'postIt'
+type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -47,7 +47,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   const stageRef = useRef<Konva.Stage>(null)
 
   // 현재 선택된 도구 상태
-  const [activeTool, setActiveTool] = useState<ToolType>('hand')
+  const [activeTool, setActiveTool] = useState<ToolType>('cursor')
 
   // 선택된 캔버스 UI 객체
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null)
@@ -139,8 +139,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       // 장소 카드 배치 중에는 객체 선택/이벤트 차단하지 않음
       if (pendingPlaceCard) return
 
-      // 1. Hand 툴이 아니면 무시
-      if (activeTool !== 'hand') return
+      // 1. Cursor 툴이 아니면 무시
+      if (activeTool !== 'cursor') return
 
       // 2. 이벤트 버블링 방지 (Stage 클릭 방지)
       e.cancelBubble = true
@@ -356,7 +356,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       return
     }
 
-    // Hand 모드일 때는 Stage 드래그 혹은 객체 선택이므로 패스
+    // Cursor 모드일 때는 객체 선택이므로 패스
+    if (activeTool === 'cursor') return
+
+    // Hand 모드일 때는 Stage 드래그이므로 패스
     if (activeTool === 'hand') return
 
     // 포스트잇 추가 (커서를 중앙으로)
@@ -478,7 +481,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     return (
       <Group
         key={`focus-group-${line.id}`}
-        draggable={activeTool === 'hand'}
+        draggable={activeTool === 'cursor'}
         // 드래그 시작 시 원본 숨김 처리 시작
         onDragStart={() => setIsDragging(true)}
         // 드래그 종료 핸들러 연결
@@ -525,6 +528,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       return 'cursor-crosshair'
     }
     switch (activeTool) {
+      case 'cursor':
+        return 'cursor-default'
       case 'hand':
         return 'cursor-grab active:cursor-grabbing'
       case 'pencil':
@@ -551,6 +556,17 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       {/* 상단 중앙 도구 토글 UI */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
         <div className="flex items-center p-1.5 bg-white rounded-full shadow-xl border border-gray-200 gap-1">
+          <button
+            onClick={() => {
+              setActiveTool('cursor')
+              setCursorPos(null)
+            }}
+            className={getButtonStyle('cursor')}
+            title="선택"
+          >
+            <CursorIcon className="w-5 h-5" />
+          </button>
+
           <button
             onClick={() => {
               setActiveTool('hand')
@@ -655,7 +671,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             <EditablePostIt
               key={postIt.id}
               postIt={postIt}
-              draggable={activeTool === 'hand' && !pendingPlaceCard}
+              draggable={activeTool === 'cursor' && !pendingPlaceCard}
               isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
@@ -672,7 +688,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             <PlaceCardItem
               key={card.id}
               card={card}
-              draggable={activeTool === 'hand' && !pendingPlaceCard}
+              draggable={activeTool === 'cursor' && !pendingPlaceCard}
               onDragEnd={(x, y) => {
                 updatePlaceCard(card.id, { x, y })
               }}
