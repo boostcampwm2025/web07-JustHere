@@ -1,4 +1,3 @@
-
 import CanvasContextMenu from '@/components/main/CanvasContextMenu'
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
@@ -65,10 +64,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
   // 현재 드래그 중인지 여부
   const [isDragging, setIsDragging] = useState(false)
-  
+
   // 배치 중 마우스 따라다니는 카드 위치
   const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
-  
+
   useEffect(() => {
     if (!pendingPlaceCard) return
 
@@ -80,7 +79,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [pendingPlaceCard, onPlaceCardCanceled])
-  
+
   // 커서챗 관련 상태
   const [isChatActive, setIsChatActive] = useState(false)
   const [isChatFading, setIsChatFading] = useState(false)
@@ -137,6 +136,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   // 객체 선택 핸들러 (좌클릭/우클릭 공통)
   const handleObjectSelect = useCallback(
     (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
+      // 장소 카드 배치 중에는 객체 선택/이벤트 차단하지 않음
+      if (pendingPlaceCard) return
+
       // 1. Hand 툴이 아니면 무시
       if (activeTool !== 'hand') return
 
@@ -163,7 +165,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         setContextMenu(null)
       }
     },
-    [activeTool], // activeTool이 바뀔 때만 함수 재생성
+    [activeTool, pendingPlaceCard], // activeTool 또는 배치 상태가 바뀔 때만 함수 재생성
   )
 
   // 배경 클릭 시 선택 해제
@@ -330,9 +332,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
   // 마우스 다운 이벤트 (드로잉 시작, 포스트잇 추가, 장소 카드 추가)
   const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // Hand 모드일 때는 Stage 드래그 혹은 객체 선택이므로 패스
-    if (activeTool === 'hand') return
-
     // 우클릭은 드로잉/생성 로직 실행 안 함
     const isMouseEvent = e.evt.type.startsWith('mouse')
     if (isMouseEvent) {
@@ -356,6 +355,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       onPlaceCardPlaced()
       return
     }
+
+    // Hand 모드일 때는 Stage 드래그 혹은 객체 선택이므로 패스
+    if (activeTool === 'hand') return
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
@@ -579,7 +581,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
       {/* 우클릭 Context Menu (Popover) */}
       {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteFromMenu} onClose={() => setContextMenu(null)} />}
-      
+
       {/* 커서챗 입력 UI */}
       {isChatActive && chatInputPosition && (
         <CursorChatInput
@@ -653,7 +655,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             <EditablePostIt
               key={postIt.id}
               postIt={postIt}
-              draggable={activeTool === 'hand'}
+              draggable={activeTool === 'hand' && !pendingPlaceCard}
               isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
@@ -670,7 +672,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             <PlaceCardItem
               key={card.id}
               card={card}
-              draggable={activeTool === 'hand'}
+              draggable={activeTool === 'hand' && !pendingPlaceCard}
               onDragEnd={(x, y) => {
                 updatePlaceCard(card.id, { x, y })
               }}
