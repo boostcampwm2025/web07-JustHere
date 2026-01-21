@@ -8,6 +8,7 @@ import { useRoomCategories } from '@/hooks/room'
 import type { Category } from '@/types/domain'
 import AddCategoryModal from './AddCategoryModal'
 import DeleteCategoryModal from './DeleteCategoryModal'
+import type { PlaceCard } from '@/types/canvas.types'
 
 // 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
 type ToggleType = 'map' | 'canvas'
@@ -16,9 +17,19 @@ interface WhiteboardSectionProps {
   roomId: string
   onCreateCategory: (name: string) => void
   onDeleteCategory: (categoryId: string) => void
+  pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
+  onPlaceCardPlaced: () => void
+  onPlaceCardCanceled: () => void
 }
 
-function WhiteboardSection({ roomId, onCreateCategory, onDeleteCategory }: WhiteboardSectionProps) {
+function WhiteboardSection({
+  roomId,
+  onCreateCategory,
+  onDeleteCategory,
+  pendingPlaceCard,
+  onPlaceCardPlaced,
+  onPlaceCardCanceled,
+}: WhiteboardSectionProps) {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
@@ -117,7 +128,13 @@ function WhiteboardSection({ roomId, onCreateCategory, onDeleteCategory }: White
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
           activeCategoryId ? (
-            <WhiteboardCanvas roomId={roomId} canvasId={activeCategoryId} />
+            <WhiteboardCanvas
+              roomId={roomId}
+              canvasId={activeCategoryId}
+              pendingPlaceCard={pendingPlaceCard}
+              onPlaceCardPlaced={onPlaceCardPlaced}
+              onPlaceCardCanceled={onPlaceCardCanceled}
+            />
           ) : (
             <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
               <div className="text-center">
