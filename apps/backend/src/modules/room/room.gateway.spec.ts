@@ -9,9 +9,8 @@ describe('RoomGateway', () => {
   let gateway: RoomGateway
 
   const roomService = {
-    leaveByDisconnect: jest.fn(),
+    leaveRoom: jest.fn(),
     joinRoom: jest.fn(),
-    leaveRoomBySession: jest.fn(),
     updateParticipantName: jest.fn(),
     transferOwner: jest.fn(),
   }
@@ -47,8 +46,8 @@ describe('RoomGateway', () => {
 
       await gateway.handleDisconnect(client)
 
-      expect(roomService.leaveByDisconnect).toHaveBeenCalledTimes(1)
-      expect(roomService.leaveByDisconnect).toHaveBeenCalledWith(client)
+      expect(roomService.leaveRoom).toHaveBeenCalledTimes(1)
+      expect(roomService.leaveRoom).toHaveBeenCalledWith(client)
     })
   })
 
@@ -73,8 +72,8 @@ describe('RoomGateway', () => {
 
       await gateway.onRoomLeave(client)
 
-      expect(roomService.leaveRoomBySession).toHaveBeenCalledTimes(1)
-      expect(roomService.leaveRoomBySession).toHaveBeenCalledWith(client)
+      expect(roomService.leaveRoom).toHaveBeenCalledTimes(1)
+      expect(roomService.leaveRoom).toHaveBeenCalledWith(client)
     })
   })
 
