@@ -97,6 +97,7 @@ function WhiteboardSection({
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="카테고리 삭제"
                   className="text-gray-disable hover:text-gray rounded-full p-0"
                   onClick={e => {
                     e.stopPropagation()
