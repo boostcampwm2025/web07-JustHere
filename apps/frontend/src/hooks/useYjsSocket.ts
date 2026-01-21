@@ -11,7 +11,7 @@ import type {
   YjsAwarenessBroadcast,
   CursorInfoWithId,
 } from '@/types/yjs.types'
-import type { Rectangle, PostIt, Line, PlaceCard } from '@/types/canvas.types'
+import type { PostIt, Line, PlaceCard } from '@/types/canvas.types'
 import { throttle } from '@/utils/throttle'
 import { useSocketClient } from '@/hooks/useSocketClient'
 import { socketBaseUrl } from '@/config/socket'
@@ -82,6 +82,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         y: yMap.get('y') as number,
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
+        category: (yMap.get('category') as string | undefined) ?? '',
       }))
       setPlaceCards(items)
     }
@@ -270,22 +271,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [canvasId, updateCursorThrottled, userName],
   )
 
-  // 네모 추가 함수
-  const addRectangle = (rect: Rectangle) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yRectangles = doc.getArray<Y.Map<unknown>>('rectangles')
-    const yMap = new Y.Map()
-    yMap.set('id', rect.id)
-    yMap.set('x', rect.x)
-    yMap.set('y', rect.y)
-    yMap.set('width', rect.width)
-    yMap.set('height', rect.height)
-    yMap.set('fill', rect.fill)
-    yRectangles.push([yMap])
-  }
-
   // 공통 업데이트 헬퍼 함수
   const updateItem = useCallback((arrayName: string, id: string, updates: Record<string, unknown>) => {
     const doc = docRef.current
@@ -304,10 +289,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     })
   }, [])
 
-  // 네모 위치 업데이트 함수
-  const updateRectangle = (id: string, updates: Partial<Omit<Rectangle, 'id'>>) => {
-    updateItem('rectangles', id, updates)
-  }
   // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
   const sendCursorChat = useCallback(
     (chatActive: boolean, chatMessage?: string) => {
@@ -366,6 +347,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('y', card.y)
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
+    yMap.set('category', card.category ?? '')
     yPlaceCards.push([yMap])
   }
 
