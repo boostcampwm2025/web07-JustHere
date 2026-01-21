@@ -15,9 +15,9 @@ export function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-80 flex flex-col gap-2">
+    <div className="fixed top-32 left-1/2 -translate-x-1/2 z-80 flex flex-col gap-2">
       {toasts.map(toast => (
-        <div
+        <button
           key={toast.id}
           className={cn(
             'bg-white px-4 flex items-center gap-2 py-3 rounded-lg shadow-lg cursor-pointer',
@@ -28,7 +28,7 @@ export function ToastContainer() {
         >
           <AlertCircleIcon className={cn('size-6', toastTypeStyles[toast.type])} />
           <p className="text-base font-semibold">{toast.message}</p>
-        </div>
+        </button>
       ))}
     </div>
   )
