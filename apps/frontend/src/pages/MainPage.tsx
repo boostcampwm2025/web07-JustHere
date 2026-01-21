@@ -79,6 +79,7 @@ function MainPage() {
         />
         <LocationListSection
           roomId={roomId}
+          slug={slug}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}

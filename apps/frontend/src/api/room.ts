@@ -28,7 +28,7 @@ export const createRoom = async (payload: RoomRegionPayload): Promise<RoomData> 
   return response.data.data
 }
 
-export const updateRoom = async (payload: RoomRegionPayload): Promise<RoomData> => {
-  const response = await axios.patch<RoomResponse>('/api/room/${slug}', payload)
+export const updateRoom = async (slug: string, payload: RoomRegionPayload): Promise<RoomData> => {
+  const response = await axios.patch<RoomResponse>(`/api/room/${slug}`, payload)
   return response.data.data
 }
