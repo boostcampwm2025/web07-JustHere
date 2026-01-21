@@ -4,12 +4,11 @@ import type { KakaoPlace } from '@/types/kakao'
 
 type PlaceDetailModalProps = {
   place: KakaoPlace | null
-  isOpen: boolean
   onClose: () => void
 }
 
-export default function PlaceDetailModal({ place, isOpen, onClose }: PlaceDetailModalProps) {
-  if (!place || !isOpen) return null
+export default function PlaceDetailModal({ place, onClose }: PlaceDetailModalProps) {
+  if (!place) return null
 
   const placeUrl = `https://place.map.kakao.com/${place.id}`
 
