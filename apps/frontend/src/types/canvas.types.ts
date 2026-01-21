@@ -1,5 +1,3 @@
-export type Tool = 'cursor' | 'pen'
-
 export interface PostIt {
   id: string
   x: number
