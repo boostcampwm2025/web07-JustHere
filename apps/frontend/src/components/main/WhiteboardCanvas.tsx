@@ -366,6 +366,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
+      stopCapturing()
       const newPostIt: PostIt = {
         id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
