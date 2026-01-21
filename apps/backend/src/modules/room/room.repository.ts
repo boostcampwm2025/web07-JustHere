@@ -57,4 +57,11 @@ export class RoomRepository {
       where: { id },
     })
   }
+
+  async udpateBySlug(slug: string, data: { x: number; y: number; place_name?: string }) {
+    return this.prisma.room.update({
+      where: { slug },
+      data,
+    })
+  }
 }

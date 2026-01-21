@@ -242,4 +242,12 @@ export class RoomService {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     return uuidRegex.test(str)
   }
+
+  async updateRoom(slug: string, data: { x: number; y: number; place_name?: string }) {
+    const room = await this.roomRepository.findBySlug(slug)
+    if (!room) {
+      throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
+    }
+    return this.roomRepository.udpateBySlug(slug, data)
+  }
 }
