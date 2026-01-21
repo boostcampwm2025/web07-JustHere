@@ -102,6 +102,12 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   // 현재 드래그 중인지 여부 (단일 라인 드래그용)
   const [isDragging, setIsDragging] = useState(false)
 
+  // 스페이스바를 누르고 있는지 여부 (일시적 hand 모드)
+  const [isSpacePressed, setIsSpacePressed] = useState(false)
+
+  // 스페이스바가 눌려있으면 hand 모드, 아니면 현재 선택된 도구
+  const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
+
   // 배치 중 마우스 따라다니는 카드 위치
   const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
 
@@ -180,7 +186,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       if (pendingPlaceCard) return
 
       // Cursor 툴이 아니면 무시
-      if (activeTool !== 'cursor') return
+      if (effectiveTool !== 'cursor') return
 
       // 이벤트 버블링 방지 (Stage mouseDown 방지)
       e.cancelBubble = true
@@ -191,7 +197,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         setSelectedItems([{ id, type }])
       }
     },
-    [activeTool, pendingPlaceCard, selectedItems],
+    [effectiveTool, pendingPlaceCard, selectedItems],
   )
 
   // 객체 클릭 핸들러 (click/contextMenu에서 호출 - 우클릭 메뉴 처리)
@@ -201,7 +207,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       if (pendingPlaceCard) return
 
       // Cursor 툴이 아니면 무시
-      if (activeTool !== 'cursor') return
+      if (effectiveTool !== 'cursor') return
 
       // 이벤트 버블링 방지 (Stage 클릭 방지)
       e.cancelBubble = true
@@ -221,7 +227,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         setContextMenu(null)
       }
     },
-    [activeTool, pendingPlaceCard],
+    [effectiveTool, pendingPlaceCard],
   )
 
   // 배경 클릭 시 선택 해제
@@ -331,6 +337,37 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isChatActive, activateCursorChat])
 
+  // 스페이스바 단축키로 일시적 hand 모드 전환
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 다른 입력 요소에 포커스가 있으면 무시
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
+      // 스페이스바 누르면 일시적 hand 모드
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        setIsSpacePressed(true)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // 스페이스바 떼면 원래 도구로 복귀
+      if (e.code === 'Space') {
+        setIsSpacePressed(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
+
   // 마우스 이동 시 커서 위치 업데이트
   const handleMouseMove = () => {
     const stage = stageRef.current
@@ -343,7 +380,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       updateCursor(canvasPos.x, canvasPos.y)
 
       // 포스트잇 고스트 UI 업데이트 (캔버스 좌표)
-      if (activeTool === 'postIt' && !pendingPlaceCard) {
+      if (effectiveTool === 'postIt' && !pendingPlaceCard) {
         setCursorPos(canvasPos)
       }
 
@@ -353,7 +390,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
       // 드래그 선택 중이면 선택 영역 업데이트
       // 함수형 업데이트를 사용하여 stale closure 문제 방지
-      if (activeTool === 'cursor' && isSelecting) {
+      if (effectiveTool === 'cursor' && isSelecting) {
         setSelectionBox(prev => {
           if (!prev) return null
           return {
@@ -365,7 +402,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       }
 
       // 펜 드로잉 중이면 포인트 추가
-      if (activeTool === 'pencil' && isDrawing && currentLineId) {
+      if (effectiveTool === 'pencil' && isDrawing && currentLineId) {
         // 현재 그리고 있는 선 찾기
         const currentLine = lines.find(line => line.id === currentLineId)
         if (currentLine) {
@@ -387,7 +424,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
   // 마우스 나갈 때 포스트잇 고스트 제거 및 드로잉 종료
   const handleMouseLeave = () => {
-    if (activeTool === 'postIt') {
+    if (effectiveTool === 'postIt') {
       setCursorPos(null)
     }
     if (pendingPlaceCard) {
@@ -427,7 +464,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
 
     // Cursor 모드일 때 Stage 빈 공간 클릭 시 드래그 선택 시작
-    if (activeTool === 'cursor') {
+    if (effectiveTool === 'cursor') {
       // Stage 자체를 클릭했을 때만 (객체 클릭은 handleObjectSelect에서 처리)
       if (e.target === e.target.getStage()) {
         setIsSelecting(true)
@@ -443,10 +480,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
 
     // Hand 모드일 때는 Stage 드래그이므로 패스
-    if (activeTool === 'hand') return
+    if (effectiveTool === 'hand') return
 
     // 포스트잇 추가 (커서를 중앙으로)
-    if (activeTool === 'postIt') {
+    if (effectiveTool === 'postIt') {
       const newPostIt: PostIt = {
         id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
@@ -461,7 +498,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
 
     // 펜 드로잉 시작
-    if (activeTool === 'pencil') {
+    if (effectiveTool === 'pencil') {
       setIsDrawing(true)
       const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
@@ -483,14 +520,14 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   // 마우스 업 이벤트 (드로잉 종료, 드래그 선택 완료)
   const handleMouseUp = () => {
     // 펜 드로잉 종료
-    if (activeTool === 'pencil' && isDrawing) {
+    if (effectiveTool === 'pencil' && isDrawing) {
       setIsDrawing(false)
       setCurrentLineId(null)
     }
 
     // 드래그 선택 종료 및 충돌 감지
     // 함수형 업데이트를 사용하여 최신 selectionBox 값으로 충돌 감지
-    if (activeTool === 'cursor' && isSelecting) {
+    if (effectiveTool === 'cursor' && isSelecting) {
       setSelectionBox(currentSelectionBox => {
         if (!currentSelectionBox) return null
 
@@ -674,7 +711,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (selectedLineIds.length === 0) return null
 
     // 다중 선택 시에는 개별 라인 드래그 비활성화 (그룹 드래그 사용)
-    const canDragIndividually = activeTool === 'cursor' && selectedItems.length === 1
+    const canDragIndividually = effectiveTool === 'cursor' && selectedItems.length === 1
 
     return selectedLineIds.map(lineId => {
       const line = lines.find(l => l.id === lineId)
@@ -726,16 +763,17 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         </Group>
       )
     })
-  }, [selectedLineIds, selectedItems.length, lines, activeTool, handleLineGroupDragEnd, handleObjectMouseDown, handleObjectClick])
+  }, [selectedLineIds, selectedItems.length, lines, effectiveTool, handleLineGroupDragEnd, handleObjectMouseDown, handleObjectClick])
 
   /**
    * 도구에 따른 커서 스타일 반환
+   * effectiveTool을 사용하여 스페이스바 누르고 있을 때 hand 커서 표시
    */
   const getCursorStyle = () => {
     if (pendingPlaceCard) {
       return 'cursor-crosshair'
     }
-    switch (activeTool) {
+    switch (effectiveTool) {
       case 'cursor':
         return 'cursor-default'
       case 'hand':
@@ -752,7 +790,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   const getButtonStyle = (tool: ToolType) => {
     return cn(
       'p-2.5 rounded-full transition-all duration-200',
-      activeTool === tool ? 'text-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900',
+      effectiveTool === tool ? 'text-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900',
     )
   }
 
@@ -826,8 +864,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         ref={stageRef}
         width={window.innerWidth}
         height={window.innerHeight}
-        // 손 도구일 때만 캔버스 전체 드래그(Pan) 가능
-        draggable={!pendingPlaceCard && activeTool === 'hand'}
+        // 손 도구일 때 또는 스페이스바 누르고 있을 때 캔버스 전체 드래그(Pan) 가능
+        draggable={!pendingPlaceCard && effectiveTool === 'hand'}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -879,7 +917,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           {/* 포스트잇 렌더링 */}
           {postIts.map(postIt => {
             const isSelected = selectedItems.some(item => item.id === postIt.id && item.type === 'postit')
-            const canDrag = activeTool === 'cursor' && !pendingPlaceCard
+            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
 
             return (
               <EditablePostIt
@@ -902,7 +940,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           {/* 장소 카드 렌더링 */}
           {placeCards.map(card => {
             const isSelected = selectedItems.some(item => item.id === card.id && item.type === 'placeCard')
-            const canDrag = activeTool === 'cursor' && !pendingPlaceCard
+            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
 
             return (
               <PlaceCardItem
@@ -924,7 +962,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           })}
 
           {/* 고스트 포스트잇 (미리보기) */}
-          {activeTool === 'postIt' && !pendingPlaceCard && cursorPos && (
+          {effectiveTool === 'postIt' && !pendingPlaceCard && cursorPos && (
             <Group
               x={cursorPos.x - 75} // 마우스 중앙 정렬 (150 / 2)
               y={cursorPos.y - 75}
@@ -1001,11 +1039,11 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             <Group
               x={0}
               y={0}
-              draggable={activeTool === 'cursor'}
+              draggable={effectiveTool === 'cursor'}
               onDragEnd={handleMultiDragEnd}
               onContextMenu={e => {
                 // 다중 선택 요소에서 우클릭 시 컨텍스트 메뉴 표시
-                if (activeTool !== 'cursor') return
+                if (effectiveTool !== 'cursor') return
                 e.cancelBubble = true
                 e.evt.preventDefault()
                 setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
