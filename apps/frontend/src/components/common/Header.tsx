@@ -7,6 +7,7 @@ import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
 import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 import { getOrCreateStoredUser, updateStoredUserName } from '@/utils/userStorage'
+import { cn } from '@/utils/cn'
 
 interface HeaderProps {
   participants: Participant[]
@@ -56,8 +57,10 @@ export default function Header({ participants, currentUserId, roomLink, onUpdate
                 {combinedParticipants.slice(0, displayCount).map(p => (
                   <div key={p.userId} className="relative w-9 h-9 overflow-visible">
                     <div
-                      className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-black overflow-hidden"
-                      style={{ backgroundColor: getParticipantColor(p.name) }}
+                      className={cn(
+                        'w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden',
+                        getParticipantColor(p.name),
+                      )}
                     >
                       {getParticipantInitial(p.name)}
                     </div>
@@ -76,7 +79,7 @@ export default function Header({ participants, currentUserId, roomLink, onUpdate
               </div>
             )}
 
-            {hasParticipants && <div className="w-[1px] h-6 bg-gray-200" />}
+            {hasParticipants && <div className="w-px h-6 bg-gray-200" />}
           </>
         )}
 
