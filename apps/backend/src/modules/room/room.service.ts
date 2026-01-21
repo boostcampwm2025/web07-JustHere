@@ -1,6 +1,7 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
 import { CategoryService } from '@/modules/category/category.service'
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import { UserSession } from '@/modules/user/user.type'
@@ -25,6 +26,7 @@ export class RoomService {
     private readonly users: UserService,
     private readonly categoryService: CategoryService,
     private readonly broadcaster: RoomBroadcaster,
+    private readonly roomScheduler: RoomActivitySchedulerService,
   ) {}
 
   async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
@@ -35,6 +37,7 @@ export class RoomService {
    * 클라이언트를 방에 참여시킴
    * 이미 다른 방에 참여 중이면 먼저 나간 후 새 방에 참여
    */
+  // TODO: joinRoom 메서드가 갖고 있는 역할이 너무 많음. 분리 필요
   async joinRoom(client: Socket, { roomId, user }: RoomJoinPayload) {
     // roomId가 UUID인지 slug인지 판별
     let actualRoomId: string
@@ -53,6 +56,9 @@ export class RoomService {
     // 이미 다른 방에 참여 중이면 먼저 나가기
     const existing = this.users.getSession(client.id)
     if (existing) await this.leaveRoom(client)
+
+    // 활동 감지 (메모리에 마킹만 함 -> DB 부하 0)
+    this.roomScheduler.markAsActive(actualRoomId)
 
     await client.join(`room:${actualRoomId}`)
 
@@ -90,12 +96,16 @@ export class RoomService {
   /**
    * 소켓을 방에서 나가고 세션 삭제
    */
+  // TODO: leaveRoom 메서드가 갖고 있는 역할이 너무 많음. 분리 필요
   async leaveRoom(client: Socket) {
     const session = this.users.getSession(client.id)
     if (!session) return
 
     const { roomId } = session
     const wasOwner = session.isOwner
+
+    // room에서 나가는 활동 체크
+    this.roomScheduler.markAsActive(roomId)
 
     await client.leave(`room:${roomId}`)
 
