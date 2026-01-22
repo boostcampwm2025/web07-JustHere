@@ -75,7 +75,7 @@ export type CategoryDeletedPayload = {
 export type RoomRegionUpdatedPayload = {
   x: number
   y: number
-  place_name: string
+  place_name: string | null
 }
 
 // 소켓 에러 타입
