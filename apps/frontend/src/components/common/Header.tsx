@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { BellIcon, CogIcon, ShareVariantIcon, StarIcon } from '@/components/Icons'
+import { BellIcon, CogIcon, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/components/Icons'
 import Logo from '@/assets/images/logo.svg?react'
 import RoomInfoModal from '@/components/main/RoomInfoModal'
 import { Button } from '@/components/common/Button'
@@ -22,6 +22,7 @@ interface HeaderProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
+  currentRegion?: string
 }
 
 export default function Header(props: MinimalHeaderProps | HeaderProps) {
@@ -50,7 +51,7 @@ export default function Header(props: MinimalHeaderProps | HeaderProps) {
   return <FullHeader {...props} />
 }
 
-function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner }: HeaderProps) {
+function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner, currentRegion }: HeaderProps) {
   const { slug } = useParams<{ slug: string }>()
   const [userName, setUserName] = useState(() => (slug ? getOrCreateStoredUser(slug).name : ''))
 
@@ -79,6 +80,15 @@ function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwn
       </div>
 
       <div className="flex items-center gap-5">
+        {currentRegion && (
+          <>
+            <div className="flex items-center gap-1.5">
+              <MapMarkerIcon className="w-4 h-4 text-primary" />
+              <span className="text-sm text-gray-700">{currentRegion}</span>
+            </div>
+            <div className="w-px h-6 bg-gray-200" />
+          </>
+        )}
         {hasParticipants && (
           <div className="flex items-center -space-x-2">
             {combinedParticipants.slice(0, displayCount).map(p => (

@@ -11,7 +11,7 @@ import type { PlaceCard } from '@/types/canvas.types'
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory, deleteCategory } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory } = useRoomSocketCache()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
@@ -68,6 +68,7 @@ function MainPage() {
         isOwner={isOwner}
         ownerId={ownerId}
         onTransferOwner={transferOwner}
+        currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
@@ -80,6 +81,8 @@ function MainPage() {
         />
         <LocationListSection
           roomId={roomId}
+          slug={slug}
+          currentRegion={currentRegion}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}

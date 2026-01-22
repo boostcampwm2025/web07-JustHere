@@ -12,6 +12,7 @@ export type RoomJoinedPayload = {
   participants: Participant[]
   categories: Category[]
   ownerId: string
+  place_name?: string
 }
 
 // [S->C] participant:connected
@@ -68,6 +69,13 @@ export type CategoryCreatedPayload = {
 // [S->C] category:deleted
 export type CategoryDeletedPayload = {
   categoryId: string
+}
+
+// [S->C] room:region_updated
+export type RoomRegionUpdatedPayload = {
+  x: number
+  y: number
+  place_name: string | null
 }
 
 // 소켓 에러 타입

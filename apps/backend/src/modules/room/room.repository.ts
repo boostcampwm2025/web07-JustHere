@@ -58,6 +58,12 @@ export class RoomRepository {
     })
   }
 
+  async updateBySlug(slug: string, data: { x: number; y: number; place_name?: string }) {
+    return this.prisma.room.update({
+      where: { slug },
+      data,
+    })
+  }
   // 여러 방의 활동 시간을 한 번에 업데이트 (IN 서브 쿼리)
   async updateManyLastActiveAt(ids: string[], date: Date): Promise<void> {
     await this.prisma.room.updateMany({

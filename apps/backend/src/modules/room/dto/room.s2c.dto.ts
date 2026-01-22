@@ -19,6 +19,7 @@ export type RoomJoinedPayload = {
   participants: Participant[]
   categories: Category[]
   ownerId: string
+  place_name: string | null
 }
 
 // [S->C] participant:connected
@@ -44,4 +45,11 @@ export type ParticipantNameUpdatedPayload = {
 export type RoomOwnerTransferredPayload = {
   previousOwnerId: string
   newOwnerId: string
+}
+
+// [S->C] room:region_updated
+export type RoomRegionUpdatedPayload = {
+  x: number
+  y: number
+  place_name: string | null
 }

@@ -5,9 +5,13 @@ import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 import PlaceDetailModal from './PlaceDetailModal'
+import RegionSelector from './RegionSelector'
 
 interface LocationListSectionProps {
   roomId: string
+  slug: string
+  currentRegion?: string | null
+  onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
@@ -15,7 +19,15 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCancelPlaceCard }: LocationListSectionProps) {
+function LocationListSection({
+  roomId,
+  slug,
+  currentRegion,
+  onRegionChange,
+  pendingPlaceCard,
+  onStartPlaceCard,
+  onCancelPlaceCard,
+}: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
@@ -77,24 +89,30 @@ function LocationListSection({ roomId, pendingPlaceCard, onStartPlaceCard, onCan
   ]
 
   return (
-    <div className="flex flex-col w-96 h-full bg-white border-l border-gray-200">
+    <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200">
       {/* Header Section */}
       <div className="flex flex-col gap-4 p-5 pb-4">
         {/* Tab Buttons */}
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {tabs.map(tab => (
             <button
               type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors ${
-                activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }`}
+              className={cn(
+                'flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors shrink-0',
+                activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200',
+              )}
             >
               {tab.icon}
               <span>{tab.label}</span>
             </button>
           ))}
+
+          {/* Region Selector */}
+          <div className="ml-auto">
+            <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
+          </div>
         </div>
 
         {/* Search Input */}
