@@ -40,6 +40,7 @@ function LocationListSection({
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const isFetchingMoreRef = useRef(false)
+  const requestIdRef = useRef(0)
 
   const fetchSearchResults = useCallback(
     async (nextPage: number, mode: 'replace' | 'append') => {
@@ -52,6 +53,9 @@ function LocationListSection({
         }
         return
       }
+
+      const requestId = requestIdRef.current + 1
+      requestIdRef.current = requestId
 
       if (mode === 'append') {
         setIsFetchingMore(true)
@@ -68,15 +72,18 @@ function LocationListSection({
           page: nextPage,
           size: SEARCH_PAGE_SIZE,
         })
+        if (requestIdRef.current !== requestId) return
         setSearchResults(prev => (mode === 'append' ? [...prev, ...documents] : documents))
         setPage(nextPage)
         setHasMore(!meta.is_end)
       } catch (error) {
         console.error('검색 실패:', error)
       } finally {
-        setIsLoading(false)
-        setIsFetchingMore(false)
-        isFetchingMoreRef.current = false
+        if (requestIdRef.current === requestId) {
+          setIsLoading(false)
+          setIsFetchingMore(false)
+          isFetchingMoreRef.current = false
+        }
       }
     },
     [searchQuery, roomId],
@@ -265,6 +272,10 @@ function LocationListSection({
               )
             })}
             <div ref={loadMoreRef} />
+            {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
+            {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
+              <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
+            )}
           </div>
         )}
       </div>
