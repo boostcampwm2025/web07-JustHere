@@ -39,12 +39,12 @@ function LocationListSection({
 
     setIsLoading(true)
     try {
-      const results = await searchKeyword({
+      const { documents } = await searchKeyword({
         keyword: searchQuery,
         roomId: roomId,
         radius: 2000,
       })
-      setSearchResults(results)
+      setSearchResults(documents)
     } catch (error) {
       console.error('검색 실패:', error)
     } finally {

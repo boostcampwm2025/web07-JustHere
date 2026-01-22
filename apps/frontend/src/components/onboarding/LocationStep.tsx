@@ -38,8 +38,8 @@ function LocationStep({ onNext }: LocationStepProps) {
     }
 
     try {
-      const result = await searchKeyword(trimmedQuery)
-      setSearchResults(result)
+      const { documents } = await searchKeyword(trimmedQuery)
+      setSearchResults(documents)
     } catch (error) {
       console.error('키워드 검색 실패', error)
       setSearchResults([])

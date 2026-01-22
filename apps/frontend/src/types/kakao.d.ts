@@ -51,4 +51,17 @@ export interface KakaoPlace {
   y: string
 }
 
+export interface KakaoSameName {
+  region: string[]
+  keyword: string
+  selected_region: string
+}
+
+export interface KakaoMeta {
+  total_count: number
+  pageable_count: number
+  is_end: boolean
+  same_name: KakaoSameName
+}
+
 export {}

@@ -42,8 +42,8 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
 
     setIsLoading(true)
     try {
-      const places = await searchKeyword({ keyword: keyword.trim() })
-      setResults(places)
+      const { documents } = await searchKeyword({ keyword: keyword.trim() })
+      setResults(documents)
     } catch (error) {
       console.error('지역 검색 실패:', error)
       setResults([])
