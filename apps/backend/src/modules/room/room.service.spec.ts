@@ -88,6 +88,7 @@ describe('RoomService', () => {
           useValue: {
             createRoom: jest.fn(),
             findBySlug: jest.fn(),
+            findById: jest.fn(),
           },
         },
         { provide: UserService, useValue: users },
@@ -268,6 +269,7 @@ describe('RoomService', () => {
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
       categoryService.findByRoomId.mockResolvedValue([])
 
+      jest.spyOn(repository, 'findById').mockResolvedValue({ id: uuidRoomId, place_name: '테스트 지역' } as Room)
       const findBySlugSpy = jest.spyOn(repository, 'findBySlug')
 
       const payload: RoomJoinPayload = {
