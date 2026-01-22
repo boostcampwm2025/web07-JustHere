@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/components/Icons'
 import { searchKeyword } from '@/api/kakao'
 import { cn } from '@/utils/cn'
@@ -38,6 +38,8 @@ function LocationListSection({
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const isFetchingMoreRef = useRef(false)
 
   const fetchSearchResults = useCallback(
     async (nextPage: number, mode: 'replace' | 'append') => {
@@ -53,6 +55,7 @@ function LocationListSection({
 
       if (mode === 'append') {
         setIsFetchingMore(true)
+        isFetchingMoreRef.current = true
       } else {
         setIsLoading(true)
       }
@@ -73,6 +76,7 @@ function LocationListSection({
       } finally {
         setIsLoading(false)
         setIsFetchingMore(false)
+        isFetchingMoreRef.current = false
       }
     },
     [searchQuery, roomId],
@@ -88,6 +92,31 @@ function LocationListSection({
     }
     await fetchSearchResults(1, 'replace')
   }, [fetchSearchResults, isLoading, isFetchingMore, page, hasMore])
+
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || isLoading || isFetchingMoreRef.current) return
+    if (!searchQuery.trim()) return
+    fetchSearchResults(page + 1, 'append')
+  }, [fetchSearchResults, hasMore, isLoading, page, searchQuery])
+
+  useEffect(() => {
+    const target = loadMoreRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore()
+        }
+      },
+      { rootMargin: '120px' },
+    )
+
+    observer.observe(target)
+    return () => {
+      observer.disconnect()
+    }
+  }, [handleLoadMore])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -235,6 +264,7 @@ function LocationListSection({
                 </div>
               )
             })}
+            <div ref={loadMoreRef} />
           </div>
         )}
       </div>
