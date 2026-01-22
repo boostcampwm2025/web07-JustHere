@@ -24,6 +24,10 @@ interface WhiteboardCanvasProps {
 const PLACE_CARD_WIDTH = 240
 const PLACE_CARD_HEIGHT = 180
 
+const MIN_POSTIT_SIZE = 50
+const MIN_PLACE_CARD_WIDTH = 100
+const MIN_PLACE_CARD_HEIGHT = 75
+
 // 드로잉 객체의 Bounding Box 계산 함수
 const getLineBoundingBox = (points: number[]): BoundingBox => {
   if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
@@ -199,8 +203,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       node.scaleY(1)
 
       // 새 크기 계산 (최소 크기 50px)
-      const newWidth = Math.max(50, postIt.width * scaleX)
-      const newHeight = Math.max(50, postIt.height * scaleY)
+      const newWidth = Math.max(MIN_POSTIT_SIZE, postIt.width * scaleX)
+      const newHeight = Math.max(MIN_POSTIT_SIZE, postIt.height * scaleY)
 
       const minScale = Math.min(scaleX, scaleY)
       const newScale = postIt.scale * minScale
@@ -231,8 +235,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       const cardHeight = card.height ?? PLACE_CARD_HEIGHT
 
       // 새 크기 계산 (최소 크기 100px)
-      const newWidth = Math.max(100, cardWidth * scaleX)
-      const newHeight = Math.max(75, cardHeight * scaleY)
+      const newWidth = Math.max(MIN_PLACE_CARD_WIDTH, cardWidth * scaleX)
+      const newHeight = Math.max(MIN_PLACE_CARD_HEIGHT, cardHeight * scaleY)
 
       const minScale = Math.min(scaleX, scaleY)
       const newScale = card.scale * minScale
@@ -1151,7 +1155,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             ref={transformerRef}
             boundBoxFunc={(oldBox, newBox) => {
               // 최소 크기 제한
-              if (newBox.width < 50 || newBox.height < 50) {
+              if (newBox.width < MIN_PLACE_CARD_WIDTH || newBox.height < MIN_PLACE_CARD_HEIGHT) {
                 return oldBox
               }
               return newBox
