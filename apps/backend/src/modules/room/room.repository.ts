@@ -57,4 +57,34 @@ export class RoomRepository {
       where: { id },
     })
   }
+
+  async updateBySlug(slug: string, data: { x: number; y: number; place_name?: string }) {
+    return this.prisma.room.update({
+      where: { slug },
+      data,
+    })
+  }
+  // 여러 방의 활동 시간을 한 번에 업데이트 (IN 서브 쿼리)
+  async updateManyLastActiveAt(ids: string[], date: Date): Promise<void> {
+    await this.prisma.room.updateMany({
+      where: {
+        id: { in: ids },
+      },
+      data: {
+        lastActiveAt: date,
+      },
+    })
+  }
+
+  // 특정 날짜 이전에 활동한 방들을 일괄 삭제
+  async deleteRoomsInactiveSince(thresholdDate: Date): Promise<number> {
+    const result = await this.prisma.room.deleteMany({
+      where: {
+        lastActiveAt: {
+          lt: thresholdDate, // Less Than
+        },
+      },
+    })
+    return result.count
+  }
 }

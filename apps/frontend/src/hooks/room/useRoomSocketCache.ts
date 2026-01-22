@@ -10,6 +10,7 @@ import type {
   ParticipantUpdateNamePayload,
   RoomOwnerTransferredPayload,
   RoomTransferOwnerPayload,
+  RoomRegionUpdatedPayload,
   CategoryDeletedPayload,
   CategoryCreatedPayload,
   CategoryCreatePayload,
@@ -35,6 +36,7 @@ export function useRoomSocketCache() {
 
   const [isReady, setIsReady] = useState(false)
   const [roomId, setRoomId] = useState<string | null>(null)
+  const [currentRegion, setCurrentRegion] = useState<string | null>(null)
   const [error, setError] = useState<Error | null>(null)
 
   const roomIdRef = useRef<string | null>(null)
@@ -60,10 +62,11 @@ export function useRoomSocketCache() {
     const socket = getSocket()
     if (!socket) return
 
-    const onJoined = ({ roomId, participants, categories, ownerId }: RoomJoinedPayload) => {
+    const onJoined = ({ roomId, participants, categories, ownerId, place_name }: RoomJoinedPayload) => {
       roomIdRef.current = roomId
       setRoomId(roomId)
       setIsReady(true)
+      setCurrentRegion(place_name ?? null)
 
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
@@ -117,6 +120,10 @@ export function useRoomSocketCache() {
         if (!prev) return prev
         return { ...prev, ownerId: newOwnerId }
       })
+    }
+
+    const onRegionUpdated = ({ place_name }: RoomRegionUpdatedPayload) => {
+      setCurrentRegion(place_name)
     }
 
     const onCategoryCreated = ({ categoryId, name }: CategoryCreatedPayload) => {
@@ -175,6 +182,7 @@ export function useRoomSocketCache() {
     socket.on('participant:disconnected', onParticipantDisconnected)
     socket.on('participant:name_updated', onParticipantNameUpdated)
     socket.on('room:owner_transferred', onOwnerTransferred)
+    socket.on('room:region_updated', onRegionUpdated)
     socket.on('room:error', onRoomError)
     socket.on('category:created', onCategoryCreated)
     socket.on('category:deleted', onCategoryDeleted)
@@ -188,6 +196,7 @@ export function useRoomSocketCache() {
       socket.off('participant:disconnected', onParticipantDisconnected)
       socket.off('participant:name_updated', onParticipantNameUpdated)
       socket.off('room:owner_transferred', onOwnerTransferred)
+      socket.off('room:region_updated', onRegionUpdated)
       socket.off('room:error', onRoomError)
       socket.off('category:created', onCategoryCreated)
       socket.off('category:deleted', onCategoryDeleted)
@@ -289,7 +298,7 @@ export function useRoomSocketCache() {
     [getSocket],
   )
 
-  return { ready, roomId, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory }
+  return { ready, roomId, currentRegion, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory }
 }
 
 function isHardDisconnect(reason: Socket.DisconnectReason) {

@@ -1,3 +1,4 @@
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Server, Socket } from 'socket.io'
 import { RoomGateway } from './room.gateway'
@@ -9,9 +10,8 @@ describe('RoomGateway', () => {
   let gateway: RoomGateway
 
   const roomService = {
-    leaveByDisconnect: jest.fn(),
+    leaveRoom: jest.fn(),
     joinRoom: jest.fn(),
-    leaveRoomBySession: jest.fn(),
     updateParticipantName: jest.fn(),
     transferOwner: jest.fn(),
   }
@@ -20,11 +20,22 @@ describe('RoomGateway', () => {
     setServer: jest.fn(),
   }
 
+  const roomScheduler = {
+    markAsActive: jest.fn(),
+    flushActivityToDb: jest.fn(),
+    cleanUpGhostRooms: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RoomGateway, { provide: RoomService, useValue: roomService }, { provide: RoomBroadcaster, useValue: broadcaster }],
+      providers: [
+        RoomGateway,
+        { provide: RoomService, useValue: roomService },
+        { provide: RoomBroadcaster, useValue: broadcaster },
+        { provide: RoomActivitySchedulerService, useValue: roomScheduler },
+      ],
     }).compile()
 
     gateway = module.get(RoomGateway)
@@ -47,8 +58,8 @@ describe('RoomGateway', () => {
 
       await gateway.handleDisconnect(client)
 
-      expect(roomService.leaveByDisconnect).toHaveBeenCalledTimes(1)
-      expect(roomService.leaveByDisconnect).toHaveBeenCalledWith(client)
+      expect(roomService.leaveRoom).toHaveBeenCalledTimes(1)
+      expect(roomService.leaveRoom).toHaveBeenCalledWith(client)
     })
   })
 
@@ -73,8 +84,8 @@ describe('RoomGateway', () => {
 
       await gateway.onRoomLeave(client)
 
-      expect(roomService.leaveRoomBySession).toHaveBeenCalledTimes(1)
-      expect(roomService.leaveRoomBySession).toHaveBeenCalledWith(client)
+      expect(roomService.leaveRoom).toHaveBeenCalledTimes(1)
+      expect(roomService.leaveRoom).toHaveBeenCalledWith(client)
     })
   })
 

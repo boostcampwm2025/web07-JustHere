@@ -13,9 +13,11 @@ import { CategoryModule } from '@/modules/category/category.module'
 import { RoomModule } from '@/modules/room/room.module'
 import { YjsModule } from '@/modules/canvas/yjs.module'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
+import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     PrismaModule,
     KakaoModule,
