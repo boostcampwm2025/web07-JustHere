@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/components/Icons'
-import { searchKeyword } from '@/api/kakao'
 import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 import PlaceDetailModal from './PlaceDetailModal'
 import RegionSelector from './RegionSelector'
+import { useLocationSearch } from '@/hooks/useLocationSearch'
 
 interface LocationListSectionProps {
   roomId: string
@@ -19,8 +19,6 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-const SEARCH_PAGE_SIZE = 15
-
 function LocationListSection({
   roomId,
   slug,
@@ -31,99 +29,8 @@ function LocationListSection({
   onCancelPlaceCard,
 }: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
-  const isFetchingMoreRef = useRef(false)
-  const requestIdRef = useRef(0)
-
-  const fetchSearchResults = useCallback(
-    async (nextPage: number, mode: 'replace' | 'append') => {
-      const trimmedQuery = searchQuery.trim()
-      if (!trimmedQuery) {
-        if (mode === 'replace') {
-          setSearchResults([])
-          setPage(1)
-          setHasMore(false)
-        }
-        return
-      }
-
-      const requestId = requestIdRef.current + 1
-      requestIdRef.current = requestId
-
-      if (mode === 'append') {
-        setIsFetchingMore(true)
-        isFetchingMoreRef.current = true
-      } else {
-        setIsLoading(true)
-      }
-
-      try {
-        const { documents, meta } = await searchKeyword({
-          keyword: trimmedQuery,
-          roomId: roomId,
-          radius: 2000,
-          page: nextPage,
-          size: SEARCH_PAGE_SIZE,
-        })
-        if (requestIdRef.current !== requestId) return
-        setSearchResults(prev => (mode === 'append' ? [...prev, ...documents] : documents))
-        setPage(nextPage)
-        setHasMore(!meta.is_end)
-      } catch (error) {
-        console.error('검색 실패:', error)
-      } finally {
-        if (requestIdRef.current === requestId) {
-          setIsLoading(false)
-          setIsFetchingMore(false)
-          isFetchingMoreRef.current = false
-        }
-      }
-    },
-    [searchQuery, roomId],
-  )
-
-  const handleSearch = useCallback(async () => {
-    if (isLoading || isFetchingMore) return
-    if (page !== 1) {
-      setPage(1)
-    }
-    if (hasMore) {
-      setHasMore(false)
-    }
-    await fetchSearchResults(1, 'replace')
-  }, [fetchSearchResults, isLoading, isFetchingMore, page, hasMore])
-
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore || isLoading || isFetchingMoreRef.current) return
-    if (!searchQuery.trim()) return
-    fetchSearchResults(page + 1, 'append')
-  }, [fetchSearchResults, hasMore, isLoading, page, searchQuery])
-
-  useEffect(() => {
-    const target = loadMoreRef.current
-    if (!target) return
-
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0]?.isIntersecting) {
-          handleLoadMore()
-        }
-      },
-      { rootMargin: '120px' },
-    )
-
-    observer.observe(target)
-    return () => {
-      observer.disconnect()
-    }
-  }, [handleLoadMore])
+  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, handleSearch, loadMoreRef } = useLocationSearch({ roomId })
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
