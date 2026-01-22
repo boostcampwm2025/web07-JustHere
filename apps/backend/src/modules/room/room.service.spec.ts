@@ -1,5 +1,6 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Socket } from 'socket.io'
 import type { Category, Room } from '@prisma/client'
@@ -77,6 +78,12 @@ describe('RoomService', () => {
     emitToRoom: jest.fn(),
   }
 
+  const mockRoomScheduler = {
+    markAsActive: jest.fn(),
+    flushActivityToDb: jest.fn(),
+    cleanUpGhostRooms: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
 
@@ -94,6 +101,7 @@ describe('RoomService', () => {
 
         { provide: CategoryService, useValue: categoryService },
         { provide: RoomBroadcaster, useValue: broadcaster },
+        { provide: RoomActivitySchedulerService, useValue: mockRoomScheduler },
       ],
     }).compile()
 
@@ -111,6 +119,7 @@ describe('RoomService', () => {
         place_name: '강남역',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const inputData = {
@@ -137,6 +146,7 @@ describe('RoomService', () => {
         place_name: '',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const inputData = {
@@ -328,7 +338,7 @@ describe('RoomService', () => {
       const client = createMockSocket('socket-1')
       users.getSession.mockReturnValue(null)
 
-      await service.leaveRoomBySession(client)
+      await service.leaveRoom(client)
 
       expect(client.leave).not.toHaveBeenCalled()
       expect(users.removeSession).not.toHaveBeenCalled()
@@ -341,7 +351,7 @@ describe('RoomService', () => {
       const nonOwnerSession = { ...sessionA, isOwner: false }
       users.getSession.mockReturnValue(nonOwnerSession)
 
-      await service.leaveRoomBySession(client)
+      await service.leaveRoom(client)
 
       expect(client.leave).toHaveBeenCalledWith(`room:${roomId}`)
 
@@ -366,7 +376,7 @@ describe('RoomService', () => {
       const nonOwnerSession = { ...sessionA, isOwner: false }
       users.getSession.mockReturnValue(nonOwnerSession)
 
-      await service.leaveByDisconnect(client)
+      await service.leaveRoom(client)
 
       expect(client.leave).toHaveBeenCalledWith(`room:${roomId}`)
       expect(users.removeSession).toHaveBeenCalledWith('socket-1')
@@ -380,11 +390,11 @@ describe('RoomService', () => {
     })
   })
 
-  describe('getUsersByRoom', () => {
+  describe('getAllParticipants', () => {
     it('룸 세션들을 Participant 배열로 매핑해서 반환', () => {
       users.getSessionsByRoom.mockReturnValue([sessionA, sessionB])
 
-      const participants = service.getUsersByRoom(roomId)
+      const participants = service.getAllParticipants(roomId)
 
       expect(participants).toHaveLength(2)
 
@@ -514,7 +524,7 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(ownerSession)
       users.getSessionsByRoom.mockReturnValue([nextSession])
 
-      await service.leaveByDisconnect(client)
+      await service.leaveRoom(client)
 
       // participant:disconnected + room:owner_transferred
       const calls = broadcaster.emitToRoom.mock.calls
@@ -535,7 +545,7 @@ describe('RoomService', () => {
 
       users.getSession.mockReturnValue(memberSession)
 
-      await service.leaveByDisconnect(client)
+      await service.leaveRoom(client)
 
       const calls = broadcaster.emitToRoom.mock.calls
       expect(calls.length).toBe(1)
@@ -551,7 +561,7 @@ describe('RoomService', () => {
       users.getSession.mockReturnValue(ownerSession)
       users.getSessionsByRoom.mockReturnValue([]) // 남은 참여자 없음
 
-      await service.leaveByDisconnect(client)
+      await service.leaveRoom(client)
 
       const calls = broadcaster.emitToRoom.mock.calls
       expect(calls.length).toBe(1) // participant:disconnected만
