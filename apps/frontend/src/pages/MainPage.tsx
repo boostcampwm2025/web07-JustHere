@@ -68,7 +68,7 @@ function MainPage() {
         isOwner={isOwner}
         ownerId={ownerId}
         onTransferOwner={transferOwner}
-        currentRegion={currentRegion}
+        currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
