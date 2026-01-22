@@ -1,5 +1,7 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
 import type { ReactNode } from 'react'
+import PlaceMarker from './main/PlaceMarker'
+import type { KakaoPlace } from '@/types/kakao'
 
 interface KakaoMapProps {
   // 크기 관련 (기본값: 100%)
@@ -21,6 +23,11 @@ interface KakaoMapProps {
 
   // 지도 드래그 가능 여부
   draggable?: boolean
+
+  // 마커 관련
+  markers?: KakaoPlace[]
+  selectedMarkerId?: string
+  onMarkerClick?: (place: KakaoPlace) => void
 }
 
 function KakaoMap({
@@ -32,6 +39,9 @@ function KakaoMap({
   children,
   onLoad,
   draggable = true,
+  markers = [],
+  selectedMarkerId,
+  onMarkerClick,
 }: KakaoMapProps) {
   // 2. 카카오맵 로더
   const [loading, error] = useKakaoLoader({
@@ -63,6 +73,9 @@ function KakaoMap({
   return (
     <Map center={center} style={containerStyle} level={level} className={className} onCreate={onLoad} draggable={draggable}>
       {/* 부모 컴포넌트에서 전달한 마커 등이 여기에 렌더링됨 */}
+      {markers.map(place => (
+        <PlaceMarker key={place.id} place={place} isSelected={place.id === selectedMarkerId} onClick={onMarkerClick} />
+      ))}
       {children}
     </Map>
   )
