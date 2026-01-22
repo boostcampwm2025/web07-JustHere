@@ -91,6 +91,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         y: yMap.get('y') as number,
         width: yMap.get('width') as number,
         height: yMap.get('height') as number,
+        rotation: (yMap.get('rotation') as number | undefined) ?? 0,
         fill: yMap.get('fill') as string,
         text: yMap.get('text') as string,
         authorName: yMap.get('authorName') as string,
@@ -106,6 +107,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         address: yMap.get('address') as string,
         x: yMap.get('x') as number,
         y: yMap.get('y') as number,
+        width: (yMap.get('width') as number | undefined) ?? 240,
+        height: (yMap.get('height') as number | undefined) ?? 180,
+        rotation: (yMap.get('rotation') as number | undefined) ?? 0,
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
         category: (yMap.get('category') as string | undefined) ?? '',
@@ -376,6 +380,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('y', postit.y)
     yMap.set('width', postit.width)
     yMap.set('height', postit.height)
+    yMap.set('rotation', postit.rotation ?? 0)
     yMap.set('fill', postit.fill)
     yMap.set('text', postit.text)
     yMap.set('authorName', postit.authorName)
@@ -402,6 +407,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('address', card.address)
     yMap.set('x', card.x)
     yMap.set('y', card.y)
+    yMap.set('width', card.width ?? 240)
+    yMap.set('height', card.height ?? 180)
+    yMap.set('rotation', card.rotation ?? 0)
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
     yMap.set('category', card.category ?? '')

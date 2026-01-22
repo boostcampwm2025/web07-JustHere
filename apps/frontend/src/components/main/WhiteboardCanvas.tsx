@@ -1,6 +1,6 @@
 import CanvasContextMenu from '@/components/main/CanvasContextMenu'
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
-import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
+import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/types/canvas.types'
@@ -41,23 +41,6 @@ const getLineBoundingBox = (points: number[]): BoundingBox => {
   }
 }
 
-// 여러 BoundingBox를 합쳐서 하나의 통합 BoundingBox 계산
-const getMergedBoundingBox = (boxes: BoundingBox[]): BoundingBox | null => {
-  if (boxes.length === 0) return null
-
-  const minX = Math.min(...boxes.map(b => b.x))
-  const minY = Math.min(...boxes.map(b => b.y))
-  const maxX = Math.max(...boxes.map(b => b.x + b.width))
-  const maxY = Math.max(...boxes.map(b => b.y + b.height))
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  }
-}
-
 // 선택 영역과 Bounding Box의 충돌 감지 함수
 const isBoxIntersecting = (selectionBox: SelectionBox, boundingBox: BoundingBox): boolean => {
   // 선택 영역의 정규화 (start가 end보다 클 수 있으므로)
@@ -78,6 +61,15 @@ const isBoxIntersecting = (selectionBox: SelectionBox, boundingBox: BoundingBox)
 
 function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) {
   const stageRef = useRef<Konva.Stage>(null)
+  const transformerRef = useRef<Konva.Transformer>(null)
+  const shapeRefs = useRef(new Map<string, Konva.Group>())
+
+  // Transformer 드래그 시 Line 동기화를 위한 ref
+  const transformerDragStartPos = useRef<{ x: number; y: number } | null>(null)
+  const linePointsBeforeDrag = useRef<Map<string, number[]>>(new Map())
+
+  // 드래그 중 Line의 임시 위치 오프셋 (로컬 렌더링용, Yjs 업데이트 안 함)
+  const [lineDragOffset, setLineDragOffset] = useState<{ dx: number; dy: number } | null>(null)
 
   // 현재 선택된 도구 상태
   const [activeTool, setActiveTool] = useState<ToolType>('cursor')
@@ -184,7 +176,134 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedItems, deletePostIt, deleteLine, removePlaceCard])
 
+  // Transformer 노드 연결 (선택 변경 시)
+  useEffect(() => {
+    if (!transformerRef.current) return
+
+    // Line은 제외하고 PostIt과 PlaceCard만 Transformer에 연결
+    const selectedNonLineItems = selectedItems.filter(item => item.type !== 'line')
+    const nodes = selectedNonLineItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => node !== null)
+
+    transformerRef.current.nodes(nodes)
+  }, [selectedItems])
+
+  // PostIt Transform 종료 핸들러
+  const handlePostItTransformEnd = useCallback(
+    (postIt: PostIt, e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target as Konva.Group
+      const scaleX = node.scaleX()
+      const scaleY = node.scaleY()
+
+      // 스케일 리셋
+      node.scaleX(1)
+      node.scaleY(1)
+
+      // 새 크기 계산 (최소 크기 50px)
+      const newWidth = Math.max(50, postIt.width * scaleX)
+      const newHeight = Math.max(50, postIt.height * scaleY)
+
+      updatePostIt(postIt.id, {
+        x: node.x(),
+        y: node.y(),
+        width: newWidth,
+        height: newHeight,
+        rotation: node.rotation(),
+      })
+    },
+    [updatePostIt],
+  )
+
+  // PlaceCard Transform 종료 핸들러
+  const handlePlaceCardTransformEnd = useCallback(
+    (card: PlaceCard, e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target as Konva.Group
+      const scaleX = node.scaleX()
+      const scaleY = node.scaleY()
+
+      // 스케일 리셋
+      node.scaleX(1)
+      node.scaleY(1)
+
+      const cardWidth = card.width ?? PLACE_CARD_WIDTH
+      const cardHeight = card.height ?? PLACE_CARD_HEIGHT
+
+      // 새 크기 계산 (최소 크기 100px)
+      const newWidth = Math.max(100, cardWidth * scaleX)
+      const newHeight = Math.max(75, cardHeight * scaleY)
+
+      updatePlaceCard(card.id, {
+        x: node.x(),
+        y: node.y(),
+        width: newWidth,
+        height: newHeight,
+        rotation: node.rotation(),
+      })
+    },
+    [updatePlaceCard],
+  )
+
+  // Transformer 드래그 시작 핸들러 (선택된 Line들의 초기 상태 저장)
+  const handleTransformerDragStart = useCallback(() => {
+    // Transformer의 첫 번째 노드 위치를 시작점으로 저장
+    const nodes = transformerRef.current?.nodes() || []
+    if (nodes.length > 0) {
+      transformerDragStartPos.current = { x: nodes[0].x(), y: nodes[0].y() }
+    }
+
+    // 선택된 Line들의 현재 points 저장
+    const selectedLineItems = selectedItems.filter(item => item.type === 'line')
+    linePointsBeforeDrag.current.clear()
+    selectedLineItems.forEach(item => {
+      const line = lines.find(l => l.id === item.id)
+      if (line) {
+        linePointsBeforeDrag.current.set(item.id, [...line.points])
+      }
+    })
+
+    // 드래그 시작 시 Line 드래그 상태 활성화 (시각적 피드백)
+    if (selectedLineItems.length > 0) {
+      setIsDragging(true)
+    }
+  }, [selectedItems, lines])
+
+  // Transformer 드래그 중 핸들러 (로컬 오프셋만 업데이트, Yjs 업데이트 안 함)
+  const handleTransformerDragMove = useCallback(() => {
+    if (!transformerDragStartPos.current) return
+
+    const nodes = transformerRef.current?.nodes() || []
+    if (nodes.length === 0) return
+
+    // 현재 위치와 시작 위치의 차이 계산
+    const currentPos = { x: nodes[0].x(), y: nodes[0].y() }
+    const dx = currentPos.x - transformerDragStartPos.current.x
+    const dy = currentPos.y - transformerDragStartPos.current.y
+
+    // 로컬 오프셋만 업데이트 (시각적 렌더링용)
+    setLineDragOffset({ dx, dy })
+  }, [])
+
+  // Transformer 드래그 종료 핸들러 (Yjs 한번에 업데이트)
+  const handleTransformerDragEnd = useCallback(() => {
+    // 드래그 종료 시 Line들의 최종 위치를 Yjs에 업데이트
+    if (lineDragOffset && linePointsBeforeDrag.current.size > 0) {
+      const { dx, dy } = lineDragOffset
+      linePointsBeforeDrag.current.forEach((originalPoints, lineId) => {
+        const newPoints = originalPoints.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
+        updateLine(lineId, { points: newPoints })
+      })
+    }
+
+    // 드래그 상태 비활성화
+    setIsDragging(false)
+    setLineDragOffset(null)
+
+    // ref 초기화
+    transformerDragStartPos.current = null
+    linePointsBeforeDrag.current.clear()
+  }, [lineDragOffset, updateLine])
+
   // 객체 선택 핸들러 (mouseDown에서 호출 - 즉시 선택 전환)
+  // Shift/Ctrl/Cmd 키로 다중 선택 지원
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
       // 장소 카드 배치 중에는 객체 선택/이벤트 차단
@@ -196,11 +315,20 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       // 이벤트 버블링 방지 (Stage mouseDown 방지)
       e.cancelBubble = true
 
+      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
-      // 선택되지 않은 요소를 클릭하면 해당 요소만 선택 (기존 선택 해제)
-      if (!isAlreadySelected) {
+
+      if (!metaPressed && !isAlreadySelected) {
+        // Meta 키 없이 선택되지 않은 요소 클릭 → 단일 선택
         setSelectedItems([{ id, type }])
+      } else if (metaPressed && isAlreadySelected) {
+        // Meta 키 + 이미 선택된 요소 클릭 → 선택에서 제거
+        setSelectedItems(prev => prev.filter(item => !(item.id === id && item.type === type)))
+      } else if (metaPressed && !isAlreadySelected) {
+        // Meta 키 + 선택되지 않은 요소 클릭 → 선택에 추가
+        setSelectedItems(prev => [...prev, { id, type }])
       }
+      // 이미 선택된 요소를 Meta 키 없이 클릭 → 그대로 유지 (드래그 준비)
     },
     [effectiveTool, pendingPlaceCard, selectedItems],
   )
@@ -695,85 +823,23 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
   // 선택된 라인 ID 목록
   const selectedLineIds = useMemo(() => selectedItems.filter(item => item.type === 'line').map(item => item.id), [selectedItems])
 
-  // 다중 선택 시 통합 Bounding Box 계산
-  const multiSelectionBoundingBox = useMemo(() => {
-    if (selectedItems.length < 2) return null
-
-    const boxes: BoundingBox[] = []
-
-    selectedItems.forEach(item => {
-      if (item.type === 'postit') {
-        const postIt = postIts.find(p => p.id === item.id)
-        if (postIt) {
-          boxes.push({ x: postIt.x, y: postIt.y, width: postIt.width, height: postIt.height })
-        }
-      } else if (item.type === 'placeCard') {
-        const card = placeCards.find(c => c.id === item.id)
-        if (card) {
-          boxes.push({ x: card.x, y: card.y, width: PLACE_CARD_WIDTH, height: PLACE_CARD_HEIGHT })
-        }
-      } else if (item.type === 'line') {
-        const line = lines.find(l => l.id === item.id)
-        if (line) {
-          boxes.push(getLineBoundingBox(line.points))
-        }
-      }
-    })
-
-    return getMergedBoundingBox(boxes)
-  }, [selectedItems, postIts, placeCards, lines])
-
-  const handleMultiDragEnd = useCallback(
-    (e: Konva.KonvaEventObject<DragEvent>) => {
-      const groupNode = e.target
-      const dx = groupNode.x()
-      const dy = groupNode.y()
-
-      // delta가 0이면 실제 이동이 없으므로 스킵
-      if (dx === 0 && dy === 0) {
-        return
-      }
-
-      // 선택된 모든 객체의 위치를 delta만큼 이동
-      selectedItems.forEach(item => {
-        if (item.type === 'postit') {
-          const postIt = postIts.find(p => p.id === item.id)
-          if (postIt) {
-            updatePostIt(item.id, { x: postIt.x + dx, y: postIt.y + dy })
-          }
-        } else if (item.type === 'placeCard') {
-          const card = placeCards.find(c => c.id === item.id)
-          if (card) {
-            updatePlaceCard(item.id, { x: card.x + dx, y: card.y + dy })
-          }
-        } else if (item.type === 'line') {
-          const line = lines.find(l => l.id === item.id)
-          if (line) {
-            const newPoints = line.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
-            updateLine(item.id, { points: newPoints })
-          }
-        }
-      })
-
-      // Konva 노드 위치 리셋
-      groupNode.position({ x: 0, y: 0 })
-    },
-    [selectedItems, postIts, placeCards, lines, updatePostIt, updatePlaceCard, updateLine],
-  )
-
   // 드로잉 객체에 대한 Focus Box 렌더링 (다중 선택 지원)
   const renderLineFocus = useMemo(() => {
     // 선택된 라인이 없으면 렌더링 X
     if (selectedLineIds.length === 0) return null
 
-    // 다중 선택 시에는 개별 라인 드래그 비활성화 (그룹 드래그 사용)
+    // 다중 선택 시에는 개별 라인 드래그 비활성화 (Transformer 드래그 사용)
     const canDragIndividually = effectiveTool === 'cursor' && selectedItems.length === 1
+    const isMultiDragging = selectedItems.length > 1 && lineDragOffset !== null
 
     return selectedLineIds.map(lineId => {
       const line = lines.find(l => l.id === lineId)
       if (!line) return null
 
-      const box = getLineBoundingBox(line.points)
+      // 다중 선택 드래그 중이면 오프셋 적용한 points 사용
+      const displayPoints = isMultiDragging ? line.points.map((p, i) => (i % 2 === 0 ? p + lineDragOffset.dx : p + lineDragOffset.dy)) : line.points
+
+      const box = getLineBoundingBox(displayPoints)
       const padding = 5
 
       return (
@@ -794,7 +860,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         >
           {/* 드래그 시 시각적으로 따라올 Ghost Line */}
           <Line
-            points={line.points}
+            points={displayPoints}
             stroke={line.stroke}
             strokeWidth={line.strokeWidth}
             tension={line.tension}
@@ -819,7 +885,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         </Group>
       )
     })
-  }, [selectedLineIds, selectedItems.length, lines, effectiveTool, handleLineGroupDragEnd, handleObjectMouseDown, handleObjectClick])
+  }, [selectedLineIds, selectedItems.length, lines, effectiveTool, lineDragOffset, handleLineGroupDragEnd, handleObjectMouseDown, handleObjectClick])
 
   /**
    * 도구에 따른 커서 스타일 반환
@@ -956,9 +1022,10 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         <Layer>
           {/* 펜으로 그린 선 렌더링 */}
           {lines.map(line => {
-            // 현재 라인이 선택되었고, 드래그 중인가?
+            // 현재 라인이 선택되었고, 드래그 중인가? (단일 드래그 또는 다중 선택 드래그)
             const isTargetLine = selectedLineIds.includes(line.id)
-            const shouldDim = isTargetLine && isDragging
+            const isMultiDragging = selectedItems.length > 1 && lineDragOffset !== null
+            const shouldDim = isTargetLine && (isDragging || isMultiDragging)
 
             return (
               <Line
@@ -988,7 +1055,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
           {/* 포스트잇 렌더링 */}
           {postIts.map(postIt => {
-            const isSelected = selectedItems.some(item => item.id === postIt.id && item.type === 'postit')
             const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
 
             return (
@@ -996,7 +1062,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 key={postIt.id}
                 postIt={postIt}
                 draggable={canDrag}
-                isSelected={isSelected}
                 onEditStart={stopCapturing}
                 onEditEnd={stopCapturing}
                 onDragEnd={(x, y) => {
@@ -1007,13 +1072,20 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 }}
                 onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
                 onSelect={e => handleObjectClick(e)}
+                shapeRef={node => {
+                  if (node) {
+                    shapeRefs.current.set(postIt.id, node)
+                  } else {
+                    shapeRefs.current.delete(postIt.id)
+                  }
+                }}
+                onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
               />
             )
           })}
 
           {/* 장소 카드 렌더링 */}
           {placeCards.map(card => {
-            const isSelected = selectedItems.some(item => item.id === card.id && item.type === 'placeCard')
             const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
 
             return (
@@ -1021,7 +1093,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 key={card.id}
                 card={card}
                 draggable={canDrag}
-                isSelected={isSelected}
                 onDragEnd={(x, y) => {
                   updatePlaceCard(card.id, { x, y })
                 }}
@@ -1031,6 +1102,14 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
                 onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
                 onClick={e => handleObjectClick(e)}
                 onContextMenu={e => handleObjectClick(e)}
+                shapeRef={node => {
+                  if (node) {
+                    shapeRefs.current.set(card.id, node)
+                  } else {
+                    shapeRefs.current.delete(card.id)
+                  }
+                }}
+                onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
               />
             )
           })}
@@ -1108,35 +1187,22 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
             />
           )}
 
-          {/* 다중 선택 드래그 오버레이 */}
-          {multiSelectionBoundingBox && selectedItems.length >= 2 && !isSelecting && (
-            <Group
-              x={0}
-              y={0}
-              draggable={effectiveTool === 'cursor'}
-              onDragEnd={handleMultiDragEnd}
-              onContextMenu={e => {
-                // 다중 선택 요소에서 우클릭 시 컨텍스트 메뉴 표시
-                if (effectiveTool !== 'cursor') return
-                e.cancelBubble = true
-                e.evt.preventDefault()
-                setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
-              }}
-            >
-              {/* 드래그 영역 (투명하지만 클릭 가능) */}
-              <Rect
-                x={multiSelectionBoundingBox.x - 10}
-                y={multiSelectionBoundingBox.y - 10}
-                width={multiSelectionBoundingBox.width + 20}
-                height={multiSelectionBoundingBox.height + 20}
-                fill="transparent"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dash={[6, 4]}
-                cornerRadius={4}
-              />
-            </Group>
-          )}
+          {/* Transformer (선택된 요소에 크기 조절/회전 핸들 표시) */}
+          <Transformer
+            ref={transformerRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              // 최소 크기 제한
+              if (newBox.width < 50 || newBox.height < 50) {
+                return oldBox
+              }
+              return newBox
+            }}
+            rotateEnabled={false}
+            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+            onDragStart={handleTransformerDragStart}
+            onDragMove={handleTransformerDragMove}
+            onDragEnd={handleTransformerDragEnd}
+          />
 
           {/* 다른 사용자의 커서 렌더링 (애니메이션 적용) */}
           {Array.from(cursors.values()).map(cursor => (

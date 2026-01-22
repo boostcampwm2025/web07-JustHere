@@ -7,22 +7,41 @@ import type { PostIt } from '@/types/canvas.types'
 interface EditablePostItProps {
   postIt: PostIt
   draggable: boolean
-  isSelected: boolean
   onDragEnd: (x: number, y: number) => void
   onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
   onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onEditStart: () => void
   onEditEnd: () => void
+  shapeRef?: (node: Konva.Group | null) => void
+  onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
-function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onMouseDown, onSelect, isSelected, onEditStart, onEditEnd }: EditablePostItProps) {
+function EditablePostIt({
+  postIt,
+  draggable,
+  onDragEnd,
+  onChange,
+  onMouseDown,
+  onSelect,
+  onEditStart,
+  onEditEnd,
+  shapeRef,
+  onTransformEnd,
+}: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
 
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // shapeRef 콜백 연결
+  useEffect(() => {
+    if (shapeRef) {
+      shapeRef(groupRef.current)
+    }
+  }, [shapeRef])
 
   // 편집 모드 진입 시 textarea에 포커스
   useEffect(() => {
@@ -74,26 +93,20 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onMouseDown, o
       ref={groupRef}
       x={postIt.x}
       y={postIt.y}
-      draggable={draggable && !isEditing} // 편집 중에는 드래그 불가
+      width={postIt.width}
+      height={postIt.height}
+      rotation={postIt.rotation ?? 0}
+      draggable={draggable && !isEditing}
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
       }}
-      // mouseDown에서 즉시 선택 전환
       onMouseDown={onMouseDown}
-      // 좌클릭 / 우클릭(contextmenu) 모두 Selection 핸들러 호출
       onClick={onSelect}
       onContextMenu={onSelect}
+      onTransformEnd={onTransformEnd}
     >
-      {/* focus box */}
-      <Rect
-        width={postIt.width}
-        height={postIt.height}
-        fill={postIt.fill}
-        shadowBlur={5}
-        cornerRadius={8}
-        onDblClick={handleDblClick}
-        stroke={isSelected ? '#3b82f6' : undefined}
-      />
+      {/* 포스트잇 배경 */}
+      <Rect width={postIt.width} height={postIt.height} fill={postIt.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
 
       {/* 편집 모드: HTML textarea */}
       {isEditing ? (
