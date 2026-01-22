@@ -29,15 +29,25 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [socketId, setSocketId] = useState('unknown')
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
+  const undoManagerRef = useRef<Y.UndoManager | null>(null)
+  const localOriginRef = useRef(Symbol('canvas-local'))
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
   const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
   const handleSocketError = useCallback((error: Error) => {
     console.error('[canvas] socket error:', error)
+  }, [])
+  const updateHistoryState = useCallback(() => {
+    const undoManager = undoManagerRef.current
+    if (!undoManager) return
+    setCanUndo(undoManager.canUndo())
+    setCanRedo(undoManager.canRedo())
   }, [])
 
   const { getSocket, status } = useSocketClient({
@@ -56,6 +66,22 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
+
+    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines], {
+      trackedOrigins: new Set([localOriginRef.current]),
+      captureTimeout: 1000,
+    })
+    undoManagerRef.current = undoManager
+
+    const handleStackChange = () => {
+      updateHistoryState()
+    }
+
+    undoManager.on('stack-item-added', handleStackChange)
+    undoManager.on('stack-item-popped', handleStackChange)
+    undoManager.on('stack-item-updated', handleStackChange)
+    undoManager.on('stack-cleared', handleStackChange)
+    handleStackChange()
 
     // Yjs 변경사항을 React state에 반영하는 함수
     const syncPostitsToState = () => {
@@ -117,9 +143,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
+      undoManager.off('stack-item-added', handleStackChange)
+      undoManager.off('stack-item-popped', handleStackChange)
+      undoManager.off('stack-item-updated', handleStackChange)
+      undoManager.off('stack-cleared', handleStackChange)
+      undoManager.destroy()
+      undoManagerRef.current = null
+      setCanUndo(false)
+      setCanRedo(false)
       doc.destroy()
     }
-  }, [roomId, canvasId])
+  }, [roomId, canvasId, updateHistoryState])
 
   useEffect(() => {
     const socket = getSocket()
@@ -286,7 +320,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       Object.entries(updates).forEach(([key, value]) => {
         yMap.set(key, value)
       })
-    })
+    }, localOriginRef.current)
   }, [])
 
   // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
@@ -309,6 +343,27 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [canvasId, userName],
   )
 
+  const undo = useCallback(() => {
+    const undoManager = undoManagerRef.current
+    if (!undoManager) return
+    undoManager.undo()
+    updateHistoryState()
+  }, [updateHistoryState])
+
+  const redo = useCallback(() => {
+    const undoManager = undoManagerRef.current
+    if (!undoManager) return
+    undoManager.redo()
+    updateHistoryState()
+  }, [updateHistoryState])
+
+  const stopCapturing = useCallback(() => {
+    const undoManager = undoManagerRef.current
+    if (!undoManager) return
+    undoManager.stopCapturing()
+    updateHistoryState()
+  }, [updateHistoryState])
+
   // 포스트잇 추가 함수
   const addPostIt = (postit: PostIt) => {
     const doc = docRef.current
@@ -324,7 +379,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('fill', postit.fill)
     yMap.set('text', postit.text)
     yMap.set('authorName', postit.authorName)
-    yPostits.push([yMap])
+    doc.transact(() => {
+      yPostits.push([yMap])
+    }, localOriginRef.current)
   }
 
   // 포스트잇 업데이트 함수 (위치, 텍스트 등)
@@ -348,7 +405,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
     yMap.set('category', card.category ?? '')
-    yPlaceCards.push([yMap])
+    doc.transact(() => {
+      yPlaceCards.push([yMap])
+    }, localOriginRef.current)
   }
 
   // 장소 카드 업데이트 함수
@@ -367,7 +426,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     doc.transact(() => {
       yPlaceCards.delete(index, 1)
-    })
+    }, localOriginRef.current)
   }
 
   // 선 추가 함수
@@ -385,7 +444,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('lineCap', line.lineCap)
     yMap.set('lineJoin', line.lineJoin)
     yMap.set('tool', line.tool)
-    yLines.push([yMap])
+    doc.transact(() => {
+      yLines.push([yMap])
+    }, localOriginRef.current)
   }
 
   // 선 업데이트 함수 (주로 points 배열 업데이트)
@@ -404,7 +465,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (index !== -1) {
       doc.transact(() => {
         yPostits.delete(index, 1) // 해당 인덱스 삭제
-      })
+      }, localOriginRef.current)
     }
   }
 
@@ -419,7 +480,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (index !== -1) {
       doc.transact(() => {
         yLines.delete(index, 1)
-      })
+      }, localOriginRef.current)
     }
   }
 
@@ -430,8 +491,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     placeCards,
     lines,
     socketId,
+    canUndo,
+    canRedo,
     updateCursor,
     sendCursorChat,
+    undo,
+    redo,
+    stopCapturing,
     addPostIt,
     updatePostIt,
     deletePostIt,

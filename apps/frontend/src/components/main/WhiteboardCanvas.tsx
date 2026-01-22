@@ -3,17 +3,15 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text } from 'react-konva'
 import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt, Line as LineType, PlaceCard, SelectedItem } from '@/types/canvas.types'
+import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
-import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
+import { HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
 import PlaceCardItem from './PlaceCardItem'
 import CursorChatInput from './CursorChatInput'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
-
-type ToolType = 'hand' | 'pencil' | 'postIt'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -98,8 +96,13 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     placeCards,
     lines,
     socketId,
+    canUndo,
+    canRedo,
     updateCursor,
     sendCursorChat,
+    undo,
+    redo,
+    stopCapturing,
     addPostIt,
     updatePostIt,
     deletePostIt,
@@ -124,6 +127,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       if (e.key === 'Backspace' && selectedItem) {
         if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
         if (selectedItem.type === 'line') deleteLine(selectedItem.id)
+        if (selectedItem.type === 'placeCard') removePlaceCard(selectedItem.id)
 
         setSelectedItem(null)
         setContextMenu(null)
@@ -131,11 +135,11 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItem, deletePostIt, deleteLine])
+  }, [selectedItem, deletePostIt, deleteLine, removePlaceCard])
 
   // 객체 선택 핸들러 (좌클릭/우클릭 공통)
   const handleObjectSelect = useCallback(
-    (id: string, type: 'postit' | 'line', e: Konva.KonvaEventObject<MouseEvent>) => {
+    (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
       // 장소 카드 배치 중에는 객체 선택/이벤트 차단하지 않음
       if (pendingPlaceCard) return
 
@@ -182,6 +186,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (selectedItem) {
       if (selectedItem.type === 'postit') deletePostIt(selectedItem.id)
       if (selectedItem.type === 'line') deleteLine(selectedItem.id)
+      if (selectedItem.type === 'placeCard') removePlaceCard(selectedItem.id)
     }
     setSelectedItem(null)
     setContextMenu(null)
@@ -361,6 +366,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
+      stopCapturing()
       const newPostIt: PostIt = {
         id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
@@ -376,6 +382,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 펜 드로잉 시작
     if (activeTool === 'pencil') {
+      stopCapturing()
       setIsDrawing(true)
       const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
@@ -399,6 +406,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (activeTool === 'pencil' && isDrawing) {
       setIsDrawing(false)
       setCurrentLineId(null)
+      stopCapturing()
     }
   }
 
@@ -543,6 +551,13 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     )
   }
 
+  const getActionButtonStyle = (isEnabled: boolean) => {
+    return cn(
+      'p-2.5 rounded-full transition-all duration-200 text-gray-400 hover:bg-gray-100 hover:text-gray-900',
+      !isEnabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-400',
+    )
+  }
+
   return (
     <div
       className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`}
@@ -575,6 +590,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
           <button onClick={() => setActiveTool('postIt')} className={getButtonStyle('postIt')} title="포스트잇 추가">
             <NoteTextIcon className="w-5 h-5" />
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+
+          <button type="button" onClick={undo} disabled={!canUndo} className={getActionButtonStyle(canUndo)} title="Undo" aria-label="Undo">
+            <UndoIcon className="w-5 h-5" />
+          </button>
+          <button type="button" onClick={redo} disabled={!canRedo} className={getActionButtonStyle(canRedo)} title="Redo" aria-label="Redo">
+            <RedoIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -657,6 +681,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               postIt={postIt}
               draggable={activeTool === 'hand' && !pendingPlaceCard}
               isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
+              onEditStart={stopCapturing}
+              onEditEnd={stopCapturing}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
               }}
@@ -673,12 +699,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               key={card.id}
               card={card}
               draggable={activeTool === 'hand' && !pendingPlaceCard}
+              isSelected={selectedItem?.id === card.id && selectedItem?.type === 'placeCard'}
               onDragEnd={(x, y) => {
                 updatePlaceCard(card.id, { x, y })
               }}
               onRemove={() => {
                 removePlaceCard(card.id)
               }}
+              onClick={e => handleObjectSelect(card.id, 'placeCard', e)}
+              onContextMenu={e => handleObjectSelect(card.id, 'placeCard', e)}
             />
           ))}
 

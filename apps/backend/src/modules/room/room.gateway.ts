@@ -33,7 +33,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    await this.roomService.leaveByDisconnect(client)
+    await this.roomService.leaveRoom(client)
   }
 
   @SubscribeMessage('room:join')
@@ -43,7 +43,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('room:leave')
   async onRoomLeave(@ConnectedSocket() client: Socket) {
-    await this.roomService.leaveRoomBySession(client)
+    await this.roomService.leaveRoom(client)
   }
 
   @SubscribeMessage('participant:update_name')

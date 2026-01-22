@@ -11,9 +11,11 @@ interface EditablePostItProps {
   onDragEnd: (x: number, y: number) => void
   onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
   onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void
+  onEditStart: () => void
+  onEditEnd: () => void
 }
 
-function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSelected }: EditablePostItProps) {
+function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSelected, onEditStart, onEditEnd }: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
@@ -32,6 +34,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
   // 더블클릭 → 편집 모드
   const handleDblClick = () => {
     draftRef.current = postIt.text
+    onEditStart()
     setIsEditing(true)
   }
 
@@ -52,6 +55,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
   const handleBlur = () => {
     commit()
     setIsEditing(false)
+    onEditEnd()
   }
 
   // Enter 키 (Shift 없이) → 편집 종료
@@ -60,8 +64,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      commit((e.target as HTMLTextAreaElement).value)
-      setIsEditing(false)
+      ;(e.target as HTMLTextAreaElement).blur()
     }
   }
 
