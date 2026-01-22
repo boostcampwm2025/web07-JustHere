@@ -20,8 +20,10 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const [hasMore, setHasMore] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const isFetchingMoreRef = useRef(false)
+  // 최신 요청만 반영하기 위한 요청 식별자
   const requestIdRef = useRef(0)
 
+  // 검색어 비움 시 상태 초기화 + 진행 중 요청 무효화
   const resetAndInvalidate = useCallback(() => {
     requestIdRef.current += 1
     isFetchingMoreRef.current = false
@@ -35,6 +37,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const updateSearchQuery = useCallback(
     (value: string) => {
       setSearchQuery(value)
+      // 빈 검색어면 즉시 결과를 비우고 요청을 무효화
       if (!value.trim()) {
         resetAndInvalidate()
       }
@@ -70,6 +73,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
           page: nextPage,
           size: pageSize,
         })
+        // 최신 요청이 아니면 응답을 버림
         if (requestIdRef.current !== requestId) return
         setSearchResults(prev => (mode === 'append' ? [...prev, ...documents] : documents))
         setPage(nextPage)
@@ -115,6 +119,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
 
     const observer = new IntersectionObserver(
       entries => {
+        // 하단 sentinel이 보이면 다음 페이지 로드
         if (entries[0]?.isIntersecting) {
           handleLoadMore()
         }
