@@ -15,6 +15,9 @@ interface LocationListSectionProps {
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
+  onSearchComplete?: (results: KakaoPlace[]) => void
+  selectedPlace: KakaoPlace | null
+  onPlaceSelect: (place: KakaoPlace | null) => void
 }
 
 type TabType = 'locations' | 'candidates'
@@ -27,12 +30,14 @@ function LocationListSection({
   pendingPlaceCard,
   onStartPlaceCard,
   onCancelPlaceCard,
+  onSearchComplete,
+  selectedPlace,
+  onPlaceSelect,
 }: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
@@ -45,12 +50,17 @@ function LocationListSection({
         radius: 2000,
       })
       setSearchResults(results)
+      onSearchComplete?.(results)
     } catch (error) {
       console.error('검색 실패:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [searchQuery, roomId])
+  }, [searchQuery, roomId, onSearchComplete])
+
+  const handlePlaceSelect = (place: KakaoPlace | null) => {
+    onPlaceSelect(place)
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -157,14 +167,17 @@ function LocationListSection({
                 <div key={place.id}>
                   <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
                     {/* Thumbnail */}
-                    <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer" onClick={() => setSelectedPlace(place)}>
+                    <div
+                      className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
+                      onClick={() => handlePlaceSelect(place)}
+                    >
                       <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 flex flex-col justify-between py-0.5">
                       {/* Top Section */}
-                      <div className="flex flex-col gap-1 cursor-pointer" onClick={() => setSelectedPlace(place)}>
+                      <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
                         <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
                         <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
                         <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
@@ -213,7 +226,7 @@ function LocationListSection({
       </div>
 
       {/* Place Detail Modal */}
-      <PlaceDetailModal place={selectedPlace} onClose={() => setSelectedPlace(null)} />
+      <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />
     </div>
   )
 }
