@@ -708,54 +708,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       })
       setIsSelecting(false)
     }
-
-    // 드래그 선택 종료 및 충돌 감지
-    // 함수형 업데이트를 사용하여 최신 selectionBox 값으로 충돌 감지
-    if (effectiveTool === 'cursor' && isSelecting) {
-      setSelectionBox(currentSelectionBox => {
-        if (!currentSelectionBox) return null
-
-        const newSelectedItems: SelectedItem[] = []
-
-        // 포스트잇 충돌 감지
-        postIts.forEach(postIt => {
-          const postItBox: BoundingBox = {
-            x: postIt.x,
-            y: postIt.y,
-            width: postIt.width,
-            height: postIt.height,
-          }
-          if (isBoxIntersecting(currentSelectionBox, postItBox)) {
-            newSelectedItems.push({ id: postIt.id, type: 'postit' })
-          }
-        })
-
-        // 장소 카드 충돌 감지
-        placeCards.forEach(card => {
-          const cardBox: BoundingBox = {
-            x: card.x,
-            y: card.y,
-            width: PLACE_CARD_WIDTH,
-            height: PLACE_CARD_HEIGHT,
-          }
-          if (isBoxIntersecting(currentSelectionBox, cardBox)) {
-            newSelectedItems.push({ id: card.id, type: 'placeCard' })
-          }
-        })
-
-        // 라인 충돌 감지
-        lines.forEach(line => {
-          const lineBox = getLineBoundingBox(line.points)
-          if (isBoxIntersecting(currentSelectionBox, lineBox)) {
-            newSelectedItems.push({ id: line.id, type: 'line' })
-          }
-        })
-
-        setSelectedItems(newSelectedItems)
-        return null // selectionBox를 null로 설정
-      })
-      setIsSelecting(false)
-    }
   }
 
   // 휠 이벤트로 확대/축소 (Cmd/Ctrl + Scroll)
