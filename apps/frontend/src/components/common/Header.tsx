@@ -22,7 +22,7 @@ interface HeaderProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
-  currentRegion?: string | null
+  currentRegion?: string
 }
 
 export default function Header(props: MinimalHeaderProps | HeaderProps) {
