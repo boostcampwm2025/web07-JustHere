@@ -19,6 +19,8 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
+const SEARCH_PAGE_SIZE = 15
+
 function LocationListSection({
   roomId,
   slug,
@@ -32,25 +34,60 @@ function LocationListSection({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingMore, setIsFetchingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) return
+  const fetchSearchResults = useCallback(
+    async (nextPage: number, mode: 'replace' | 'append') => {
+      const trimmedQuery = searchQuery.trim()
+      if (!trimmedQuery) {
+        if (mode === 'replace') {
+          setSearchResults([])
+          setPage(1)
+          setHasMore(false)
+        }
+        return
+      }
 
-    setIsLoading(true)
-    try {
-      const { documents } = await searchKeyword({
-        keyword: searchQuery,
-        roomId: roomId,
-        radius: 2000,
-      })
-      setSearchResults(documents)
-    } catch (error) {
-      console.error('검색 실패:', error)
-    } finally {
-      setIsLoading(false)
+      if (mode === 'append') {
+        setIsFetchingMore(true)
+      } else {
+        setIsLoading(true)
+      }
+
+      try {
+        const { documents, meta } = await searchKeyword({
+          keyword: trimmedQuery,
+          roomId: roomId,
+          radius: 2000,
+          page: nextPage,
+          size: SEARCH_PAGE_SIZE,
+        })
+        setSearchResults(prev => (mode === 'append' ? [...prev, ...documents] : documents))
+        setPage(nextPage)
+        setHasMore(!meta.is_end)
+      } catch (error) {
+        console.error('검색 실패:', error)
+      } finally {
+        setIsLoading(false)
+        setIsFetchingMore(false)
+      }
+    },
+    [searchQuery, roomId],
+  )
+
+  const handleSearch = useCallback(async () => {
+    if (isLoading || isFetchingMore) return
+    if (page !== 1) {
+      setPage(1)
     }
-  }, [searchQuery, roomId])
+    if (hasMore) {
+      setHasMore(false)
+    }
+    await fetchSearchResults(1, 'replace')
+  }, [fetchSearchResults, isLoading, isFetchingMore, page, hasMore])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
