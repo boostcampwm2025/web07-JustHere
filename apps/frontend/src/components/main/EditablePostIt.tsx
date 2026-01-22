@@ -64,7 +64,7 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      (e.target as HTMLTextAreaElement).blur()
+      ;(e.target as HTMLTextAreaElement).blur()
     }
   }
 
