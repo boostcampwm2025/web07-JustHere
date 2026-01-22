@@ -22,10 +22,33 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const isFetchingMoreRef = useRef(false)
   const requestIdRef = useRef(0)
 
+  const resetAndInvalidate = useCallback(() => {
+    requestIdRef.current += 1
+    isFetchingMoreRef.current = false
+    setSearchResults([])
+    setPage(1)
+    setHasMore(false)
+    setIsLoading(false)
+    setIsFetchingMore(false)
+  }, [])
+
+  const updateSearchQuery = useCallback(
+    (value: string) => {
+      setSearchQuery(value)
+      if (!value.trim()) {
+        resetAndInvalidate()
+      }
+    },
+    [resetAndInvalidate],
+  )
+
   const fetchSearchResults = useCallback(
     async (nextPage: number, mode: 'replace' | 'append') => {
       const trimmedQuery = searchQuery.trim()
       if (!trimmedQuery) {
+        if (mode === 'replace') {
+          resetAndInvalidate()
+        }
         return
       }
 
@@ -61,12 +84,15 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
         }
       }
     },
-    [searchQuery, roomId, radius, pageSize],
+    [searchQuery, roomId, radius, pageSize, resetAndInvalidate],
   )
 
   const handleSearch = useCallback(async () => {
     const trimmedQuery = searchQuery.trim()
-    if (!trimmedQuery) return
+    if (!trimmedQuery) {
+      resetAndInvalidate()
+      return
+    }
     if (isLoading || isFetchingMore) return
     if (page !== 1) {
       setPage(1)
@@ -75,7 +101,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
       setHasMore(false)
     }
     await fetchSearchResults(1, 'replace')
-  }, [fetchSearchResults, hasMore, isFetchingMore, isLoading, page, searchQuery])
+  }, [fetchSearchResults, hasMore, isFetchingMore, isLoading, page, resetAndInvalidate, searchQuery])
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isLoading || isFetchingMoreRef.current) return
@@ -104,7 +130,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
 
   return {
     searchQuery,
-    setSearchQuery,
+    setSearchQuery: updateSearchQuery,
     searchResults,
     isLoading,
     isFetchingMore,
