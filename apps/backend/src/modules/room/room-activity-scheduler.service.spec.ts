@@ -35,6 +35,10 @@ describe('RoomActivitySchedulerService', () => {
     ;(service as unknown as ServiceWithPrivate).activeRoomIds = new Set()
   })
 
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   it('서비스가 정의되어 있어야 한다', () => {
     expect(service).toBeDefined()
   })
