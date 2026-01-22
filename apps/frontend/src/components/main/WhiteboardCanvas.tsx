@@ -207,7 +207,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         y: node.y(),
         width: newWidth,
         height: newHeight,
-        rotation: node.rotation(),
       })
     },
     [updatePostIt],
@@ -236,7 +235,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         y: node.y(),
         width: newWidth,
         height: newHeight,
-        rotation: node.rotation(),
       })
     },
     [updatePlaceCard],

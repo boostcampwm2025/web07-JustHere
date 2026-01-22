@@ -95,7 +95,6 @@ function EditablePostIt({
       y={postIt.y}
       width={postIt.width}
       height={postIt.height}
-      rotation={postIt.rotation ?? 0}
       draggable={draggable && !isEditing}
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())

@@ -50,7 +50,6 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
       y={card.y}
       width={cardWidth}
       height={cardHeight}
-      rotation={card.rotation ?? 0}
       draggable={draggable}
       onDragEnd={e => onDragEnd(e.target.x(), e.target.y())}
       onMouseDown={onMouseDown}
