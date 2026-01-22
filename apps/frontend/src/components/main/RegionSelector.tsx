@@ -20,6 +20,8 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
   const inputRef = useRef<HTMLInputElement>(null)
 
   // 외부 클릭 시 닫기
+  // TODO: 외부 클릭 감지 로직 중복 (RegionSelector, RoomInfoModal, PlaceDetailModal, AddCategoryModal)
+  // TODO: 공통 훅으로 분리하면 좋을듯
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -37,6 +39,7 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
     }
   }, [isOpen])
 
+  // TODO: handleSearch 함수가 LocationListSection.tsx 에도 같은 양식으로 쓰임 (공통 커스텀 훅으로 분리 필요)
   const handleSearch = async (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || !keyword.trim()) return
 
@@ -78,6 +81,7 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
   return (
     <div className="relative" ref={dropdownRef}>
       {/* 트리거 버튼 */}
+      {/* TODO: Button 컴포넌트로 변경 필요 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -94,6 +98,7 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border animate-slide-up z-50">
           {/* 검색바 */}
+          {/* TODO: SearchInput 컴포넌트로 변경 필요 */}
           <div className="p-3 border-b">
             <div className="relative">
               <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

@@ -34,6 +34,7 @@ function LocationListSection({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
+  // TODO: handleSearch 함수가 RegionSelector.tsx 에도 같은 양식으로 쓰임 (공통 커스텀 훅으로 분리 필요)
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
 
@@ -95,6 +96,7 @@ function LocationListSection({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
+            // TODO: Button 컴포넌트로 변경 필요
             <button
               type="button"
               key={tab.id}
@@ -118,6 +120,7 @@ function LocationListSection({
         {/* Search Input */}
         <div className="relative">
           <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
+          {/* TODO: SearchInput 컴포넌트로 변경 필요 */}
           <input
             type="text"
             value={searchQuery}
@@ -127,6 +130,7 @@ function LocationListSection({
             className="w-full h-12 pl-10 pr-10 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary"
           />
           {searchQuery && (
+            // TODO: Button Component로 변경 필요
             <button
               type="button"
               onClick={() => setSearchQuery('')}
@@ -140,6 +144,7 @@ function LocationListSection({
       </div>
 
       {/* Divider */}
+      {/* TODO: Divider 컴포넌트로 변경 필요 */}
       <div className="h-px bg-gray-100" />
 
       {/* Location List */}
@@ -149,6 +154,7 @@ function LocationListSection({
         ) : searchResults.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">검색어를 입력하고 Enter를 눌러주세요</div>
         ) : (
+          // TODO: 추후 후보 리스트와 별도의 목록을 보여줘야 하므로 장소 리스트 목록을 컴포넌트로 빼야 함.
           <div className="flex flex-col gap-4">
             {searchResults.map((place, index) => {
               const isSelected = pendingPlaceCard?.placeId === String(place.id)
@@ -194,6 +200,7 @@ function LocationListSection({
                   </div>
 
                   {/* Divider between items */}
+                  {/* TODO: Divider 컴포넌트로 변경 필요 */}
                   {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
                 </div>
               )
@@ -204,6 +211,7 @@ function LocationListSection({
 
       {/* Footer Button */}
       <div className="p-5 pt-0">
+        {/* TODO: Button 컴포넌트로 변경 필요 */}
         <button
           type="button"
           className="w-full flex items-center justify-center gap-1.5 px-5 py-3 bg-primary hover:bg-primary-pressed text-white font-semibold rounded-full transition-colors"

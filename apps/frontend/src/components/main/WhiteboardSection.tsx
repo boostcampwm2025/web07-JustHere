@@ -41,6 +41,7 @@ function WhiteboardSection({
     setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
   }, [categories, activeCategoryId])
 
+  // TODO: src/utils 경로에 배치해서 별도 분리
   // 아이콘 맵퍼 (Type에 따라 아이콘 반환)
   const getIconByType = (type: string) => {
     switch (type) {
@@ -67,6 +68,7 @@ function WhiteboardSection({
   // 토글 비활성화 스타일
   const inactiveClass = 'text-gray hover:bg-gray-bg hover:text-black bg-transparent'
 
+  // TODO: 자식 컴포넌트가 너무 많으니까 Compound Pattern으로 관리해도? 괜찮을 듯 합니다.
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
       {/* Tab Header */}
@@ -160,6 +162,7 @@ function WhiteboardSection({
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex p-1 bg-white rounded-full shadow-lg border border-slate-200">
             {/* Canvas Mode Button */}
+            {/* TODO: 이것도 toggle.map(() => {} ) 이런 식으로 변경 가능할 듯 */}
             <Button
               size="sm"
               variant={viewMode === 'canvas' ? 'primary' : 'ghost'}

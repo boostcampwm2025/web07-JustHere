@@ -33,6 +33,7 @@ export default function CanvasContextMenu({ position, onDelete, onClose }: Conte
       // 우클릭 이벤트가 상위(Canvas)로 전파되어 또 다른 메뉴를 여는 것을 방지
       onContextMenu={e => e.preventDefault()}
     >
+      {/* TODO: menu.map()으로 렌더링해도 좋을 듯 */}
       <button
         onClick={onDelete}
         className="w-full flex items-center justify-between px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
