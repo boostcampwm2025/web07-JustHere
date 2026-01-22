@@ -16,22 +16,27 @@ interface PlaceCardItemProps {
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
+// 기준 상수값 (scale이 1일 때의 기준)
 const DEFAULT_CARD_WIDTH = 240
 const DEFAULT_CARD_HEIGHT = 180
-const IMAGE_HEIGHT = 90
-const PADDING = 12
+const BASE_IMAGE_HEIGHT = 90
+const BASE_PADDING = 12
 const PLACEHOLDER_SRC = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
 function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onClick, onContextMenu, shapeRef, onTransformEnd }: PlaceCardItemProps) {
   const groupRef = useRef<Konva.Group>(null)
 
-  // 카드 크기 (기본값 사용)
+  // 현재 스케일
+  const scale = card.scale || 1
+
+  // 1. 전체 카드 크기 조절
   const cardWidth = card.width ?? DEFAULT_CARD_WIDTH
   const cardHeight = card.height ?? DEFAULT_CARD_HEIGHT
 
-  // 이미지 높이 비율 계산 (기본 높이 기준으로 비율 유지)
-  const imageHeight = (IMAGE_HEIGHT / DEFAULT_CARD_HEIGHT) * cardHeight
-  const padding = (PADDING / DEFAULT_CARD_WIDTH) * cardWidth
+  // 2. 내부 요소들을 위한 스케일된 간격/크기 계산
+  const scaledPadding = BASE_PADDING * scale
+  const scaledImageHeight = BASE_IMAGE_HEIGHT * scale
+  const textWidth = Math.max(1, cardWidth - scaledPadding * 2)
 
   // shapeRef 콜백 연결
   useEffect(() => {
@@ -40,7 +45,6 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
     }
   }, [shapeRef])
 
-  // konva를 쓰면 src로 이미지 받아서 렌더링하는게 안됨, 이미 로드된 이미지만 렌더링할 수 있다.
   const [image] = useImage(card.image || PLACEHOLDER_SRC, 'anonymous')
 
   return (
@@ -57,31 +61,59 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
       onContextMenu={onContextMenu}
       onTransformEnd={onTransformEnd}
     >
-      <Rect width={cardWidth} height={cardHeight} fill="#FFFBE6" stroke="#E5E7EB" strokeWidth={1} cornerRadius={10} />
-
-      {image && card.image ? (
-        <KonvaImage image={image} x={padding} y={padding} width={cardWidth - padding * 2} height={imageHeight} />
-      ) : (
-        <Rect x={padding} y={padding} width={cardWidth - padding * 2} height={imageHeight} fill="#F3F4F6" cornerRadius={8} />
-      )}
-
-      <Text
-        text={card.name}
-        x={padding}
-        y={padding + imageHeight + 10}
-        width={cardWidth - padding * 2}
-        fontSize={14}
-        fontStyle="bold"
-        fill="#111827"
+      {/* 배경 카드 */}
+      <Rect
+        width={cardWidth}
+        height={cardHeight}
+        fill="#FFFBE6"
+        stroke="#E5E7EB"
+        strokeWidth={1}
+        cornerRadius={10 * scale} // 코너 반경도 스케일에 맞게
       />
 
-      <Text text={card.category || ''} x={padding} y={padding + imageHeight + 30} width={cardWidth - padding * 2} fontSize={11} fill="#6B7280" />
+      {/* 이미지 영역 */}
+      {image && card.image ? (
+        <KonvaImage image={image} x={scaledPadding} y={scaledPadding} width={textWidth} height={scaledImageHeight} cornerRadius={8 * scale} />
+      ) : (
+        <Rect x={scaledPadding} y={scaledPadding} width={textWidth} height={scaledImageHeight} fill="#F3F4F6" cornerRadius={8 * scale} />
+      )}
 
-      <Text text={card.address} x={padding} y={padding + imageHeight + 49} width={cardWidth - padding * 2} fontSize={12} fill="#4B5563" />
+      {/* 텍스트 정보 (y값과 fontSize에 스케일 적용) */}
+      <Text
+        text={card.name}
+        x={scaledPadding}
+        y={scaledPadding + scaledImageHeight + 10 * scale}
+        width={textWidth}
+        fontSize={14 * scale}
+        fontStyle="bold"
+        fill="#111827"
+        ellipsis={true} // 텍스트가 넘칠 경우 처리
+        wrap="none"
+      />
 
+      <Text
+        text={card.category || ''}
+        x={scaledPadding}
+        y={scaledPadding + scaledImageHeight + 30 * scale}
+        width={textWidth}
+        fontSize={11 * scale}
+        fill="#6B7280"
+      />
+
+      <Text
+        text={card.address}
+        x={scaledPadding}
+        y={scaledPadding + scaledImageHeight + 49 * scale}
+        width={textWidth}
+        fontSize={12 * scale}
+        fill="#4B5563"
+        wrap="char" // 주소는 길어질 수 있으므로 줄바꿈 허용
+      />
+
+      {/* 삭제 버튼 (크기와 위치 모두 스케일링) */}
       <Group
-        x={cardWidth - 24}
-        y={8}
+        x={cardWidth - 24 * scale}
+        y={8 * scale}
         onClick={e => {
           e.cancelBubble = true
           onRemove()
@@ -91,8 +123,8 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
           onRemove()
         }}
       >
-        <Rect width={16} height={16} fill="#F3F4F6" stroke="#E5E7EB" cornerRadius={8} />
-        <Text text="×" width={16} height={16} align="center" verticalAlign="middle" fontSize={14} fill="#4B5563" />
+        <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" cornerRadius={8 * scale} />
+        <Text text="×" width={16 * scale} height={16 * scale} align="center" verticalAlign="middle" fontSize={14 * scale} fill="#4B5563" />
       </Group>
     </Group>
   )

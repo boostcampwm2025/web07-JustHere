@@ -29,6 +29,7 @@ export interface PostIt {
   y: number
   width: number
   height: number
+  scale: number
   fill: string
   text: string // 포스트잇 내용
   authorName: string // 작성자 이름
@@ -43,6 +44,7 @@ export interface PlaceCard {
   y: number
   width?: number // 카드 너비 (기본값: 240)
   height?: number // 카드 높이 (기본값: 180)
+  scale: number
   createdAt: string
   image?: string | null
   category: string

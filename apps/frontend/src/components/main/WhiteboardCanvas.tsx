@@ -202,11 +202,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       const newWidth = Math.max(50, postIt.width * scaleX)
       const newHeight = Math.max(50, postIt.height * scaleY)
 
+      const minScale = Math.min(scaleX, scaleY)
+      const newScale = postIt.scale * minScale
+
       updatePostIt(postIt.id, {
         x: node.x(),
         y: node.y(),
         width: newWidth,
         height: newHeight,
+        scale: newScale,
       })
     },
     [updatePostIt],
@@ -230,11 +234,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       const newWidth = Math.max(100, cardWidth * scaleX)
       const newHeight = Math.max(75, cardHeight * scaleY)
 
+      const minScale = Math.min(scaleX, scaleY)
+      const newScale = card.scale * minScale
+
       updatePlaceCard(card.id, {
         x: node.x(),
         y: node.y(),
         width: newWidth,
         height: newHeight,
+        scale: newScale,
       })
     },
     [updatePlaceCard],
@@ -622,6 +630,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
         y: canvasPos.y - 75, // 중앙 정렬 (height / 2)
         width: 150,
         height: 150,
+        scale: 1,
         fill: '#FFF9C4', // 노란색 포스트잇
         text: '내용을 입력하세요',
         authorName: `User ${socketId.substring(0, 4)}`,

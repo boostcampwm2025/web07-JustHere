@@ -88,6 +88,9 @@ function EditablePostIt({
     }
   }
 
+  const basePadding = 10
+  const scaledPadding = basePadding * (postIt.scale || 1)
+
   return (
     <Group
       ref={groupRef}
@@ -131,17 +134,21 @@ function EditablePostIt({
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4]"
+            style={{
+              fontSize: `${14 * (postIt.scale || 1)}px`,
+              padding: `${scaledPadding}px`,
+            }}
           />
         </Html>
       ) : (
         /* 일반 모드: Konva Text */
         <Text
           text={postIt.text}
-          x={10}
-          y={10}
-          width={postIt.width - 20}
-          height={postIt.height - 40}
-          fontSize={14}
+          x={scaledPadding}
+          y={scaledPadding}
+          width={Math.max(50, postIt.width - scaledPadding * 2)}
+          height={Math.max(50, postIt.height - scaledPadding * 2)}
+          fontSize={14 * postIt.scale}
           fontFamily="Arial, sans-serif"
           fill="#333"
           lineHeight={1.4}
