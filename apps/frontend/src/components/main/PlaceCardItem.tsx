@@ -9,6 +9,7 @@ interface PlaceCardItemProps {
   isSelected?: boolean
   onDragEnd: (x: number, y: number) => void
   onRemove: () => void
+  onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onContextMenu?: (e: Konva.KonvaEventObject<MouseEvent>) => void
 }
@@ -19,7 +20,7 @@ const IMAGE_HEIGHT = 90
 const PADDING = 12
 const PLACEHOLDER_SRC = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
-function PlaceCardItem({ card, draggable, isSelected, onDragEnd, onRemove, onClick, onContextMenu }: PlaceCardItemProps) {
+function PlaceCardItem({ card, draggable, isSelected, onDragEnd, onRemove, onMouseDown, onClick, onContextMenu }: PlaceCardItemProps) {
   // konva를 쓰면 src로 이미지 받아서 렌더링하는게 안됨, 이미 로드된 이미지만 렌더링할 수 있다.
   // 원래 img 태그 쓰면 브라우저가 HTML 렌더링 엔진에서 자동으로 이미지 다운, 캐싱, 로딩 에러 처리 해줌, React는 문자열만 전달
   // konva는 canvas 기반이니까 브라우저의 이미지 로딩 시스템을 쓸 수 없음.
@@ -32,6 +33,7 @@ function PlaceCardItem({ card, draggable, isSelected, onDragEnd, onRemove, onCli
       y={card.y}
       draggable={draggable}
       onDragEnd={e => onDragEnd(e.target.x(), e.target.y())}
+      onMouseDown={onMouseDown}
       onClick={onClick}
       onContextMenu={onContextMenu}
     >

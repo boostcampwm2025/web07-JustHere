@@ -10,12 +10,13 @@ interface EditablePostItProps {
   isSelected: boolean
   onDragEnd: (x: number, y: number) => void
   onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
+  onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onEditStart: () => void
   onEditEnd: () => void
 }
 
-function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSelected, onEditStart, onEditEnd }: EditablePostItProps) {
+function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onMouseDown, onSelect, isSelected, onEditStart, onEditEnd }: EditablePostItProps) {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
@@ -77,6 +78,8 @@ function EditablePostIt({ postIt, draggable, onDragEnd, onChange, onSelect, isSe
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
       }}
+      // mouseDown에서 즉시 선택 전환
+      onMouseDown={onMouseDown}
       // 좌클릭 / 우클릭(contextmenu) 모두 Selection 핸들러 호출
       onClick={onSelect}
       onContextMenu={onSelect}

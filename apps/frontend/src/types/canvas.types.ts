@@ -1,10 +1,26 @@
-export type ToolType = 'hand' | 'pencil' | 'postIt'
+export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt'
 
 export type CanvasItemType = 'postit' | 'line' | 'placeCard'
 
 export interface SelectedItem {
   id: string
   type: CanvasItemType
+}
+
+// 드래그 선택 영역 (투명 사각형)
+export interface SelectionBox {
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+}
+
+// Bounding Box 인터페이스 (충돌 감지용)
+export interface BoundingBox {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export interface PostIt {
