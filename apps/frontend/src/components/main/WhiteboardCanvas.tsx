@@ -857,13 +857,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     )
   }
 
-  const getActionButtonStyle = (isEnabled: boolean) => {
-    return cn(
-      'p-2.5 rounded-full transition-all duration-200 text-gray-400 hover:bg-gray-100 hover:text-gray-900',
-      !isEnabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-400',
-    )
-  }
-
   return (
     <div
       className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`}
