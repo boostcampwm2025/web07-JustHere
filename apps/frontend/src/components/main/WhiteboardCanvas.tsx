@@ -5,7 +5,7 @@ import type Konva from 'konva'
 import { useYjsSocket } from '@/hooks/useYjsSocket'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
-import { HandBackRightIcon, NoteTextIcon, PencilIcon } from '@/components/Icons'
+import { HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/components/Icons'
 import EditablePostIt from './EditablePostIt'
 import AnimatedCursor from './AnimatedCursor'
 import PlaceCardItem from './PlaceCardItem'
@@ -96,8 +96,13 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     placeCards,
     lines,
     socketId,
+    canUndo,
+    canRedo,
     updateCursor,
     sendCursorChat,
+    undo,
+    redo,
+    stopCapturing,
     addPostIt,
     updatePostIt,
     deletePostIt,
@@ -361,6 +366,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 포스트잇 추가 (커서를 중앙으로)
     if (activeTool === 'postIt') {
+      stopCapturing()
       const newPostIt: PostIt = {
         id: `postIt-${crypto.randomUUID()}`,
         x: canvasPos.x - 75, // 중앙 정렬 (width / 2)
@@ -376,6 +382,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
     // 펜 드로잉 시작
     if (activeTool === 'pencil') {
+      stopCapturing()
       setIsDrawing(true)
       const newLineId = `line-${crypto.randomUUID()}`
       setCurrentLineId(newLineId)
@@ -399,6 +406,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     if (activeTool === 'pencil' && isDrawing) {
       setIsDrawing(false)
       setCurrentLineId(null)
+      stopCapturing()
     }
   }
 
@@ -543,6 +551,13 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     )
   }
 
+  const getActionButtonStyle = (isEnabled: boolean) => {
+    return cn(
+      'p-2.5 rounded-full transition-all duration-200 text-gray-400 hover:bg-gray-100 hover:text-gray-900',
+      !isEnabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-400',
+    )
+  }
+
   return (
     <div
       className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`}
@@ -575,6 +590,15 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
 
           <button onClick={() => setActiveTool('postIt')} className={getButtonStyle('postIt')} title="포스트잇 추가">
             <NoteTextIcon className="w-5 h-5" />
+          </button>
+
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+
+          <button type="button" onClick={undo} disabled={!canUndo} className={getActionButtonStyle(canUndo)} title="Undo" aria-label="Undo">
+            <UndoIcon className="w-5 h-5" />
+          </button>
+          <button type="button" onClick={redo} disabled={!canRedo} className={getActionButtonStyle(canRedo)} title="Redo" aria-label="Redo">
+            <RedoIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -657,6 +681,8 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               postIt={postIt}
               draggable={activeTool === 'hand' && !pendingPlaceCard}
               isSelected={selectedItem?.id === postIt.id && selectedItem?.type === 'postit'}
+              onEditStart={stopCapturing}
+              onEditEnd={stopCapturing}
               onDragEnd={(x, y) => {
                 updatePostIt(postIt.id, { x, y })
               }}
