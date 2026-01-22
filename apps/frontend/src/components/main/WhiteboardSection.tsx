@@ -22,7 +22,7 @@ interface WhiteboardSectionProps {
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
   searchResults?: KakaoPlace[]
-  selectedPlace?: KakaoPlace | null
+  selectedPlace: KakaoPlace | null
   onMarkerClick?: (place: KakaoPlace | null) => void
 }
 
