@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CustomOverlayMap } from 'react-kakao-maps-sdk'
 import type { KakaoPlace } from '@/types/kakao'
+import { cn } from '@/utils/cn'
 
 interface PlaceMarkerProps {
   place: KakaoPlace
@@ -36,12 +37,11 @@ export default function PlaceMarker({ place, isSelected, onClick }: PlaceMarkerP
 
         {/* 핀 마커 */}
         <div
-          className={`
-            relative w-8 h-8 rounded-full flex items-center justify-center
-            transition-all duration-200
-            ${isSelected ? 'bg-primary-pressed scale-125' : 'bg-primary'}
-            ${isHovered ? 'scale-110' : ''}
-          `}
+          className={cn(
+            'relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200',
+            isSelected ? 'bg-primary-pressed scale-125' : 'bg-primary',
+            isHovered && 'scale-110',
+          )}
         >
           {/* 내부 흰색 원 */}
           <div className="w-3 h-3 bg-white rounded-full" />
@@ -49,14 +49,10 @@ export default function PlaceMarker({ place, isSelected, onClick }: PlaceMarkerP
 
         {/* 핀 꼬리 */}
         <div
-          className={`
-            w-0 h-0 -mt-1
-            border-l-[6px] border-l-transparent
-            border-r-[6px] border-r-transparent
-            border-t-[10px]
-            transition-all duration-200
-            ${isSelected ? 'border-t-primary-pressed' : 'border-t-primary'}
-          `}
+          className={cn(
+            'w-0 h-0 -mt-1 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[10px] transition-all duration-200',
+            isSelected ? 'border-t-primary-pressed' : 'border-t-primary',
+          )}
         />
       </div>
     </CustomOverlayMap>
