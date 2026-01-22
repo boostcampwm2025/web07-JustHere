@@ -34,7 +34,7 @@ function LocationListSection({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
 
-  // TODO: handleSearch 함수가 RegionSelector.tsx 에도 같은 양식으로 쓰임 (공통 커스텀 훅으로 분리 필요)
+  // TODO: handleSearch 함수가 LocationListSection.tsx 에도 같은 양식으로 쓰임 (추후 Tanstank Query로 적용)
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
 
