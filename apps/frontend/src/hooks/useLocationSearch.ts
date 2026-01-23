@@ -9,9 +9,10 @@ interface UseLocationSearchOptions {
   roomId: string
   radius?: number
   pageSize?: number
+  onSearchComplete?: (results: KakaoPlace[]) => void
 }
 
-export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = DEFAULT_PAGE_SIZE }: UseLocationSearchOptions) {
+export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = DEFAULT_PAGE_SIZE, onSearchComplete }: UseLocationSearchOptions) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -75,9 +76,11 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
         })
         // 최신 요청이 아니면 응답을 버림
         if (requestIdRef.current !== requestId) return
-        setSearchResults(prev => (mode === 'append' ? [...prev, ...documents] : documents))
+        const newResults = mode === 'append' ? [...searchResults, ...documents] : documents
+        setSearchResults(newResults)
         setPage(nextPage)
         setHasMore(!meta.is_end)
+        onSearchComplete?.(newResults)
       } catch (error) {
         console.error('검색 실패:', error)
       } finally {
