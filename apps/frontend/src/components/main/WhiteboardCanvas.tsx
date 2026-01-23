@@ -1090,7 +1090,7 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
               return newBox
             }}
             rotateEnabled={false}
-            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
             onDragStart={handleTransformerDragStart}
             onDragEnd={handleTransformerDragEnd}
           />
