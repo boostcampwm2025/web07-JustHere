@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/components/Icons'
-import { searchKeyword } from '@/api/kakao'
 import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 import PlaceDetailModal from './PlaceDetailModal'
 import RegionSelector from './RegionSelector'
+import { useLocationSearch } from '@/hooks/useLocationSearch'
 
 interface LocationListSectionProps {
   roomId: string
@@ -35,28 +35,10 @@ function LocationListSection({
   onPlaceSelect,
 }: LocationListSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) return
-
-    setIsLoading(true)
-    try {
-      const results = await searchKeyword({
-        keyword: searchQuery,
-        roomId: roomId,
-        radius: 2000,
-      })
-      setSearchResults(results)
-      onSearchComplete?.(results)
-    } catch (error) {
-      console.error('검색 실패:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [searchQuery, roomId, onSearchComplete])
+  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, handleSearch, loadMoreRef } = useLocationSearch({
+    roomId,
+    onSearchComplete,
+  })
 
   const handlePlaceSelect = (place: KakaoPlace | null) => {
     onPlaceSelect(place)
@@ -211,6 +193,11 @@ function LocationListSection({
                 </div>
               )
             })}
+            <div ref={loadMoreRef} />
+            {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
+            {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
+              <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
+            )}
           </div>
         )}
       </div>
