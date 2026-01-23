@@ -91,7 +91,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
         }
       }
     },
-    [searchQuery, roomId, radius, pageSize, resetAndInvalidate],
+    [searchQuery, roomId, radius, pageSize, resetAndInvalidate, searchResults, onSearchComplete],
   )
 
   const handleSearch = useCallback(async () => {
