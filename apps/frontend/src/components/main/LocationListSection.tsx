@@ -62,6 +62,7 @@ function LocationListSection({
       name: place.place_name,
       address: place.road_address_name || place.address_name,
       createdAt: new Date().toISOString(),
+      scale: 1,
       image: null,
       category: place.category_group_name,
     })
