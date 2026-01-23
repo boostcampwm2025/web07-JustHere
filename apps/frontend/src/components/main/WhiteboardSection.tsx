@@ -8,6 +8,7 @@ import { useRoomCategories } from '@/hooks/room'
 import type { Category } from '@/types/domain'
 import AddCategoryModal from './AddCategoryModal'
 import DeleteCategoryModal from './DeleteCategoryModal'
+import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 
 // 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
@@ -20,6 +21,9 @@ interface WhiteboardSectionProps {
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
+  searchResults?: KakaoPlace[]
+  selectedPlace: KakaoPlace | null
+  onMarkerClick?: (place: KakaoPlace | null) => void
 }
 
 function WhiteboardSection({
@@ -29,6 +33,9 @@ function WhiteboardSection({
   pendingPlaceCard,
   onPlaceCardPlaced,
   onPlaceCardCanceled,
+  searchResults = [],
+  selectedPlace,
+  onMarkerClick,
 }: WhiteboardSectionProps) {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
@@ -152,7 +159,12 @@ function WhiteboardSection({
           )
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            <KakaoMap />
+            <KakaoMap
+              markers={searchResults}
+              selectedMarkerId={selectedPlace?.id}
+              onMarkerClick={onMarkerClick}
+              center={searchResults[0] ? { lat: Number(searchResults[0].y), lng: Number(searchResults[0].x) } : undefined}
+            />
           </div>
         )}
 
