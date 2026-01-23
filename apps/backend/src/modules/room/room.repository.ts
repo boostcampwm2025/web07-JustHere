@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
+import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '@/lib/prisma/prisma.service'
 import { Room } from '@prisma/client'
 import { customAlphabet } from 'nanoid'
@@ -7,15 +9,16 @@ const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 8)
 
 @Injectable()
 export class RoomRepository {
+  private readonly logger = new Logger(RoomRepository.name)
+
   constructor(private readonly prisma: PrismaService) {}
 
   private isPrismaUniqueConstraintError(error: unknown): boolean {
-    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002'
+    return typeof error === 'object' && error !== null && 'code' in error && (error as { code: unknown }).code === 'P2002'
   }
 
   async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
     const maxRetries = 3
-    let lastError: Error | undefined
 
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -29,19 +32,59 @@ export class RoomRepository {
           },
         })
       } catch (error) {
-        lastError = error as Error
-        if (!this.isPrismaUniqueConstraintError(error)) {
-          throw error
+        if (this.isPrismaUniqueConstraintError(error)) {
+          // 슬러그 중복 시 로그 남기고 재시도
+          this.logger.warn(`Slug collision detected: ${error}`)
+          continue
         }
-        // slug 중복이면 재시도
+        // 그 외 DB 에러는 즉시 throw
+        throw error
       }
     }
-    throw new Error(`최대 재시도 횟수 ${maxRetries} 회를 초과하였습니다: ${lastError ? lastError.message : '알 수 없는 오류'}`)
+
+    // 최대 재시도 횟수 초과 시 CustomException 발생
+    throw new CustomException(ErrorType.InternalServerError, '방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
   }
 
   async findBySlug(slug: string): Promise<Room | null> {
     return this.prisma.room.findUnique({
       where: { slug },
     })
+  }
+
+  async findById(id: string): Promise<Room | null> {
+    return this.prisma.room.findUnique({
+      where: { id },
+    })
+  }
+
+  async updateBySlug(slug: string, data: { x: number; y: number; place_name?: string }) {
+    return this.prisma.room.update({
+      where: { slug },
+      data,
+    })
+  }
+  // 여러 방의 활동 시간을 한 번에 업데이트 (IN 서브 쿼리)
+  async updateManyLastActiveAt(ids: string[], date: Date): Promise<void> {
+    await this.prisma.room.updateMany({
+      where: {
+        id: { in: ids },
+      },
+      data: {
+        lastActiveAt: date,
+      },
+    })
+  }
+
+  // 특정 날짜 이전에 활동한 방들을 일괄 삭제
+  async deleteRoomsInactiveSince(thresholdDate: Date): Promise<number> {
+    const result = await this.prisma.room.deleteMany({
+      where: {
+        lastActiveAt: {
+          lt: thresholdDate, // Less Than
+        },
+      },
+    })
+    return result.count
   }
 }

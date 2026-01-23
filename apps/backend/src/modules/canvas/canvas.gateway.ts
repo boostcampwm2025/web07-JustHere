@@ -1,3 +1,5 @@
+import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -16,6 +18,7 @@ import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenes
   namespace: '/canvas',
   cors: { origin: '*' },
 })
+@UseFilters(new WebsocketExceptionsFilter('canvas'))
 export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
@@ -48,10 +51,11 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   async onCanvasAttach(@ConnectedSocket() client: Socket, @MessageBody() payload: CanvasAttachPayload) {
     const { roomId, canvasId } = payload
 
+    // 서비스 초기화
+    const response = await this.yjsService.initializeConnection(roomId, canvasId, client.id)
+
     // Socket.io room에 참여
     await client.join(`canvas:${canvasId}`)
-
-    const response = await this.yjsService.initializeConnection(roomId, canvasId, client.id)
 
     client.emit('canvas:attached', response)
   }
@@ -86,12 +90,10 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     const updateArray = new Uint8Array(update)
 
     // Yjs 문서에 업데이트 적용 & 버퍼링
-    const isSuccess = this.yjsService.processUpdate(canvasId, updateArray)
+    this.yjsService.processUpdate(canvasId, updateArray)
 
     // 다른 클라이언트들에게 업데이트 브로드캐스트
-    if (isSuccess) {
-      this.broadcaster.emitToCanvas(canvasId, 'y:update', payload, { exceptSocketId: client.id })
-    }
+    this.broadcaster.emitToCanvas(canvasId, 'y:update', payload, { exceptSocketId: client.id })
   }
 
   /**

@@ -7,11 +7,12 @@ import { RoomRepository } from './room.repository'
 import { RoomService } from './room.service'
 import { RoomController } from './room.controller'
 import { RoomGateway } from './room.gateway'
+import { RoomActivitySchedulerService } from './room-activity-scheduler.service'
 
 @Module({
   imports: [PrismaModule, CategoryModule, SocketModule, UserModule],
   controllers: [RoomController],
-  providers: [RoomRepository, RoomService, RoomGateway],
-  exports: [RoomService],
+  providers: [RoomRepository, RoomService, RoomGateway, RoomActivitySchedulerService],
+  exports: [RoomService, RoomRepository],
 })
 export class RoomModule {}

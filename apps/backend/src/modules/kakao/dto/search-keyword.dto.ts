@@ -1,74 +1,36 @@
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator'
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator'
 import { Type } from 'class-transformer'
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class SearchKeywordDto {
   @ApiProperty({
-    description: '검색할 키워드',
-    example: '강남역 카페',
+    description: '검색 키워드',
+    example: '맛집',
   })
   @IsString()
+  @IsNotEmpty()
   keyword: string
 
-  @ApiProperty({
-    required: false,
-    description: '중심 좌표 경도',
-    example: '127.027621',
-  })
+  @ApiPropertyOptional({ description: '주변 검색 시 Room ID' })
   @IsOptional()
   @IsString()
-  x?: string
+  roomId?: string
 
-  @ApiProperty({
-    required: false,
-    description: '중심 좌표 위도',
-    example: '37.497952',
-  })
-  @IsOptional()
-  @IsString()
-  y?: string
-
-  @ApiProperty({
-    required: false,
-    description: '반경거리 (m)',
-    minimum: 0,
-    maximum: 20000,
-    example: 5000,
-  })
+  @ApiPropertyOptional({ description: '검색 반경 (미터)', example: 2000, default: 2000 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  @Max(20000)
+  @IsNumber()
   radius?: number
 
-  @ApiProperty({
-    required: false,
-    description: '페이지 번호',
-    minimum: 1,
-    maximum: 45,
-    default: 1,
-    example: 1,
-  })
+  @ApiPropertyOptional({ description: '페이지 번호', example: 1 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(45)
-  page?: number = 1
+  @IsNumber()
+  page?: number
 
-  @ApiProperty({
-    required: false,
-    description: '페이지 크기',
-    minimum: 1,
-    maximum: 15,
-    default: 15,
-    example: 15,
-  })
+  @ApiPropertyOptional({ description: '페이지당 결과 수', example: 15 })
   @IsOptional()
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(15)
-  size?: number = 15
+  @IsNumber()
+  size?: number
 }

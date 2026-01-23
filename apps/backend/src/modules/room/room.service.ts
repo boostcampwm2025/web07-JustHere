@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common'
-import type { Socket } from 'socket.io'
-import { Room } from '@prisma/client'
-import { RoomRepository } from './room.repository'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import { CategoryService } from '@/modules/category/category.service'
+import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import { UserSession } from '@/modules/user/user.type'
+import { Injectable } from '@nestjs/common'
+import { Room } from '@prisma/client'
+import type { Socket } from 'socket.io'
 import type { RoomJoinPayload } from './dto/room.c2s.dto'
 import {
   Participant,
@@ -15,6 +17,7 @@ import {
   RoomJoinedPayload,
   RoomOwnerTransferredPayload,
 } from './dto/room.s2c.dto'
+import { RoomRepository } from './room.repository'
 
 @Injectable()
 export class RoomService {
@@ -23,6 +26,7 @@ export class RoomService {
     private readonly users: UserService,
     private readonly categoryService: CategoryService,
     private readonly broadcaster: RoomBroadcaster,
+    private readonly roomScheduler: RoomActivitySchedulerService,
   ) {}
 
   async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
@@ -33,26 +37,28 @@ export class RoomService {
    * 클라이언트를 방에 참여시킴
    * 이미 다른 방에 참여 중이면 먼저 나간 후 새 방에 참여
    */
+  // TODO: joinRoom 메서드가 갖고 있는 역할이 너무 많음. 분리 필요
   async joinRoom(client: Socket, { roomId, user }: RoomJoinPayload) {
     // roomId가 UUID인지 slug인지 판별
     let actualRoomId: string
 
+    let room: Room | null = null
+
     if (this.isUUID(roomId)) {
-      // UUID면 바로 사용
       actualRoomId = roomId
+      room = await this.roomRepository.findById(roomId)
     } else {
-      // slug면 DB에서 UUID 조회
-      const room = await this.roomRepository.findBySlug(roomId)
-      if (!room) {
-        client.emit('room:error', { message: '방을 찾을 수 없습니다.' })
-        return
-      }
+      room = await this.roomRepository.findBySlug(roomId)
+      if (!room) throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
       actualRoomId = room.id
     }
 
     // 이미 다른 방에 참여 중이면 먼저 나가기
     const existing = this.users.getSession(client.id)
     if (existing) await this.leaveRoom(client)
+
+    // 활동 감지 (메모리에 마킹만 함 -> DB 부하 0)
+    this.roomScheduler.markAsActive(actualRoomId)
 
     await client.join(`room:${actualRoomId}`)
 
@@ -73,6 +79,7 @@ export class RoomService {
       participants: allParticipants,
       categories,
       ownerId: this.getOwnerId(actualRoomId),
+      place_name: room?.place_name ?? null,
     }
     client.emit('room:joined', joinedPayload)
 
@@ -88,33 +95,18 @@ export class RoomService {
   }
 
   /**
-   * 클라이언트가 명시적으로 방을 나갈 때 호출
-   * 세션에서 roomId를 조회하여 처리
-   */
-  async leaveRoomBySession(client: Socket) {
-    const session = this.users.getSession(client.id)
-    if (!session) return
-
-    await this.leaveRoom(client)
-  }
-
-  /**
-   * 소켓 연결이 끊어졌을 때 자동으로 호출
-   * 세션 정보를 기반으로 방에서 나가고 세션 삭제
-   */
-  async leaveByDisconnect(client: Socket) {
-    await this.leaveRoom(client)
-  }
-
-  /**
    * 소켓을 방에서 나가고 세션 삭제
    */
-  private async leaveRoom(client: Socket) {
+  // TODO: leaveRoom 메서드가 갖고 있는 역할이 너무 많음. 분리 필요
+  async leaveRoom(client: Socket) {
     const session = this.users.getSession(client.id)
     if (!session) return
 
     const { roomId } = session
     const wasOwner = session.isOwner
+
+    // room에서 나가는 활동 체크
+    this.roomScheduler.markAsActive(roomId)
 
     await client.leave(`room:${roomId}`)
 
@@ -150,13 +142,13 @@ export class RoomService {
    */
   updateParticipantName(client: Socket, name: string): void {
     const session = this.users.getSession(client.id)
-    if (!session) {
-      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
-      return
-    }
+
+    if (!session) throw new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.')
 
     const updatedSession = this.users.updateSessionName(client.id, name)
-    if (!updatedSession) return
+    if (!updatedSession) {
+      throw new CustomException(ErrorType.InternalServerError, '이름 변경에 실패했습니다.')
+    }
 
     // 방의 모든 참여자에게 브로드 캐스트 (본인 포함)
     const payload: ParticipantNameUpdatedPayload = {
@@ -171,30 +163,18 @@ export class RoomService {
    */
   transferOwner(client: Socket, targetUserId: string): void {
     const session = this.users.getSession(client.id)
-    if (!session) {
-      client.emit('room:error', { message: '세션을 찾을 수 없습니다.' })
-      return
-    }
+    if (!session) throw new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.')
 
     // 방장 권한 확인
-    if (!session.isOwner) {
-      client.emit('room:error', { code: 'NOT_OWNER', message: '방장만 권한을 위임할 수 있습니다.' })
-      return
-    }
+    if (!session.isOwner) throw new CustomException(ErrorType.NotOwner, '방장만 권한을 위임할 수 있습니다.')
 
     // 대상 유저 존재 확인
     const targetSession = this.users.getSessionByUserIdInRoom(session.roomId, targetUserId)
-    if (!targetSession) {
-      client.emit('room:error', { code: 'TARGET_NOT_FOUND', message: '대상 유저를 찾을 수 없습니다.' })
-      return
-    }
+    if (!targetSession) throw new CustomException(ErrorType.TargetNotFound, '대상 유저를 찾을 수 없습니다.')
 
     // 권한 이전
     const success = this.users.transferOwnership(session.roomId, session.userId, targetUserId)
-    if (!success) {
-      client.emit('room:error', { message: '권한 위임에 실패했습니다.' })
-      return
-    }
+    if (!success) throw new CustomException(ErrorType.InternalServerError, '권한 위임에 실패했습니다.')
 
     // 방의 모든 참여자에게 브로드캐스트
     const payload: RoomOwnerTransferredPayload = {
@@ -207,15 +187,7 @@ export class RoomService {
   /**
    * 방의 전체 참여자 목록 조회
    */
-  private getAllParticipants(roomId: string): Participant[] {
-    const sessions = this.users.getSessionsByRoom(roomId)
-    return sessions.map(session => this.sessionToParticipant(session))
-  }
-
-  /**
-   * 방의 모든 유저 조회
-   */
-  getUsersByRoom(roomId: string): Participant[] {
+  getAllParticipants(roomId: string): Participant[] {
     const sessions = this.users.getSessionsByRoom(roomId)
     return sessions.map(session => this.sessionToParticipant(session))
   }
@@ -253,5 +225,22 @@ export class RoomService {
   private isUUID(str: string): boolean {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     return uuidRegex.test(str)
+  }
+
+  async updateRoom(slug: string, data: { x: number; y: number; place_name?: string }) {
+    const room = await this.roomRepository.findBySlug(slug)
+    if (!room) {
+      throw new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.')
+    }
+    const updatedRoom = await this.roomRepository.updateBySlug(slug, data)
+
+    // 방의 모든 참여자에게 브로드캐스트
+    this.broadcaster.emitToRoom(room.id, 'room:region_updated', {
+      x: data.x,
+      y: data.y,
+      place_name: data.place_name ?? null,
+    })
+
+    return updatedRoom
   }
 }

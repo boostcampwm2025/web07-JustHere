@@ -4,7 +4,9 @@
  */
 
 import AccountCheckOutlineIcon from '@/assets/icons/account-check-outline.svg?react'
+import AlertCircleIcon from '@/assets/icons/alert-circle.svg?react'
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg?react'
+import BackspaceIcon from '@/assets/icons/backspace.svg?react'
 import BellIcon from '@/assets/icons/bell.svg?react'
 import CheckCircleIcon from '@/assets/icons/check-circle.svg?react'
 import CheckIcon from '@/assets/icons/check.svg?react'
@@ -17,6 +19,7 @@ import CompassIcon from '@/assets/icons/compass.svg?react'
 import ContentCopyIcon from '@/assets/icons/content-copy.svg?react'
 import CreationIcon from '@/assets/icons/creation.svg?react'
 import CrosshairsGpsIcon from '@/assets/icons/crosshairs-gps.svg?react'
+import CursorIcon from '@/assets/icons/cursor.svg?react'
 import ForumIcon from '@/assets/icons/forum.svg?react'
 import HandBackRightIcon from '@/assets/icons/hand-back-right.svg?react'
 import LiquorIcon from '@/assets/icons/liquor.svg?react'
@@ -30,14 +33,18 @@ import PencilIcon from '@/assets/icons/pencil.svg?react'
 import PhoneIcon from '@/assets/icons/phone.svg?react'
 import PlusCircleIcon from '@/assets/icons/plus-circle.svg?react'
 import PlusIcon from '@/assets/icons/plus.svg?react'
+import RedoIcon from '@/assets/icons/redo.svg?react'
 import ShareVariantIcon from '@/assets/icons/share-variant.svg?react'
 import SilverwareForkKnifeIcon from '@/assets/icons/silverware-fork-knife.svg?react'
 import StarIcon from '@/assets/icons/star.svg?react'
+import UndoIcon from '@/assets/icons/undo.svg?react'
 import VoteIcon from '@/assets/icons/vote.svg?react'
 
 export {
   AccountCheckOutlineIcon,
+  AlertCircleIcon,
   ArrowLeftIcon,
+  BackspaceIcon,
   BellIcon,
   CheckCircleIcon,
   CheckIcon,
@@ -50,6 +57,7 @@ export {
   ContentCopyIcon,
   CreationIcon,
   CrosshairsGpsIcon,
+  CursorIcon,
   ForumIcon,
   HandBackRightIcon,
   LiquorIcon,
@@ -63,8 +71,10 @@ export {
   PhoneIcon,
   PlusCircleIcon,
   PlusIcon,
+  RedoIcon,
   ShareVariantIcon,
   SilverwareForkKnifeIcon,
   StarIcon,
+  UndoIcon,
   VoteIcon,
 }

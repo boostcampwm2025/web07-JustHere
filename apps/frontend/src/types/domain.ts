@@ -16,3 +16,8 @@ export type Category = {
   orderIndex: number
   createdAt: string
 }
+
+export type User = {
+  userId: string
+  name: string
+}

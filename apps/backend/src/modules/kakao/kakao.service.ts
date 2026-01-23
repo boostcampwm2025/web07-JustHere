@@ -1,15 +1,21 @@
-import { Injectable, HttpException, HttpStatus, BadGatewayException } from '@nestjs/common'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import axios, { AxiosInstance } from 'axios'
 import { SearchKeywordDto } from './dto/search-keyword.dto'
 import { KakaoLocalSearchResponse } from './dto/kakao-api.dto'
+import { RoomRepository } from '../room/room.repository'
 
 @Injectable()
 export class KakaoService {
   private readonly axiosInstance: AxiosInstance
   private readonly apiKey: string
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly roomRepository: RoomRepository,
+  ) {
     this.apiKey = this.configService.getOrThrow<string>('KAKAO_REST_API_KEY')
     const baseURL = this.configService.get<string>('KAKAO_API_BASE_URL')
 
@@ -24,12 +30,23 @@ export class KakaoService {
 
   async searchByKeyword(dto: SearchKeywordDto): Promise<KakaoLocalSearchResponse> {
     try {
+      let x: number | undefined
+      let y: number | undefined
+
+      if (dto.roomId) {
+        const room = await this.roomRepository.findById(dto.roomId)
+        if (!room) {
+          throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
+        }
+        x = room.x
+        y = room.y
+      }
       const { data } = await this.axiosInstance.get<KakaoLocalSearchResponse>('/v2/local/search/keyword.json', {
         params: {
           query: dto.keyword,
-          x: dto.x,
-          y: dto.y,
-          radius: dto.radius,
+          x,
+          y,
+          radius: x !== undefined && y !== undefined ? (dto.radius ?? 2000) : undefined,
           page: dto.page,
           size: dto.size,
         },
@@ -42,18 +59,13 @@ export class KakaoService {
         const message = (error.response?.data as { message?: string })?.message || error.message
 
         // Kakao API 에러 상태 코드별 처리
-        if (status === 400) {
-          throw new HttpException(`잘못된 요청입니다: ${message}`, HttpStatus.BAD_REQUEST)
-        } else if (status === 401) {
-          throw new HttpException('Kakao API 인증 실패', HttpStatus.UNAUTHORIZED)
-        } else if (status === 429) {
-          throw new HttpException('API 호출 한도 초과', HttpStatus.TOO_MANY_REQUESTS)
-        } else {
-          throw new BadGatewayException(`Kakao API 호출 실패: ${message}`)
-        }
+        if (status === 400) throw new CustomException(ErrorType.BadRequest, `잘못된 요청입니다: ${message}`)
+        else if (status === 401) throw new CustomException(ErrorType.Unauthorized, 'Kakao API 인증 실패')
+        else if (status === 429) throw new CustomException(ErrorType.TooManyRequests, 'API 호출 한도 초과')
+        else throw new CustomException(ErrorType.BadGateway, `Kakao API 호출 실패: ${message}`)
       }
 
-      throw new BadGatewayException('Kakao API 호출 중 오류 발생')
+      throw new CustomException(ErrorType.BadGateway, 'Kakao API 호출 중 오류 발생')
     }
   }
 }

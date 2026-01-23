@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/common/Button'
 import KakaoMap from '@/components/KakaoMap'
 import WhiteboardCanvas from '@/components/main/WhiteboardCanvas.tsx'
-import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon } from '@/components/Icons'
+import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn.ts'
 import { useRoomCategories } from '@/hooks/room'
-import AddCategoryModal from './AddCategoryModal'
 import type { Category } from '@/types/domain'
+import AddCategoryModal from './AddCategoryModal'
+import DeleteCategoryModal from './DeleteCategoryModal'
+import type { KakaoPlace } from '@/types/kakao'
+import type { PlaceCard } from '@/types/canvas.types'
 
 // 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
 type ToggleType = 'map' | 'canvas'
@@ -14,10 +17,28 @@ type ToggleType = 'map' | 'canvas'
 interface WhiteboardSectionProps {
   roomId: string
   onCreateCategory: (name: string) => void
+  onDeleteCategory: (categoryId: string) => void
+  pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
+  onPlaceCardPlaced: () => void
+  onPlaceCardCanceled: () => void
+  searchResults?: KakaoPlace[]
+  selectedPlace: KakaoPlace | null
+  onMarkerClick?: (place: KakaoPlace | null) => void
 }
 
-function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps) {
-  const [isCategoryModalOpen, setCategoryModalOpen] = useState(false)
+function WhiteboardSection({
+  roomId,
+  onCreateCategory,
+  onDeleteCategory,
+  pendingPlaceCard,
+  onPlaceCardPlaced,
+  onPlaceCardCanceled,
+  searchResults = [],
+  selectedPlace,
+  onMarkerClick,
+}: WhiteboardSectionProps) {
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
@@ -56,44 +77,78 @@ function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps)
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
       {/* Tab Header */}
-      <header className="flex items-end gap-1 px-4 pt-3 bg-slate-100 border-b border-gray-200">
+      <header className="flex items-end px-4 pt-3 bg-slate-100 border-b border-gray-200 overflow-x-auto">
         <nav className="flex items-end gap-1" role="tablist">
           {categories.map(category => (
-            <button
+            <div
               key={category.id}
               role="tab"
               // 활성화 여부를 ID로 비교
               aria-selected={activeCategoryId === category.id}
               onClick={() => setActiveCategoryId(category.id)}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors ${
-                activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150'
-              }`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setActiveCategoryId(category.id)
+                }
+              }}
+              tabIndex={0}
+              className={cn(
+                'min-w-fit flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
+                activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150',
+              )}
             >
               {getIconByType(category.title)}
               <span className="font-bold text-gray-800 text-sm">{category.title}</span>
-            </button>
+              {activeCategoryId === category.id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="카테고리 삭제"
+                  className="text-gray-disable hover:text-gray rounded-full p-0"
+                  onClick={e => {
+                    e.stopPropagation()
+                    setCategoryToDelete(category)
+                  }}
+                >
+                  <CloseIcon className="size-4" />
+                </Button>
+              )}
+            </div>
           ))}
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full hover:bg-slate-200 transition-colors mb-1 ml-1 shrink-0"
+            aria-label="새 탭 추가"
+            onClick={() => setIsAddCategoryModalOpen(true)}
+          >
+            <PlusIcon className="size-5 text-gray-800" />
+          </Button>
         </nav>
 
-        {/* Add Tab Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full hover:bg-slate-200 transition-colors mb-1"
-          aria-label="새 탭 추가"
-          onClick={() => setCategoryModalOpen(true)}
-        >
-          <PlusIcon className="size-5 text-gray-800" />
-        </Button>
-
-        <AddCategoryModal isOpen={isCategoryModalOpen} onClose={() => setCategoryModalOpen(false)} onComplete={onCreateCategory} />
+        {isAddCategoryModalOpen && <AddCategoryModal onClose={() => setIsAddCategoryModalOpen(false)} onComplete={onCreateCategory} />}
+        {categoryToDelete && (
+          <DeleteCategoryModal
+            categoryName={categoryToDelete.title}
+            onClose={() => setCategoryToDelete(undefined)}
+            onConfirm={() => onDeleteCategory(categoryToDelete.id)}
+          />
+        )}
       </header>
 
       {/* Whiteboard Canvas */}
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
           activeCategoryId ? (
-            <WhiteboardCanvas roomId={roomId} canvasId={activeCategoryId} />
+            <WhiteboardCanvas
+              roomId={roomId}
+              canvasId={activeCategoryId}
+              pendingPlaceCard={pendingPlaceCard}
+              onPlaceCardPlaced={onPlaceCardPlaced}
+              onPlaceCardCanceled={onPlaceCardCanceled}
+            />
           ) : (
             <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
               <div className="text-center">
@@ -104,7 +159,12 @@ function WhiteboardSection({ roomId, onCreateCategory }: WhiteboardSectionProps)
           )
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            <KakaoMap />
+            <KakaoMap
+              markers={searchResults}
+              selectedMarkerId={selectedPlace?.id}
+              onMarkerClick={onMarkerClick}
+              center={searchResults[0] ? { lat: Number(searchResults[0].y), lng: Number(searchResults[0].x) } : undefined}
+            />
           </div>
         )}
 

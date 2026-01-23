@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import Header from '@/components/common/Header'
 import WhiteboardSection from '@/components/main/WhiteboardSection'
@@ -6,16 +6,28 @@ import LocationListSection from '@/components/main/LocationListSection'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 import { socketBaseUrl } from '@/config/socket'
+import type { KakaoPlace } from '@/types/kakao'
+import type { PlaceCard } from '@/types/canvas.types'
 
 function MainPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, updateParticipantName, transferOwner, createCategory } = useRoomSocketCache()
+  const { joinRoom, leaveRoom, ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory } =
+    useRoomSocketCache()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
+  const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
+  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
+  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
+  const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
+    setPendingPlaceCard(card)
+  }
+  const clearPendingPlaceCard = () => {
+    setPendingPlaceCard(null)
+  }
 
   useEffect(() => {
     if (!slug || !user) return
@@ -60,10 +72,31 @@ function MainPage() {
         isOwner={isOwner}
         ownerId={ownerId}
         onTransferOwner={transferOwner}
+        currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
-        <WhiteboardSection roomId={roomId} onCreateCategory={createCategory} />
-        <LocationListSection />
+        <WhiteboardSection
+          roomId={roomId}
+          onCreateCategory={createCategory}
+          onDeleteCategory={deleteCategory}
+          pendingPlaceCard={pendingPlaceCard}
+          onPlaceCardPlaced={clearPendingPlaceCard}
+          onPlaceCardCanceled={clearPendingPlaceCard}
+          searchResults={searchResults}
+          selectedPlace={selectedPlace}
+          onMarkerClick={setSelectedPlace}
+        />
+        <LocationListSection
+          roomId={roomId}
+          slug={slug}
+          currentRegion={currentRegion}
+          pendingPlaceCard={pendingPlaceCard}
+          onStartPlaceCard={handleStartPlaceCard}
+          onCancelPlaceCard={clearPendingPlaceCard}
+          onSearchComplete={setSearchResults}
+          selectedPlace={selectedPlace}
+          onPlaceSelect={setSelectedPlace}
+        />
       </div>
     </div>
   )
