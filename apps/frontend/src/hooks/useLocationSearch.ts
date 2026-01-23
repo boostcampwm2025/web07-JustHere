@@ -19,6 +19,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const [isFetchingMore, setIsFetchingMore] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const isFetchingMoreRef = useRef(false)
   // 최신 요청만 반영하기 위한 요청 식별자
@@ -31,6 +32,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
     setSearchResults([])
     setPage(1)
     setHasMore(false)
+    setHasSearched(false)
     setIsLoading(false)
     setIsFetchingMore(false)
   }, [])
@@ -38,6 +40,9 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const updateSearchQuery = useCallback(
     (value: string) => {
       setSearchQuery(value)
+      if (value.trim()) {
+        setHasSearched(false)
+      }
       // 빈 검색어면 즉시 결과를 비우고 요청을 무효화
       if (!value.trim()) {
         resetAndInvalidate()
@@ -107,6 +112,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
     if (hasMore) {
       setHasMore(false)
     }
+    setHasSearched(true)
     await fetchSearchResults(1, 'replace')
   }, [fetchSearchResults, hasMore, isFetchingMore, isLoading, page, resetAndInvalidate, searchQuery])
 
@@ -143,6 +149,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
     isLoading,
     isFetchingMore,
     hasMore,
+    hasSearched,
     handleSearch,
     loadMoreRef,
   }
