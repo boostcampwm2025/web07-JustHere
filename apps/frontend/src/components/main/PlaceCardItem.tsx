@@ -67,7 +67,7 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
         height={cardHeight}
         fill="#FFFBE6"
         stroke="#E5E7EB"
-        strokeWidth={1}
+        strokeWidth={1 * scale}
         cornerRadius={10 * scale} // 코너 반경도 스케일에 맞게
       />
 
@@ -123,7 +123,7 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
           onRemove()
         }}
       >
-        <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" cornerRadius={8 * scale} />
+        <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" strokeWidth={1 * scale} cornerRadius={8 * scale} />
         <Text text="×" width={16 * scale} height={16 * scale} align="center" verticalAlign="middle" fontSize={14 * scale} fill="#4B5563" />
       </Group>
     </Group>
