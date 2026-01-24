@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from './hooks'
-import { getOrCreateStoredUser } from '@/utils/userStorage'
-import { socketBaseUrl } from '@/config/socket'
-import type { KakaoPlace } from '@/types/kakao'
-import type { PlaceCard } from '@/types/canvas.types'
+import { getOrCreateStoredUser } from '@/shared/lib/userStorage'
+import { socketBaseUrl } from '@/shared/config/socket'
+import type { KakaoPlace } from '@/shared/types/kakao'
+import type { PlaceCard } from '@/shared/types/canvas.types'
 
 export function RoomPage() {
   const { slug } = useParams<{ slug: string }>()

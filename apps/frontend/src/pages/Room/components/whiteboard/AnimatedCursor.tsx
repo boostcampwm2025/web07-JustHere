@@ -2,10 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Group } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
-import type { CursorInfoWithId } from '@/types/yjs.types'
-import { CursorIcon } from '@/components/Icons'
-import { getCursorColor, getParticipantColor } from '@/utils/participant'
-import { cn } from '@/utils/cn'
+import type { CursorInfoWithId } from '@/shared/types/yjs.types'
+import { CursorIcon } from '@/shared/ui/icons/Icons'
+import { getCursorColor, getParticipantColor } from '@/shared/lib/participant'
+import { cn } from '@/shared/lib/cn'
 
 interface AnimatedCursorProps {
   cursor: CursorInfoWithId

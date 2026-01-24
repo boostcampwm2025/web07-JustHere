@@ -1,4 +1,4 @@
-import { BellIcon, CogIcon } from '@/components/Icons'
+import { BellIcon, CogIcon } from '@/shared/ui/icons/Icons'
 import Logo from '@/assets/images/logo.svg?react'
 import { Button } from '@/shared/ui/Button'
 

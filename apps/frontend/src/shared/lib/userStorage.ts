@@ -1,5 +1,5 @@
-import type { User } from '@/types/domain'
-import { createRandomUser } from '@/utils/randomUser'
+import type { User } from '@/shared/types/domain'
+import { createRandomUser } from '@/shared/lib/randomUser'
 
 const USER_STORAGE_KEY_PREFIX = 'justhere.user'
 

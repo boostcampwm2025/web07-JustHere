@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LocationStep, InviteStep } from './components'
 import { Header } from '@/shared/ui/Header'
-import { createRoom } from '@/api/room'
-import { socketBaseUrl } from '@/config/socket'
+import { createRoom } from '@/shared/api/room'
+import { socketBaseUrl } from '@/shared/config/socket'
 
 type OnboardingStep = 'location' | 'invite'
 

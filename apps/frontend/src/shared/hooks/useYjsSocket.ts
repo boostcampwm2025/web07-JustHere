@@ -10,11 +10,11 @@ import type {
   YjsUpdateBroadcast,
   YjsAwarenessBroadcast,
   CursorInfoWithId,
-} from '@/types/yjs.types'
-import type { PostIt, Line, PlaceCard } from '@/types/canvas.types'
-import { throttle } from '@/utils/throttle'
-import { useSocketClient } from '@/hooks/useSocketClient'
-import { socketBaseUrl } from '@/config/socket'
+} from '@/shared/types/yjs.types'
+import type { PostIt, Line, PlaceCard } from '@/shared/types/canvas.types'
+import { throttle } from '@/shared/lib/throttle'
+import { useSocketClient } from '@/shared/hooks/useSocketClient'
+import { socketBaseUrl } from '@/shared/config/socket'
 
 interface UseYjsSocketOptions {
   roomId: string

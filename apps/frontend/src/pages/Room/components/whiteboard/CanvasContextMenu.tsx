@@ -1,4 +1,4 @@
-import { BackspaceIcon } from '@/components/Icons'
+import { BackspaceIcon } from '@/shared/ui/icons/Icons'
 import { useEffect, useRef } from 'react'
 
 interface ContextMenuProps {

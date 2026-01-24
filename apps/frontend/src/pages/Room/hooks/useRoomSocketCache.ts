@@ -16,12 +16,12 @@ import type {
   CategoryCreatePayload,
   CategoryDeletePayload,
   ErrorPayload,
-} from '@/types/socket'
-import type { Category, Participant, User } from '@/types/domain'
-import { useSocketClient } from '@/hooks/useSocketClient'
-import { socketBaseUrl } from '@/config/socket'
-import { useToast } from '@/hooks/useToast'
-import { RoomNotFoundError } from '@/types/socket-error.types'
+} from '@/shared/types/socket'
+import type { Category, Participant, User } from '@/shared/types/domain'
+import { useSocketClient } from '@/shared/hooks/useSocketClient'
+import { socketBaseUrl } from '@/shared/config/socket'
+import { useToast } from '@/shared/hooks/useToast'
+import { RoomNotFoundError } from '@/shared/types/socket-error.types'
 import { roomQueryKeys } from './useRoomQueries'
 
 export const useRoomSocketCache = () => {

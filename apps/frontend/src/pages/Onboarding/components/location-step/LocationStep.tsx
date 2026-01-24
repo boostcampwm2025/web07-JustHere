@@ -1,10 +1,10 @@
 import { useRef, useEffect, useState } from 'react'
 import { MapMarker } from 'react-kakao-maps-sdk'
-import { searchKeyword } from '@/api/kakao'
+import { searchKeyword } from '@/shared/api/kakao'
 import { Button } from '@/shared/ui/Button'
 import { SearchInput } from '@/shared/ui/SearchInput'
 import { KakaoMap } from '@/components/KakaoMap'
-import type { KakaoPlace } from '@/types/kakao'
+import type { KakaoPlace } from '@/shared/types/kakao'
 import { SearchResultsList } from './SearchResultsList'
 import { OnboardingProgress } from '../onboarding-progress/OnboardingProgress'
 

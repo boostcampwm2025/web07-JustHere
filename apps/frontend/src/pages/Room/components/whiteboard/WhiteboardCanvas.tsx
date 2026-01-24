@@ -2,16 +2,25 @@ import { CanvasContextMenu } from './CanvasContextMenu'
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
-import { useYjsSocket } from '@/hooks/useYjsSocket'
-import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/types/canvas.types'
-import { cn } from '@/utils/cn'
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/components/Icons'
+import { useYjsSocket } from '@/shared/hooks/useYjsSocket'
+import type {
+  PostIt,
+  Line as LineType,
+  PlaceCard,
+  SelectedItem,
+  CanvasItemType,
+  ToolType,
+  SelectionBox,
+  BoundingBox,
+} from '@/shared/types/canvas.types'
+import { cn } from '@/shared/lib/cn'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui/icons/Icons'
 import { EditablePostIt } from './EditablePostIt'
 import { AnimatedCursor } from './AnimatedCursor'
 import { PlaceCardItem } from './PlaceCardItem'
 import { CursorChatInput } from './CursorChatInput'
 import { useParams } from 'react-router-dom'
-import { getOrCreateStoredUser } from '@/utils/userStorage'
+import { getOrCreateStoredUser } from '@/shared/lib/userStorage'
 
 interface WhiteboardCanvasProps {
   roomId: string

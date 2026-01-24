@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/components/Icons'
-import { searchKeyword } from '@/api/kakao'
-import { updateRoom } from '@/api/room'
-import { cn } from '@/utils/cn'
-import type { KakaoPlace } from '@/types/kakao'
+import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/ui/icons/Icons'
+import { searchKeyword } from '@/shared/api/kakao'
+import { updateRoom } from '@/shared/api/room'
+import { cn } from '@/shared/lib/cn'
+import type { KakaoPlace } from '@/shared/types/kakao'
 
 interface RegionSelectorProps {
   currentRegion?: string | null

@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react'
-import { RoomNotFoundError } from '@/types/socket-error.types'
+import { RoomNotFoundError } from '@/shared/types/socket-error.types'
 import ErrorPage from '@/pages/ErrorPage'
 
 type Props = {

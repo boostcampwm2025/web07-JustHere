@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ContentCopyIcon, CheckIcon } from '@/components/Icons'
+import { ContentCopyIcon, CheckIcon } from '@/shared/ui/icons/Icons'
 import { Button } from '@/shared/ui/Button'
 import { OnboardingProgress } from '../onboarding-progress/OnboardingProgress'
 

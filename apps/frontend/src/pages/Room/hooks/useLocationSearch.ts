@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { searchKeyword } from '@/api/kakao'
-import type { KakaoPlace } from '@/types/kakao'
+import { searchKeyword } from '@/shared/api/kakao'
+import type { KakaoPlace } from '@/shared/types/kakao'
 
 const DEFAULT_PAGE_SIZE = 15
 const DEFAULT_RADIUS = 2000
