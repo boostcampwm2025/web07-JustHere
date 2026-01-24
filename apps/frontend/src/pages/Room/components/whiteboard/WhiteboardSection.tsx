@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/shared/ui/Button'
-import { KakaoMap } from '@/components/KakaoMap'
+import { KakaoMap } from '@/shared/ui/KakaoMap'
 import { WhiteboardCanvas } from './WhiteboardCanvas'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/ui/icons/Icons'
 import { cn } from '@/shared/lib/cn.ts'

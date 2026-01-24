@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { RoomErrorBoundary } from './components/error-boundary/RoomErrorBoundary'
+import { RoomErrorBoundary } from './pages/Room/error-boundary/RoomErrorBoundary'
 import { OnboardingPage } from './pages/Onboarding/page'
 import { RoomPage } from './pages/Room/page'
 
