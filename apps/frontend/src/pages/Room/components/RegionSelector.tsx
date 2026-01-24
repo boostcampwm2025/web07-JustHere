@@ -19,9 +19,6 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 외부 클릭 시 닫기
-  // TODO: 외부 클릭 감지 로직 중복 (RegionSelector, RoomInfoModal, PlaceDetailModal, AddCategoryModal)
-  // TODO: 공통 훅으로 분리하면 좋을듯
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -32,14 +29,12 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 드롭다운 열릴 때 input 포커스
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus()
     }
   }, [isOpen])
 
-  // TODO: handleSearch 함수가 LocationListSection.tsx 에도 같은 양식으로 쓰임 (추후 Tanstank Query로 적용)
   const handleSearch = async (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || !keyword.trim()) return
 
@@ -80,8 +75,6 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* 트리거 버튼 */}
-      {/* TODO: Button 컴포넌트로 변경 필요 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -94,11 +87,8 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
         <ChevronDownIcon className={cn('w-4 h-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
-      {/* 드롭다운 패널 */}
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border animate-slide-up z-50">
-          {/* 검색바 */}
-          {/* TODO: SearchInput 컴포넌트로 변경 필요 */}
           <div className="p-3 border-b">
             <div className="relative">
               <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -119,7 +109,6 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
             </div>
           </div>
 
-          {/* 검색 결과 */}
           <div className="max-h-64 overflow-y-auto">
             {isLoading ? (
               <div className="p-4 text-center text-sm text-gray-500">검색 중...</div>

@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/useToast'
 import { RoomNotFoundError } from '@/types/socket-error.types'
 import { roomQueryKeys } from './useRoomQueries'
 
-export function useRoomSocketCache() {
+export const useRoomSocketCache = () => {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
@@ -43,7 +43,6 @@ export function useRoomSocketCache() {
   const userInfoRef = useRef<User | null>(null)
   const shouldRejoinRef = useRef(false)
 
-  // Error Boundary로 에러 전파
   if (error) throw error
 
   const handleErrorWithToast = useCallback(
@@ -89,7 +88,6 @@ export function useRoomSocketCache() {
       if (!roomId) return
 
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => {
-        // socketId 기준으로 중복 체크
         if (prev.some(x => x.socketId === socketId)) return prev
         return [...prev, { socketId, userId, name }]
       })
@@ -99,7 +97,6 @@ export function useRoomSocketCache() {
       const roomId = roomIdRef.current
       if (!roomId) return
 
-      // socketId 기준으로 삭제 (같은 userId의 다른 세션은 유지)
       queryClient.setQueryData<Participant[]>(roomQueryKeys.participants(roomId), (prev = []) => prev.filter(x => x.socketId !== socketId))
     }
 
@@ -146,7 +143,6 @@ export function useRoomSocketCache() {
     const onCategoryError = (errorPayload: ErrorPayload) => handleErrorWithToast(errorPayload)
 
     const onRoomError = (errorPayload: ErrorPayload) => {
-      // NOT_FOUND 에러는 Error Boundary로 전파
       if (errorPayload.errorType === 'NOT_FOUND') {
         roomIdRef.current = null
         userInfoRef.current = null
@@ -301,6 +297,6 @@ export function useRoomSocketCache() {
   return { ready, roomId, currentRegion, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory }
 }
 
-function isHardDisconnect(reason: Socket.DisconnectReason) {
+const isHardDisconnect = (reason: Socket.DisconnectReason) => {
   return reason === 'io server disconnect' || reason === 'io client disconnect'
 }

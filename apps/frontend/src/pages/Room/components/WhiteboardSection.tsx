@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/shared/ui/Button'
 import { KakaoMap } from '@/components/KakaoMap'
-import { WhiteboardCanvas } from '@/components/main/WhiteboardCanvas'
+import { WhiteboardCanvas } from './WhiteboardCanvas'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn.ts'
-import { useRoomCategories } from '@/hooks/room'
+import { useRoomCategories } from '../hooks'
 import type { Category } from '@/types/domain'
 import { AddCategoryModal } from './AddCategoryModal'
 import { DeleteCategoryModal } from './DeleteCategoryModal'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 
-// 탭의 아이콘/라벨 타입을 결정하기 위한 UI 타입
 type ToggleType = 'map' | 'canvas'
 
 interface WhiteboardSectionProps {
@@ -26,7 +25,7 @@ interface WhiteboardSectionProps {
   onMarkerClick?: (place: KakaoPlace | null) => void
 }
 
-function WhiteboardSection({
+export const WhiteboardSection = ({
   roomId,
   onCreateCategory,
   onDeleteCategory,
@@ -36,7 +35,7 @@ function WhiteboardSection({
   searchResults = [],
   selectedPlace,
   onMarkerClick,
-}: WhiteboardSectionProps) {
+}: WhiteboardSectionProps) => {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
@@ -48,8 +47,6 @@ function WhiteboardSection({
     setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
   }, [categories, activeCategoryId])
 
-  // TODO: src/utils 경로에 배치해서 별도 분리
-  // 아이콘 맵퍼 (Type에 따라 아이콘 반환)
   const getIconByType = (type: string) => {
     switch (type) {
       case '음식점':
@@ -65,27 +62,18 @@ function WhiteboardSection({
     }
   }
 
-  // TODO: [아진] 해당 버튼 스타일이 많이 사용되면 Button 컴포넌트를 확장한 ToggleButton을 따로 만들어도 좋을 것 같음.
-  // 토글 버튼 공통 스타일
   const toggleButtonBaseClass = 'rounded-full transition-all duration-200'
-
-  // 토글 활성화 스타일
   const activeClass = 'bg-primary hover:bg-primary-pressed ring-primary text-white shadow-md'
-
-  // 토글 비활성화 스타일
   const inactiveClass = 'text-gray hover:bg-gray-bg hover:text-black bg-transparent'
 
-  // TODO: 자식 컴포넌트가 너무 많으니까 Compound Pattern으로 관리해도? 괜찮을 듯 합니다.
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
-      {/* Tab Header */}
       <header className="flex items-end px-4 pt-3 bg-slate-100 border-b border-gray-200 overflow-x-auto">
         <nav className="flex items-end gap-1" role="tablist">
           {categories.map(category => (
             <div
               key={category.id}
               role="tab"
-              // 활성화 여부를 ID로 비교
               aria-selected={activeCategoryId === category.id}
               onClick={() => setActiveCategoryId(category.id)}
               onKeyDown={e => {
@@ -140,7 +128,6 @@ function WhiteboardSection({
         )}
       </header>
 
-      {/* Whiteboard Canvas */}
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
           activeCategoryId ? (
@@ -170,11 +157,8 @@ function WhiteboardSection({
           </div>
         )}
 
-        {/* 4. 하단 중앙 토글 버튼 (Floating UI) */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex p-1 bg-white rounded-full shadow-lg border border-slate-200">
-            {/* Canvas Mode Button */}
-            {/* TODO: 이것도 toggle.map(() => {} ) 이런 식으로 변경 가능할 듯 */}
             <Button
               size="sm"
               variant={viewMode === 'canvas' ? 'primary' : 'ghost'}
@@ -184,7 +168,6 @@ function WhiteboardSection({
               캔버스
             </Button>
 
-            {/* Map Mode Button */}
             <Button
               size="sm"
               variant={viewMode === 'map' ? 'primary' : 'ghost'}
@@ -199,8 +182,6 @@ function WhiteboardSection({
     </section>
   )
 }
-
-export { WhiteboardSection }
 
 function resolveActiveCategoryId(categories: Category[], currentId: string) {
   if (!categories || categories.length === 0) return ''

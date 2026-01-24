@@ -22,7 +22,7 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-function LocationListSection({
+export const LocationListSection = ({
   roomId,
   slug,
   currentRegion,
@@ -33,7 +33,7 @@ function LocationListSection({
   onSearchComplete,
   selectedPlace,
   onPlaceSelect,
-}: LocationListSectionProps) {
+}: LocationListSectionProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, handleSearch, loadMoreRef } = useLocationSearch({
     roomId,
@@ -83,12 +83,9 @@ function LocationListSection({
 
   return (
     <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200">
-      {/* Header Section */}
       <div className="flex flex-col gap-4 p-5 pb-4">
-        {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            // TODO: Button 컴포넌트로 변경 필요
             <button
               type="button"
               key={tab.id}
@@ -103,16 +100,13 @@ function LocationListSection({
             </button>
           ))}
 
-          {/* Region Selector */}
           <div className="ml-auto">
             <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
           </div>
         </div>
 
-        {/* Search Input */}
         <div className="relative">
           <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
-          {/* TODO: SearchInput 컴포넌트로 변경 필요 */}
           <input
             type="text"
             value={searchQuery}
@@ -122,7 +116,6 @@ function LocationListSection({
             className="w-full h-12 pl-10 pr-10 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary"
           />
           {searchQuery && (
-            // TODO: Button Component로 변경 필요
             <button
               type="button"
               onClick={() => setSearchQuery('')}
@@ -135,18 +128,14 @@ function LocationListSection({
         </div>
       </div>
 
-      {/* Divider */}
-      {/* TODO: Divider 컴포넌트로 변경 필요 */}
       <div className="h-px bg-gray-100" />
 
-      {/* Location List */}
       <div className="flex-1 overflow-y-auto p-5">
         {isLoading ? (
           <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
         ) : searchResults.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">검색어를 입력하고 Enter를 눌러주세요</div>
         ) : (
-          // TODO: 추후 후보 리스트와 별도의 목록을 보여줘야 하므로 장소 리스트 목록을 컴포넌트로 빼야 함.
           <div className="flex flex-col gap-4">
             {searchResults.map((place, index) => {
               const isSelected = pendingPlaceCard?.placeId === String(place.id)
@@ -154,7 +143,6 @@ function LocationListSection({
               return (
                 <div key={place.id}>
                   <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                    {/* Thumbnail */}
                     <div
                       className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
                       onClick={() => handlePlaceSelect(place)}
@@ -162,16 +150,13 @@ function LocationListSection({
                       <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 flex flex-col justify-between py-0.5">
-                      {/* Top Section */}
                       <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
                         <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
                         <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
                         <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
                       </div>
 
-                      {/* Bottom Section */}
                       <div className="flex items-center justify-end gap-2 mt-1">
                         <button
                           type="button"
@@ -194,8 +179,6 @@ function LocationListSection({
                     </div>
                   </div>
 
-                  {/* Divider between items */}
-                  {/* TODO: Divider 컴포넌트로 변경 필요 */}
                   {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
                 </div>
               )
@@ -209,9 +192,7 @@ function LocationListSection({
         )}
       </div>
 
-      {/* Footer Button */}
       <div className="p-5 pt-0">
-        {/* TODO: Button 컴포넌트로 변경 필요 */}
         <button
           type="button"
           className="w-full flex items-center justify-center gap-1.5 px-5 py-3 bg-primary hover:bg-primary-pressed text-white font-semibold rounded-full transition-colors"
@@ -220,10 +201,7 @@ function LocationListSection({
         </button>
       </div>
 
-      {/* Place Detail Modal */}
       <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />
     </div>
   )
 }
-
-export { LocationListSection }

@@ -7,8 +7,6 @@ interface DeleteCategoryModalProps {
   onConfirm: () => void
 }
 
-// TODO: AddCategoryModal, DeleteCategoryModal, PlaceDetailModal, RoomInfoModal 등 여러 모달이 존재
-// TODO: 전부 같은 layer로 구현되어있음 -> 공통 Modal 컴포넌트로 추출해서 분리하면 좋을 듯?
 export const DeleteCategoryModal = ({ categoryName, onClose, onConfirm }: DeleteCategoryModalProps) => {
   const onClickDelete = () => {
     onConfirm()

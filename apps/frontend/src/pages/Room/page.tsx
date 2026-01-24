@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
-import { Header } from '@/shared/ui/Header'
-import { WhiteboardSection } from '@/components/main/WhiteboardSection'
-import { LocationListSection } from '@/components/main/LocationListSection'
-import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from '@/hooks/room'
+import { RoomHeader } from './components/RoomHeader'
+import { WhiteboardSection } from './components/WhiteboardSection'
+import { LocationListSection } from './components/LocationListSection'
+import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from './hooks'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 import { socketBaseUrl } from '@/config/socket'
 import type { KakaoPlace } from '@/types/kakao'
@@ -48,7 +48,7 @@ export function RoomPage() {
   if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Header
+        <RoomHeader
           participants={participants}
           currentUserId={user.userId}
           roomLink={roomLink}
@@ -64,7 +64,7 @@ export function RoomPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header
+      <RoomHeader
         participants={participants}
         currentUserId={user.userId}
         roomLink={roomLink}

@@ -11,14 +11,9 @@ interface CursorChatInputProps {
   onEscape: () => void
 }
 
-/**
- * 커서챗 입력 컴포넌트
- * 위치 변경 시 이 컴포넌트만 리렌더링되어 부드러운 커서 추적 가능
- */
 export const CursorChatInput = ({ position, name, isFading, message, onMessageChange, onEscape }: CursorChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 마운트 시 자동 포커스
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus()

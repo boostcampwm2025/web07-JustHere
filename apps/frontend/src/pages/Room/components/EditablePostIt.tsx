@@ -36,14 +36,12 @@ export const EditablePostIt = ({
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // shapeRef 콜백 연결
   useEffect(() => {
     if (shapeRef) {
       shapeRef(groupRef.current)
     }
   }, [shapeRef])
 
-  // 편집 모드 진입 시 textarea에 포커스
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus()
@@ -51,14 +49,12 @@ export const EditablePostIt = ({
     }
   }, [isEditing])
 
-  // 더블클릭 → 편집 모드
   const handleDblClick = () => {
     draftRef.current = postIt.text
     onEditStart()
     setIsEditing(true)
   }
 
-  // 텍스트 변경 → 실시간 동기화
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     draftRef.current = e.target.value
     if (!isComposingRef.current) {
@@ -71,14 +67,12 @@ export const EditablePostIt = ({
     if (value !== postIt.text) onChange({ text: value })
   }
 
-  // 편집 종료
   const handleBlur = () => {
     commit()
     setIsEditing(false)
     onEditEnd()
   }
 
-  // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposingRef.current) return
 
@@ -107,10 +101,8 @@ export const EditablePostIt = ({
       onContextMenu={onSelect}
       onTransformEnd={onTransformEnd}
     >
-      {/* 포스트잇 배경 */}
       <Rect width={postIt.width} height={postIt.height} fill={postIt.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
 
-      {/* 편집 모드: HTML textarea */}
       {isEditing ? (
         <Html
           transform
@@ -141,7 +133,6 @@ export const EditablePostIt = ({
           />
         </Html>
       ) : (
-        /* 일반 모드: Konva Text */
         <Text
           text={postIt.text}
           x={scaledPadding}

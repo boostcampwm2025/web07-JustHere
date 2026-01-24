@@ -1,6 +1,6 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
 import type { ReactNode } from 'react'
-import { PlaceMarker } from './main/PlaceMarker'
+import { PlaceMarker } from '@/pages/Room/components/PlaceMarker'
 import type { KakaoPlace } from '@/types/kakao'
 
 interface KakaoMapProps {

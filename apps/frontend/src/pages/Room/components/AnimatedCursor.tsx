@@ -11,31 +11,20 @@ interface AnimatedCursorProps {
   cursor: CursorInfoWithId
 }
 
-/**
- * 애니메이션이 적용된 커서 컴포넌트
- * requestAnimationFrame + Lerp을 사용하여 부드러운 추적 애니메이션 구현
- * 커서챗 활성화 시 말풍선 UI 표시
- */
 export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   const groupRef = useRef<Konva.Group>(null)
 
-  // 목표 위치 저장
   const targetRef = useRef({ x: cursor.x, y: cursor.y })
-
-  // 현재 위치 저장 (부드럽게 보간되는 위치)
   const currentRef = useRef({ x: cursor.x, y: cursor.y })
 
-  // 애니메이션 객체 저장
   const animationRef = useRef<Konva.Animation | null>(null)
 
-  // 커서챗 fade-out 관련 상태
   const [isChatFading, setIsChatFading] = useState(false)
-  const [isChatFaded, setIsChatFaded] = useState(false) // fade 완료 상태 (이름표로 전환)
+  const [isChatFaded, setIsChatFaded] = useState(false)
   const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevChatMessageRef = useRef(cursor.chatMessage)
 
-  // fade-out 완전 비활성화 함수
   const deactivateFade = useCallback(() => {
     if (chatInactivityTimerRef.current) {
       clearTimeout(chatInactivityTimerRef.current)
@@ -49,20 +38,16 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
     setIsChatFaded(false)
   }, [])
 
-  // fade-out 애니메이션 시작 함수
   const startFadeOut = useCallback(() => {
     setIsChatFading(true)
-    // 3초간 fade-out 애니메이션 후 이름표로 전환
     chatFadeTimerRef.current = setTimeout(() => {
-      setIsChatFading(false) // fading 완료
-      setIsChatFaded(true) // 높이 축소 애니메이션 시작
+      setIsChatFading(false)
+      setIsChatFaded(true)
       chatFadeTimerRef.current = null
     }, 3000)
   }, [])
 
-  // 비활성화 타이머 리셋 (3초 후 fade-out 시작)
   const resetInactivityTimer = useCallback(() => {
-    // 기존 타이머들 정리
     if (chatInactivityTimerRef.current) {
       clearTimeout(chatInactivityTimerRef.current)
     }
@@ -70,31 +55,25 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
       clearTimeout(chatFadeTimerRef.current)
       chatFadeTimerRef.current = null
     }
-    // fade-out 중이었다면 즉시 다시 활성화 (opacity 복구)
     setIsChatFading(false)
     setIsChatFaded(false)
 
-    // 3초 후 fade-out 시작
     chatInactivityTimerRef.current = setTimeout(() => {
       startFadeOut()
     }, 3000)
   }, [startFadeOut])
 
-  // chatMessage가 변경될 때마다 타이머 리셋
   useEffect(() => {
     if (cursor.chatActive) {
-      // 메시지가 실제로 변경되었을 때만 타이머 리셋
       if (prevChatMessageRef.current !== cursor.chatMessage) {
         prevChatMessageRef.current = cursor.chatMessage
         resetInactivityTimer()
       }
     } else {
-      // 채팅 비활성화 시 타이머 정리
       deactivateFade()
     }
   }, [cursor.chatActive, cursor.chatMessage, resetInactivityTimer, deactivateFade])
 
-  // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
     return () => {
       if (chatInactivityTimerRef.current) {
@@ -107,41 +86,35 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   }, [])
 
   useEffect(() => {
-    // 목표 위치 업데이트
     targetRef.current = { x: cursor.x, y: cursor.y }
   }, [cursor.x, cursor.y])
 
   useEffect(() => {
     if (!groupRef.current) return
 
-    // 초기 위치 설정
     const initialX = cursor.x
     const initialY = cursor.y
     currentRef.current = { x: initialX, y: initialY }
     groupRef.current.x(initialX)
     groupRef.current.y(initialY)
 
-    // Konva.Animation으로 부드러운 추적 애니메이션
     const animation = new Konva.Animation(() => {
       if (!groupRef.current) return
 
       const current = currentRef.current
       const target = targetRef.current
 
-      // Lerp (Linear Interpolation): 현재 위치에서 목표 위치로 20%씩 이동
       const lerpFactor = 0.2
 
       current.x += (target.x - current.x) * lerpFactor
       current.y += (target.y - current.y) * lerpFactor
 
-      // 매우 가까워지면 정확히 목표 위치로 스냅
       const distance = Math.sqrt(Math.pow(target.x - current.x, 2) + Math.pow(target.y - current.y, 2))
       if (distance < 0.5) {
         current.x = target.x
         current.y = target.y
       }
 
-      // 그룹 위치 업데이트 (하위 요소들은 상대 좌표)
       groupRef.current.x(current.x)
       groupRef.current.y(current.y)
     }, groupRef.current.getLayer())
@@ -153,7 +126,7 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
       animation.stop()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // 컴포넌트 마운트 시 한 번만 실행
+  }, [])
 
   return (
     <Group ref={groupRef}>
@@ -176,7 +149,6 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
         <div className="relative flex flex-col items-start overflow-visible">
           <CursorIcon className={cn('w-6 h-6 drop-shadow-md', getCursorColor(cursor.name))} />
 
-          {/* 통합된 이름표/커서챗 말풍선 */}
           <div
             className={cn(
               'ml-5 -mt-1 text-white shadow-lg whitespace-nowrap',
@@ -188,10 +160,8 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
               transition: 'border-radius 0.3s ease-out, padding 0.3s ease-out',
             }}
           >
-            {/* 이름 (항상 표시) */}
             <div className="text-xs">{cursor.name}</div>
 
-            {/* 메시지 텍스트 (채팅 활성화 시에만, fade-out 및 높이 축소 적용) */}
             {cursor.chatActive && (
               <div
                 className="text-sm wrap-break-word max-w-[200px] overflow-hidden"

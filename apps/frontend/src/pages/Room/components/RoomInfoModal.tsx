@@ -17,8 +17,6 @@ interface RoomInfoModalProps {
   onTransferOwner?: (targetUserId: string) => void
 }
 
-// TODO: AddCategoryModal, DeleteCategoryModal, PlaceDetailModal, RoomInfoModal 등 여러 모달이 존재
-// TODO: 전부 같은 layer로 구현되어있음 -> 공통 Modal 컴포넌트로 추출해서 분리하면 좋을 듯?
 export const RoomInfoModal = ({
   onClose,
   userName,
@@ -73,7 +71,6 @@ export const RoomInfoModal = ({
           <div className="flex flex-col gap-2">
             {visibleParticipants.map(p => (
               <div key={p.userId} className="flex items-center gap-4 px-2 py-1">
-                {/* TODO: Header & RoomInfoModal 에서 사용자 프로필 표시 로직이 중복됨 -> Avatar 컴포넌트로 분리 필요 */}
                 <div
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center text-[18px] font-bold text-white shadow-sm',
@@ -152,7 +149,6 @@ export const RoomInfoModal = ({
           </div>
         </div>
 
-        {/* TODO: Divider 컴포넌트로 분리 가능할 듯 */}
         <div className="h-2 bg-gray-bg border-t border-b border-gray-200" />
       </div>
     </>
