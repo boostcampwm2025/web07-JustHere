@@ -93,6 +93,7 @@ function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwn
           <div className="flex items-center -space-x-2">
             {combinedParticipants.slice(0, displayCount).map(p => (
               <div key={p.userId} className="relative w-9 h-9 overflow-visible">
+                {/* TODO: Header & RoomInfoModal 에서 사용자 프로필 표시 로직이 중복됨 -> Avatar 컴포넌트로 분리 필요 */}
                 <div
                   className={cn(
                     'w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden',
@@ -116,6 +117,7 @@ function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwn
           </div>
         )}
 
+        {/* TODO: Divider 컴포넌트로 재사용 가능 */}
         {hasParticipants && <div className="w-px h-6 bg-gray-200" />}
 
         <div className="flex items-center gap-3">
