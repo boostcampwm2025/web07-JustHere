@@ -1,6 +1,6 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
 import type { ReactNode } from 'react'
-import PlaceMarker from './main/PlaceMarker'
+import { PlaceMarker } from './main/PlaceMarker'
 import type { KakaoPlace } from '@/types/kakao'
 
 interface KakaoMapProps {
@@ -30,7 +30,7 @@ interface KakaoMapProps {
   onMarkerClick?: (place: KakaoPlace) => void
 }
 
-function KakaoMap({
+export const KakaoMap = ({
   width = '100%',
   height = '100%',
   className = '',
@@ -42,7 +42,7 @@ function KakaoMap({
   markers = [],
   selectedMarkerId,
   onMarkerClick,
-}: KakaoMapProps) {
+}: KakaoMapProps) => {
   // 2. 카카오맵 로더
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY,
@@ -80,5 +80,3 @@ function KakaoMap({
     </Map>
   )
 }
-
-export default KakaoMap

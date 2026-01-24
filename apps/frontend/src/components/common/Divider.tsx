@@ -5,7 +5,7 @@ interface DividerProps {
   className?: string
 }
 
-export function Divider({ orientation = 'horizontal', className }: DividerProps) {
+export const Divider = ({ orientation = 'horizontal', className }: DividerProps) => {
   return (
     <div
       role="separator"

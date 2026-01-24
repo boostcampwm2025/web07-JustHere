@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/common/Button'
-import KakaoMap from '@/components/KakaoMap'
-import WhiteboardCanvas from '@/components/main/WhiteboardCanvas.tsx'
+import { KakaoMap } from '@/components/KakaoMap'
+import { WhiteboardCanvas } from '@/components/main/WhiteboardCanvas'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn.ts'
 import { useRoomCategories } from '@/hooks/room'
 import type { Category } from '@/types/domain'
-import AddCategoryModal from './AddCategoryModal'
-import DeleteCategoryModal from './DeleteCategoryModal'
+import { AddCategoryModal } from './AddCategoryModal'
+import { DeleteCategoryModal } from './DeleteCategoryModal'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 
@@ -200,7 +200,7 @@ function WhiteboardSection({
   )
 }
 
-export default WhiteboardSection
+export { WhiteboardSection }
 
 function resolveActiveCategoryId(categories: Category[], currentId: string) {
   if (!categories || categories.length === 0) return ''

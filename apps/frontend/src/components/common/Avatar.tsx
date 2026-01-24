@@ -10,7 +10,7 @@ export interface AvatarProps {
   showBorder?: boolean
 }
 
-export function Avatar({ name, size = 'md', className, isOwner = false, showBorder = false }: AvatarProps) {
+export const Avatar = ({ name, size = 'md', className, isOwner = false, showBorder = false }: AvatarProps) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-[18px]',
     md: 'w-9 h-9 text-sm',

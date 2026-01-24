@@ -9,7 +9,7 @@ interface InviteStepProps {
   onComplete: () => void
 }
 
-function InviteStep({ selectedLocation, inviteLink, onComplete }: InviteStepProps) {
+export const InviteStep = ({ selectedLocation, inviteLink, onComplete }: InviteStepProps) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -58,5 +58,3 @@ function InviteStep({ selectedLocation, inviteLink, onComplete }: InviteStepProp
     </main>
   )
 }
-
-export default InviteStep

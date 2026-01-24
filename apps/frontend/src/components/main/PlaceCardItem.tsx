@@ -23,7 +23,17 @@ const BASE_IMAGE_HEIGHT = 90
 const BASE_PADDING = 12
 const PLACEHOLDER_SRC = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
-function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onClick, onContextMenu, shapeRef, onTransformEnd }: PlaceCardItemProps) {
+export const PlaceCardItem = ({
+  card,
+  draggable,
+  onDragEnd,
+  onRemove,
+  onMouseDown,
+  onClick,
+  onContextMenu,
+  shapeRef,
+  onTransformEnd,
+}: PlaceCardItemProps) => {
   const groupRef = useRef<Konva.Group>(null)
 
   // 현재 스케일
@@ -129,5 +139,3 @@ function PlaceCardItem({ card, draggable, onDragEnd, onRemove, onMouseDown, onCl
     </Group>
   )
 }
-
-export default PlaceCardItem

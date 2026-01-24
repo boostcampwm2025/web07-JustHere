@@ -17,7 +17,7 @@ interface EditablePostItProps {
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
-function EditablePostIt({
+export const EditablePostIt = ({
   postIt,
   draggable,
   onDragEnd,
@@ -28,7 +28,7 @@ function EditablePostIt({
   onEditEnd,
   shapeRef,
   onTransformEnd,
-}: EditablePostItProps) {
+}: EditablePostItProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
@@ -159,5 +159,3 @@ function EditablePostIt({
     </Group>
   )
 }
-
-export default EditablePostIt

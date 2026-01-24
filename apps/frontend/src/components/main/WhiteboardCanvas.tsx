@@ -1,4 +1,4 @@
-import CanvasContextMenu from '@/components/main/CanvasContextMenu'
+import { CanvasContextMenu } from '@/components/main/CanvasContextMenu'
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
@@ -6,10 +6,10 @@ import { useYjsSocket } from '@/hooks/useYjsSocket'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/types/canvas.types'
 import { cn } from '@/utils/cn'
 import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/components/Icons'
-import EditablePostIt from './EditablePostIt'
-import AnimatedCursor from './AnimatedCursor'
-import PlaceCardItem from './PlaceCardItem'
-import CursorChatInput from './CursorChatInput'
+import { EditablePostIt } from './EditablePostIt'
+import { AnimatedCursor } from './AnimatedCursor'
+import { PlaceCardItem } from './PlaceCardItem'
+import { CursorChatInput } from './CursorChatInput'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/utils/userStorage'
 
@@ -65,7 +65,7 @@ const isBoxIntersecting = (selectionBox: SelectionBox, boundingBox: BoundingBox)
 
 type DragInitialState = { type: 'postit' | 'placeCard'; x: number; y: number } | { type: 'line'; points: number[] }
 
-function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) {
+export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
   const shapeRefs = useRef(new Map<string, Konva.Group>())
@@ -1104,5 +1104,3 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     </div>
   )
 }
-
-export default WhiteboardCanvas

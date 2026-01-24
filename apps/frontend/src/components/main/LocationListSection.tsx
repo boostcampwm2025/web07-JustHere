@@ -3,8 +3,8 @@ import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '
 import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
-import PlaceDetailModal from './PlaceDetailModal'
-import RegionSelector from './RegionSelector'
+import { PlaceDetailModal } from './PlaceDetailModal'
+import { RegionSelector } from './RegionSelector'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 
 interface LocationListSectionProps {
@@ -226,4 +226,4 @@ function LocationListSection({
   )
 }
 
-export default LocationListSection
+export { LocationListSection }

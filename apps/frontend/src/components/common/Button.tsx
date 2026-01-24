@@ -8,7 +8,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   iconPosition?: 'left' | 'right'
 }
 
-export function Button({ className, variant = 'primary', size = 'md', icon, iconPosition = 'left', children, ...props }: ButtonProps) {
+export const Button = ({ className, variant = 'primary', size = 'md', icon, iconPosition = 'left', children, ...props }: ButtonProps) => {
   const baseStyles =
     'flex items-center justify-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
 

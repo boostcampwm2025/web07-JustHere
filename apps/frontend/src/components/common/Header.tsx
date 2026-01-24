@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { BellIcon, CogIcon, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/components/Icons'
 import Logo from '@/assets/images/logo.svg?react'
-import RoomInfoModal from '@/components/main/RoomInfoModal'
+import { RoomInfoModal } from '@/components/main/RoomInfoModal'
 import { Button } from '@/components/common/Button'
 import type { Participant } from '@/types/domain'
 import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
@@ -25,7 +25,7 @@ interface HeaderProps {
   currentRegion?: string
 }
 
-export default function Header(props: MinimalHeaderProps | HeaderProps) {
+export const Header = (props: MinimalHeaderProps | HeaderProps) => {
   const isMinimal = props.minimal === true
 
   if (isMinimal) {
@@ -51,7 +51,16 @@ export default function Header(props: MinimalHeaderProps | HeaderProps) {
   return <FullHeader {...props} />
 }
 
-function FullHeader({ participants, currentUserId, roomLink, onUpdateName, isOwner = false, ownerId, onTransferOwner, currentRegion }: HeaderProps) {
+const FullHeader = ({
+  participants,
+  currentUserId,
+  roomLink,
+  onUpdateName,
+  isOwner = false,
+  ownerId,
+  onTransferOwner,
+  currentRegion,
+}: HeaderProps) => {
   const { slug } = useParams<{ slug: string }>()
   const [userName, setUserName] = useState(() => (slug ? getOrCreateStoredUser(slug).name : ''))
 

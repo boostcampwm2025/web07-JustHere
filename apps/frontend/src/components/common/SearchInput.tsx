@@ -10,7 +10,7 @@ interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string
 }
 
-export function SearchInput({ value, onChange, onClear, onSearch, onKeyDown, className, containerClassName, ...props }: SearchInputProps) {
+export const SearchInput = ({ value, onChange, onClear, onSearch, onKeyDown, className, containerClassName, ...props }: SearchInputProps) => {
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event)
     if (!event.defaultPrevented && event.key === 'Enter') {

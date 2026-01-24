@@ -7,7 +7,7 @@ interface OnboardingProgressProps {
   currentStep: OnboardingStep
 }
 
-export function OnboardingProgress({ currentStep }: OnboardingProgressProps) {
+export const OnboardingProgress = ({ currentStep }: OnboardingProgressProps) => {
   const isLocationActive = currentStep === 'location' || currentStep === 'invite'
   const isInviteActive = currentStep === 'invite'
 

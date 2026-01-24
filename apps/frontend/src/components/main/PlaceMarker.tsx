@@ -9,7 +9,7 @@ interface PlaceMarkerProps {
   onClick?: (place: KakaoPlace) => void
 }
 
-export default function PlaceMarker({ place, isSelected, onClick }: PlaceMarkerProps) {
+export const PlaceMarker = ({ place, isSelected, onClick }: PlaceMarkerProps) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const position = {

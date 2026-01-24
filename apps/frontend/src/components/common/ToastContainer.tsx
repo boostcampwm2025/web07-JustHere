@@ -9,7 +9,7 @@ const toastTypeStyles: Record<ToastType, string> = {
   info: 'text-gray',
 }
 
-export function ToastContainer() {
+export const ToastContainer = () => {
   const { toasts, removeToast } = useToast()
 
   if (toasts.length === 0) return null

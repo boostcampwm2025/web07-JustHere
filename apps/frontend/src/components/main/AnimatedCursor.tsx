@@ -16,7 +16,7 @@ interface AnimatedCursorProps {
  * requestAnimationFrame + Lerp을 사용하여 부드러운 추적 애니메이션 구현
  * 커서챗 활성화 시 말풍선 UI 표시
  */
-const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
+export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
   const groupRef = useRef<Konva.Group>(null)
 
   // 목표 위치 저장
@@ -211,5 +211,3 @@ const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
 })
 
 AnimatedCursor.displayName = 'AnimatedCursor'
-
-export default AnimatedCursor

@@ -18,7 +18,7 @@ export interface ModalProps {
   closeOnOverlayClick?: boolean
 }
 
-export function Modal({
+export const Modal = ({
   isOpen,
   onClose,
   title,
@@ -30,7 +30,7 @@ export function Modal({
   overlayClassName,
   showCloseButton = true,
   closeOnOverlayClick = true,
-}: ModalProps) {
+}: ModalProps) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'

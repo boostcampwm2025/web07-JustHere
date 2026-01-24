@@ -1,9 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import OnboardingPage from '@/pages/OnboardingPage'
-import MainPage from '@/pages/MainPage'
-import { RoomErrorBoundary } from '@/components/error-boundary/RoomErrorBoundary'
+import { OnboardingPage } from './pages/Onboarding'
+import { RoomErrorBoundary } from './components/error-boundary/RoomErrorBoundary'
+import { RoomPage } from './pages/Room'
 
-function App() {
+export function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/onboarding" replace />} />
@@ -12,7 +12,7 @@ function App() {
         path="/room/:slug"
         element={
           <RoomErrorBoundary>
-            <MainPage />
+            <RoomPage />
           </RoomErrorBoundary>
         }
       />

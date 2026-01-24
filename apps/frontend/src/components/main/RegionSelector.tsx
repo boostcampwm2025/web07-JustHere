@@ -11,7 +11,7 @@ interface RegionSelectorProps {
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
 }
 
-export default function RegionSelector({ slug, onRegionChange }: RegionSelectorProps) {
+export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [results, setResults] = useState<KakaoPlace[]>([])

@@ -4,7 +4,7 @@ import { searchKeyword } from '@/api/kakao'
 import { Button } from '@/components/common/Button'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResultsList } from '@/components/onboarding/SearchResultsList'
-import KakaoMap from '@/components/KakaoMap'
+import { KakaoMap } from '@/components/KakaoMap'
 import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { KakaoPlace } from '@/types/kakao'
 
@@ -12,7 +12,7 @@ interface LocationStepProps {
   onNext: (location: { name: string; address: string; x: number; y: number }) => void
 }
 
-function LocationStep({ onNext }: LocationStepProps) {
+export const LocationStep = ({ onNext }: LocationStepProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
@@ -107,5 +107,3 @@ function LocationStep({ onNext }: LocationStepProps) {
     </main>
   )
 }
-
-export default LocationStep

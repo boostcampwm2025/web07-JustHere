@@ -19,7 +19,7 @@ interface RoomInfoModalProps {
 
 // TODO: AddCategoryModal, DeleteCategoryModal, PlaceDetailModal, RoomInfoModal 등 여러 모달이 존재
 // TODO: 전부 같은 layer로 구현되어있음 -> 공통 Modal 컴포넌트로 추출해서 분리하면 좋을 듯?
-export default function RoomInfoModal({
+export const RoomInfoModal = ({
   onClose,
   userName,
   roomLink,
@@ -29,7 +29,7 @@ export default function RoomInfoModal({
   isOwner = false,
   ownerId,
   onTransferOwner,
-}: RoomInfoModalProps) {
+}: RoomInfoModalProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
   // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
   const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)

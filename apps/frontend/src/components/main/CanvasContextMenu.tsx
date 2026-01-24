@@ -7,7 +7,7 @@ interface ContextMenuProps {
   onClose: () => void
 }
 
-export default function CanvasContextMenu({ position, onDelete, onClose }: ContextMenuProps) {
+export const CanvasContextMenu = ({ position, onDelete, onClose }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null)
 
   // 외부 영역 클릭 감지
