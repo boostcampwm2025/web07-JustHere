@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ContentCopyIcon, CheckIcon } from '@/components/Icons'
 import { Button } from '@/shared/ui/Button'
-import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
+import { OnboardingProgress } from './OnboardingProgress'
 
 interface InviteStepProps {
   selectedLocation: string

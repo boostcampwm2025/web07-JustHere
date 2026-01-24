@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LocationStep } from '@/components/onboarding/LocationStep'
-import { InviteStep } from '@/components/onboarding/InviteStep'
+import { LocationStep, InviteStep } from './components'
 import { Header } from '@/shared/ui/Header'
 import { createRoom } from '@/api/room'
 import { socketBaseUrl } from '@/config/socket'

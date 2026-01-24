@@ -3,10 +3,10 @@ import { MapMarker } from 'react-kakao-maps-sdk'
 import { searchKeyword } from '@/api/kakao'
 import { Button } from '@/shared/ui/Button'
 import { SearchInput } from '@/shared/ui/SearchInput'
-import { SearchResultsList } from '@/components/onboarding/SearchResultsList'
 import { KakaoMap } from '@/components/KakaoMap'
-import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 import type { KakaoPlace } from '@/types/kakao'
+import { SearchResultsList } from './SearchResultsList'
+import { OnboardingProgress } from './OnboardingProgress'
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string; x: number; y: number }) => void
