@@ -1,5 +1,5 @@
 import { CloseIcon } from '@/components/Icons'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import type { KakaoPlace } from '@/types/kakao'
 
 type PlaceDetailModalProps = {

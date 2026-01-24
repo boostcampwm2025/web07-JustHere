@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { KakaoMap } from '@/components/KakaoMap'
 import { WhiteboardCanvas } from '@/components/main/WhiteboardCanvas'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/components/Icons'

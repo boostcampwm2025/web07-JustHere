@@ -5,7 +5,7 @@ import '@/index.css'
 import App from '@/App'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from '@/contexts/ToastProvider'
-import { ToastContainer } from '@/components/common/ToastContainer'
+import { ToastContainer } from '@/shared/ui/ToastContainer'
 
 const queryClient = new QueryClient({
   defaultOptions: {

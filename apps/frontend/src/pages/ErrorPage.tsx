@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { AlertCircleIcon } from '@/components/Icons'
-import { Header } from '@/components/common/Header'
+import { Header } from '@/shared/ui/Header'
 
 type ErrorType = 'room-not-found' | 'unknown'
 

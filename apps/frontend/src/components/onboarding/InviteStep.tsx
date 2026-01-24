@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ContentCopyIcon, CheckIcon } from '@/components/Icons'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress'
 
 interface InviteStepProps {

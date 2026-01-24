@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CloseIcon } from '@/components/Icons'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { cn } from '@/utils/cn'
 
 export interface ModalProps {

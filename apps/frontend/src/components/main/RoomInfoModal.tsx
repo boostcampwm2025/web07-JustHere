@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/components/Icons'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import type { Participant } from '@/types/domain'
 import { getParticipantColor, getParticipantInitial } from '@/utils/participant'
 import { cn } from '@/utils/cn'

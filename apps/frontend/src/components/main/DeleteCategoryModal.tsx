@@ -1,4 +1,4 @@
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { CloseIcon } from '@/components/Icons'
 
 interface DeleteCategoryModalProps {

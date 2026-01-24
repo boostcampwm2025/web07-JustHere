@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react'
-import { Button } from '@/components/common/Button'
+import { Button } from '@/shared/ui/Button'
 import { CloseIcon, CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/components/Icons'
 import { cn } from '@/utils/cn'
 
