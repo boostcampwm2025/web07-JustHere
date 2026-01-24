@@ -5,7 +5,7 @@ import type { KakaoPlace } from '@/types/kakao'
 import type { PlaceCard } from '@/types/canvas.types'
 import { PlaceDetailModal } from './PlaceDetailModal'
 import { RegionSelector } from './RegionSelector'
-import { useLocationSearch } from '@/hooks/useLocationSearch'
+import { useLocationSearch } from '../../hooks'
 
 interface LocationListSectionProps {
   roomId: string
@@ -147,7 +147,7 @@ export const LocationListSection = ({
                       className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
                       onClick={() => handlePlaceSelect(place)}
                     >
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
+                      <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
                     </div>
 
                     <div className="flex-1 flex flex-col justify-between py-0.5">

@@ -21,8 +21,14 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   const [hasMore, setHasMore] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const isFetchingMoreRef = useRef(false)
+  const onSearchCompleteRef = useRef<UseLocationSearchOptions['onSearchComplete']>(onSearchComplete)
+
   // 최신 요청만 반영하기 위한 요청 식별자
   const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    onSearchCompleteRef.current = onSearchComplete
+  }, [onSearchComplete])
 
   // 검색어 비움 시 상태 초기화 + 진행 중 요청 무효화
   const resetAndInvalidate = useCallback(() => {
@@ -76,11 +82,14 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
         })
         // 최신 요청이 아니면 응답을 버림
         if (requestIdRef.current !== requestId) return
-        const newResults = mode === 'append' ? [...searchResults, ...documents] : documents
-        setSearchResults(newResults)
+
+        setSearchResults(prev => {
+          const newResults = mode === 'append' ? [...prev, ...documents] : documents
+          onSearchCompleteRef.current?.(newResults)
+          return newResults
+        })
         setPage(nextPage)
         setHasMore(!meta.is_end)
-        onSearchComplete?.(newResults)
       } catch (error) {
         console.error('검색 실패:', error)
       } finally {
@@ -91,7 +100,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
         }
       }
     },
-    [searchQuery, roomId, radius, pageSize, resetAndInvalidate],
+    [pageSize, radius, resetAndInvalidate, roomId, searchQuery],
   )
 
   const handleSearch = useCallback(async () => {

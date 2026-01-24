@@ -1,5 +1,5 @@
-export { RoomHeader } from './RoomHeader'
-export { RoomInfoModal } from './RoomInfoModal'
+export { RoomHeader } from './header/RoomHeader'
+export { RoomInfoModal } from './header/RoomInfoModal'
 
-export { LocationListSection } from './LocationListSection'
-export { WhiteboardSection } from './WhiteboardSection'
+export { LocationListSection } from './location/LocationListSection'
+export { WhiteboardSection } from './whiteboard/WhiteboardSection'

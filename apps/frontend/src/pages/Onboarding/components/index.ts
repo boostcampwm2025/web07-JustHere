@@ -1,2 +1,2 @@
-export { InviteStep } from './InviteStep'
-export { LocationStep } from './LocationStep'
+export { InviteStep } from './invite-step/InviteStep'
+export { LocationStep } from './location-step/LocationStep'

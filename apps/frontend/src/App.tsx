@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { OnboardingPage } from './pages/Onboarding'
 import { RoomErrorBoundary } from './components/error-boundary/RoomErrorBoundary'
-import { RoomPage } from './pages/Room'
+import { OnboardingPage } from './pages/Onboarding/page'
+import { RoomPage } from './pages/Room/page'
 
 export function App() {
   return (

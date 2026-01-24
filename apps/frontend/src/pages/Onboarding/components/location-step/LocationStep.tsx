@@ -6,7 +6,7 @@ import { SearchInput } from '@/shared/ui/SearchInput'
 import { KakaoMap } from '@/components/KakaoMap'
 import type { KakaoPlace } from '@/types/kakao'
 import { SearchResultsList } from './SearchResultsList'
-import { OnboardingProgress } from './OnboardingProgress'
+import { OnboardingProgress } from '../onboarding-progress/OnboardingProgress'
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string; x: number; y: number }) => void

@@ -1,1 +1,0 @@
-export { RoomPage } from './page'
