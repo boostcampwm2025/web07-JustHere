@@ -1,7 +1,7 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
 import type { ReactNode } from 'react'
 import type { KakaoPlace } from '@/shared/types'
-import { PlaceMarker } from './PlaceMarker'
+import { PlaceMarker } from './place-marker'
 
 interface KakaoMapProps {
   // 크기 관련 (기본값: 100%)

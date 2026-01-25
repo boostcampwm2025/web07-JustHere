@@ -1,0 +1,1 @@
+export { EditablePostIt } from './EditablePostIt'

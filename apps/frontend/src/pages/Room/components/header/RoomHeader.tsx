@@ -4,7 +4,7 @@ import { Avatar, Button, Divider, MapMarkerIcon, ShareVariantIcon } from '@/shar
 import type { Participant } from '@/shared/types'
 import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
-import { RoomInfoModal } from './RoomInfoModal'
+import { RoomInfoModal } from './room-info'
 
 interface RoomHeaderProps {
   participants: Participant[]

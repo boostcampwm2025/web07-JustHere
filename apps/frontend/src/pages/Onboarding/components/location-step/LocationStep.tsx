@@ -4,7 +4,7 @@ import { searchKeyword } from '@/shared/api/kakao'
 import { Button } from '@/shared/ui'
 import { SearchInput, KakaoMap } from '@/shared/components'
 import type { KakaoPlace } from '@/shared/types'
-import { SearchResultsList } from './SearchResultsList'
+import { SearchResultsList } from './search-result'
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string; x: number; y: number }) => void
