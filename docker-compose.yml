@@ -50,6 +50,39 @@ services:
                sleep 12h & wait $${!};
              done"
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: monitoring-prometheus
+    restart: always
+    volumes:
+      # 1. 로컬 설정 파일을 컨테이너 내부로 마운트
+      - ./docker/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.prod.yml
+      # 2. 수집된 데이터를 영구 저장 (컨테이너 삭제돼도 유지)
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.prod.yml'
+      - '--storage.tsdb.retention.time=15d' # 데이터 15일 보관
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: monitoring-grafana
+    restart: always
+    depends_on:
+      - prometheus
+    ports:
+      - '3001:3000' # 외부에서 3001번 포트로 접속 (http://IP:3001)
+    volumes:
+      # 대시보드 설정을 영구 저장
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
