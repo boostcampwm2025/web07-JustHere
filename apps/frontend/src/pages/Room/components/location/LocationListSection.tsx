@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon, Button } from '@/shared/ui'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon, Button, Divider } from '@/shared/ui'
 import type { KakaoPlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { RegionSelector } from './region-selector'
@@ -111,7 +111,7 @@ export const LocationListSection = ({
         />
       </div>
 
-      <div className="h-px bg-gray-100" />
+      <Divider />
 
       <div className="flex-1 overflow-y-auto p-5">
         {isLoading ? (
@@ -159,7 +159,7 @@ export const LocationListSection = ({
                     </div>
                   </div>
 
-                  {index < searchResults.length - 1 && <div className="h-px bg-gray-100 mt-4" />}
+                  {index < searchResults.length - 1 && <Divider className="mt-4" />}
                 </div>
               )
             })}

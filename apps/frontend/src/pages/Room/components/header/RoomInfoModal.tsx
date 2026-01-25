@@ -94,7 +94,9 @@ export const RoomInfoModal = ({
                 </div>
               ))}
             </div>
+
             <Divider className="my-4" />
+
             <div className="gap-4 flex flex-col">
               <div>
                 <label className="block text-sm text-gray mb-1.5">이름 수정</label>

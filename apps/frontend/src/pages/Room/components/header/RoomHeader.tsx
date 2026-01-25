@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Button, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
+import { Button, Divider, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
 import { getParticipantColor, getParticipantInitial, getOrCreateStoredUser, updateStoredUserName, cn } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
@@ -57,7 +57,7 @@ export const RoomHeader = ({
               <MapMarkerIcon className="w-4 h-4 text-primary" />
               <span className="text-sm text-gray-700">{currentRegion}</span>
             </div>
-            <div className="w-px h-6 bg-gray-200" />
+            <Divider orientation="vertical" />
           </>
         )}
         {hasParticipants && (
