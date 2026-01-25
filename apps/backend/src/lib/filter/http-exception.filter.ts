@@ -2,6 +2,7 @@ import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorResponse, ErrorStatusMap, ErrorType, ResponseStatus } from '@/lib/types/response.type'
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import { Request, Response } from 'express'
+import * as Sentry from '@sentry/nestjs'
 
 @Catch(Error, CustomException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -45,6 +46,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message,
       }
       this.logger.error(`[${request.method}] ${request.url} ${status} - Error: ${JSON.stringify(errorLog)}`, exception.stack)
+    }
+
+    if (process.env.SENTRY_DSN && status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      Sentry.withScope(scope => {
+        scope.setTag('method', request.method)
+        scope.setTag('url', request.url)
+        scope.setTag('status', String(status))
+        scope.setExtra('errorType', errorType)
+        Sentry.captureException(exception)
+      })
     }
 
     // 클라이언트에게 보낼 응답
