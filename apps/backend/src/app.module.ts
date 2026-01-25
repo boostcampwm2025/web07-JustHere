@@ -14,6 +14,7 @@ import { RoomModule } from '@/modules/room/room.module'
 import { YjsModule } from '@/modules/canvas/yjs.module'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
+import { PrometheusModule } from '@willsoto/nestjs-prometheus'
 
 @Module({
   imports: [
@@ -27,6 +28,17 @@ import { ScheduleModule } from '@nestjs/schedule'
     RoomModule,
     YjsModule,
     SwaggerConfigModule,
+    PrometheusModule.register({
+      path: '/metrics',
+      defaultMetrics: {
+        enabled: true, // CPU, Memory, EventLoop 등 기본 지표 수집
+      },
+      defaultLabels: {
+        // Docker 컨테이너 ID(Hostname)를 라벨로 사용하여 여러 대 서버 사용 시 구분가능하게 함
+        app: 'justhere-app-server',
+        instance: process.env.HOSTNAME ?? 'backend',
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [
