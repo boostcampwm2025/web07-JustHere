@@ -83,7 +83,6 @@ function EditablePostIt({
 
   // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    console.log(scaledPadding)
     if (isComposingRef.current) return
 
     if (e.key === 'Enter' && !e.shiftKey) {
