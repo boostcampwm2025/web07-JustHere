@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-import { cn } from '@/shared/lib/cn'
-import { getParticipantColor } from '@/shared/lib/participant'
+import { getParticipantColor, cn } from '@/shared/utils'
 
 interface CursorChatInputProps {
   position: { x: number; y: number }

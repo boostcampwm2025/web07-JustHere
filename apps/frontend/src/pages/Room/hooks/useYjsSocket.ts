@@ -12,7 +12,7 @@ import type {
   CursorInfoWithId,
 } from '@/shared/types/yjs.types'
 import type { PostIt, Line, PlaceCard } from '@/shared/types/canvas.types'
-import { throttle } from '@/shared/lib/throttle'
+import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks/useSocketClient'
 import { socketBaseUrl } from '@/shared/config/socket'
 

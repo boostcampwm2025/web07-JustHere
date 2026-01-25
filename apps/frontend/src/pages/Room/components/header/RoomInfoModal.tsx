@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import { CloseIcon, PencilIcon, ContentCopyIcon } from '@/shared/ui/icons/Icons'
 import { Button } from '@/shared/ui/Button'
 import type { Participant } from '@/shared/types/domain'
-import { getParticipantColor, getParticipantInitial } from '@/shared/lib/participant'
-import { cn } from '@/shared/lib/cn'
+import { getParticipantColor, getParticipantInitial, cn } from '@/shared/utils'
 
 interface RoomInfoModalProps {
   onClose: () => void

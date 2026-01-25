@@ -4,8 +4,7 @@ import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { CursorInfoWithId } from '@/shared/types/yjs.types'
 import { CursorIcon } from '@/shared/ui/icons/Icons'
-import { getCursorColor, getParticipantColor } from '@/shared/lib/participant'
-import { cn } from '@/shared/lib/cn'
+import { getCursorColor, getParticipantColor, cn } from '@/shared/utils'
 
 interface AnimatedCursorProps {
   cursor: CursorInfoWithId

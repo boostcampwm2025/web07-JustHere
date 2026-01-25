@@ -1,7 +1,7 @@
 import { useState, type ElementType } from 'react'
 import { Button } from '@/shared/ui/Button'
 import { CloseIcon, CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/ui/icons/Icons'
-import { cn } from '@/shared/lib/cn'
+import { cn } from '@/shared/utils'
 
 type Category = {
   name: '음식점' | '카페' | '술집' | '가볼만한곳' | '직접 입력'
