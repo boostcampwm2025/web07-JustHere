@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket, type ManagerOptions, type SocketOptions } from 'socket.io-client'
+import * as Sentry from '@sentry/react'
 
 type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
@@ -41,29 +42,47 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
 
     socketRef.current = socket
 
+    const addSocketBreadcrumb = (message: string, data?: Record<string, unknown>, level: 'info' | 'warning' | 'error' = 'info') => {
+      Sentry.addBreadcrumb({
+        category: 'socket',
+        message,
+        data: {
+          namespace: namespace ?? 'root',
+          url: fullUrl,
+          ...data,
+        },
+        level,
+      })
+    }
+
     const handleConnect = () => {
       setStatus('connected')
       reconnectAttemptsRef.current = 0
+      addSocketBreadcrumb('connect')
     }
 
     const handleDisconnect = (reason: Socket.DisconnectReason) => {
       if (reason === 'io server disconnect' || reason === 'io client disconnect') {
         setStatus('disconnected')
         reconnectAttemptsRef.current = 0
+        addSocketBreadcrumb('disconnect', { reason }, 'warning')
         return
       }
 
       setStatus('reconnecting')
+      addSocketBreadcrumb('disconnect', { reason }, 'warning')
     }
 
     const handleConnectError = (error: Error) => {
       setStatus('reconnecting')
+      addSocketBreadcrumb('connect_error', { message: error.message }, 'error')
       onError?.(error)
     }
 
     const handleReconnectAttempt = (attemptNumber: number) => {
       reconnectAttemptsRef.current = attemptNumber
       setStatus('reconnecting')
+      addSocketBreadcrumb('reconnect_attempt', { attemptNumber }, 'warning')
 
       if (attemptNumber >= SOCKET_RECONNECTION_CONFIG.maxAttempts) {
         setStatus('disconnected')
@@ -72,6 +91,7 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
     }
 
     const handleError = (error: Error) => {
+      addSocketBreadcrumb('socket_error', { message: error.message }, 'error')
       onError?.(error)
     }
 
