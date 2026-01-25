@@ -1,5 +1,4 @@
-import { Button } from '@/shared/ui/Button'
-import { CloseIcon } from '@/shared/ui/icons/Icons'
+import { Button, CloseIcon } from '@/shared/ui'
 
 interface DeleteCategoryModalProps {
   categoryName: string

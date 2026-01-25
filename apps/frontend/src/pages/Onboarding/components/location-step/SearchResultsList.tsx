@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
-import { CheckIcon } from '@/shared/ui/icons/Icons'
-import { cn } from '@/shared/utils/cn'
+import { CheckIcon } from '@/shared/ui'
+import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types/kakao'
 
 interface SearchResultsListProps {

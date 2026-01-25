@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/ui/icons/Icons'
+import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared/types/canvas.types'

@@ -1,6 +1,5 @@
-import { BellIcon, CogIcon } from '@/shared/ui/icons/Icons'
 import Logo from '@/assets/images/logo.svg?react'
-import { Button } from '@/shared/ui/Button'
+import { Button, BellIcon, CogIcon } from '@/shared/ui'
 
 interface MinimalHeaderProps {
   minimal: true

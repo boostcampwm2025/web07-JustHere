@@ -14,7 +14,7 @@ import type {
   SelectionBox,
   BoundingBox,
 } from '@/shared/types/canvas.types'
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui/icons/Icons'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui'
 import { AnimatedCursor } from './AnimatedCursor'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { CursorChatInput } from './CursorChatInput'

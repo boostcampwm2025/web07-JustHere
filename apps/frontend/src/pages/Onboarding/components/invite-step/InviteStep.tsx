@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { ContentCopyIcon, CheckIcon } from '@/shared/ui/icons/Icons'
-import { Button } from '@/shared/ui/Button'
+import { ContentCopyIcon, CheckIcon, Button } from '@/shared/ui'
 
 interface InviteStepProps {
   selectedLocation: string

@@ -3,7 +3,7 @@ import { Group } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { CursorInfoWithId } from '@/shared/types/yjs.types'
-import { CursorIcon } from '@/shared/ui/icons/Icons'
+import { CursorIcon } from '@/shared/ui'
 import { getCursorColor, getParticipantColor, cn } from '@/shared/utils'
 
 interface AnimatedCursorProps {

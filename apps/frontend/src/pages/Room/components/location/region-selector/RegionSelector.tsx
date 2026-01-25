@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/ui/icons/Icons'
+import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/ui'
 import { searchKeyword } from '@/shared/api/kakao'
 import { updateRoom } from '@/shared/api/room'
 import { cn } from '@/shared/utils'
