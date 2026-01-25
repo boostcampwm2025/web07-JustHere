@@ -1,7 +1,7 @@
 import { AlertCircleIcon } from '@/shared/ui'
 import { useToast } from '@/shared/hooks'
 import { cn } from '@/shared/utils'
-import type { ToastType } from '@/shared/toast/ToastContext'
+import type { ToastType } from '@/shared/toast'
 
 const toastTypeStyles: Record<ToastType, string> = {
   error: 'text-primary',

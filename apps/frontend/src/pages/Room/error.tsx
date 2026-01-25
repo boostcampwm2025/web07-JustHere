@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Button, AlertCircleIcon, Header } from '@/shared/ui'
+import { Button, AlertCircleIcon } from '@/shared/ui'
+import { Header } from '@/shared/components'
 
 type ErrorType = 'room-not-found' | 'unknown'
 
@@ -34,7 +35,7 @@ export default function RoomErrorPage({ errorType = 'unknown', onReset }: ErrorP
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Header minimal />
+      <Header />
       <div className="flex flex-1 flex-col items-center justify-center bg-gray-bg px-4">
         <div className="flex flex-col items-center text-center max-w-md">
           <div className="size-24 mb-6 rounded-full bg-primary-bg flex items-center justify-center">

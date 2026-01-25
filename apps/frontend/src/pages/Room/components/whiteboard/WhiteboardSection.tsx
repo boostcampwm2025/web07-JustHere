@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Button, KakaoMap, SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/ui'
+import { Button, SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/ui'
+import { KakaoMap } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { Category } from '@/shared/types/domain'
 import type { KakaoPlace } from '@/shared/types/kakao'

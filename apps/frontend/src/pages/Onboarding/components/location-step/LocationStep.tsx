@@ -1,9 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
 import { MapMarker } from 'react-kakao-maps-sdk'
 import { searchKeyword } from '@/shared/api/kakao'
-import { Button } from '@/shared/ui/Button'
-import { SearchInput } from '@/shared/ui/SearchInput'
-import { KakaoMap } from '@/shared/ui/KakaoMap'
+import { Button } from '@/shared/ui'
+import { SearchInput, KakaoMap } from '@/shared/components'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import { SearchResultsList } from './SearchResultsList'
 
