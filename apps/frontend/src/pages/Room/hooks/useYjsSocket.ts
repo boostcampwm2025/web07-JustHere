@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Socket } from 'socket.io-client'
 import * as Y from 'yjs'
 import type {
+  PostIt,
+  Line,
+  PlaceCard,
   CanvasAttachPayload,
   CanvasDetachPayload,
   YjsUpdatePayload,
@@ -10,8 +13,7 @@ import type {
   YjsUpdateBroadcast,
   YjsAwarenessBroadcast,
   CursorInfoWithId,
-} from '@/shared/types/yjs.types'
-import type { PostIt, Line, PlaceCard } from '@/shared/types/canvas.types'
+} from '@/shared/types'
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'

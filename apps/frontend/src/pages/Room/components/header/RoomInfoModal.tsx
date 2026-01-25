@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Button, CloseIcon, PencilIcon, ContentCopyIcon } from '@/shared/ui'
-import type { Participant } from '@/shared/types/domain'
+import type { Participant } from '@/shared/types'
 import { getParticipantColor, getParticipantInitial, cn } from '@/shared/utils'
 
 interface RoomInfoModalProps {

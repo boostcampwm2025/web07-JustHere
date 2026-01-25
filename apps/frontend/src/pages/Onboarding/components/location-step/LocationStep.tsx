@@ -3,7 +3,7 @@ import { MapMarker } from 'react-kakao-maps-sdk'
 import { searchKeyword } from '@/shared/api/kakao'
 import { Button } from '@/shared/ui'
 import { SearchInput, KakaoMap } from '@/shared/components'
-import type { KakaoPlace } from '@/shared/types/kakao'
+import type { KakaoPlace } from '@/shared/types'
 import { SearchResultsList } from './SearchResultsList'
 
 interface LocationStepProps {

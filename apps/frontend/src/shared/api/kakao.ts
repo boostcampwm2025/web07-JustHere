@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { KakaoPlace, KakaoMeta } from '@/shared/types/kakao'
+import type { KakaoPlace, KakaoMeta } from '@/shared/types'
 
 export type SearchKeywordParams = {
   keyword: string

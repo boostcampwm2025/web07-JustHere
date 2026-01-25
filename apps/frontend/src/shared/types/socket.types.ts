@@ -1,4 +1,4 @@
-import type { Participant, Category, User } from './domain'
+import type { Participant, Category, User } from './domain.types'
 
 // [C->S] room:join
 export type RoomJoinPayload = {

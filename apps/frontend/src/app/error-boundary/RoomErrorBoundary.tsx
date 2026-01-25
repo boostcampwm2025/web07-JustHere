@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
-import { RoomNotFoundError } from '@/shared/types/socket-error.types'
 import { RoomErrorPage } from '@/pages'
+import { RoomNotFoundError } from './SocketError'
 
 type Props = {
   children: ReactNode

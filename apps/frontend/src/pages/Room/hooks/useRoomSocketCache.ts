@@ -1,26 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
-import type {
-  RoomJoinPayload,
-  RoomJoinedPayload,
-  ParticipantConnectedPayload,
-  ParticipantDisconnectedPayload,
-  ParticipantNameUpdatedPayload,
-  ParticipantUpdateNamePayload,
-  RoomOwnerTransferredPayload,
-  RoomTransferOwnerPayload,
-  RoomRegionUpdatedPayload,
-  CategoryDeletedPayload,
-  CategoryCreatedPayload,
-  CategoryCreatePayload,
-  CategoryDeletePayload,
-  ErrorPayload,
-} from '@/shared/types/socket'
-import type { Category, Participant, User } from '@/shared/types/domain'
+import {
+  type RoomJoinPayload,
+  type RoomJoinedPayload,
+  type ParticipantConnectedPayload,
+  type ParticipantDisconnectedPayload,
+  type ParticipantNameUpdatedPayload,
+  type ParticipantUpdateNamePayload,
+  type RoomOwnerTransferredPayload,
+  type RoomTransferOwnerPayload,
+  type RoomRegionUpdatedPayload,
+  type CategoryDeletedPayload,
+  type CategoryCreatedPayload,
+  type CategoryCreatePayload,
+  type CategoryDeletePayload,
+  type ErrorPayload,
+  type User,
+  type Participant,
+  type Category,
+} from '@/shared/types'
+import { RoomNotFoundError } from '@/app/error-boundary'
 import { useSocketClient, useToast } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { RoomNotFoundError } from '@/shared/types/socket-error.types'
 import { roomQueryKeys } from './useRoomQueries'
 
 export const useRoomSocketCache = () => {

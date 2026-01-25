@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CustomOverlayMap } from 'react-kakao-maps-sdk'
-import type { KakaoPlace } from '@/shared/types/kakao'
+import type { KakaoPlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 
 interface PlaceMarkerProps {

@@ -1,4 +1,4 @@
-import type { User } from '@/shared/types/domain'
+import type { User } from '@/shared/types'
 
 const USER_STORAGE_KEY_PREFIX = 'justhere.user'
 

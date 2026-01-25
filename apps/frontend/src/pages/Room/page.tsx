@@ -4,8 +4,7 @@ import { RoomHeader, WhiteboardSection, LocationListSection } from '@/pages/room
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from './hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
-import type { KakaoPlace } from '@/shared/types/kakao'
-import type { PlaceCard } from '@/shared/types/canvas.types'
+import type { KakaoPlace, PlaceCard } from '@/shared/types'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()

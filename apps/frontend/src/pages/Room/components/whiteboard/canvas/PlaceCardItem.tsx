@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type Konva from 'konva'
 import { Group, Rect, Text, Image as KonvaImage } from 'react-konva'
 import { useImage } from 'react-konva-utils'
-import type { PlaceCard } from '@/shared/types/canvas.types'
+import type { PlaceCard } from '@/shared/types'
 
 interface PlaceCardItemProps {
   card: PlaceCard

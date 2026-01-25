@@ -4,16 +4,7 @@ import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser, cn } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
-import type {
-  PostIt,
-  Line as LineType,
-  PlaceCard,
-  SelectedItem,
-  CanvasItemType,
-  ToolType,
-  SelectionBox,
-  BoundingBox,
-} from '@/shared/types/canvas.types'
+import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/shared/types'
 import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui'
 import { AnimatedCursor } from './AnimatedCursor'
 import { CanvasContextMenu } from './CanvasContextMenu'

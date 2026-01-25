@@ -1,4 +1,4 @@
-import type { SocketErrorType } from './socket'
+import type { SocketErrorType } from '@/shared/types'
 
 /**
  * 클라이언트 소켓 에러 타입 클래스

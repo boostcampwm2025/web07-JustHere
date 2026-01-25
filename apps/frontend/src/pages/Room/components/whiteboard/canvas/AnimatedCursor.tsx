@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Group } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
-import type { CursorInfoWithId } from '@/shared/types/yjs.types'
+import type { CursorInfoWithId } from '@/shared/types'
 import { CursorIcon } from '@/shared/ui'
 import { getCursorColor, getParticipantColor, cn } from '@/shared/utils'
 

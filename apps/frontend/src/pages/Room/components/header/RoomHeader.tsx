@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Logo from '@/assets/images/logo.svg?react'
 import { Button, BellIcon, CogIcon, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
-import type { Participant } from '@/shared/types/domain'
+import type { Participant } from '@/shared/types'
 import { getParticipantColor, getParticipantInitial, getOrCreateStoredUser, updateStoredUserName, cn } from '@/shared/utils'
 import { RoomInfoModal } from './RoomInfoModal'
 

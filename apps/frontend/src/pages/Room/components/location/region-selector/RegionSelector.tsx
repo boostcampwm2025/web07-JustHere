@@ -3,7 +3,7 @@ import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared
 import { searchKeyword } from '@/shared/api/kakao'
 import { updateRoom } from '@/shared/api/room'
 import { cn } from '@/shared/utils'
-import type { KakaoPlace } from '@/shared/types/kakao'
+import type { KakaoPlace } from '@/shared/types'
 
 interface RegionSelectorProps {
   currentRegion?: string | null

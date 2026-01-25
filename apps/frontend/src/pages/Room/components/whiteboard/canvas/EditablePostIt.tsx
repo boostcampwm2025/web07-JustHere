@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } fro
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import type Konva from 'konva'
-import type { PostIt } from '@/shared/types/canvas.types'
+import type { PostIt } from '@/shared/types'
 
 interface EditablePostItProps {
   postIt: PostIt

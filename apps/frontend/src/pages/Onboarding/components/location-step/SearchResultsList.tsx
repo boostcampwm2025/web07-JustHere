@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 import { CheckIcon } from '@/shared/ui'
 import { cn } from '@/shared/utils'
-import type { KakaoPlace } from '@/shared/types/kakao'
+import type { KakaoPlace } from '@/shared/types'
 
 interface SearchResultsListProps {
   results: KakaoPlace[]

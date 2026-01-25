@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Participant, Category, RoomMeta } from '@/shared/types/domain'
+import type { Participant, Category, RoomMeta } from '@/shared/types'
 
 export const roomQueryKeys = {
   base: (roomId: string) => ['room', roomId] as const,
