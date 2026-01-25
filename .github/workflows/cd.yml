@@ -75,10 +75,11 @@ jobs:
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_SSH_PORT }}
           script: |
-            mkdir -p /root/my-project
+          # 파일이 들어갈 하위 폴더까지 미리 생성
+            mkdir -p /root/my-project/docker/prometheus
 
       # 3. 파일 전송 (SCP)
-      # 로컬에 있는 3개 파일(.env, .env.backend, docker-compose.yml)을 서버로 전송
+      # 로컬에 있는 4개 파일(.env, .env.backend, docker-compose.yml, docker 폴더)을 서버로 전송
       - name: Copy Files to Server
         uses: appleboy/scp-action@master
         with:
@@ -86,7 +87,7 @@ jobs:
           username: ${{ secrets.NCP_USERNAME }}
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_SSH_PORT }}
-          source: 'docker-compose.yml, .env.backend, .env'
+          source: 'docker-compose.yml, .env.backend, .env, docker/prometheus/prometheus.prod.yml'
           target: '/root/my-project'
           overwrite: true
 
