@@ -163,7 +163,7 @@ function WhiteboardSection({
               markers={searchResults}
               selectedMarkerId={selectedPlace?.id}
               onMarkerClick={onMarkerClick}
-              center={searchResults[0] ? { lat: Number(searchResults[0].y), lng: Number(searchResults[0].x) } : undefined}
+              {...(searchResults[0] && { center: { lat: Number(searchResults[0].y), lng: Number(searchResults[0].x) } })}
             />
           </div>
         )}
