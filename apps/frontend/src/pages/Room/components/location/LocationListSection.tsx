@@ -35,10 +35,11 @@ export const LocationListSection = ({
   onPlaceSelect,
 }: LocationListSectionProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
-  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, handleSearch, loadMoreRef } = useLocationSearch({
-    roomId,
-    onSearchComplete,
-  })
+  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
+    useLocationSearch({
+      roomId,
+      onSearchComplete,
+    })
 
   const handlePlaceSelect = (place: KakaoPlace | null) => {
     onPlaceSelect(place)
@@ -117,7 +118,9 @@ export const LocationListSection = ({
         {isLoading ? (
           <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
         ) : searchResults.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray text-sm">검색어를 입력하고 Enter를 눌러주세요</div>
+          <div className="flex items-center justify-center h-32 text-gray text-sm">
+            {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             {searchResults.map((place, index) => {
