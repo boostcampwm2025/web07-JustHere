@@ -61,33 +61,35 @@ export const RoomHeader = ({
           </>
         )}
         {hasParticipants && (
-          <button type="button" className="flex items-center -space-x-2" onClick={() => setIsRoomInfoModalOpen(true)}>
-            {combinedParticipants.slice(0, displayCount).map(p => (
-              <div key={p.userId} className="relative w-9 h-9 overflow-visible">
-                <div
-                  className={cn(
-                    'w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden',
-                    getParticipantColor(p.name),
+          <Button variant="ghost" className="px-0 rounded-full" onClick={() => setIsRoomInfoModalOpen(true)}>
+            <div className="flex items-center -space-x-2">
+              {combinedParticipants.slice(0, displayCount).map(p => (
+                <div key={p.userId} className="relative w-9 h-9 overflow-visible">
+                  <div
+                    className={cn(
+                      'w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden',
+                      getParticipantColor(p.name),
+                    )}
+                  >
+                    {getParticipantInitial(p.name)}
+                  </div>
+                  {ownerId && p.userId === ownerId && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-300 border border-yellow-500 shadow-sm">
+                      <StarIcon className="w-2.5 h-2.5 text-yellow-900 fill-yellow-900" />
+                    </span>
                   )}
-                >
-                  {getParticipantInitial(p.name)}
                 </div>
-                {ownerId && p.userId === ownerId && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-300 border border-yellow-500 shadow-sm">
-                    <StarIcon className="w-2.5 h-2.5 text-yellow-900 fill-yellow-900" />
-                  </span>
-                )}
-              </div>
-            ))}
-            {extraCount > 0 && (
-              <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
-                <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
-              </div>
-            )}
-          </button>
+              ))}
+              {extraCount > 0 && (
+                <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
+                  <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
+                </div>
+              )}
+            </div>
+          </Button>
         )}
         <div className="relative">
-          <Button variant="primary" size="sm" icon={<ShareVariantIcon className="w-[18px] h-[18px]" />} onClick={() => setIsRoomInfoModalOpen(true)}>
+          <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => setIsRoomInfoModalOpen(true)}>
             Share
           </Button>
 

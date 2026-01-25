@@ -24,7 +24,7 @@ export const DeleteCategoryModal = ({ categoryName, onClose, onConfirm }: Delete
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="ghost" size="sm" className="bg-white border border-gray-200" onClick={onClose}>
+        <Button variant="outline" size="sm" className="bg-white" onClick={onClose}>
           취소
         </Button>
         <Button variant="primary" size="sm" onClick={onClickDelete}>

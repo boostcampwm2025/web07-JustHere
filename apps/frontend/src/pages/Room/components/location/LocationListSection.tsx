@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/ui'
-import { cn } from '@/shared/utils'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon, Button } from '@/shared/ui'
 import type { KakaoPlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { RegionSelector } from './region-selector'
 import { PlaceDetailModal } from './place-detail'
+import { SearchInput } from '@/shared/components/search-input/SearchInput'
+import { cn } from '@/shared/utils'
 
 interface LocationListSectionProps {
   roomId: string
@@ -43,10 +44,8 @@ export const LocationListSection = ({
     onPlaceSelect(place)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearch()
-    }
+  const handleClear = () => {
+    setSearchQuery('')
   }
 
   const handleAddPlaceCard = (place: KakaoPlace) => {
@@ -85,46 +84,31 @@ export const LocationListSection = ({
       <div className="flex flex-col gap-4 p-5 pb-4">
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <button
-              type="button"
+            <Button
               key={tab.id}
+              icon={tab.icon}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors shrink-0',
+                'text-sm px-0 flex-1 whitespace-nowrap',
                 activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200',
               )}
             >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
+              {tab.label}
+            </Button>
           ))}
 
-          <div className="ml-auto">
+          <div className="flex-1">
             <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
           </div>
         </div>
 
-        <div className="relative">
-          <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="검색"
-            className="w-full h-12 pl-10 pr-10 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray hover:text-black"
-              aria-label="검색어 지우기"
-            >
-              <CloseIcon className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onClear={handleClear}
+          onSearch={handleSearch}
+          placeholder="검색"
+        />
       </div>
 
       <div className="h-px bg-gray-100" />
@@ -157,23 +141,20 @@ export const LocationListSection = ({
                       </div>
 
                       <div className="flex items-center justify-end gap-2 mt-1">
-                        <button
-                          type="button"
+                        <Button
+                          size="sm"
+                          icon={<PlusIcon className="size-3" />}
                           onClick={() => handleAddPlaceCard(place)}
                           className={cn(
-                            'flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-primary',
-                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20',
+                            'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
+                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
                           )}
                         >
-                          <span className="font-bold text-xs">캔버스</span>
-                          <PlusIcon className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 bg-gray-100 text-gray-800 font-bold text-xs rounded-md hover:bg-gray-200 transition-colors"
-                        >
-                          후보 등록
-                        </button>
+                          캔버스
+                        </Button>
+                        <Button variant="gray" size="sm" className="text-xs">
+                          후보등록
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -189,15 +170,6 @@ export const LocationListSection = ({
             )}
           </div>
         )}
-      </div>
-
-      <div className="p-5 pt-0">
-        <button
-          type="button"
-          className="w-full flex items-center justify-center gap-1.5 px-5 py-3 bg-primary hover:bg-primary-pressed text-white font-semibold rounded-full transition-colors"
-        >
-          장소 목록 뽑기~
-        </button>
       </div>
 
       {selectedPlace && <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />}

@@ -2,15 +2,15 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
-import { getOrCreateStoredUser, cn } from '@/shared/utils'
+import { getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/shared/types'
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui'
 import { AnimatedCursor } from './AnimatedCursor'
 import { CanvasContextMenu } from './CanvasContextMenu'
 import { CursorChatInput } from './CursorChatInput'
 import { EditablePostIt } from './EditablePostIt'
 import { PlaceCardItem } from './PlaceCardItem'
+import { Toolbar } from './toolbar'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -663,71 +663,17 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     }
   }
 
-  const getButtonStyle = (tool: ToolType) => {
-    return cn(
-      'p-2.5 rounded-full transition-all duration-200',
-      effectiveTool === tool ? 'text-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-900',
-    )
-  }
-
-  const getActionButtonStyle = (isEnabled: boolean) => {
-    return cn(
-      'p-2.5 rounded-full transition-all duration-200 text-gray-400 hover:bg-gray-100 hover:text-gray-900',
-      !isEnabled && 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-gray-400',
-    )
-  }
-
   return (
     <div className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
-        <div className="flex items-center p-1.5 bg-white rounded-full shadow-xl border border-gray-200 gap-1">
-          <button
-            onClick={() => {
-              setActiveTool('cursor')
-              setCursorPos(null)
-            }}
-            className={getButtonStyle('cursor')}
-            title="선택"
-          >
-            <CursorIcon className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTool('hand')
-              setCursorPos(null)
-            }}
-            className={getButtonStyle('hand')}
-            title="화면 이동"
-          >
-            <HandBackRightIcon className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTool('pencil')
-              setCursorPos(null)
-            }}
-            className={getButtonStyle('pencil')}
-            title="그리기"
-          >
-            <PencilIcon className="w-5 h-5" />
-          </button>
-
-          <button onClick={() => setActiveTool('postIt')} className={getButtonStyle('postIt')} title="포스트잇 추가">
-            <NoteTextIcon className="w-5 h-5" />
-          </button>
-
-          <div className="w-px h-5 bg-gray-200 mx-1" />
-
-          <button type="button" onClick={undo} disabled={!canUndo} className={getActionButtonStyle(canUndo)} title="Undo" aria-label="Undo">
-            <UndoIcon className="w-5 h-5" />
-          </button>
-          <button type="button" onClick={redo} disabled={!canRedo} className={getActionButtonStyle(canRedo)} title="Redo" aria-label="Redo">
-            <RedoIcon className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      <Toolbar
+        effectiveTool={effectiveTool}
+        setActiveTool={setActiveTool}
+        setCursorPos={setCursorPos}
+        undo={undo}
+        redo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
 
       {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteFromMenu} onClose={() => setContextMenu(null)} />}
 

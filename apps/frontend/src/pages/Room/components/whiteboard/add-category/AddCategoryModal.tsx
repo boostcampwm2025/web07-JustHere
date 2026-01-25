@@ -96,7 +96,7 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="ghost" size="sm" className="bg-white border border-gray-200" onClick={onClickClose}>
+        <Button variant="outline" size="sm" onClick={onClickClose} className="bg-white">
           취소
         </Button>
         <Button variant="primary" size="sm" onClick={onSelectCategory} disabled={isSubmitDisabled}>

@@ -87,12 +87,7 @@ export const RoomInfoModal = ({
                   </div>
 
                   {isOwner && p.userId !== currentUserId && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs border border-gray-200 text-gray-700 hover:bg-gray-100 shrink-0"
-                      onClick={() => onTransferOwner?.(p.userId)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => onTransferOwner?.(p.userId)}>
                       방장 넘기기
                     </Button>
                   )}
@@ -134,13 +129,7 @@ export const RoomInfoModal = ({
                   <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-12 flex items-center overflow-hidden">
                     <span className="text-black truncate w-full">{roomLink}</span>
                   </div>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="h-11 rounded-lg shadow-sm font-normal active:scale-[0.98]"
-                    icon={<ContentCopyIcon className="size-4" />}
-                    onClick={handleCopyLink}
-                  >
+                  <Button variant="primary" size="lg" className="h-11" icon={<ContentCopyIcon className="size-4" />} onClick={handleCopyLink}>
                     링크 복사
                   </Button>
                 </div>

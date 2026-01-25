@@ -1,5 +1,5 @@
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent } from 'react'
-import { MagnifyIcon, CloseIcon } from '@/shared/ui'
+import { MagnifyIcon, CloseIcon, Button } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
 interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -20,14 +20,7 @@ export const SearchInput = ({ value, onChange, onClear, onSearch, onKeyDown, cla
 
   return (
     <div className={cn('relative', containerClassName)}>
-      <button
-        type="button"
-        onClick={onSearch}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black"
-        aria-label="검색"
-      >
-        <MagnifyIcon className="w-5 h-5" />
-      </button>
+      <MagnifyIcon className="size-5 absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black" />
       <input
         type="text"
         value={value}
@@ -40,13 +33,13 @@ export const SearchInput = ({ value, onChange, onClear, onSearch, onKeyDown, cla
         {...props}
       />
       {value && (
-        <button
-          type="button"
+        <Button
+          icon={<CloseIcon className="size-5" />}
+          size="icon"
+          variant="ghost"
           onClick={onClear}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray hover:text-black flex items-center justify-center"
-        >
-          <CloseIcon className="w-5 h-5" />
-        </button>
+          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full"
+        />
       )}
     </div>
   )

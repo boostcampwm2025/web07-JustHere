@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/ui'
+import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon, Button } from '@/shared/ui'
 import { searchKeyword } from '@/shared/api/kakao'
 import { updateRoom } from '@/shared/api/room'
 import { cn } from '@/shared/utils'
@@ -75,23 +75,19 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          'flex items-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors',
-          'bg-gray-100 text-gray-800 hover:bg-gray-200',
-        )}
-      >
-        <MapMarkerIcon className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium text-gray-700 max-w-32 truncate">지역 변경</span>
-        <ChevronDownIcon className={cn('w-4 h-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
-      </button>
+      <Button onClick={() => setIsOpen(!isOpen)} variant="gray" className="px-3 w-full">
+        <div className="flex items-center gap-1 w-full justify-center">
+          <MapMarkerIcon className="size-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">지역 변경</span>
+          <ChevronDownIcon className={cn('size-4 text-gray-400 transition-transform shrink-0', isOpen && 'rotate-180')} />
+        </div>
+      </Button>
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border animate-slide-up z-50">
           <div className="p-3 border-b">
             <div className="relative">
-              <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
               <input
                 ref={inputRef}
                 type="text"
@@ -102,9 +98,13 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
                 className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg focus:outline-none focus:border-primary"
               />
               {keyword && (
-                <button onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <CloseIcon className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                </button>
+                <Button
+                  icon={<CloseIcon className="size-4" />}
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleClear}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                />
               )}
             </div>
           </div>

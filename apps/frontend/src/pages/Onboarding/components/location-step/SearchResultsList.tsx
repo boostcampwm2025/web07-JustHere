@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { CheckIcon } from '@/shared/ui'
+import { Button, CheckIcon } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types'
 
@@ -15,13 +15,15 @@ export const SearchResultsList = forwardRef<HTMLDivElement, SearchResultsListPro
       {results.map(result => {
         const isSelected = selectedPlace?.id === result.id
         return (
-          <button
+          <Button
             key={result.id}
+            variant="outline"
+            size="lg"
             onClick={() => onSelect(result)}
-            className={cn('flex items-center justify-between px-5 py-4 rounded-xl border transition-colors text-left w-full shrink-0', {
-              'bg-primary-bg border-primary': isSelected,
-              'bg-white border-gray-300 hover:border-gray': !isSelected,
-            })}
+            className={cn(
+              'rounded-xl py-4 h-fit px-5 flex items-center justify-between text-left hover:bg-transparent',
+              isSelected ? 'bg-primary-bg border-primary' : 'bg-white border-gray-300 hover:border-gray',
+            )}
           >
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-black">{result.place_name}</span>
@@ -32,7 +34,7 @@ export const SearchResultsList = forwardRef<HTMLDivElement, SearchResultsListPro
                 <CheckIcon className="w-4 h-4 text-white" />
               </div>
             )}
-          </button>
+          </Button>
         )
       })}
     </div>
