@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { searchKeyword } from '@/api/kakao'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useInfiniteSearchKeyword } from '@/hooks/kakao/useKakaoQueries'
 import type { KakaoPlace } from '@/types/kakao'
 
 const DEFAULT_PAGE_SIZE = 15
@@ -14,123 +14,34 @@ interface UseLocationSearchOptions {
 
 export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = DEFAULT_PAGE_SIZE, onSearchComplete }: UseLocationSearchOptions) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
-  const isFetchingMoreRef = useRef(false)
-  // 최신 요청만 반영하기 위한 요청 식별자
-  const requestIdRef = useRef(0)
 
-  // 검색어 비움 시 상태 초기화 + 진행 중 요청 무효화
-  const resetAndInvalidate = useCallback(() => {
-    requestIdRef.current += 1
-    isFetchingMoreRef.current = false
-    setSearchResults([])
-    setPage(1)
-    setHasMore(false)
-    setHasSearched(false)
-    setIsLoading(false)
-    setIsFetchingMore(false)
-  }, [])
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteSearchKeyword({
+    keyword: searchTerm,
+    roomId,
+    radius,
+    size: pageSize,
+  })
 
-  const updateSearchQuery = useCallback(
-    (value: string) => {
-      setSearchQuery(value)
-      if (value.trim()) {
-        setHasSearched(false)
-      }
-      // 빈 검색어면 즉시 결과를 비우고 요청을 무효화
-      if (!value.trim()) {
-        resetAndInvalidate()
-      }
-    },
-    [resetAndInvalidate],
-  )
+  const searchResults = useMemo(() => data?.pages ?? [], [data?.pages])
 
-  const fetchSearchResults = useCallback(
-    async (nextPage: number, mode: 'replace' | 'append') => {
-      const trimmedQuery = searchQuery.trim()
-      if (!trimmedQuery) {
-        if (mode === 'replace') {
-          resetAndInvalidate()
-        }
-        return
-      }
-
-      const requestId = requestIdRef.current + 1
-      requestIdRef.current = requestId
-
-      if (mode === 'append') {
-        setIsFetchingMore(true)
-        isFetchingMoreRef.current = true
-      } else {
-        setIsLoading(true)
-      }
-
-      try {
-        const { documents, meta } = await searchKeyword({
-          keyword: trimmedQuery,
-          roomId: roomId,
-          radius,
-          page: nextPage,
-          size: pageSize,
-        })
-        // 최신 요청이 아니면 응답을 버림
-        if (requestIdRef.current !== requestId) return
-        const newResults = mode === 'append' ? [...searchResults, ...documents] : documents
-        setSearchResults(newResults)
-        setPage(nextPage)
-        setHasMore(!meta.is_end)
-        onSearchComplete?.(newResults)
-      } catch (error) {
-        console.error('검색 실패:', error)
-      } finally {
-        if (requestIdRef.current === requestId) {
-          setIsLoading(false)
-          setIsFetchingMore(false)
-          isFetchingMoreRef.current = false
-        }
-      }
-    },
-    [searchQuery, roomId, radius, pageSize, resetAndInvalidate, searchResults, onSearchComplete],
-  )
-
-  const handleSearch = useCallback(async () => {
-    const trimmedQuery = searchQuery.trim()
-    if (!trimmedQuery) {
-      resetAndInvalidate()
-      return
+  // 지도뷰에 마커를 띄우기 위해 검색 완료 콜백 호출
+  useEffect(() => {
+    if (isSuccess && searchTerm) {
+      onSearchComplete?.(searchResults)
     }
-    if (isLoading || isFetchingMore) return
-    if (page !== 1) {
-      setPage(1)
-    }
-    if (hasMore) {
-      setHasMore(false)
-    }
-    setHasSearched(true)
-    await fetchSearchResults(1, 'replace')
-  }, [fetchSearchResults, hasMore, isFetchingMore, isLoading, page, resetAndInvalidate, searchQuery])
+  }, [isSuccess, searchResults, searchTerm, onSearchComplete])
 
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore || isLoading || isFetchingMoreRef.current) return
-    if (!searchQuery.trim()) return
-    fetchSearchResults(page + 1, 'append')
-  }, [fetchSearchResults, hasMore, isLoading, page, searchQuery])
-
+  // Intersection Observer for infinite scrolling
   useEffect(() => {
     const target = loadMoreRef.current
     if (!target) return
 
     const observer = new IntersectionObserver(
       entries => {
-        // 하단 sentinel이 보이면 다음 페이지 로드
-        if (entries[0]?.isIntersecting) {
-          handleLoadMore()
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
         }
       },
       { rootMargin: '120px' },
@@ -140,16 +51,24 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
     return () => {
       observer.disconnect()
     }
-  }, [handleLoadMore])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  const handleSearch = () => {
+    setSearchTerm(searchQuery)
+  }
+
+  const updateSearchQuery = (value: string) => {
+    setSearchQuery(value)
+  }
 
   return {
     searchQuery,
     setSearchQuery: updateSearchQuery,
     searchResults,
-    isLoading,
-    isFetchingMore,
-    hasMore,
-    hasSearched,
+    isLoading: isLoading && !!searchTerm,
+    isFetchingMore: isFetchingNextPage,
+    hasMore: hasNextPage ?? false,
+    hasSearched: !!searchTerm,
     handleSearch,
     loadMoreRef,
   }

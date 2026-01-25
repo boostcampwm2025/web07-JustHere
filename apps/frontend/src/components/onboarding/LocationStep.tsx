@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { MapMarker } from 'react-kakao-maps-sdk'
-import { searchKeyword } from '@/api/kakao'
+import { useSearchKeyword } from '@/hooks/kakao/useKakaoQueries'
 import { Button } from '@/components/common/Button'
 import { SearchInput } from '@/components/common/SearchInput'
 import { SearchResultsList } from '@/components/onboarding/SearchResultsList'
@@ -14,10 +14,11 @@ interface LocationStepProps {
 
 function LocationStep({ onNext }: LocationStepProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
 
+  const { data: searchResults, isLoading } = useSearchKeyword(searchTerm)
   const listContainerRef = useRef<HTMLDivElement>(null)
 
   const defaultCenter = { lat: 37.498095, lng: 127.02761 }
@@ -29,21 +30,14 @@ function LocationStep({ onNext }: LocationStepProps) {
     return defaultCenter
   }
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     const trimmedQuery = searchQuery.trim()
     if (!trimmedQuery) {
-      setSearchResults([])
+      setSearchTerm('')
       setSelectedPlace(null)
       return
     }
-
-    try {
-      const { documents } = await searchKeyword(trimmedQuery)
-      setSearchResults(documents)
-    } catch (error) {
-      console.error('키워드 검색 실패', error)
-      setSearchResults([])
-    }
+    setSearchTerm(trimmedQuery)
   }
 
   useEffect(() => {
@@ -62,6 +56,8 @@ function LocationStep({ onNext }: LocationStepProps) {
       })
     }
   }
+
+  const documents = searchResults?.documents ?? []
 
   return (
     <main className="flex-1 flex items-start justify-center px-4 py-16">
@@ -88,7 +84,7 @@ function LocationStep({ onNext }: LocationStepProps) {
           onChange={e => setSearchQuery(e.target.value)}
           onClear={() => {
             setSearchQuery('')
-            setSearchResults([])
+            setSearchTerm('')
             setSelectedPlace(null)
           }}
           onSearch={handleSearch}
@@ -96,9 +92,10 @@ function LocationStep({ onNext }: LocationStepProps) {
           containerClassName="mb-4"
         />
 
-        {searchResults.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({searchResults.length})</p>}
+        {documents.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({documents.length})</p>}
+        {isLoading && <p className="text-sm text-gray mb-3">검색 중...</p>}
 
-        <SearchResultsList ref={listContainerRef} results={searchResults} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
+        <SearchResultsList ref={listContainerRef} results={documents} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
 
         <Button onClick={handleNext} disabled={!selectedPlace} size="lg" className="py-4 text-base font-bold">
           장소 선택하기
