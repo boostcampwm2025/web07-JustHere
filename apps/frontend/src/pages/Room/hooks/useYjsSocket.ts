@@ -13,7 +13,7 @@ import type {
 } from '@/shared/types/yjs.types'
 import type { PostIt, Line, PlaceCard } from '@/shared/types/canvas.types'
 import { throttle } from '@/shared/utils'
-import { useSocketClient } from '@/shared/hooks/useSocketClient'
+import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 
 interface UseYjsSocketOptions {

@@ -1,5 +1,5 @@
 import { AlertCircleIcon } from '@/shared/ui/icons/Icons'
-import { useToast } from '@/shared/hooks/useToast'
+import { useToast } from '@/shared/hooks'
 import { cn } from '@/shared/utils'
 import type { ToastType } from '@/shared/toast/ToastContext'
 

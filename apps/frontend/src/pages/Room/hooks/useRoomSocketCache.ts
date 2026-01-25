@@ -18,9 +18,8 @@ import type {
   ErrorPayload,
 } from '@/shared/types/socket'
 import type { Category, Participant, User } from '@/shared/types/domain'
-import { useSocketClient } from '@/shared/hooks/useSocketClient'
+import { useSocketClient, useToast } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useToast } from '@/shared/hooks/useToast'
 import { RoomNotFoundError } from '@/shared/types/socket-error.types'
 import { roomQueryKeys } from './useRoomQueries'
 
