@@ -6,7 +6,6 @@ import { SearchInput } from '@/shared/ui/SearchInput'
 import { KakaoMap } from '@/shared/ui/KakaoMap'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import { SearchResultsList } from './SearchResultsList'
-import { OnboardingProgress } from '../onboarding-progress/OnboardingProgress'
 
 interface LocationStepProps {
   onNext: (location: { name: string; address: string; x: number; y: number }) => void
@@ -64,46 +63,42 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
   }
 
   return (
-    <main className="flex-1 flex items-start justify-center px-4 py-16">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm p-12">
-        <OnboardingProgress currentStep="location" />
+    <>
+      <h1 className="text-2xl font-medium text-black text-center mb-8">만날 지역을 선택해보세요</h1>
+      <div className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0">
+        <KakaoMap center={getCenter()} level={3} draggable={false} onLoad={() => setIsMapLoaded(true)} className="w-full h-full">
+          {selectedPlace && <MapMarker position={getCenter()} />}
+        </KakaoMap>
 
-        <h1 className="text-2xl font-medium text-black text-center mb-8">만날 지역을 선택해보세요</h1>
-        <div className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0">
-          <KakaoMap center={getCenter()} level={3} draggable={false} onLoad={() => setIsMapLoaded(true)} className="w-full h-full">
-            {selectedPlace && <MapMarker position={getCenter()} />}
-          </KakaoMap>
-
-          {selectedPlace && isMapLoaded && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10" style={{ marginTop: '-45px' }}>
-              <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium mb-1 whitespace-nowrap shadow-sm">
-                {selectedPlace.place_name}
-              </div>
+        {selectedPlace && isMapLoaded && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10" style={{ marginTop: '-45px' }}>
+            <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium mb-1 whitespace-nowrap shadow-sm">
+              {selectedPlace.place_name}
             </div>
-          )}
-        </div>
-
-        <SearchInput
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          onClear={() => {
-            setSearchQuery('')
-            setSearchResults([])
-            setSelectedPlace(null)
-          }}
-          onSearch={handleSearch}
-          placeholder="장소를 검색하세요"
-          containerClassName="mb-4"
-        />
-
-        {searchResults.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({searchResults.length})</p>}
-
-        <SearchResultsList ref={listContainerRef} results={searchResults} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
-
-        <Button onClick={handleNext} disabled={!selectedPlace} size="lg" className="py-4 text-base font-bold">
-          장소 선택하기
-        </Button>
+          </div>
+        )}
       </div>
-    </main>
+
+      <SearchInput
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        onClear={() => {
+          setSearchQuery('')
+          setSearchResults([])
+          setSelectedPlace(null)
+        }}
+        onSearch={handleSearch}
+        placeholder="장소를 검색하세요"
+        containerClassName="mb-4"
+      />
+
+      {searchResults.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({searchResults.length})</p>}
+
+      <SearchResultsList ref={listContainerRef} results={searchResults} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
+
+      <Button onClick={handleNext} disabled={!selectedPlace} size="lg" className="py-4 text-base font-bold">
+        장소 선택하기
+      </Button>
+    </>
   )
 }

@@ -1,18 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LocationStep, InviteStep } from '@/pages/onboarding/components'
+import { LocationStep, InviteStep, OnboardingProgress } from '@/pages/onboarding/components'
 import { Header } from '@/shared/ui/Header'
 import { createRoom } from '@/shared/api/room'
 import { socketBaseUrl } from '@/shared/config/socket'
-
-type OnboardingStep = 'location' | 'invite'
-
-interface SelectedLocation {
-  name: string
-  address: string
-  x: number
-  y: number
-}
+import type { OnboardingStep, SelectedLocation } from './types'
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
@@ -47,11 +39,17 @@ export default function OnboardingPage() {
     <div className="flex flex-col min-h-screen bg-gray-bg">
       <Header minimal />
 
-      {currentStep === 'location' && <LocationStep onNext={handleLocationSelect} />}
+      <div className="flex-1 flex items-start justify-center px-4 py-16">
+        <div className="w-full max-w-2xl bg-white rounded-3xl shadow-sm p-12">
+          <OnboardingProgress currentStep={currentStep} />
 
-      {currentStep === 'invite' && selectedLocation && inviteLink && (
-        <InviteStep selectedLocation={selectedLocation.name} inviteLink={inviteLink} onComplete={handleInviteComplete} />
-      )}
+          {currentStep === 'location' && <LocationStep onNext={handleLocationSelect} />}
+
+          {currentStep === 'invite' && selectedLocation && inviteLink && (
+            <InviteStep selectedLocation={selectedLocation.name} inviteLink={inviteLink} onComplete={handleInviteComplete} />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
