@@ -1,5 +1,6 @@
 import { useState, type ElementType } from 'react'
-import { Button, CloseIcon, CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/ui'
+import { Button, CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/ui'
+import { Modal } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
 type Category = {
@@ -31,10 +32,7 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
 
   const onSelectCategory = () => {
     const categoryToSubmit = selectedCategory === '직접 입력' ? customCategory.trim() : selectedCategory
-    if (categoryToSubmit && onComplete) {
-      onComplete(categoryToSubmit)
-    }
-
+    if (categoryToSubmit) onComplete(categoryToSubmit)
     onClickClose()
   }
 
@@ -44,24 +42,19 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
     onClose()
   }
 
+  const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory
+
   return (
-    <div className="fixed inset-0 z-60">
-      <div className="fixed inset-0 bg-gray-500/50" onClick={onClickClose} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-2xl w-full bg-white z-70 shadow-xl rounded-3xl border border-gray-100">
-        <div className="flex flex-col gap-6 p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-2xl font-bold">카테고리 추가</h3>
-              <span className="text-sm pb-4">어떤 종류의 장소를 찾고 계신가요?</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClickClose} className="text-gray-disable hover:bg-transparent hover:text-gray">
-              <CloseIcon className="w-6 h-6" />
-            </Button>
-          </div>
+    <Modal title="카테고리 추가" onClose={onClickClose}>
+      <Modal.Body className="pt-0">
+        <div className="flex flex-col gap-6">
+          <span className="text-sm text-gray-700">어떤 종류의 장소를 찾고 계신가요?</span>
+
           <div className="grid grid-cols-3 gap-2">
             {categories.map(category => {
               const Icon = category.icon
               const isSelected = selectedCategory === category.name
+
               return (
                 <Button
                   key={category.name}
@@ -83,6 +76,7 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
               )
             })}
           </div>
+
           {selectedCategory === '직접 입력' && (
             <div className="flex flex-col gap-2">
               <label htmlFor="custom-category" className="text-sm font-medium text-gray-700">
@@ -99,20 +93,16 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-2 bg-gray-50 p-4 rounded-b-3xl border-t border-gray-200">
-          <Button variant="ghost" size="sm" className="bg-white border border-gray-200" onClick={onClickClose}>
-            취소
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onSelectCategory}
-            disabled={selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory}
-          >
-            선택 완료
-          </Button>
-        </div>
-      </div>
-    </div>
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="ghost" size="sm" className="bg-white border border-gray-200" onClick={onClickClose}>
+          취소
+        </Button>
+        <Button variant="primary" size="sm" onClick={onSelectCategory} disabled={isSubmitDisabled}>
+          선택 완료
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }

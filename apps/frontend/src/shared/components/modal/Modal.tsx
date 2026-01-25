@@ -1,77 +1,37 @@
-import { useEffect, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import type { HTMLAttributes, ReactNode } from 'react'
 import { Button, CloseIcon } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
-export interface ModalProps {
-  isOpen: boolean
+interface ModalProps extends HTMLAttributes<HTMLDivElement> {
+  title: string
   onClose: () => void
-  title?: ReactNode
-  description?: ReactNode
   children: ReactNode
-  footer?: ReactNode
-  className?: string
-  contentClassName?: string
-  overlayClassName?: string
-  showCloseButton?: boolean
-  closeOnOverlayClick?: boolean
 }
 
-export const Modal = ({
-  isOpen,
-  onClose,
-  title,
-  description,
-  children,
-  footer,
-  className,
-  contentClassName,
-  overlayClassName,
-  showCloseButton = true,
-  closeOnOverlayClick = true,
-}: ModalProps) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
+export const Modal = ({ title, onClose, children, className }: ModalProps) => {
+  return (
+    <div className="fixed inset-0 z-60">
+      <div className="absolute inset-0 bg-gray-500/50" onClick={onClose} />
 
-  if (!isOpen) return null
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className={cn('fixed inset-0 bg-gray-500/50 transition-opacity', overlayClassName)}
-        onClick={closeOnOverlayClick ? onClose : undefined}
-        aria-hidden="true"
-      />
-      <div
-        className={cn('relative w-full bg-white shadow-xl rounded-3xl border border-gray-100 flex flex-col max-h-[90vh]', className)}
-        role="dialog"
-        aria-modal="true"
-      >
-        {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 pb-4 shrink-0">
-            <div className="flex flex-col gap-1">
-              {typeof title === 'string' ? <h3 className="text-xl font-bold text-gray-900">{title}</h3> : title}
-              {typeof description === 'string' ? <p className="text-sm text-gray-500">{description}</p> : description}
-            </div>
-            {showCloseButton && (
-              <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-disable hover:bg-transparent hover:text-gray -mr-2 -mt-2">
-                <CloseIcon className="w-6 h-6" />
-              </Button>
-            )}
+      <div role="dialog" aria-modal="true" className={cn('absolute top-1/2 left-1/2 w-full -translate-x-1/2 -translate-y-1/2 max-w-2xl', className)}>
+        <div className="bg-white shadow-xl border border-gray-100 rounded-3xl overflow-hidden flex flex-col h-full">
+          <div className="flex items-center justify-between px-6 py-5">
+            <h3 className="text-xl font-bold">{title}</h3>
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-disable hover:bg-transparent hover:text-gray">
+              <CloseIcon className="w-6 h-6" />
+            </Button>
           </div>
-        )}
-        <div className={cn('p-6 pt-2 overflow-y-auto', contentClassName)}>{children}</div>
-        {footer && <div className="flex justify-end gap-2 bg-gray-50 p-4 rounded-b-3xl border-t border-gray-200 shrink-0">{footer}</div>}
+          {children}
+        </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   )
+}
+
+Modal.Body = function ModalBody({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('px-6 pb-6', className)} {...props} />
+}
+
+Modal.Footer = function ModalFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex justify-end gap-2 bg-gray-50 px-6 py-4 border-t border-gray-200', className)} {...props} />
 }

@@ -200,7 +200,7 @@ export const LocationListSection = ({
         </button>
       </div>
 
-      <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />
+      {selectedPlace && <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />}
     </div>
   )
 }

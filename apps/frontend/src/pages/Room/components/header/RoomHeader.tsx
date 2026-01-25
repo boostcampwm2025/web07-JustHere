@@ -61,7 +61,7 @@ export const RoomHeader = ({
           </>
         )}
         {hasParticipants && (
-          <button type="button" className="flex items-center -space-x-2 cursor-pointer" onClick={() => setIsRoomInfoModalOpen(true)}>
+          <button type="button" className="flex items-center -space-x-2" onClick={() => setIsRoomInfoModalOpen(true)}>
             {combinedParticipants.slice(0, displayCount).map(p => (
               <div key={p.userId} className="relative w-9 h-9 overflow-visible">
                 <div
