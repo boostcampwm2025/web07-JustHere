@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import Logo from '@/assets/images/logo.svg?react'
-import { Button, BellIcon, CogIcon, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
+import { Button, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
 import { getParticipantColor, getParticipantInitial, getOrCreateStoredUser, updateStoredUserName, cn } from '@/shared/utils'
+import { Header } from '@/shared/components/header/Header'
 import { RoomInfoModal } from './RoomInfoModal'
 
 interface RoomHeaderProps {
@@ -49,11 +49,7 @@ export const RoomHeader = ({
   const extraCount = Math.max(combinedParticipants.length - displayCount, 0)
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
-      <div className="flex items-center gap-4">
-        <Logo />
-      </div>
-
+    <Header>
       <div className="flex items-center gap-5">
         {currentRegion && (
           <>
@@ -65,7 +61,7 @@ export const RoomHeader = ({
           </>
         )}
         {hasParticipants && (
-          <div className="flex items-center -space-x-2">
+          <button type="button" className="flex items-center -space-x-2 cursor-pointer" onClick={() => setIsRoomInfoModalOpen(true)}>
             {combinedParticipants.slice(0, displayCount).map(p => (
               <div key={p.userId} className="relative w-9 h-9 overflow-visible">
                 <div
@@ -88,46 +84,28 @@ export const RoomHeader = ({
                 <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
               </div>
             )}
-          </div>
+          </button>
         )}
-
-        {hasParticipants && <div className="w-px h-6 bg-gray-200" />}
-
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<ShareVariantIcon className="w-[18px] h-[18px]" />}
-              onClick={() => setIsRoomInfoModalOpen(true)}
-            >
-              Share
-            </Button>
-
-            {isRoomInfoModalOpen && (
-              <RoomInfoModal
-                onClose={() => setIsRoomInfoModalOpen(false)}
-                userName={userName}
-                roomLink={roomLink}
-                participants={participants}
-                currentUserId={currentUserId}
-                onUpdateName={handleUpdateName}
-                isOwner={isOwner}
-                ownerId={ownerId}
-                onTransferOwner={onTransferOwner}
-              />
-            )}
-          </div>
-
-          <Button variant="gray" size="icon" className="w-9 h-9">
-            <BellIcon className="w-5 h-5" />
+        <div className="relative">
+          <Button variant="primary" size="sm" icon={<ShareVariantIcon className="w-[18px] h-[18px]" />} onClick={() => setIsRoomInfoModalOpen(true)}>
+            Share
           </Button>
 
-          <Button variant="gray" size="icon" className="w-9 h-9">
-            <CogIcon className="w-5 h-5" />
-          </Button>
+          {isRoomInfoModalOpen && (
+            <RoomInfoModal
+              onClose={() => setIsRoomInfoModalOpen(false)}
+              userName={userName}
+              roomLink={roomLink}
+              participants={participants}
+              currentUserId={currentUserId}
+              onUpdateName={handleUpdateName}
+              isOwner={isOwner}
+              ownerId={ownerId}
+              onTransferOwner={onTransferOwner}
+            />
+          )}
         </div>
       </div>
-    </header>
+    </Header>
   )
 }
