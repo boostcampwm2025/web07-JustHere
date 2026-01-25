@@ -26,7 +26,7 @@ interface ErrorPageProps {
   onReset?: () => void
 }
 
-function ErrorPage({ errorType = 'unknown', onReset }: ErrorPageProps) {
+export default function RoomErrorPage({ errorType = 'unknown', onReset }: ErrorPageProps) {
   const navigate = useNavigate()
 
   const error = errorMessages[errorType ?? 'unknown']
@@ -59,5 +59,3 @@ function ErrorPage({ errorType = 'unknown', onReset }: ErrorPageProps) {
     </div>
   )
 }
-
-export default ErrorPage

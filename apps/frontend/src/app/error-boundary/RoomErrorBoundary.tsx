@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { RoomNotFoundError } from '@/shared/types/socket-error.types'
-import ErrorPage from '@/pages/ErrorPage'
+import { RoomErrorPage } from '@/pages'
 
 type Props = {
   children: ReactNode
@@ -34,11 +34,11 @@ export class RoomErrorBoundary extends Component<Props, State> {
     const { error, resetKey } = this.state
 
     if (error instanceof RoomNotFoundError) {
-      return <ErrorPage errorType="room-not-found" />
+      return <RoomErrorPage errorType="room-not-found" />
     }
 
     if (error) {
-      return <ErrorPage onReset={this.handleReset} />
+      return <RoomErrorPage onReset={this.handleReset} />
     }
 
     // key가 바뀌면 children 트리가 완전히 unmount → mount 됨

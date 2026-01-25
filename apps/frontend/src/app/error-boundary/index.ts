@@ -1,0 +1,1 @@
+export { RoomErrorBoundary } from './RoomErrorBoundary'

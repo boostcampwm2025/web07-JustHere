@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
-import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
+import { RoomHeader, WhiteboardSection, LocationListSection } from '@/pages/room/components'
 import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from './hooks'
 import { getOrCreateStoredUser } from '@/shared/lib/userStorage'
 import { socketBaseUrl } from '@/shared/config/socket'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared/types/canvas.types'
 
-export function RoomPage() {
+export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory } =

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LocationStep, InviteStep } from './components'
+import { LocationStep, InviteStep } from '@/pages/onboarding/components'
 import { Header } from '@/shared/ui/Header'
 import { createRoom } from '@/shared/api/room'
 import { socketBaseUrl } from '@/shared/config/socket'
@@ -14,7 +14,7 @@ interface SelectedLocation {
   y: number
 }
 
-export function OnboardingPage() {
+export default function OnboardingPage() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('location')
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null)
