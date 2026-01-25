@@ -3,9 +3,9 @@ import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '
 import { cn } from '@/shared/lib/cn'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared/types/canvas.types'
-import { PlaceDetailModal } from './PlaceDetailModal'
-import { RegionSelector } from './RegionSelector'
-import { useLocationSearch } from '../../hooks'
+import { useLocationSearch } from '@/pages/room/hooks'
+import { RegionSelector } from './region-selector'
+import { PlaceDetailModal } from './place-detail'
 
 interface LocationListSectionProps {
   roomId: string

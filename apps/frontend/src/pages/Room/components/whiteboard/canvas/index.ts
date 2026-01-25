@@ -1,0 +1,1 @@
+export { WhiteboardCanvas } from './WhiteboardCanvas'

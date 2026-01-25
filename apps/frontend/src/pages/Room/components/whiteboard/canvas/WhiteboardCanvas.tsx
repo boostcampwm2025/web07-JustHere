@@ -1,8 +1,9 @@
-import { CanvasContextMenu } from './CanvasContextMenu'
 import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
-import { useYjsSocket } from '@/shared/hooks/useYjsSocket'
+import { useParams } from 'react-router-dom'
+import { getOrCreateStoredUser } from '@/shared/lib/userStorage'
+import { useYjsSocket } from '@/pages/room/hooks'
 import type {
   PostIt,
   Line as LineType,
@@ -15,12 +16,11 @@ import type {
 } from '@/shared/types/canvas.types'
 import { cn } from '@/shared/lib/cn'
 import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui/icons/Icons'
-import { EditablePostIt } from './EditablePostIt'
 import { AnimatedCursor } from './AnimatedCursor'
-import { PlaceCardItem } from './PlaceCardItem'
+import { CanvasContextMenu } from './CanvasContextMenu'
 import { CursorChatInput } from './CursorChatInput'
-import { useParams } from 'react-router-dom'
-import { getOrCreateStoredUser } from '@/shared/lib/userStorage'
+import { EditablePostIt } from './EditablePostIt'
+import { PlaceCardItem } from './PlaceCardItem'
 
 interface WhiteboardCanvasProps {
   roomId: string
