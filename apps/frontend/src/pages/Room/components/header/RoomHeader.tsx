@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Button, Divider, MapMarkerIcon, ShareVariantIcon, StarIcon } from '@/shared/ui'
+import { Avatar, Button, Divider, MapMarkerIcon, ShareVariantIcon } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
-import { getParticipantColor, getParticipantInitial, getOrCreateStoredUser, updateStoredUserName, cn } from '@/shared/utils'
+import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
 import { RoomInfoModal } from './RoomInfoModal'
 
@@ -64,21 +64,7 @@ export const RoomHeader = ({
           <Button variant="ghost" className="px-0 rounded-full" onClick={() => setIsRoomInfoModalOpen(true)}>
             <div className="flex items-center -space-x-2">
               {combinedParticipants.slice(0, displayCount).map(p => (
-                <div key={p.userId} className="relative w-9 h-9 overflow-visible">
-                  <div
-                    className={cn(
-                      'w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-sm font-bold text-white overflow-hidden',
-                      getParticipantColor(p.name),
-                    )}
-                  >
-                    {getParticipantInitial(p.name)}
-                  </div>
-                  {ownerId && p.userId === ownerId && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-300 border border-yellow-500 shadow-sm">
-                      <StarIcon className="w-2.5 h-2.5 text-yellow-900 fill-yellow-900" />
-                    </span>
-                  )}
-                </div>
+                <Avatar key={p.userId} name={p.name} isOwner={p.userId === ownerId} />
               ))}
               {extraCount > 0 && (
                 <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">

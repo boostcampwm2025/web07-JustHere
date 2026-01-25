@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { Button, PencilIcon, ContentCopyIcon, Divider } from '@/shared/ui'
+import { Button, PencilIcon, ContentCopyIcon, Divider, Avatar } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
-import { getParticipantColor, getParticipantInitial, cn } from '@/shared/utils'
+import { cn } from '@/shared/utils'
 import { Modal } from '@/shared/components'
 
 interface RoomInfoModalProps {
@@ -68,15 +68,8 @@ export const RoomInfoModal = ({
             <h3 className="text-xl font-bold text-center my-6">참여자</h3>
             <div className="flex flex-col gap-2">
               {visibleParticipants.map(p => (
-                <div key={p.userId} className="flex items-center gap-2 px-2 py-1">
-                  <div
-                    className={cn(
-                      'w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-sm',
-                      getParticipantColor(p.name),
-                    )}
-                  >
-                    {getParticipantInitial(p.name)}
-                  </div>
+                <div key={p.userId} className="flex items-center gap-3 px-2 py-1">
+                  <Avatar name={p.name} />
 
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-lg text-black truncate">{p.name}</span>
