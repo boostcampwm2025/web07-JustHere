@@ -51,7 +51,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (process.env.SENTRY_DSN && status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       Sentry.withScope(scope => {
         scope.setTag('method', request.method)
-        scope.setTag('url', request.url)
+        scope.setTag('path', request.path)
         scope.setTag('status', String(status))
         scope.setExtra('errorType', errorType)
         Sentry.captureException(exception)
