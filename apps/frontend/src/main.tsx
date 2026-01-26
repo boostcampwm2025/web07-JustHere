@@ -14,7 +14,12 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: import.meta.env.VITE_SENTRY_ENV ?? 'local',
     release: import.meta.env.VITE_SENTRY_RELEASE,
-    integrations: [Sentry.replayIntegration()],
+    integrations: [
+      Sentry.replayIntegration({
+        maskAllText: false,
+        blockAllMedia: false,
+      }),
+    ],
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
     beforeSend(event) {
