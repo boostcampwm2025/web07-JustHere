@@ -123,7 +123,7 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
       socketRef.current = null
       reconnectAttemptsRef.current = 0
     }
-  }, [fullUrl, autoConnect, autoReconnect, ioOptions, onError])
+  }, [fullUrl, autoConnect, autoReconnect, ioOptions, onError, namespace])
 
   const connect = useCallback(() => {
     const socket = socketRef.current

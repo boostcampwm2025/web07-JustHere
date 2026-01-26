@@ -324,7 +324,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socket.off('y:awareness', handleAwareness)
       socketRef.current = null
     }
-  }, [roomId, canvasId, getSocket, status])
+  }, [roomId, canvasId, getSocket, status, trackHighFreq])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
   // 커서 이동 시에도 현재 커서챗 상태를 함께 전송

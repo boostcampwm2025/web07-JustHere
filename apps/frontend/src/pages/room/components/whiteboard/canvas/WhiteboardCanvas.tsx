@@ -186,7 +186,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItems, deletePostIt, deleteLine, removePlaceCard])
+  }, [selectedItems, deletePostIt, deleteLine, removePlaceCard, roomId, canvasId])
 
   useEffect(() => {
     const transformer = transformerRef.current
