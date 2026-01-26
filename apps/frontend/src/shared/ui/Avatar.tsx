@@ -1,4 +1,4 @@
-import { StarIcon } from '@/shared/ui'
+import { StarIcon } from '@/shared/assets'
 import { cn, getParticipantColor, getParticipantInitial } from '@/shared/utils'
 
 export interface AvatarProps {

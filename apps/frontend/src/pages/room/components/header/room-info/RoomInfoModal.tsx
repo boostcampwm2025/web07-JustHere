@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { Button, PencilIcon, ContentCopyIcon, Divider, Avatar } from '@/shared/ui'
+import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
+import { Button, Divider, Avatar } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
 import { cn } from '@/shared/utils'
 import { Modal } from '@/shared/components'

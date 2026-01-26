@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon, Button, Divider } from '@/shared/ui'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
+import { Button, Divider } from '@/shared/ui'
 import type { KakaoPlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { SearchInput } from '@/shared/components/search-input/SearchInput'

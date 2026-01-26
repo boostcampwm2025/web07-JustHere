@@ -1,4 +1,5 @@
-import { Button, CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/ui'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/assets'
+import { Button } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
 type Tool = 'cursor' | 'hand' | 'pencil' | 'postIt'

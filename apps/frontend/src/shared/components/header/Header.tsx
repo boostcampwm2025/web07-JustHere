@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import Logo from '@/assets/images/logo.svg?react'
-import { Button, BellIcon, CogIcon } from '@/shared/ui'
+import { Logo, BellIcon, CogIcon } from '@/shared/assets'
+import { Button } from '@/shared/ui'
 
 interface HeaderProps {
   children?: ReactNode

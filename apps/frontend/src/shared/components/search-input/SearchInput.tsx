@@ -1,5 +1,6 @@
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent } from 'react'
-import { MagnifyIcon, CloseIcon, Button } from '@/shared/ui'
+import { MagnifyIcon, CloseIcon } from '@/shared/assets'
+import { Button } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 
 interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {

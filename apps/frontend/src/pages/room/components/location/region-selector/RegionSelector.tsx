@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSearchKeyword } from '@/shared/hooks'
-import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon, Button } from '@/shared/ui'
+import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/assets'
+import { Button } from '@/shared/ui'
 import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types'
 import { useUpdateRoom } from '@/pages/room/hooks'

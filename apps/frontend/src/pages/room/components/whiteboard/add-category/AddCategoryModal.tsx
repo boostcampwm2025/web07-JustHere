@@ -1,5 +1,6 @@
 import { useState, type ElementType } from 'react'
-import { Button, CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/ui'
+import { CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/assets'
+import { Button } from '@/shared/ui'
 import { Modal } from '@/shared/components'
 import { cn } from '@/shared/utils'
 

@@ -1,4 +1,4 @@
-import { MapCheckOutlineIcon, AccountCheckOutlineIcon } from '@/shared/ui'
+import { MapCheckOutlineIcon, AccountCheckOutlineIcon } from '@/shared/assets'
 import { cn } from '@/shared/utils'
 
 export type OnboardingStep = 'location' | 'invite'

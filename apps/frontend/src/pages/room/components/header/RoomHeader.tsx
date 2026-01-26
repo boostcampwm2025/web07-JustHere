@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Avatar, Button, Divider, MapMarkerIcon, ShareVariantIcon } from '@/shared/ui'
+import { MapMarkerIcon, ShareVariantIcon } from '@/shared/assets'
+import { Avatar, Button, Divider } from '@/shared/ui'
 import type { Participant } from '@/shared/types'
 import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
