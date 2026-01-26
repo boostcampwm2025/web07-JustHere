@@ -71,11 +71,13 @@ services:
     restart: always
     depends_on:
       - prometheus
-    ports:
-      - '3001:3000' # 외부에서 3001번 포트로 접속 (http://IP:3001)
     volumes:
       # 대시보드 설정을 영구 저장
       - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SERVER_DOMAIN=justhere.p-e.kr
+      - GF_SERVER_ROOT_URL=https://justhere.p-e.kr/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     networks:
       - app-network
 
