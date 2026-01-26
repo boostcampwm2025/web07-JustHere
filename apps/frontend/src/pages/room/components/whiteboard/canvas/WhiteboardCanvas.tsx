@@ -135,6 +135,27 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     userName,
   })
 
+  const cancelDrawing = useCallback(
+    (reason: 'tool-change' | 'mouse-leave' | 'space-press') => {
+      if (!isDrawing) return
+      addSocketBreadcrumb('draw:cancel', { roomId, canvasId, lineId: currentLineId ?? undefined, reason })
+      setIsDrawing(false)
+      setCurrentLineId(null)
+      stopCapturing()
+    },
+    [isDrawing, currentLineId, roomId, canvasId, stopCapturing],
+  )
+
+  const handleToolChange = useCallback(
+    (tool: ToolType) => {
+      if (tool !== 'pencil' && isDrawing) {
+        cancelDrawing('tool-change')
+      }
+      setActiveTool(tool)
+    },
+    [isDrawing, cancelDrawing],
+  )
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
@@ -435,6 +456,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
+        if (isDrawing) {
+          cancelDrawing('space-press')
+        }
         setIsSpacePressed(true)
       }
     }
@@ -451,7 +475,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [])
+  }, [cancelDrawing, isDrawing])
 
   const handleMouseMove = () => {
     const stage = stageRef.current
@@ -505,8 +529,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       setPlaceCardCursorPos(null)
     }
     if (isDrawing) {
-      setIsDrawing(false)
-      setCurrentLineId(null)
+      cancelDrawing('mouse-leave')
     }
   }
 
@@ -695,7 +718,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     <div className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
       <Toolbar
         effectiveTool={effectiveTool}
-        setActiveTool={setActiveTool}
+        setActiveTool={handleToolChange}
         setCursorPos={setCursorPos}
         undo={undo}
         redo={redo}

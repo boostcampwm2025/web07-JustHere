@@ -43,11 +43,20 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
     socketRef.current = socket
 
     const addConnectionBreadcrumb = (message: string, data?: Record<string, unknown>, level: 'info' | 'warning' | 'error' = 'info') => {
+      let safeUrl = fullUrl
+      try {
+        const url = new URL(fullUrl)
+        url.search = ''
+        url.hash = ''
+        safeUrl = url.toString()
+      } catch {
+        // ignore invalid URL parsing
+      }
       addSocketBreadcrumb(
         message,
         {
           namespace: namespace ?? 'root',
-          url: fullUrl,
+          url: safeUrl,
           ...data,
         },
         level,

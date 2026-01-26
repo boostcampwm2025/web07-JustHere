@@ -41,6 +41,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const localOriginRef = useRef(Symbol('canvas-local'))
   const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
   const summaryTimerRef = useRef<number | null>(null)
+  const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
@@ -78,6 +79,10 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     },
     [flushSummary],
   )
+
+  useEffect(() => {
+    trackHighFreqRef.current = trackHighFreq
+  }, [trackHighFreq])
   const updateHistoryState = useCallback(() => {
     const undoManager = undoManagerRef.current
     if (!undoManager) return
@@ -196,12 +201,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
   useEffect(() => {
     return () => {
+      flushSummary()
       if (summaryTimerRef.current != null) {
         window.clearTimeout(summaryTimerRef.current)
         summaryTimerRef.current = null
       }
     }
-  }, [roomId, canvasId])
+  }, [roomId, canvasId, flushSummary])
 
   useEffect(() => {
     const socket = getSocket()
@@ -347,7 +353,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
             },
           }
           socketRef.current.emit('y:awareness', awarenessPayload)
-          trackHighFreq('y:awareness:send')
+          trackHighFreqRef.current('y:awareness:send')
         }
       },
       100,
@@ -397,7 +403,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         },
       }
       socketRef.current.emit('y:awareness', awarenessPayload)
-      trackHighFreq('y:awareness:send')
+      trackHighFreqRef.current('y:awareness:send')
     },
     [canvasId, userName],
   )
