@@ -54,7 +54,12 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleSearch = () => {
-    setSearchTerm(searchQuery)
+    const trimmed = searchQuery.trim()
+    if (!trimmed) {
+      setSearchTerm('')
+      return
+    }
+    setSearchTerm(trimmed)
   }
 
   const updateSearchQuery = (value: string) => {
