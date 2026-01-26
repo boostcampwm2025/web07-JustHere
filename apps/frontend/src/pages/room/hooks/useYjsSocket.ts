@@ -13,6 +13,7 @@ import type {
   YjsUpdateBroadcast,
   YjsAwarenessBroadcast,
   CursorInfoWithId,
+  Candidate,
 } from '@/shared/types'
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
@@ -33,6 +34,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [socketId, setSocketId] = useState('unknown')
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
+  const [candidates, setCandidates] = useState<Candidate[]>([]) // [추가] 후보 리스트 상태
 
   const socketRef = useRef<Socket | null>(null)
   const docRef = useRef<Y.Doc | null>(null)
@@ -68,6 +70,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const yCandidates = doc.getArray<Y.Map<unknown>>('candidates')
 
     const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines], {
       trackedOrigins: new Set([localOriginRef.current]),
@@ -133,22 +136,43 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       setLines(items)
     }
 
+    const syncCandidatesToState = () => {
+      const items: Candidate[] = yCandidates.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        place_name: yMap.get('place_name') as string,
+        address_name: yMap.get('address_name') as string,
+        road_address_name: yMap.get('road_address_name') as string,
+        distance: yMap.get('distance') as string,
+        phone: yMap.get('phone') as string,
+        place_url: yMap.get('place_url') as string,
+        category_name: yMap.get('category_name') as string,
+        x: yMap.get('x') as string,
+        y: yMap.get('y') as string,
+        addedBy: yMap.get('addedBy') as string,
+      }))
+
+      setCandidates(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yPostits.observeDeep(syncPostitsToState)
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
+    yCandidates.observeDeep(syncCandidatesToState)
 
     // 초기 동기화
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
+    syncCandidatesToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
+      yCandidates.unobserveDeep(syncCandidatesToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
@@ -497,6 +521,47 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
   }
 
+  // 후보 등록 함수
+  const addCandidate = useCallback(
+    (place: Candidate) => {
+      const doc = docRef.current
+      if (!doc) return
+
+      const yCandidates = doc.getArray<Y.Map<unknown>>('candidates')
+
+      // 이미 존재하는지 확인 (중복 방지)
+      const exists = yCandidates.toArray().some(yMap => yMap.get('id') === place.id)
+      if (exists) return
+
+      const yMap = new Y.Map()
+      // KakaoPlace의 모든 필드를 Y.Map에 설정
+      Object.entries(place).forEach(([key, value]) => {
+        yMap.set(key, value)
+      })
+      yMap.set('addedBy', userName) // 추가한 사람 기록
+
+      doc.transact(() => {
+        yCandidates.push([yMap])
+      }, localOriginRef.current)
+    },
+    [userName],
+  )
+
+  // 후보 삭제 함수
+  const removeCandidate = useCallback((placeId: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yCandidates = doc.getArray<Y.Map<unknown>>('candidates')
+    const index = yCandidates.toArray().findIndex(yMap => yMap.get('id') === placeId)
+
+    if (index !== -1) {
+      doc.transact(() => {
+        yCandidates.delete(index, 1)
+      }, localOriginRef.current)
+    }
+  }, [])
+
   return {
     isConnected,
     cursors,
@@ -520,5 +585,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     addLine,
     updateLine,
     deleteLine,
+    candidates,
+    addCandidate,
+    removeCandidate,
   }
 }
