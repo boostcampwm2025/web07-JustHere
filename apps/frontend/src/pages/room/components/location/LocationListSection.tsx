@@ -1,16 +1,20 @@
+import { LocationSearchResults, CandidateList } from '@/pages/room/components/location'
 import { useState } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
+import { ListBoxOutlineIcon, VoteIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput } from '@/shared/components'
-import type { KakaoPlace, PlaceCard } from '@/shared/types'
+import type { Candidate, KakaoPlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { RegionSelector } from './region-selector'
 import { PlaceDetailModal } from './place-detail'
+import { useYjsSocket } from '@/pages/room/hooks/useYjsSocket' // 경로 확인 필요
+import { getOrCreateStoredUser } from '@/shared/utils/userStorage' // 경로 확인 필요
 
 interface LocationListSectionProps {
   roomId: string
   slug: string
   currentRegion?: string | null
+  activeCategoryId: string // [New] 상위에서 전달받은 활성 카테고리 ID
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
@@ -26,6 +30,7 @@ export const LocationListSection = ({
   roomId,
   slug,
   currentRegion,
+  activeCategoryId,
   onRegionChange,
   pendingPlaceCard,
   onStartPlaceCard,
@@ -35,6 +40,18 @@ export const LocationListSection = ({
   onPlaceSelect,
 }: LocationListSectionProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
+
+  // 유저 정보 (후보 등록자 표시용)
+  const user = getOrCreateStoredUser(slug)
+
+  // Y.js Hook 연결
+  const { candidates, addCandidate, removeCandidate } = useYjsSocket({
+    roomId,
+    canvasId: activeCategoryId,
+    userName: user?.name || 'Unknown',
+  })
+
+  // 검색 Hook 연결
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
@@ -49,6 +66,7 @@ export const LocationListSection = ({
     setSearchQuery('')
   }
 
+  // 캔버스 배치 카드 생성 핸들러
   const handleAddPlaceCard = (place: KakaoPlace) => {
     if (pendingPlaceCard?.placeId === String(place.id)) {
       onCancelPlaceCard()
@@ -65,6 +83,28 @@ export const LocationListSection = ({
       image: null,
       category: place.category_group_name,
     })
+  }
+
+  // 후보 등록/삭제 토글 핸들러
+  const handleToggleCandidate = (place: KakaoPlace) => {
+    if (!activeCategoryId) {
+      alert('카테고리를 먼저 선택하거나 생성해주세요.')
+      return
+    }
+
+    const isAlreadyCandidate = candidates.some(c => c.id === String(place.id))
+
+    if (isAlreadyCandidate) {
+      removeCandidate(String(place.id))
+    } else {
+      // KakaoPlace -> Candidate 변환
+      const candidateData: Candidate = {
+        ...place,
+        id: String(place.id), // ID 타입 안전성 확보
+        addedBy: user?.name,
+      }
+      addCandidate(candidateData)
+    }
   }
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -103,75 +143,42 @@ export const LocationListSection = ({
           </div>
         </div>
 
-        <SearchInput
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          onClear={handleClear}
-          onSearch={handleSearch}
-          placeholder="검색"
-        />
+        {activeTab === 'locations' && (
+          <SearchInput
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onClear={handleClear}
+            onSearch={handleSearch}
+            placeholder="검색"
+          />
+        )}
       </div>
 
       <Divider />
 
       <div className="flex-1 overflow-y-auto p-5">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
-        ) : searchResults.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray text-sm">
-            {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
-          </div>
+        {activeTab === 'locations' ? (
+          <LocationSearchResults
+            isLoading={isLoading}
+            searchResults={searchResults}
+            hasSearched={hasSearched}
+            hasMore={hasMore}
+            isFetchingMore={isFetchingMore}
+            loadMoreRef={loadMoreRef}
+            pendingPlaceCard={pendingPlaceCard}
+            candidates={candidates}
+            onPlaceSelect={handlePlaceSelect}
+            onAddCanvas={handleAddPlaceCard}
+            onToggleCandidate={handleToggleCandidate}
+          />
         ) : (
-          <div className="flex flex-col gap-4">
-            {searchResults.map((place, index) => {
-              const isSelected = pendingPlaceCard?.placeId === String(place.id)
-
-              return (
-                <div key={place.id}>
-                  <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                    <div
-                      className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
-                      onClick={() => handlePlaceSelect(place)}
-                    >
-                      <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-between py-0.5">
-                      <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
-                        <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
-                        <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
-                        <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-2 mt-1">
-                        <Button
-                          size="sm"
-                          icon={<PlusIcon className="size-3" />}
-                          onClick={() => handleAddPlaceCard(place)}
-                          className={cn(
-                            'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
-                            isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
-                          )}
-                        >
-                          캔버스
-                        </Button>
-                        <Button variant="gray" size="sm" className="text-xs">
-                          후보등록
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {index < searchResults.length - 1 && <Divider className="mt-4" />}
-                </div>
-              )
-            })}
-            <div ref={loadMoreRef} />
-            {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
-            {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
-              <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
-            )}
-          </div>
+          <CandidateList
+            candidates={candidates}
+            pendingPlaceCard={pendingPlaceCard}
+            onPlaceSelect={handlePlaceSelect}
+            onAddCanvas={handleAddPlaceCard}
+            onRemoveCandidate={removeCandidate}
+          />
         )}
       </div>
 
