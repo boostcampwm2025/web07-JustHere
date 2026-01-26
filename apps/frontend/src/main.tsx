@@ -1,11 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import '@/index.css'
-import App from '@/App'
 import { BrowserRouter } from 'react-router-dom'
-import { ToastProvider } from '@/contexts/ToastProvider'
-import { ToastContainer } from '@/components/common/ToastContainer'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ToastContainer } from '@/shared/components'
+import { ToastProvider } from '@/shared/providers'
+import { App } from '@/app'
+import './index.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
