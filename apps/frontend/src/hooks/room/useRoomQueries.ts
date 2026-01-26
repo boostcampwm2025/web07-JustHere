@@ -1,11 +1,24 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import type { Participant, Category, RoomMeta } from '@/types/domain'
+import { createRoom, updateRoom, type RoomRegionPayload } from '@/api/room'
 
 export const roomQueryKeys = {
   base: (roomId: string) => ['room', roomId] as const,
   room: (roomId: string) => ['room', roomId, 'meta'] as const,
   participants: (roomId: string) => ['room', roomId, 'participants'] as const,
   categories: (roomId: string) => ['room', roomId, 'categories'] as const,
+}
+
+export function useCreateRoom() {
+  return useMutation({
+    mutationFn: (payload: RoomRegionPayload) => createRoom(payload),
+  })
+}
+
+export function useUpdateRoom(slug: string) {
+  return useMutation({
+    mutationFn: (payload: RoomRegionPayload) => updateRoom(slug, payload),
+  })
 }
 
 export function useRoomMeta(roomId: string | null) {

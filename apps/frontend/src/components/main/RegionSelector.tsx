@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/components/Icons'
-import { searchKeyword } from '@/api/kakao'
-import { updateRoom } from '@/api/room'
+import { useSearchKeyword } from '@/hooks/kakao/useKakaoQueries'
 import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
+import { useUpdateRoom } from '@/hooks/room'
 
 interface RegionSelectorProps {
   currentRegion?: string | null
@@ -14,8 +14,11 @@ interface RegionSelectorProps {
 export default function RegionSelector({ slug, onRegionChange }: RegionSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
-  const [results, setResults] = useState<KakaoPlace[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const { data: results, isLoading } = useSearchKeyword(searchTerm)
+
+  const { mutate: updateRoom } = useUpdateRoom(slug)
+
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -37,41 +40,40 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
     }
   }, [isOpen])
 
-  const handleSearch = async (e: React.KeyboardEvent) => {
+  const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key !== 'Enter' || !keyword.trim()) return
-
-    setIsLoading(true)
-    try {
-      const { documents } = await searchKeyword({ keyword: keyword.trim() })
-      setResults(documents)
-    } catch (error) {
-      console.error('지역 검색 실패:', error)
-      setResults([])
-    } finally {
-      setIsLoading(false)
-    }
+    e.preventDefault()
+    setSearchTerm(keyword.trim())
   }
 
   const handleSelect = async (place: KakaoPlace) => {
-    try {
-      const payload = {
+    updateRoom(
+      {
         x: parseFloat(place.x),
         y: parseFloat(place.y),
         place_name: place.place_name,
-      }
-      await updateRoom(slug, payload)
-      onRegionChange?.(payload)
-      setIsOpen(false)
-      setKeyword('')
-      setResults([])
-    } catch (error) {
-      console.error('지역 변경 실패:', error)
-    }
+      },
+      {
+        onSuccess: room => {
+          onRegionChange?.({
+            x: room.x,
+            y: room.y,
+            place_name: room.place_name || '',
+          })
+          setIsOpen(false)
+          setKeyword('')
+          setSearchTerm('')
+        },
+        onError: error => {
+          console.error('지역 변경 실패:', error)
+        },
+      },
+    )
   }
 
   const handleClear = () => {
     setKeyword('')
-    setResults([])
+    setSearchTerm('')
     inputRef.current?.focus()
   }
 
@@ -118,9 +120,9 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
           <div className="max-h-64 overflow-y-auto">
             {isLoading ? (
               <div className="p-4 text-center text-sm text-gray-500">검색 중...</div>
-            ) : results.length > 0 ? (
+            ) : results && results.documents.length > 0 ? (
               <ul>
-                {results.map(place => (
+                {results.documents.map(place => (
                   <li key={place.id}>
                     <button onClick={() => handleSelect(place)} className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
                       <div className="text-sm font-medium text-gray-900">{place.place_name}</div>
@@ -129,7 +131,7 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
                   </li>
                 ))}
               </ul>
-            ) : keyword ? (
+            ) : searchTerm ? (
               <div className="p-4 text-center text-sm text-gray-500">검색 결과가 없습니다</div>
             ) : (
               <div className="p-4 text-center text-sm text-gray-500">지역명을 입력하고 Enter를 눌러주세요</div>
