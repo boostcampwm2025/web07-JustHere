@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LocationStep, InviteStep, OnboardingProgress } from '@/pages/onboarding/components'
 import { Header } from '@/shared/components'
 import { createRoom } from '@/shared/api/room'
 import { socketBaseUrl } from '@/shared/config/socket'
+import { LocationStep, InviteStep, OnboardingProgress } from './components'
 import type { OnboardingStep, SelectedLocation } from './types'
 
 export default function OnboardingPage() {

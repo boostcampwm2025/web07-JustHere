@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, Button, Divider } from '@/shared/ui'
 import type { KakaoPlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
-import { RegionSelector } from './region-selector'
-import { PlaceDetailModal } from './place-detail'
 import { SearchInput } from '@/shared/components/search-input/SearchInput'
 import { cn } from '@/shared/utils'
+import { RegionSelector } from './region-selector'
+import { PlaceDetailModal } from './place-detail'
 
 interface LocationListSectionProps {
   roomId: string
