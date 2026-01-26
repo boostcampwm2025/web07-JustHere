@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/components/Icons'
-import { updateRoom } from '@/api/room'
 import { useSearchKeyword } from '@/hooks/kakao/useKakaoQueries'
 import { cn } from '@/utils/cn'
 import type { KakaoPlace } from '@/types/kakao'
+import { useUpdateRoom } from '@/hooks/room'
 
 interface RegionSelectorProps {
   currentRegion?: string | null
@@ -16,6 +16,8 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const { data: results, isLoading } = useSearchKeyword(searchTerm)
+
+  const { mutate: updateRoom } = useUpdateRoom(slug)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -45,20 +47,28 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
   }
 
   const handleSelect = async (place: KakaoPlace) => {
-    try {
-      const payload = {
+    updateRoom(
+      {
         x: parseFloat(place.x),
         y: parseFloat(place.y),
         place_name: place.place_name,
-      }
-      await updateRoom(slug, payload)
-      onRegionChange?.(payload)
-      setIsOpen(false)
-      setKeyword('')
-      setSearchTerm('')
-    } catch (error) {
-      console.error('지역 변경 실패:', error)
-    }
+      },
+      {
+        onSuccess: room => {
+          onRegionChange?.({
+            x: room.x,
+            y: room.y,
+            place_name: room.place_name || '',
+          })
+          setIsOpen(false)
+          setKeyword('')
+          setSearchTerm('')
+        },
+        onError: error => {
+          console.error('지역 변경 실패:', error)
+        },
+      },
+    )
   }
 
   const handleClear = () => {
