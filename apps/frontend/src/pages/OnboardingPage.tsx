@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import LocationStep from '@/components/onboarding/LocationStep'
 import InviteStep from '@/components/onboarding/InviteStep'
 import Header from '@/components/common/Header'
-import { createRoom } from '@/api/room'
+import { useCreateRoom } from '@/hooks/room/useRoomQueries'
 import { socketBaseUrl } from '@/config/socket'
 
 type OnboardingStep = 'location' | 'invite'
@@ -22,21 +22,27 @@ function OnboardingPage() {
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [roomSlug, setRoomSlug] = useState<string | null>(null)
 
-  const handleLocationSelect = async (location: SelectedLocation) => {
-    setSelectedLocation(location)
+  const { mutate: createRoom } = useCreateRoom()
 
-    try {
-      const room = await createRoom({
+  const handleLocationSelect = (location: SelectedLocation) => {
+    setSelectedLocation(location)
+    createRoom(
+      {
         x: location.x,
         y: location.y,
         place_name: location.name,
-      })
-      setRoomSlug(room.slug)
-      setInviteLink(`${socketBaseUrl}/room/${room.slug}`)
-      setCurrentStep('invite')
-    } catch (error) {
-      console.error('방 생성 실패', error)
-    }
+      },
+      {
+        onSuccess: room => {
+          setRoomSlug(room.slug)
+          setInviteLink(`${socketBaseUrl}/room/${room.slug}`)
+          setCurrentStep('invite')
+        },
+        onError: error => {
+          console.error('방 생성 실패', error)
+        },
+      },
+    )
   }
 
   const handleInviteComplete = () => {
