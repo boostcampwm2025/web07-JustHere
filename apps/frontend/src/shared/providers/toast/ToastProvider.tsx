@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from 'react'
-import { ToastContext, type Toast, type ToastType } from './ToastContext'
+import type { Toast, ToastType } from '@/shared/types'
+import { ToastContext } from './ToastContext'
 
 type ToastProviderProps = {
   children: ReactNode

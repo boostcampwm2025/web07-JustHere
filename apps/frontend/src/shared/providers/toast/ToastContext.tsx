@@ -1,13 +1,5 @@
+import type { Toast, ToastType } from '@/shared/types'
 import { createContext } from 'react'
-
-export type ToastType = 'error' | 'success' | 'info'
-
-export type Toast = {
-  id: string
-  message: string
-  type: ToastType
-  isLeaving: boolean
-}
 
 type ToastContextValue = {
   toasts: Toast[]
