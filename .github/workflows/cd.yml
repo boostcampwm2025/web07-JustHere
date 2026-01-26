@@ -3,7 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - feat/237-be-monitoring-system
+      - main
 
 jobs:
   build-and-push:
