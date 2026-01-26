@@ -1,13 +1,15 @@
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
 import { SwaggerService } from '@/lib/swagger/swagger.service'
 import { NestFactory } from '@nestjs/core'
-import { ValidationPipe } from '@nestjs/common'
+import { RequestMethod, ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api', {
+    exclude: [{ path: 'metrics', method: RequestMethod.GET }],
+  })
 
   app.useGlobalPipes(
     new ValidationPipe({

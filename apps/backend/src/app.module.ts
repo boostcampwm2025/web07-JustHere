@@ -1,5 +1,6 @@
 import { HttpExceptionFilter } from '@/lib/filter'
 import { HttpLoggingInterceptor, ResponseBuilderInterceptor } from '@/lib/interceptors'
+import { MetricModule } from '@/lib/metric/metric.module'
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
@@ -39,6 +40,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus'
         instance: process.env.HOSTNAME ?? 'backend',
       },
     }),
+    MetricModule,
   ],
   controllers: [AppController],
   providers: [
