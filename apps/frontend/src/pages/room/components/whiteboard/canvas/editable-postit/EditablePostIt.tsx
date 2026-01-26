@@ -73,6 +73,10 @@ export const EditablePostIt = ({
     onEditEnd()
   }
 
+  const basePadding = 10
+  const scaledPadding = basePadding * (postIt.scale || 1)
+
+  // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposingRef.current) return
 
@@ -81,9 +85,6 @@ export const EditablePostIt = ({
       ;(e.target as HTMLTextAreaElement).blur()
     }
   }
-
-  const basePadding = 10
-  const scaledPadding = basePadding * (postIt.scale || 1)
 
   return (
     <Group
@@ -101,7 +102,15 @@ export const EditablePostIt = ({
       onContextMenu={onSelect}
       onTransformEnd={onTransformEnd}
     >
-      <Rect width={postIt.width} height={postIt.height} fill={postIt.fill} shadowBlur={5} cornerRadius={8} onDblClick={handleDblClick} />
+      {/* 포스트잇 배경 */}
+      <Rect
+        width={postIt.width}
+        height={postIt.height}
+        fill={postIt.fill}
+        shadowBlur={5}
+        cornerRadius={8 * (postIt.scale || 1)}
+        onDblClick={handleDblClick}
+      />
 
       {isEditing ? (
         <Html
@@ -137,8 +146,8 @@ export const EditablePostIt = ({
           text={postIt.text}
           x={scaledPadding}
           y={scaledPadding}
-          width={Math.max(50, postIt.width - scaledPadding * 2)}
-          height={Math.max(50, postIt.height - scaledPadding * 2)}
+          width={postIt.width - scaledPadding * 2}
+          height={postIt.height - scaledPadding * 2}
           fontSize={14 * postIt.scale}
           fontFamily="Arial, sans-serif"
           fill="#333"

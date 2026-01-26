@@ -66,7 +66,15 @@ export const PlaceCardItem = ({
       onContextMenu={onContextMenu}
       onTransformEnd={onTransformEnd}
     >
-      <Rect width={cardWidth} height={cardHeight} fill="#FFFBE6" stroke="#E5E7EB" strokeWidth={1} cornerRadius={10 * scale} />
+      {/* 배경 카드 */}
+      <Rect
+        width={cardWidth}
+        height={cardHeight}
+        fill="#FFFBE6"
+        stroke="#E5E7EB"
+        strokeWidth={1 * scale}
+        cornerRadius={10 * scale} // 코너 반경도 스케일에 맞게
+      />
 
       {image && card.image ? (
         <KonvaImage image={image} x={scaledPadding} y={scaledPadding} width={textWidth} height={scaledImageHeight} cornerRadius={8 * scale} />
@@ -117,7 +125,7 @@ export const PlaceCardItem = ({
           onRemove()
         }}
       >
-        <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" cornerRadius={8 * scale} />
+        <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" strokeWidth={1 * scale} cornerRadius={8 * scale} />
         <Text text="×" width={16 * scale} height={16 * scale} align="center" verticalAlign="middle" fontSize={14 * scale} fill="#4B5563" />
       </Group>
     </Group>
