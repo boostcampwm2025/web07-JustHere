@@ -23,6 +23,7 @@ import { socketBaseUrl } from '@/config/socket'
 import { useToast } from '@/hooks/useToast'
 import { RoomNotFoundError } from '@/types/socket-error.types'
 import { roomQueryKeys } from './useRoomQueries'
+import { addSocketBreadcrumb } from '@/utils/sentry'
 
 export function useRoomSocketCache() {
   const queryClient = useQueryClient()
@@ -67,6 +68,8 @@ export function useRoomSocketCache() {
       setRoomId(roomId)
       setIsReady(true)
       setCurrentRegion(place_name ?? null)
+
+      addSocketBreadcrumb('room:joined', { roomId, ownerId, participants: participants.length, categories: categories.length })
 
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
@@ -116,6 +119,8 @@ export function useRoomSocketCache() {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('room:owner_transferred', { roomId, newOwnerId })
+
       queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; ownerId: string } | undefined) => {
         if (!prev) return prev
         return { ...prev, ownerId: newOwnerId }
@@ -130,6 +135,8 @@ export function useRoomSocketCache() {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('category:created', { roomId, categoryId })
+
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => [
         ...prev,
         { id: categoryId, roomId, title: name, orderIndex: 0, createdAt: new Date().toISOString() },
@@ -140,12 +147,18 @@ export function useRoomSocketCache() {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('category:deleted', { roomId, categoryId })
+
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => prev.filter(x => x.id !== categoryId))
     }
 
-    const onCategoryError = (errorPayload: ErrorPayload) => handleErrorWithToast(errorPayload)
+    const onCategoryError = (errorPayload: ErrorPayload) => {
+      addSocketBreadcrumb('category:error', { errorType: errorPayload.errorType }, 'warning')
+      handleErrorWithToast(errorPayload)
+    }
 
     const onRoomError = (errorPayload: ErrorPayload) => {
+      addSocketBreadcrumb('room:error', { errorType: errorPayload.errorType }, 'warning')
       // NOT_FOUND 에러는 Error Boundary로 전파
       if (errorPayload.errorType === 'NOT_FOUND') {
         roomIdRef.current = null
