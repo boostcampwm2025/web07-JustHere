@@ -1,0 +1,1 @@
+export { PlaceResultCard } from './PlaceResultCard'

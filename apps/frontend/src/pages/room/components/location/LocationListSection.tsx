@@ -8,6 +8,7 @@ import { PlaceDetailModal } from '@/pages/room/components/location/place-detail'
 import { RegionSelector } from '@/pages/room/components/location/region-selector'
 import { CandidateListSection, VoteListSection } from '@/pages/room/components/location'
 import { useLocationSearch } from '@/pages/room/hooks'
+import { useNavigate } from 'react-router-dom'
 
 // 후보 장소 기본 타입
 export interface Candidate {
@@ -125,6 +126,7 @@ export const LocationListSection = ({
   selectedPlace,
   onPlaceSelect,
 }: LocationListSectionProps) => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   // 임시 투표 상태 > socket 연동 후 제거 예정
   const [isVoting, setIsVoting] = useState(false)
@@ -320,7 +322,7 @@ export const LocationListSection = ({
       {/* 후보 리스트 탭 */}
       {activeTab === 'candidates' &&
         (isVoting ? (
-          <VoteListSection candidates={mockVotingCandidates} />
+          <VoteListSection candidates={mockVotingCandidates} onEndVote={() => navigate(`/result/${slug}`)} />
         ) : (
           <CandidateListSection candidates={mockCandidates} onStartVote={() => setIsVoting(true)} />
         ))}
