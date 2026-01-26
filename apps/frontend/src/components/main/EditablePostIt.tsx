@@ -113,7 +113,7 @@ function EditablePostIt({
         height={postIt.height}
         fill={postIt.fill}
         shadowBlur={5}
-        cornerRadius={8 * postIt.scale}
+        cornerRadius={8 * (postIt.scale || 1)}
         onDblClick={handleDblClick}
       />
 
