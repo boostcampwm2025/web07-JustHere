@@ -43,10 +43,18 @@ function WhiteboardSection({
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
+  const [mapCenter, setMapCenter] = useState({ lat: 37.566826, lng: 126.9786567 })
 
   useEffect(() => {
     setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
   }, [categories, activeCategoryId])
+
+  useEffect(() => {
+    const firstResult = searchResults[0]
+    if (firstResult) {
+      setMapCenter({ lat: Number(firstResult.y), lng: Number(firstResult.x) })
+    }
+  }, [searchResults])
 
   // 아이콘 맵퍼 (Type에 따라 아이콘 반환)
   const getIconByType = (type: string) => {
@@ -159,12 +167,7 @@ function WhiteboardSection({
           )
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            <KakaoMap
-              markers={searchResults}
-              selectedMarkerId={selectedPlace?.id}
-              onMarkerClick={onMarkerClick}
-              center={getFirstResultCenter(searchResults)}
-            />
+            <KakaoMap markers={searchResults} selectedMarkerId={selectedPlace?.id} onMarkerClick={onMarkerClick} center={mapCenter} />
           </div>
         )}
 
@@ -204,9 +207,4 @@ function resolveActiveCategoryId(categories: Category[], currentId: string) {
 
   const exists = categories.some(c => c.id === currentId)
   return exists ? currentId : categories[0].id
-}
-
-function getFirstResultCenter(results: KakaoPlace[]) {
-  if (!results[0]) return undefined
-  return { lat: Number(results[0].y), lng: Number(results[0].x) }
 }
