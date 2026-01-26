@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { CheckIcon } from '@/shared/assets'
-import { Button } from '@/shared/ui'
+import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types'
 

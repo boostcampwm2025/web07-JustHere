@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { AlertCircleIcon } from '@/shared/assets'
-import { Button } from '@/shared/ui'
-import { Header } from '@/shared/components'
+import { Button, Header } from '@/shared/components'
 
 type ErrorType = 'room-not-found' | 'unknown'
 

@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
-import { Button, Divider, Avatar } from '@/shared/ui'
+import { Button, Divider, Avatar, Modal } from '@/shared/components'
 import type { Participant } from '@/shared/types'
 import { cn } from '@/shared/utils'
-import { Modal } from '@/shared/components'
 
 interface RoomInfoModalProps {
   onClose: () => void

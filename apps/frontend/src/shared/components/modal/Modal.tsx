@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { CloseIcon } from '@/shared/assets'
-import { Button } from '@/shared/ui'
+import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
 interface ModalProps extends HTMLAttributes<HTMLDivElement> {

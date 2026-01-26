@@ -1,5 +1,4 @@
-import { Modal } from '@/shared/components'
-import { Button } from '@/shared/ui'
+import { Button, Modal } from '@/shared/components'
 
 interface DeleteCategoryModalProps {
   categoryName: string

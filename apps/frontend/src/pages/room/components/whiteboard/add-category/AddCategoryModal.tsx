@@ -1,7 +1,6 @@
 import { useState, type ElementType } from 'react'
 import { CoffeeIcon, CompassIcon, LiquorIcon, PencilIcon, SilverwareForkKnifeIcon } from '@/shared/assets'
-import { Button } from '@/shared/ui'
-import { Modal } from '@/shared/components'
+import { Button, Modal } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
 type Category = {
