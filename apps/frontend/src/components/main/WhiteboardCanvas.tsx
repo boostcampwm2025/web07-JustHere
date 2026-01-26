@@ -24,10 +24,6 @@ interface WhiteboardCanvasProps {
 const PLACE_CARD_WIDTH = 240
 const PLACE_CARD_HEIGHT = 180
 
-const MIN_POSTIT_SIZE = 50
-const MIN_PLACE_CARD_WIDTH = 100
-const MIN_PLACE_CARD_HEIGHT = 75
-
 // 드로잉 객체의 Bounding Box 계산 함수
 const getLineBoundingBox = (points: number[]): BoundingBox => {
   if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
@@ -196,9 +192,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       node.scaleX(1)
       node.scaleY(1)
 
-      // 새 크기 계산 (최소 크기 50px)
-      const newWidth = Math.max(MIN_POSTIT_SIZE, postIt.width * scaleX)
-      const newHeight = Math.max(MIN_POSTIT_SIZE, postIt.height * scaleY)
+      // 새 크기 계산
+      const newWidth = postIt.width * scaleX
+      const newHeight = postIt.height * scaleY
 
       const minScale = Math.min(scaleX, scaleY)
       const newScale = postIt.scale * minScale
@@ -228,9 +224,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
       const cardWidth = card.width ?? PLACE_CARD_WIDTH
       const cardHeight = card.height ?? PLACE_CARD_HEIGHT
 
-      // 새 크기 계산 (최소 크기 100px)
-      const newWidth = Math.max(MIN_PLACE_CARD_WIDTH, cardWidth * scaleX)
-      const newHeight = Math.max(MIN_PLACE_CARD_HEIGHT, cardHeight * scaleY)
+      // 새 크기 계산
+      const newWidth = cardWidth * scaleX
+      const newHeight = cardHeight * scaleY
 
       const minScale = Math.min(scaleX, scaleY)
       const newScale = card.scale * minScale
@@ -724,9 +720,6 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     const oldScale = stage.scaleX()
     const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
 
-    // 최소 0.1배, 최대 5배로 제한
-    const clampedScale = Math.max(0.1, Math.min(5, newScale))
-
     const pointer = stage.getPointerPosition()
     if (!pointer) return
 
@@ -736,11 +729,11 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
     }
 
     const newPos = {
-      x: pointer.x - mousePointTo.x * clampedScale,
-      y: pointer.y - mousePointTo.y * clampedScale,
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
     }
 
-    stage.scale({ x: clampedScale, y: clampedScale })
+    stage.scale({ x: newScale, y: newScale })
     stage.position(newPos)
   }
 
@@ -1082,15 +1075,9 @@ function WhiteboardCanvas({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlace
           {/* Transformer (선택된 요소에 크기 조절/회전 핸들 표시) */}
           <Transformer
             ref={transformerRef}
-            boundBoxFunc={(oldBox, newBox) => {
-              // 최소 크기 제한
-              if (newBox.width < MIN_PLACE_CARD_WIDTH || newBox.height < MIN_PLACE_CARD_HEIGHT) {
-                return oldBox
-              }
-              return newBox
-            }}
             rotateEnabled={false}
-            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center']}
+            enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+            flipEnabled={false}
             onDragStart={handleTransformerDragStart}
             onDragEnd={handleTransformerDragEnd}
           />
