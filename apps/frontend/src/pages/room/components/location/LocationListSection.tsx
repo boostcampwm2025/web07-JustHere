@@ -258,7 +258,7 @@ export const LocationListSection = ({
                           className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
                           onClick={() => handlePlaceSelect(place)}
                         >
-                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
+                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                         </div>
 
                         {/* Content */}
