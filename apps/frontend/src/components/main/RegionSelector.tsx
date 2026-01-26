@@ -15,7 +15,7 @@ export default function RegionSelector({ slug, onRegionChange }: RegionSelectorP
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const { data: results, isLoading } = useSearchKeyword({ keyword: searchTerm })
+  const { data: results, isLoading } = useSearchKeyword(searchTerm)
 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)

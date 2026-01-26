@@ -6,14 +6,13 @@ export const kakaoKeys = {
   infinity: (params: SearchKeywordParams) => ['kakao', 'infinity', params] as const,
 }
 
-export const useSearchKeyword = (params: string | SearchKeywordParams) => {
+export const useSearchKeyword = (params: string) => {
   const queryKey = kakaoKeys.keyword(params)
-  const keyword = typeof params === 'string' ? params : params.keyword
 
   return useQuery({
     queryKey,
     queryFn: () => searchKeyword(params),
-    enabled: !!keyword,
+    enabled: !!params,
   })
 }
 
