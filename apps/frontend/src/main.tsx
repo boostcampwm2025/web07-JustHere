@@ -2,11 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import * as Sentry from '@sentry/react'
-import '@/index.css'
-import App from '@/App'
 import { BrowserRouter } from 'react-router-dom'
-import { ToastProvider } from '@/contexts/ToastProvider'
-import { ToastContainer } from '@/components/common/ToastContainer'
+import { ToastContainer } from '@/shared/components'
+import { ToastProvider } from '@/shared/providers'
+import { App } from '@/app'
+import './index.css'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
 if (sentryDsn) {
