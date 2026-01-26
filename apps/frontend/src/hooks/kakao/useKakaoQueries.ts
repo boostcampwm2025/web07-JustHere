@@ -3,6 +3,7 @@ import { searchKeyword, type SearchKeywordParams } from '@/api/kakao'
 
 export const kakaoKeys = {
   keyword: (params: string | SearchKeywordParams) => ['kakao', 'keyword', params] as const,
+  infinity: (params: SearchKeywordParams) => ['kakao', 'infinity', params] as const,
 }
 
 export const useSearchKeyword = (params: string | SearchKeywordParams) => {
@@ -20,7 +21,7 @@ export const useInfiniteSearchKeyword = (params: SearchKeywordParams) => {
   const { keyword, roomId, radius, size } = params
 
   return useInfiniteQuery({
-    queryKey: kakaoKeys.keyword(params),
+    queryKey: kakaoKeys.infinity(params),
     queryFn: ({ pageParam = 1 }) =>
       searchKeyword({
         keyword,
