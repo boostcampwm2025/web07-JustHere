@@ -1,4 +1,4 @@
-import { createRoom, updateRoom, type RoomRegionPayload } from '@/shared/api/room'
+import { createRoom, updateRoom, type RoomRegionPayload } from '@/shared/api'
 import type { Category, Participant, RoomMeta } from '@/shared/types'
 import { useMutation, useQuery } from '@tanstack/react-query'
 

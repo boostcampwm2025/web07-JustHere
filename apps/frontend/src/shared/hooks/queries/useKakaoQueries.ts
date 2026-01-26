@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
-import { searchKeyword, type SearchKeywordParams } from '@/shared/api/kakao'
+import { searchKeyword, type SearchKeywordParams } from '@/shared/api'
 
 export const kakaoKeys = {
   keyword: (params: string | SearchKeywordParams) => ['kakao', 'keyword', params] as const,
