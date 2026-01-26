@@ -14,17 +14,16 @@ export interface ResponseType<T> {
 @Injectable()
 export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, ResponseType<T>> {
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<any> {
-    const request: Request = context.switchToHttp().getRequest()
-
-    if (request.url === '/metrics') {
-      return next.handle()
-    }
-
     const now = new Date().toISOString()
 
     // 1. HTTP 요청 처리
     if (context.getType() === 'http') {
       const ctx = context.switchToHttp()
+      const request = ctx.getRequest<Request>()
+      if (request.originalUrl?.startsWith('/metrics')) {
+        return next.handle()
+      }
+
       const response = ctx.getResponse<Response>()
 
       return next.handle().pipe(
