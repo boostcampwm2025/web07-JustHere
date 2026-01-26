@@ -1,5 +1,5 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
-import { useState, useEffect, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import PlaceMarker from './main/PlaceMarker'
 import type { KakaoPlace } from '@/types/kakao'
 
@@ -46,13 +46,11 @@ function KakaoMap({
   onMarkerClick,
 }: KakaoMapProps) {
   // center가 전달되면 업데이트, 없으면 이전 값 유지
-  const [mapCenter, setMapCenter] = useState(center ?? DEFAULT_CENTER)
-
-  useEffect(() => {
-    if (center) {
-      setMapCenter(center)
-    }
-  }, [center])
+  const lastCenterRef = useRef(center ?? DEFAULT_CENTER)
+  if (center) {
+    lastCenterRef.current = center
+  }
+  const mapCenter = lastCenterRef.current
 
   // 2. 카카오맵 로더
   const [loading, error] = useKakaoLoader({
