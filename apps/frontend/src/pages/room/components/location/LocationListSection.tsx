@@ -5,7 +5,7 @@ import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared//types/canvas.types'
 import { PlaceDetailModal } from '@/pages/room/components/location/place-detail'
 import { RegionSelector } from '@/pages/room/components/location/region-selector'
-import { VoteListSection } from '@/pages/room/components/location'
+import { CandidateListSection, VoteListSection } from '@/pages/room/components/location'
 import { useLocationSearch } from '@/pages/room/hooks'
 
 interface LocationListSectionProps {
@@ -36,6 +36,8 @@ export const LocationListSection = ({
   onPlaceSelect,
 }: LocationListSectionProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('locations')
+  // 임시 투표 상태 > socket 연동 후 제거 예정
+  const [isVoting, setIsVoting] = useState(false)
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
@@ -226,7 +228,7 @@ export const LocationListSection = ({
       )}
 
       {/* 후보 리스트 탭 */}
-      {activeTab === 'candidates' && <VoteListSection />}
+      {activeTab === 'candidates' && (isVoting ? <VoteListSection /> : <CandidateListSection onStartVote={() => setIsVoting(true)} />)}
 
       {/* Place Detail Modal */}
       {selectedPlace && <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />}
