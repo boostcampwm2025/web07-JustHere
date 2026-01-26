@@ -3,10 +3,100 @@ import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '
 import { cn } from '@/shared/utils/cn'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared//types/canvas.types'
+import type { Participant } from '@/shared/types'
 import { PlaceDetailModal } from '@/pages/room/components/location/place-detail'
 import { RegionSelector } from '@/pages/room/components/location/region-selector'
 import { CandidateListSection, VoteListSection } from '@/pages/room/components/location'
 import { useLocationSearch } from '@/pages/room/hooks'
+
+// 후보 장소 기본 타입
+export interface Candidate {
+  id: string
+  name: string
+  category: string
+  distance: string
+  address: string
+  phone: string
+}
+
+// 투표 중 후보 장소 타입 (투표 정보 포함)
+export interface VotingCandidate extends Candidate {
+  votePercentage: number
+  voters: Participant[]
+  hasVoted: boolean
+}
+
+// 임시 목데이터 (실제 구현 시 API로 대체)
+const mockCandidates: Candidate[] = [
+  {
+    id: '1',
+    name: '스타벅스 강남역점',
+    category: '카페',
+    distance: '500m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+  },
+  {
+    id: '2',
+    name: '맛있는 돈까스집',
+    category: '음식점',
+    distance: '300m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+  },
+  {
+    id: '3',
+    name: '이디야커피 선릉점',
+    category: '카페',
+    distance: '800m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+  },
+]
+
+// 투표 중 목데이터
+const mockVotingCandidates: VotingCandidate[] = [
+  {
+    id: '1',
+    name: '스타벅스 강남역점',
+    category: '카페',
+    distance: '500m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+    votePercentage: 75,
+    voters: [
+      { socketId: 'socketid-1', userId: 'userId1', name: '빨간라면' },
+      { socketId: 'socketid-2', userId: 'userId2', name: '파린부대찌개' },
+      { socketId: 'socketid-3', userId: 'userId3', name: '초록삼겹살' },
+    ],
+    hasVoted: true,
+  },
+  {
+    id: '2',
+    name: '맛있는 돈까스집',
+    category: '음식점',
+    distance: '300m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+    votePercentage: 50,
+    voters: [
+      { socketId: 'socketid-4', userId: 'userId4', name: '분홍소세지' },
+      { socketId: 'socketid-5', userId: 'userId5', name: '검정초밥' },
+    ],
+    hasVoted: false,
+  },
+  {
+    id: '3',
+    name: '이디야커피 선릉점',
+    category: '카페',
+    distance: '800m',
+    address: '서울 강남구 강남대로94길 9',
+    phone: '02-6204-1116',
+    votePercentage: 25,
+    voters: [{ socketId: 'socketid-6', userId: 'userId6', name: '주황버섯' }],
+    hasVoted: false,
+  },
+]
 
 interface LocationListSectionProps {
   roomId: string
@@ -228,7 +318,12 @@ export const LocationListSection = ({
       )}
 
       {/* 후보 리스트 탭 */}
-      {activeTab === 'candidates' && (isVoting ? <VoteListSection /> : <CandidateListSection onStartVote={() => setIsVoting(true)} />)}
+      {activeTab === 'candidates' &&
+        (isVoting ? (
+          <VoteListSection candidates={mockVotingCandidates} />
+        ) : (
+          <CandidateListSection candidates={mockCandidates} onStartVote={() => setIsVoting(true)} />
+        ))}
 
       {/* Place Detail Modal */}
       {selectedPlace && <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />}

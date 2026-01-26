@@ -1,71 +1,25 @@
 import { VoteIcon, CheckCircleIcon } from '@/shared/assets'
 import { AvatarList, Button } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
-import type { Participant } from '@/shared/types'
+import type { VotingCandidate } from './LocationListSection'
 
-// 투표 후보 장소 임시 타입
-interface CandidatePlace {
-  id: string
-  name: string
-  category: string
-  distance: string
-  votePercentage: number
-  voters: Participant[]
-  additionalVoters: number
-  hasVoted: boolean
+interface VoteListSectionProps {
+  candidates: VotingCandidate[]
+  onVote?: (candidateId: string) => void
+  onEndVote?: () => void
+  onDeleteCandidate?: () => void
 }
 
-// 임시 목데이터 (실제 구현 시 props나 API로 대체)
-const mockCandidates: CandidatePlace[] = [
-  {
-    id: '1',
-    name: '스타벅스 강남역점',
-    category: '카페',
-    distance: '500m',
-    votePercentage: 75,
-    voters: [
-      { socketId: 'socketid-1', userId: 'userId1', name: '빨간라면' },
-      { socketId: 'socketid-2', userId: 'userId2', name: '파린부대찌개' },
-      { socketId: 'socketid-3', userId: 'userId3', name: '초록삼겹살' },
-    ],
-    additionalVoters: 2,
-    hasVoted: true,
-  },
-  {
-    id: '2',
-    name: '맛있는 돈까스집',
-    category: '음식점',
-    distance: '300m',
-    votePercentage: 50,
-    voters: [
-      { socketId: 'socketid-4', userId: 'userId4', name: '분홍소세지' },
-      { socketId: 'socketid-5', userId: 'userId5', name: '검정초밥' },
-    ],
-    additionalVoters: 0,
-    hasVoted: false,
-  },
-  {
-    id: '3',
-    name: '이디야커피 선릉점',
-    category: '카페',
-    distance: '800m',
-    votePercentage: 25,
-    voters: [{ socketId: 'socketid-6', userId: 'userId6', name: '주황버섯' }],
-    additionalVoters: 0,
-    hasVoted: false,
-  },
-]
-
-export const VoteListSection = () => {
+export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandidate }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto p-4">
-        {mockCandidates.length === 0 ? (
+        {candidates.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">등록된 후보가 없습니다</div>
         ) : (
           <ul className="flex flex-col gap-4">
-            {mockCandidates.map((candidate, index) => (
-              <li key={candidate.id} className={cn('flex flex-col gap-3 pb-4', index < mockCandidates.length - 1 && 'border-b border-gray-200')}>
+            {candidates.map((candidate, index) => (
+              <li key={candidate.id} className={cn('flex flex-col gap-3 pb-4', index < candidates.length - 1 && 'border-b border-gray-200')}>
                 {/* 장소 정보 */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
@@ -106,11 +60,19 @@ export const VoteListSection = () => {
                       size="sm"
                       icon={<CheckCircleIcon className="size-3.5" />}
                       iconPosition="right"
+                      onClick={() => onVote?.(candidate.id)}
                     >
                       투표하기
                     </Button>
                   ) : (
-                    <Button className="text-xs" variant="gray" size="sm" icon={<VoteIcon className="size-3.5" />} iconPosition="right">
+                    <Button
+                      className="text-xs"
+                      variant="gray"
+                      size="sm"
+                      icon={<VoteIcon className="size-3.5" />}
+                      iconPosition="right"
+                      onClick={() => onVote?.(candidate.id)}
+                    >
                       투표하기
                     </Button>
                   )}
@@ -123,10 +85,10 @@ export const VoteListSection = () => {
 
       {/* Footer Buttons */}
       <div className="flex items-center gap-3 p-4">
-        <Button size="lg" className="flex-1" variant="gray">
+        <Button size="lg" className="flex-1" variant="gray" onClick={onDeleteCandidate}>
           삭제하기
         </Button>
-        <Button size="lg" className="flex-1" variant="primary">
+        <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
           투표 종료
         </Button>
       </div>
