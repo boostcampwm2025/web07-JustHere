@@ -1,5 +1,5 @@
 import { VoteIcon, CheckCircleIcon } from '@/shared/assets'
-import { Avatar, Button } from '@/shared/components'
+import { AvatarList, Button } from '@/shared/components'
 import { cn } from '@/shared/utils/cn'
 import type { Participant } from '@/shared/types'
 
@@ -96,16 +96,7 @@ export const VoteListSection = () => {
                 <div className="flex items-center justify-between">
                   {/* 투표자 아바타 */}
                   <Button variant="ghost" className="px-0 rounded-full">
-                    <div className="flex items-center -space-x-2">
-                      {candidate.voters.map(voter => (
-                        <Avatar key={voter.userId} name={voter.name} />
-                      ))}
-                      {candidate.additionalVoters > 0 && (
-                        <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
-                          <span className="text-xs font-medium text-gray-800">+{candidate.additionalVoters}</span>
-                        </div>
-                      )}
-                    </div>
+                    <AvatarList participants={candidate.voters} />
                   </Button>
                   {/* 투표 버튼 */}
                   {candidate.hasVoted ? (
