@@ -4,12 +4,13 @@ import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
-import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox } from '@/shared/types'
+import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox, TextBox } from '@/shared/types'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
 import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
+import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
 
 interface WhiteboardCanvasProps {
@@ -54,7 +55,7 @@ const isBoxIntersecting = (selectionBox: SelectionBox, boundingBox: BoundingBox)
   return selMinX <= boxMaxX && selMaxX >= boxMinX && selMinY <= boxMaxY && selMaxY >= boxMinY
 }
 
-type DragInitialState = { type: 'postit' | 'placeCard'; x: number; y: number } | { type: 'line'; points: number[] }
+type DragInitialState = { type: 'postit' | 'placeCard' | 'textBox'; x: number; y: number } | { type: 'line'; points: number[] }
 
 export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
@@ -129,6 +130,10 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     addLine,
     updateLine,
     deleteLine,
+    textBoxes,
+    addTextBox,
+    updateTextBox,
+    deleteTextBox,
   } = useYjsSocket({
     roomId,
     canvasId,
@@ -144,6 +149,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
           if (item.type === 'postit') deletePostIt(item.id)
           if (item.type === 'line') deleteLine(item.id)
           if (item.type === 'placeCard') removePlaceCard(item.id)
+          if (item.type === 'textBox') deleteTextBox(item.id)
         })
 
         setSelectedItems([])
@@ -219,6 +225,32 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     [updatePlaceCard],
   )
 
+  const handleTextBoxTransformEnd = useCallback(
+    (textBox: TextBox, e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target as Konva.Group
+      const scaleX = node.scaleX()
+      const scaleY = node.scaleY()
+
+      node.scaleX(1)
+      node.scaleY(1)
+
+      const newWidth = textBox.width * scaleX
+      const newHeight = textBox.height * scaleY
+
+      const minScale = Math.min(scaleX, scaleY)
+      const newScale = textBox.scale * minScale
+
+      updateTextBox(textBox.id, {
+        x: node.x(),
+        y: node.y(),
+        width: newWidth,
+        height: newHeight,
+        scale: newScale,
+      })
+    },
+    [updateTextBox],
+  )
+
   const handleTransformerDragStart = useCallback(() => {
     const nodes = transformerRef.current?.nodes() || []
     if (nodes.length > 0) {
@@ -236,6 +268,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       } else if (item.type === 'line') {
         const line = lines.find(l => l.id === item.id)
         if (line) itemStatesBeforeDrag.current.set(item.id, { type: 'line', points: [...line.points] })
+      } else if (item.type === 'textBox') {
+        const textBox = textBoxes.find(t => t.id === item.id)
+        if (textBox) itemStatesBeforeDrag.current.set(item.id, { type: 'textBox', x: textBox.x, y: textBox.y })
       }
     })
   }, [selectedItems, postIts, placeCards, lines])
@@ -254,8 +289,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       const isSelected = selectedItems.some(i => i.id === id)
       if (!isSelected) return
 
-      if (originalState.type === 'postit' || originalState.type === 'placeCard') {
-        const updater = originalState.type === 'postit' ? updatePostIt : updatePlaceCard
+      if (originalState.type === 'postit' || originalState.type === 'placeCard' || originalState.type === 'textBox') {
+        const updater = originalState.type === 'postit' ? updatePostIt : originalState.type === 'placeCard' ? updatePlaceCard : updateTextBox
         updater(id, { x: originalState.x + dx, y: originalState.y + dy })
       } else if (originalState.type === 'line') {
         const newPoints = originalState.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
@@ -436,7 +471,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     if (canvasPos) {
       updateCursor(canvasPos.x, canvasPos.y)
 
-      if (effectiveTool === 'postIt' && !pendingPlaceCard) {
+      if ((effectiveTool === 'postIt' || effectiveTool === 'textBox') && !pendingPlaceCard) {
         setCursorPos(canvasPos)
       }
 
@@ -558,6 +593,21 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       }
       addLine(newLine)
     }
+
+    if (effectiveTool === 'textBox') {
+      stopCapturing()
+      const newTextBox: TextBox = {
+        id: `textBox-${crypto.randomUUID()}`,
+        x: canvasPos.x - 100,
+        y: canvasPos.y - 25,
+        width: 200,
+        height: 50,
+        scale: 1,
+        text: '텍스트를 입력하세요',
+        authorName: `User ${socketId.substring(0, 4)}`,
+      }
+      addTextBox(newTextBox)
+    }
   }
 
   const handleMouseUp = () => {
@@ -601,6 +651,13 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
           const lineBox = getLineBoundingBox(line.points)
           if (isBoxIntersecting(currentSelectionBox, lineBox)) {
             newSelectedItems.push({ id: line.id, type: 'line' })
+          }
+        })
+
+        textBoxes.forEach(tb => {
+          const bound = { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
+          if (isBoxIntersecting(currentSelectionBox, bound)) {
+            newSelectedItems.push({ id: tb.id, type: 'textBox' })
           }
         })
 
@@ -826,6 +883,37 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   }
                 }}
                 onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
+              />
+            )
+          })}
+
+          {textBoxes.map(textBox => {
+            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
+            const isSelected = selectedItems.some(i => i.id === textBox.id && i.type === 'textBox')
+            return (
+              <EditableTextBox
+                key={textBox.id}
+                textBox={textBox}
+                draggable={canDrag}
+                isSelected={isSelected}
+                onEditStart={stopCapturing}
+                onEditEnd={stopCapturing}
+                onDragEnd={(x, y) => {
+                  updateTextBox(textBox.id, { x, y })
+                }}
+                onChange={updates => {
+                  updateTextBox(textBox.id, updates)
+                }}
+                onMouseDown={e => handleObjectMouseDown(textBox.id, 'textBox', e)}
+                onSelect={e => handleObjectClick(e)}
+                shapeRef={node => {
+                  if (node) {
+                    shapeRefs.current.set(textBox.id, node)
+                  } else {
+                    shapeRefs.current.delete(textBox.id)
+                  }
+                }}
+                onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
               />
             )
           })}

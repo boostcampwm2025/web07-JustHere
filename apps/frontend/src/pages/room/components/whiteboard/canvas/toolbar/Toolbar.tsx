@@ -2,7 +2,7 @@ import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, Undo
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
-type Tool = 'cursor' | 'hand' | 'pencil' | 'postIt'
+type Tool = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
 
 type ToolConfig = {
   tool: Tool
