@@ -12,6 +12,8 @@ type ToggleType = 'map' | 'canvas'
 
 interface WhiteboardSectionProps {
   roomId: string
+  activeCategoryId: string
+  onCategoryChange: (id: string) => void
   onCreateCategory: (name: string) => void
   onDeleteCategory: (categoryId: string) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
@@ -24,6 +26,8 @@ interface WhiteboardSectionProps {
 
 export const WhiteboardSection = ({
   roomId,
+  activeCategoryId,
+  onCategoryChange,
   onCreateCategory,
   onDeleteCategory,
   pendingPlaceCard,
@@ -37,12 +41,14 @@ export const WhiteboardSection = ({
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
   const { data: categories } = useRoomCategories(roomId)
 
-  const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
 
   useEffect(() => {
-    setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
-  }, [categories, activeCategoryId])
+    const resolvedId = resolveActiveCategoryId(categories, activeCategoryId)
+    if (resolvedId !== activeCategoryId) {
+      onCategoryChange(resolvedId)
+    }
+  }, [categories, activeCategoryId, onCategoryChange])
 
   const getIconByType = (type: string) => {
     switch (type) {
@@ -72,11 +78,11 @@ export const WhiteboardSection = ({
               key={category.id}
               role="tab"
               aria-selected={activeCategoryId === category.id}
-              onClick={() => setActiveCategoryId(category.id)}
+              onClick={() => onCategoryChange(category.id)}
               onKeyDown={e => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  setActiveCategoryId(category.id)
+                  onCategoryChange(category.id)
                 }
               }}
               tabIndex={0}

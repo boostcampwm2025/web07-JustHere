@@ -20,6 +20,7 @@ export default function RoomPage() {
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
   const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('') // 활성화 카테고리 ID
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
@@ -75,6 +76,8 @@ export default function RoomPage() {
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
           roomId={roomId}
+          activeCategoryId={activeCategoryId}
+          onCategoryChange={setActiveCategoryId}
           onCreateCategory={createCategory}
           onDeleteCategory={deleteCategory}
           pendingPlaceCard={pendingPlaceCard}
@@ -88,6 +91,7 @@ export default function RoomPage() {
           roomId={roomId}
           slug={slug}
           currentRegion={currentRegion}
+          activeCategoryId={activeCategoryId}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}
