@@ -1,4 +1,4 @@
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon } from '@/shared/assets'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
@@ -29,6 +29,10 @@ const TOOLBAR_TOOLS: ToolConfig[] = [
   {
     tool: 'postIt',
     icon: <NoteTextIcon className="w-5 h-5" />,
+  },
+  {
+    tool: 'textBox',
+    icon: <TextIcon className="w-5 h-5" />,
   },
 ]
 
