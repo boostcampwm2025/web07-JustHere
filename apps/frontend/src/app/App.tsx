@@ -15,7 +15,14 @@ export function App() {
           </RoomErrorBoundary>
         }
       />
-      <Route path="/result/:slug" element={<ResultPage />} />
+      <Route
+        path="/result/:slug"
+        element={
+          <RoomErrorBoundary>
+            <ResultPage />
+          </RoomErrorBoundary>
+        }
+      />
     </Routes>
   )
 }
