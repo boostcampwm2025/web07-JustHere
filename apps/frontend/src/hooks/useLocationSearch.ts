@@ -33,7 +33,7 @@ export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = 
     }
   }, [isSuccess, searchResults, searchTerm, onSearchComplete])
 
-  // Intersection Observer for infinite scrolling
+  // 무한 스크롤 감지 로직
   useEffect(() => {
     const target = loadMoreRef.current
     if (!target) return
