@@ -1,7 +1,9 @@
 import { Map, useKakaoLoader } from 'react-kakao-maps-sdk'
-import type { ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import PlaceMarker from './main/PlaceMarker'
 import type { KakaoPlace } from '@/types/kakao'
+
+const DEFAULT_CENTER = { lat: 37.566826, lng: 126.9786567 }
 
 interface KakaoMapProps {
   // 크기 관련 (기본값: 100%)
@@ -34,7 +36,7 @@ function KakaoMap({
   width = '100%',
   height = '100%',
   className = '',
-  center = { lat: 37.566826, lng: 126.9786567 },
+  center,
   level = 3,
   children,
   onLoad,
@@ -43,6 +45,15 @@ function KakaoMap({
   selectedMarkerId,
   onMarkerClick,
 }: KakaoMapProps) {
+  // center가 전달되면 업데이트, 없으면 이전 값 유지
+  const [mapCenter, setMapCenter] = useState(center ?? DEFAULT_CENTER)
+
+  useEffect(() => {
+    if (center) {
+      setMapCenter(center)
+    }
+  }, [center])
+
   // 2. 카카오맵 로더
   const [loading, error] = useKakaoLoader({
     appkey: import.meta.env.VITE_KAKAO_MAP_API_KEY,
@@ -71,7 +82,7 @@ function KakaoMap({
 
   // 5. 지도 렌더링
   return (
-    <Map center={center} style={containerStyle} level={level} className={className} onCreate={onLoad} draggable={draggable}>
+    <Map center={mapCenter} style={containerStyle} level={level} className={className} onCreate={onLoad} draggable={draggable}>
       {/* 부모 컴포넌트에서 전달한 마커 등이 여기에 렌더링됨 */}
       {markers.map(place => (
         <PlaceMarker key={place.id} place={place} isSelected={place.id === selectedMarkerId} onClick={onMarkerClick} />
