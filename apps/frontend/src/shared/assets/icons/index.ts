@@ -8,6 +8,7 @@ import AlertCircleIcon from '@/shared/assets/icons/alert-circle.svg?react'
 import ArrowLeftIcon from '@/shared/assets/icons/arrow-left.svg?react'
 import BackspaceIcon from '@/shared/assets/icons/backspace.svg?react'
 import BellIcon from '@/shared/assets/icons/bell.svg?react'
+import CategoryIcon from '@/shared/assets/icons/category.svg?react'
 import CheckCircleIcon from '@/shared/assets/icons/check-circle.svg?react'
 import CheckIcon from '@/shared/assets/icons/check.svg?react'
 import ChevronDownIcon from '@/shared/assets/icons/chevron-down.svg?react'
@@ -46,6 +47,7 @@ export {
   ArrowLeftIcon,
   BackspaceIcon,
   BellIcon,
+  CategoryIcon,
   CheckCircleIcon,
   CheckIcon,
   ChevronDownIcon,
