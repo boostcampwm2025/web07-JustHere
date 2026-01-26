@@ -163,7 +163,7 @@ function WhiteboardSection({
               markers={searchResults}
               selectedMarkerId={selectedPlace?.id}
               onMarkerClick={onMarkerClick}
-              {...(searchResults[0] && { center: { lat: Number(searchResults[0].y), lng: Number(searchResults[0].x) } })}
+              center={getFirstResultCenter(searchResults)}
             />
           </div>
         )}
@@ -204,4 +204,9 @@ function resolveActiveCategoryId(categories: Category[], currentId: string) {
 
   const exists = categories.some(c => c.id === currentId)
   return exists ? currentId : categories[0].id
+}
+
+function getFirstResultCenter(results: KakaoPlace[]) {
+  if (!results[0]) return undefined
+  return { lat: Number(results[0].y), lng: Number(results[0].x) }
 }
