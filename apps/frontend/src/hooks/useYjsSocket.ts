@@ -185,7 +185,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
 
     const handleCanvasDetached = () => {
-      // TODO: 카테고리 나갔을 때 처리 로직
+      // TODO: 카테고리 나갔을 때 남겨진 사람들에게 필요한 로직
     }
 
     const handleYjsUpdate = (payload: YjsUpdateBroadcast) => {
@@ -256,6 +256,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // 캔버스 나가기
       const detachPayload: CanvasDetachPayload = { canvasId }
       socket.emit('canvas:detach', detachPayload)
+
+      // UI에서 타 사람들의 커서 정리
+      setCursors(new Map())
 
       doc.off('update', updateHandler)
       socket.off('connect', handleConnect)
