@@ -1,13 +1,11 @@
 import { CandidateListItem } from '@/pages/room/components/location'
-import type { KakaoPlace } from '@/shared/types'
-import type { PlaceCard } from '@/shared/types/canvas.types.ts'
-import type { Candidate } from '@/shared/types/location.types.ts'
+import type { PlaceCard, Candidate } from '@/shared/types'
 
 interface CandidateListProps {
   candidates: Candidate[]
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
-  onPlaceSelect: (place: KakaoPlace) => void
-  onAddCanvas: (place: KakaoPlace) => void
+  onPlaceSelect: (place: Candidate) => void
+  onAddCanvas: (place: Candidate) => void
   onRemoveCandidate: (placeId: string) => void
 }
 

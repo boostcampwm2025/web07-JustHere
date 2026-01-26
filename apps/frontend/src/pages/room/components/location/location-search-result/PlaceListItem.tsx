@@ -1,10 +1,10 @@
 import { PlusIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
-import type { KakaoPlace, Candidate } from '@/shared/types'
+import type { KakaoPlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 
 interface PlaceListItemProps {
-  place: KakaoPlace | Candidate
+  place: KakaoPlace
   isSelected: boolean // 캔버스 배치 대기 상태인지
   isCandidate: boolean // 후보 리스트에 포함되어 있는지
   onSelect: (place: KakaoPlace) => void
