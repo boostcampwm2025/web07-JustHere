@@ -25,7 +25,7 @@ export const CandidateList = ({ candidates, pendingPlaceCard, onPlaceSelect, onR
         <CandidateListItem
           key={place.id}
           place={place}
-          isSelected={pendingPlaceCard?.placeId === String(place.id)}
+          isSelected={pendingPlaceCard?.placeId === place.id}
           onClick={() => onPlaceSelect(place)}
           onRemove={() => onRemoveCandidate(place.id)}
         />
