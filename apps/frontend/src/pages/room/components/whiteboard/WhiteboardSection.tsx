@@ -3,7 +3,7 @@ import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon,
 import { Button, KakaoMap } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { Category, KakaoPlace, PlaceCard } from '@/shared/types'
-import { useRoomCategories } from '@/pages/room/hooks'
+import { useRoomCategories } from '@/shared/hooks'
 import { AddCategoryModal } from './add-category'
 import { DeleteCategoryModal } from './delete-category'
 import { WhiteboardCanvas } from './canvas'

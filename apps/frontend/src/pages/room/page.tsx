@@ -3,8 +3,9 @@ import { Navigate, useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
 import type { KakaoPlace, PlaceCard } from '@/shared/types'
+import { useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
-import { useRoomMeta, useRoomParticipants, useRoomSocketCache } from './hooks'
+import { useRoomSocketCache } from './hooks'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()

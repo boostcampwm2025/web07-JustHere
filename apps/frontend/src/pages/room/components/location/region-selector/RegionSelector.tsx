@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { useSearchKeyword } from '@/shared/hooks'
+import { useSearchKeyword, useUpdateRoom } from '@/shared/hooks'
 import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { KakaoPlace } from '@/shared/types'
-import { useUpdateRoom } from '@/pages/room/hooks'
 
 interface RegionSelectorProps {
   currentRegion?: string | null

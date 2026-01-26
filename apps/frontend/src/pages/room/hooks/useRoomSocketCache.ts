@@ -21,9 +21,8 @@ import {
   type Category,
 } from '@/shared/types'
 import { RoomNotFoundError } from '@/app/error-boundary'
-import { useSocketClient, useToast } from '@/shared/hooks'
+import { roomQueryKeys, useSocketClient, useToast } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { roomQueryKeys } from './useRoomQueries'
 
 export const useRoomSocketCache = () => {
   const queryClient = useQueryClient()
