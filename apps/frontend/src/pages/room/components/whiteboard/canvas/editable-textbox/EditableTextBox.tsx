@@ -33,6 +33,7 @@ export const EditableTextBox = ({
 }: EditableTextBoxProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const isComposingRef = useRef(false)
   const draftRef = useRef(textBox.text)
   const groupRef = useRef<Konva.Group>(null)
@@ -93,13 +94,17 @@ export const EditableTextBox = ({
       width={textBox.width}
       height={textBox.height}
       draggable={draggable && !isEditing}
-      onDragEnd={e => onDragEnd(e.target.x(), e.target.y())}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={e => {
+        setIsDragging(false)
+        onDragEnd(e.target.x(), e.target.y())
+      }}
       onMouseDown={onMouseDown}
       onClick={onSelect}
       onContextMenu={onSelect}
       onTransformEnd={onTransformEnd}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => !isDragging && setIsHovered(true)}
+      onMouseLeave={() => !isDragging && setIsHovered(false)}
     >
       <Rect
         width={textBox.width}
@@ -121,6 +126,7 @@ export const EditableTextBox = ({
           <textarea
             ref={textareaRef}
             defaultValue={textBox.text}
+            placeholder="텍스트를 입력하세요"
             onChange={handleTextChange}
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
@@ -129,7 +135,7 @@ export const EditableTextBox = ({
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] leading-[1.4]"
+            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
             style={{
               fontSize: `${14 * (textBox.scale || 1)}px`,
               padding: `${scaledPadding}px`,
@@ -138,14 +144,14 @@ export const EditableTextBox = ({
         </Html>
       ) : (
         <Text
-          text={textBox.text}
+          text={textBox.text || '텍스트를 입력하세요'}
           x={scaledPadding}
           y={scaledPadding}
-          width={textBox.width - scaledPadding * 2}
-          height={textBox.height - scaledPadding * 2}
+          width={Math.max(1, textBox.width - scaledPadding * 2)}
+          height={Math.max(1, textBox.height - scaledPadding * 2)}
           fontSize={14 * textBox.scale}
           fontFamily="Arial, sans-serif"
-          fill="#333"
+          fill={textBox.text ? '#333' : '#9CA3AF'}
           lineHeight={1.4}
           wrap="word"
           onDblClick={handleDblClick}

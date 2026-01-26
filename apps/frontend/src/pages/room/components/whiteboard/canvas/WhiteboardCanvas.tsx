@@ -273,7 +273,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         if (textBox) itemStatesBeforeDrag.current.set(item.id, { type: 'textBox', x: textBox.x, y: textBox.y })
       }
     })
-  }, [selectedItems, postIts, placeCards, lines])
+  }, [selectedItems, postIts, placeCards, lines, textBoxes])
 
   const handleTransformerDragEnd = useCallback(() => {
     if (!transformerDragStartPos.current || itemStatesBeforeDrag.current.size === 0) return
@@ -300,7 +300,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
     transformerDragStartPos.current = null
     itemStatesBeforeDrag.current.clear()
-  }, [selectedItems, updateLine, updatePostIt, updatePlaceCard])
+  }, [selectedItems, updateLine, updatePostIt, updatePlaceCard, updateTextBox])
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -603,7 +603,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         width: 200,
         height: 50,
         scale: 1,
-        text: '텍스트를 입력하세요',
+        text: '',
         authorName: `User ${socketId.substring(0, 4)}`,
       }
       addTextBox(newTextBox)
@@ -922,6 +922,13 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
             <Group x={cursorPos.x - 75} y={cursorPos.y - 75} listening={false}>
               <Rect width={150} height={150} fill="#FFF9C4" opacity={0.6} cornerRadius={8} stroke="#9CA3AF" strokeWidth={2} dash={[5, 5]} />
               <Text x={0} y={65} width={150} text="Click to add" align="center" fill="#6B7280" fontSize={14} />
+            </Group>
+          )}
+
+          {effectiveTool === 'textBox' && !pendingPlaceCard && cursorPos && (
+            <Group x={cursorPos.x - 100} y={cursorPos.y - 25} listening={false}>
+              <Rect width={200} height={50} fill="transparent" opacity={0.6} stroke="#9CA3AF" strokeWidth={1} dash={[5, 5]} />
+              <Text x={0} y={17} width={200} text="Click to add text" align="center" fill="#6B7280" fontSize={14} />
             </Group>
           )}
 

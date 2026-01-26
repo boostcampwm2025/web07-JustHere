@@ -162,11 +162,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
+    syncTextBoxesToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
+      yTextBoxes.unobserveDeep(syncTextBoxesToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
