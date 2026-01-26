@@ -1,7 +1,7 @@
 import { ResponseStatus } from '@/lib/types/response.type'
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common'
 import { Observable } from 'rxjs'
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import { map } from 'rxjs/operators'
 
 export interface ResponseType<T> {
@@ -13,7 +13,13 @@ export interface ResponseType<T> {
 
 @Injectable()
 export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, ResponseType<T>> {
-  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ResponseType<T>> {
+  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<any> {
+    const request: Request = context.switchToHttp().getRequest()
+
+    if (request.url === '/metrics') {
+      return next.handle()
+    }
+
     const now = new Date().toISOString()
 
     // 1. HTTP 요청 처리
