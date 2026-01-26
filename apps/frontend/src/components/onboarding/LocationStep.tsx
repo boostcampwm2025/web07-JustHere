@@ -34,6 +34,7 @@ function LocationStep({ onNext }: LocationStepProps) {
     const trimmedQuery = searchQuery.trim()
     if (!trimmedQuery) {
       setSearchTerm('')
+      setSearchQuery('')
       setSelectedPlace(null)
       return
     }
