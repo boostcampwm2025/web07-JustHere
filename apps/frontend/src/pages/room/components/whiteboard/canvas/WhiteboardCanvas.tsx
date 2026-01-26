@@ -569,7 +569,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         height: 150,
         scale: 1,
         fill: '#FFF9C4',
-        text: '내용을 입력하세요',
+        text: '',
         authorName: `User ${socketId.substring(0, 4)}`,
       }
       addPostIt(newPostIt)

@@ -126,6 +126,7 @@ export const EditablePostIt = ({
           <textarea
             ref={textareaRef}
             defaultValue={postIt.text}
+            placeholder="내용을 입력하세요"
             onChange={handleTextChange}
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
@@ -134,7 +135,7 @@ export const EditablePostIt = ({
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4]"
+            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
             style={{
               fontSize: `${14 * (postIt.scale || 1)}px`,
               padding: `${scaledPadding}px`,
@@ -143,14 +144,14 @@ export const EditablePostIt = ({
         </Html>
       ) : (
         <Text
-          text={postIt.text}
+          text={postIt.text || '내용을 입력하세요'}
           x={scaledPadding}
           y={scaledPadding}
           width={postIt.width - scaledPadding * 2}
           height={postIt.height - scaledPadding * 2}
           fontSize={14 * postIt.scale}
           fontFamily="Arial, sans-serif"
-          fill="#333"
+          fill={postIt.text ? '#333' : '#9CA3AF'}
           lineHeight={1.4}
           wrap="word"
           onDblClick={handleDblClick}
