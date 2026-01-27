@@ -1,8 +1,25 @@
 import { WebsocketExceptionsFilter } from '@/lib/filter'
 import { UseFilters } from '@nestjs/common'
-import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayDisconnect } from '@nestjs/websockets'
-import { Server } from 'socket.io'
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayInit,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets'
+import { Server, Socket } from 'socket.io'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
+import {
+  VoteCandidateAddPayload,
+  VoteCandidateRemovePayload,
+  VoteCastPayload,
+  VoteRevokePayload,
+  VoteStartPayload,
+  VoteEndPayload,
+} from './dto/vote.c2s.dto'
+import { VoteService } from './vote.service'
 
 @WebSocketGateway({
   namespace: '/vote',
@@ -13,13 +30,47 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
 
-  constructor(private readonly broadcaster: VoteBroadcaster) {}
+  constructor(
+    private readonly broadcaster: VoteBroadcaster,
+    private readonly voteService: VoteService,
+  ) {}
 
   afterInit(server: Server) {
     this.broadcaster.setServer(server)
   }
 
-  async handleDisconnect() {
+  handleDisconnect(client: Socket) {
     // TODO: VoteService.leaveVote 구현 후 연결
+    this.voteService.leaveVote(client)
+  }
+
+  @SubscribeMessage('vote:candidate:add')
+  onCandidateAdd(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateAddPayload) {
+    this.voteService.addCandidate(client, payload)
+  }
+
+  @SubscribeMessage('vote:candidate:remove')
+  onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
+    this.voteService.removeCandidate(client, payload)
+  }
+
+  @SubscribeMessage('vote:cast')
+  onCastVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCastPayload) {
+    this.voteService.castVote(client, payload)
+  }
+
+  @SubscribeMessage('vote:revoke')
+  onRevokeVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteRevokePayload) {
+    this.voteService.revokeVote(client, payload)
+  }
+
+  @SubscribeMessage('vote:start')
+  onStartVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteStartPayload) {
+    this.voteService.startVote(client, payload)
+  }
+
+  @SubscribeMessage('vote:end')
+  onEndVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteEndPayload) {
+    this.voteService.endVote(client, payload)
   }
 }
