@@ -41,6 +41,9 @@ export const EditableTextBox = ({
 
   useEffect(() => {
     if (shapeRef) shapeRef(groupRef.current)
+    return () => {
+      if (shapeRef) shapeRef(null)
+    }
   }, [shapeRef])
 
   useEffect(() => {
