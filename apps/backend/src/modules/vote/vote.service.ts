@@ -13,8 +13,8 @@ import {
 } from './dto/vote.c2s.dto'
 import { VoteSessionStore } from './vote-session.store'
 import { UserService } from '@/modules/user/user.service'
-import { VoteStatePayload } from './dto/vote.s2c.dto'
-import { VoteStatus, VoteSession } from './vote.type'
+import { VoteStatePayload, VoteStartedPayload, VoteEndedPayload, VoteCandidateUpdatedPayload, VoteMeUpdatedPayload } from './dto/vote.s2c.dto'
+import { VoteStatus, VoteSession, VoteCandidate } from './vote.type'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
 
@@ -26,12 +26,25 @@ export class VoteService {
     private readonly userService: UserService,
   ) {}
 
-  addCandidate(_client: Socket, _payload: VoteCandidateAddPayload) {
+  addCandidate(client: Socket, payload: VoteCandidateAddPayload) {
     // TODO: VoteService.addCandidate 구현
+    const candidate: VoteCandidate = { id: '1', placeId: '1', name: 'test', address: 'test', createdBy: '1', createdAt: new Date() }
+    const updatePayload: VoteCandidateUpdatedPayload = {
+      action: 'add',
+      candidate,
+    }
+
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:candidate:updated', updatePayload)
   }
 
-  removeCandidate(_client: Socket, _payload: VoteCandidateRemovePayload) {
+  removeCandidate(client: Socket, payload: VoteCandidateRemovePayload) {
     // TODO: VoteService.removeCandidate 구현
+    const updatePayload: VoteCandidateUpdatedPayload = {
+      action: 'remove',
+      candidateId: payload.candidateId,
+    }
+
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:candidate:updated', updatePayload)
   }
 
   async joinVote(client: Socket, payload: VoteJoinPayload) {
@@ -69,20 +82,59 @@ export class VoteService {
     this.sessionStore.delete(canvasId)
   }
 
-  castVote(_client: Socket, _payload: VoteCastPayload) {
+  castVote(client: Socket, payload: VoteCastPayload) {
     // TODO: VoteService.castVote 구현
+
+    // vote:counts:updated 브로드캐스트
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:counts:updated', {
+      candidateId: payload.candidateId,
+      count: 0,
+    })
+
+    // 본인에게 vote:me:updated 이벤트 emit
+    const myVotes = []
+    const mePayload: VoteMeUpdatedPayload = {
+      myVotes,
+    }
+    client.emit('vote:me:updated', mePayload)
   }
 
-  revokeVote(_client: Socket, _payload: VoteRevokePayload) {
+  revokeVote(client: Socket, payload: VoteRevokePayload) {
     // TODO: VoteService.revokeVote 구현
+
+    // vote:counts:updated 브로드캐스트
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:counts:updated', {
+      candidateId: payload.candidateId,
+      count: 0,
+    })
+
+    // 본인에게 vote:me:updated 이벤트 emit
+    const myVotes = []
+    const mePayload: VoteMeUpdatedPayload = {
+      myVotes,
+    }
+    client.emit('vote:me:updated', mePayload)
   }
 
-  startVote(_client: Socket, _payload: VoteStartPayload) {
+  startVote(client: Socket, payload: VoteStartPayload) {
     // TODO: VoteService.startVote 구현
+
+    // vote:started 브로드캐스트
+    const startedPayload: VoteStartedPayload = {
+      status: 'IN_PROGRESS',
+    }
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:started', startedPayload)
   }
 
-  endVote(_client: Socket, _payload: VoteEndPayload) {
+  endVote(client: Socket, payload: VoteEndPayload) {
     // TODO: VoteService.endVote 구현
+
+    // vote:ended 브로드캐스트
+    const endedPayload: VoteEndedPayload = {
+      status: 'COMPLETED',
+      finalResults: [],
+    }
+    this.broadcaster.emitToCanvas(payload.roomId, 'vote:ended', endedPayload)
   }
 
   private getVoteSession(canvasId: string): VoteSession {
