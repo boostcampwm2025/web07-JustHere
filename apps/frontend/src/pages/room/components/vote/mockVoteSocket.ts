@@ -349,7 +349,7 @@ export function createMockVoteSocket(): VoteSocketLike {
     const result = buildResult(room)
 
     schedule(() => {
-      dispatch(VOTE_EVENTS.ended, { roomId: room.roomId, status: room.status, result })
+      dispatch(VOTE_EVENTS.ended, { roomId: room.roomId, status: 'COMPLETED', result })
     })
 
     emitStatusChanged(room.roomId, room.status)
