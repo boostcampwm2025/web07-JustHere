@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MinLength } from 'class-validator'
+import { IsString, IsNotEmpty, MinLength, IsOptional, IsNumber } from 'class-validator'
 
 // [C->S] 기본 페이로드
 export class BasePayload {
@@ -8,4 +8,76 @@ export class BasePayload {
   roomId: string // canvasId
 }
 
-// 위 페이로드를 상속하는 DTO를 만들면 됨.
+// [C->S] vote:join
+export class VoteJoinPayload extends BasePayload {}
+
+// [C->S] vote:leave
+export class VoteLeavePayload extends BasePayload {}
+
+// [C->S] vote:start
+export class VoteStartPayload extends BasePayload {}
+
+// [C->S] vote:end
+export class VoteEndPayload extends BasePayload {}
+
+// [C->S] vote:candidate:add
+export class VoteCandidateAddPayload extends BasePayload {
+  @IsString({ message: 'placeId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'placeId는 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'placeId는 최소 1자 이상이어야 합니다' })
+  placeId: string
+
+  @IsString({ message: 'name은 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'name은 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'name은 최소 1자 이상이어야 합니다' })
+  name: string
+
+  @IsString({ message: 'address는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'address는 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'address는 최소 1자 이상이어야 합니다' })
+  address: string
+
+  @IsString({ message: 'category는 문자열이어야 합니다' })
+  @IsOptional()
+  category?: string
+
+  @IsString({ message: 'phone은 문자열이어야 합니다' })
+  @IsOptional()
+  phone?: string
+
+  @IsString({ message: 'imageUrl은 문자열이어야 합니다' })
+  @IsOptional()
+  imageUrl?: string
+
+  @IsNumber({}, { message: 'rating은 숫자여야 합니다' })
+  @IsOptional()
+  rating?: number
+
+  @IsNumber({}, { message: 'ratingCount는 숫자여야 합니다' })
+  @IsOptional()
+  ratingCount?: number
+}
+
+// [C->S] vote:candidate:remove
+export class VoteCandidateRemovePayload extends BasePayload {
+  @IsString({ message: 'candidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
+  candidateId: string
+}
+
+// [C->S] vote:cast
+export class VoteCastPayload extends BasePayload {
+  @IsString({ message: 'candidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
+  candidateId: string
+}
+
+// [C->S] vote:revoke
+export class VoteRevokePayload extends BasePayload {
+  @IsString({ message: 'candidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
+  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
+  candidateId: string
+}
