@@ -5,11 +5,16 @@ import { useSocketClient } from '@/shared/hooks'
 import {
   VOTE_EVENTS,
   createMockVoteSocket,
+  type VoteEventName,
+  type VoteAddCandidatePayload,
+  type VoteCandidate,
   type VoteCandidateUpdatedPayload,
   type VoteCountsUpdatedPayload,
   type VoteEndedPayload,
   type VoteError,
   type VoteMeUpdatedPayload,
+  type VoteRemoveCandidatePayload,
+  type VoteRoomActionPayload,
   type VoteSocketLike,
   type VoteStartedPayload,
   type VoteState,
@@ -29,7 +34,18 @@ export interface UseVoteSocketResult {
   state: VoteState
   join: () => void
   leave: () => void
+  addCandidate: (input: Omit<VoteAddCandidatePayload, 'roomId'>) => void
+  removeCandidate: (candidateId: string) => void
+  startVote: () => void
+  endVote: () => void
+  castVote: (candidateId: string) => void
+  revokeVote: (candidateId: string) => void
   resetError: () => void
+}
+
+type PendingAction = {
+  snapshot: VoteState
+  type: string
 }
 
 const DEFAULT_STATUS: VoteStatus = 'WAITING'
@@ -47,6 +63,11 @@ function createInitialState(roomId: string, isOwner: boolean): VoteState {
   }
 }
 
+function createActionId(): string {
+  const random = Math.random().toString(36).slice(2, 8)
+  return `vote-${Date.now()}-${random}`
+}
+
 export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true, useMock = false }: UseVoteSocketOptions): UseVoteSocketResult {
   const [state, setState] = useState<VoteState>(() => createInitialState(roomId, isOwner))
 
@@ -54,6 +75,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
   const isJoinedRef = useRef(false)
   const joinedRoomIdRef = useRef<string | null>(null)
   const prevRoomIdRef = useRef(roomId)
+  const pendingActionsRef = useRef<Map<string, PendingAction>>(new Map())
 
   const handleSocketError = useCallback((error: Error) => {
     console.error('[vote] socket error:', error)
@@ -77,31 +99,9 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     onError: handleSocketError,
   })
 
-  useEffect(() => {
-    const prevRoomId = prevRoomIdRef.current
-    prevRoomIdRef.current = roomId
-
-    if (!enabled) return
-    if (!isJoinedRef.current) return
-    if (!socketRef.current) return
-    if (prevRoomId === roomId) return
-
-    const joinedRoomId = joinedRoomIdRef.current
-    if (!joinedRoomId || joinedRoomId === roomId) return
-
-    // 외부 시스템(소켓) 정리만 수행하고, React state 초기화는 join/leave에서 처리한다.
-    socketRef.current.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId, userId })
-    isJoinedRef.current = false
-    joinedRoomIdRef.current = null
-
-    if (useMock) {
-      socketRef.current.disconnect()
-      socketRef.current = null
-      return
-    }
-
-    disconnectReal()
-  }, [enabled, roomId, userId, useMock, disconnectReal])
+  const clearPendingActions = useCallback(() => {
+    pendingActionsRef.current.clear()
+  }, [])
 
   const resolveSocket = useCallback((): VoteSocketLike | null => {
     if (!enabled || !roomId) return null
@@ -121,6 +121,81 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     socketRef.current = realSocket as unknown as VoteSocketLike
     return socketRef.current
   }, [enabled, roomId, useMock, getSocket])
+
+  const applyOptimistic = useCallback((actionId: string, type: string, updater: (prev: VoteState) => VoteState) => {
+    setState(prev => {
+      pendingActionsRef.current.set(actionId, { snapshot: prev, type })
+      return updater(prev)
+    })
+  }, [])
+
+  const rollbackAction = useCallback((actionId: string | undefined, error: VoteError) => {
+    if (!actionId) {
+      setState(prev => ({
+        ...prev,
+        lastError: error,
+      }))
+      return
+    }
+
+    const pending = pendingActionsRef.current.get(actionId)
+    pendingActionsRef.current.delete(actionId)
+
+    if (!pending) {
+      setState(prev => ({
+        ...prev,
+        lastError: error,
+      }))
+      return
+    }
+
+    setState({
+      ...pending.snapshot,
+      lastError: error,
+    })
+  }, [])
+
+  const emitWithAction = useCallback(
+    <TPayload extends object>(event: VoteEventName, payload: TPayload, type: string, updater: (prev: VoteState) => VoteState) => {
+      if (!enabled || !roomId) return
+
+      const socket = resolveSocket()
+      if (!socket) return
+
+      const actionId = createActionId()
+      const nextPayload = { ...payload, actionId } as TPayload & { actionId: string }
+
+      applyOptimistic(actionId, type, updater)
+      socket.emit(event, nextPayload)
+    },
+    [enabled, roomId, resolveSocket, applyOptimistic],
+  )
+
+  useEffect(() => {
+    const prevRoomId = prevRoomIdRef.current
+    prevRoomIdRef.current = roomId
+
+    if (!enabled) return
+    if (!isJoinedRef.current) return
+    if (!socketRef.current) return
+    if (prevRoomId === roomId) return
+
+    const joinedRoomId = joinedRoomIdRef.current
+    if (!joinedRoomId || joinedRoomId === roomId) return
+
+    socketRef.current.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId, userId })
+    isJoinedRef.current = false
+    joinedRoomIdRef.current = null
+    clearPendingActions()
+
+    if (useMock) {
+      socketRef.current.disconnect()
+      socketRef.current = null
+      return
+    }
+
+    disconnectReal()
+  }, [enabled, roomId, userId, useMock, disconnectReal, clearPendingActions])
 
   useEffect(() => {
     if (!enabled) return
@@ -143,6 +218,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleState = (payload: VoteStatePayload) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         roomId: payload.roomId,
@@ -156,6 +232,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleStatusChanged = (payload: { roomId: string; status: VoteStatus }) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         roomId: payload.roomId,
@@ -164,18 +241,28 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleCandidateUpdated = (payload: VoteCandidateUpdatedPayload) => {
+      clearPendingActions()
       setState(prev => {
         if (payload.action === 'add' && payload.candidate) {
-          const exists = prev.candidates.some(candidate => candidate.id === payload.candidate?.id)
+          const tempCandidates = prev.candidates.filter(
+            candidate => candidate.placeId === payload.candidate?.placeId && candidate.id.startsWith('temp-candidate-'),
+          )
+          const tempCandidateIds = new Set(tempCandidates.map(candidate => candidate.id))
+
+          const baseCandidates = prev.candidates.filter(candidate => !tempCandidateIds.has(candidate.id))
+          const exists = baseCandidates.some(candidate => candidate.id === payload.candidate?.id)
           if (exists) return prev
+
+          const nextCounts = { ...prev.counts }
+          tempCandidateIds.forEach(id => {
+            delete nextCounts[id]
+          })
 
           return {
             ...prev,
-            candidates: [...prev.candidates, payload.candidate],
-            counts: {
-              ...prev.counts,
-              [payload.candidate.id]: prev.counts[payload.candidate.id] ?? 0,
-            },
+            candidates: [...baseCandidates, payload.candidate],
+            counts: { ...nextCounts, [payload.candidate.id]: nextCounts[payload.candidate.id] ?? 0 },
+            lastError: null,
           }
         }
 
@@ -190,6 +277,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
             candidates: nextCandidates,
             counts: nextCounts,
             myVotes: nextMyVotes,
+            lastError: null,
           }
         }
 
@@ -198,6 +286,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleCountsUpdated = (payload: VoteCountsUpdatedPayload) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         counts: {
@@ -208,38 +297,36 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleMeUpdated = (payload: VoteMeUpdatedPayload) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         myVotes: payload.myVotes,
+        lastError: null,
       }))
     }
 
     const handleStarted = (payload: VoteStartedPayload) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
+        lastError: null,
       }))
     }
 
     const handleEnded = (payload: VoteEndedPayload) => {
+      clearPendingActions()
       setState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
+        lastError: null,
       }))
     }
 
     const handleError = (payload: VoteError) => {
-      setState(prev => ({
-        ...prev,
-        lastError: {
-          code: payload.code,
-          message: payload.message,
-          actionId: payload.actionId,
-          recoverable: payload.recoverable,
-        },
-      }))
+      rollbackAction(payload.actionId, payload)
     }
 
     socket.on('connect', handleConnect)
@@ -267,7 +354,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       socket.off(VOTE_EVENTS.ended, handleEnded)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, resolveSocket])
+  }, [enabled, resolveSocket, rollbackAction, clearPendingActions])
 
   const join = useCallback(() => {
     if (!enabled || !roomId) return
@@ -281,6 +368,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomIdRef.current, userId })
       isJoinedRef.current = false
       joinedRoomIdRef.current = null
+      clearPendingActions()
     }
 
     setState(createInitialState(roomId, isOwner))
@@ -294,7 +382,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     socket.emit(VOTE_EVENTS.join, { roomId, userId, isOwner })
     isJoinedRef.current = true
     joinedRoomIdRef.current = roomId
-  }, [enabled, roomId, userId, isOwner, useMock, resolveSocket, connectReal])
+  }, [enabled, roomId, userId, isOwner, useMock, resolveSocket, connectReal, clearPendingActions])
 
   const leave = useCallback(() => {
     const socket = socketRef.current
@@ -303,6 +391,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     socket.emit(VOTE_EVENTS.leave, { roomId, userId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
+    clearPendingActions()
 
     if (useMock) {
       socket.disconnect()
@@ -313,7 +402,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
 
     disconnectReal()
     setState(createInitialState(roomId, isOwner))
-  }, [roomId, userId, useMock, disconnectReal, isOwner])
+  }, [roomId, userId, useMock, disconnectReal, isOwner, clearPendingActions])
 
   useEffect(() => {
     if (!enabled) return
@@ -323,6 +412,185 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       leave()
     }
   }, [enabled, leave])
+
+  const addCandidate = useCallback(
+    (input: Omit<VoteAddCandidatePayload, 'roomId'>) => {
+      const tempActionId = createActionId()
+      const tempId = `temp-candidate-${tempActionId}`
+
+      const optimisticCandidate: VoteCandidate = {
+        id: tempId,
+        placeId: input.placeId,
+        name: input.name,
+        address: input.address,
+        category: input.category,
+        createdBy: userId,
+        createdAt: new Date().toISOString(),
+      }
+
+      emitWithAction(
+        VOTE_EVENTS.addCandidate,
+        {
+          roomId,
+          ...input,
+        },
+        'addCandidate',
+        prev => {
+          if (prev.status !== 'WAITING') return prev
+          const duplicated = prev.candidates.some(candidate => candidate.placeId === input.placeId)
+          if (duplicated) return prev
+
+          return {
+            ...prev,
+            candidates: [...prev.candidates, optimisticCandidate],
+            counts: {
+              ...prev.counts,
+              [optimisticCandidate.id]: prev.counts[optimisticCandidate.id] ?? 0,
+            },
+            lastError: null,
+          }
+        },
+      )
+    },
+    [emitWithAction, roomId, userId],
+  )
+
+  const removeCandidate = useCallback(
+    (candidateId: string) => {
+      const payload: VoteRemoveCandidatePayload = {
+        roomId,
+        candidateId,
+      }
+
+      emitWithAction(VOTE_EVENTS.removeCandidate, payload, 'removeCandidate', prev => {
+        if (prev.status !== 'WAITING') return prev
+        const exists = prev.candidates.some(candidate => candidate.id === candidateId)
+        if (!exists) return prev
+
+        const nextCandidates = prev.candidates.filter(candidate => candidate.id !== candidateId)
+        const nextCounts = { ...prev.counts }
+        delete nextCounts[candidateId]
+        const nextMyVotes = prev.myVotes.filter(id => id !== candidateId)
+
+        return {
+          ...prev,
+          candidates: nextCandidates,
+          counts: nextCounts,
+          myVotes: nextMyVotes,
+          lastError: null,
+        }
+      })
+    },
+    [emitWithAction, roomId],
+  )
+
+  const startVote = useCallback(() => {
+    if (!isOwner) {
+      setState(prev => ({
+        ...prev,
+        lastError: {
+          code: 'NOT_OWNER',
+          message: '방장 권한이 필요합니다.',
+        },
+      }))
+      return
+    }
+
+    const payload: VoteRoomActionPayload = { roomId }
+
+    emitWithAction(VOTE_EVENTS.start, payload, 'startVote', prev => {
+      if (prev.status !== 'WAITING') return prev
+      return {
+        ...prev,
+        status: 'IN_PROGRESS',
+        lastError: null,
+      }
+    })
+  }, [emitWithAction, roomId, isOwner])
+
+  const endVote = useCallback(() => {
+    if (!isOwner) {
+      setState(prev => ({
+        ...prev,
+        lastError: {
+          code: 'NOT_OWNER',
+          message: '방장 권한이 필요합니다.',
+        },
+      }))
+      return
+    }
+
+    const payload: VoteRoomActionPayload = { roomId }
+
+    emitWithAction(VOTE_EVENTS.end, payload, 'endVote', prev => {
+      if (prev.status !== 'IN_PROGRESS') return prev
+      return {
+        ...prev,
+        status: 'COMPLETED',
+        lastError: null,
+      }
+    })
+  }, [emitWithAction, roomId, isOwner])
+
+  const castVote = useCallback(
+    (candidateId: string) => {
+      emitWithAction(
+        VOTE_EVENTS.cast,
+        {
+          roomId,
+          candidateId,
+        },
+        'castVote',
+        prev => {
+          if (prev.status !== 'IN_PROGRESS') return prev
+          if (prev.myVotes.includes(candidateId)) return prev
+
+          const currentCount = prev.counts[candidateId] ?? 0
+
+          return {
+            ...prev,
+            myVotes: [...prev.myVotes, candidateId],
+            counts: {
+              ...prev.counts,
+              [candidateId]: currentCount + 1,
+            },
+            lastError: null,
+          }
+        },
+      )
+    },
+    [emitWithAction, roomId],
+  )
+
+  const revokeVote = useCallback(
+    (candidateId: string) => {
+      emitWithAction(
+        VOTE_EVENTS.revoke,
+        {
+          roomId,
+          candidateId,
+        },
+        'revokeVote',
+        prev => {
+          if (prev.status !== 'IN_PROGRESS') return prev
+          if (!prev.myVotes.includes(candidateId)) return prev
+
+          const currentCount = prev.counts[candidateId] ?? 0
+
+          return {
+            ...prev,
+            myVotes: prev.myVotes.filter(id => id !== candidateId),
+            counts: {
+              ...prev.counts,
+              [candidateId]: Math.max(0, currentCount - 1),
+            },
+            lastError: null,
+          }
+        },
+      )
+    },
+    [emitWithAction, roomId],
+  )
 
   const resetError = useCallback(() => {
     setState(prev => ({
@@ -341,6 +609,12 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     state: stableState,
     join,
     leave,
+    addCandidate,
+    removeCandidate,
+    startVote,
+    endVote,
+    castVote,
+    revokeVote,
     resetError,
   }
 }
