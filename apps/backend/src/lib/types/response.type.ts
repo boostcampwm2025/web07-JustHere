@@ -23,7 +23,7 @@ export enum ErrorType {
   NotInRoom = 'NOT_IN_ROOM',
   VoteAlreadyStarted = 'VOTE_ALREADY_STARTED',
   VoteNotInProgress = 'VOTE_NOT_IN_PROGRESS',
-  DuplicatedCandidate = 'DUPLICATE_CANDIDATE',
+  DuplicatedCandidate = 'DUPLICATED_CANDIDATE',
   NoCandidates = 'NO_CANDIDATES',
 }
 
