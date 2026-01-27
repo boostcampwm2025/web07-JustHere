@@ -1,0 +1,127 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+
+export class GooglePhotoDto {
+  @ApiProperty()
+  name: string
+
+  @ApiProperty()
+  widthPx: number
+
+  @ApiProperty()
+  heightPx: number
+}
+
+export class GoogleReviewDto {
+  @ApiProperty()
+  name: string
+
+  @ApiProperty()
+  rating: number
+
+  @ApiPropertyOptional()
+  text?: {
+    text: string
+    languageCode: string
+  }
+
+  @ApiProperty()
+  authorAttribution: {
+    displayName: string
+    uri: string
+    photoUri: string
+  }
+
+  @ApiProperty()
+  publishTime: string
+
+  @ApiProperty()
+  relativePublishTimeDescription: string
+}
+
+export class GooglePlaceDto {
+  @ApiProperty()
+  id: string
+
+  @ApiProperty()
+  displayName: {
+    text: string
+    languageCode: string
+  }
+
+  @ApiProperty()
+  formattedAddress: string
+
+  @ApiProperty()
+  location: {
+    latitude: number
+    longitude: number
+  }
+
+  @ApiPropertyOptional()
+  rating?: number
+
+  @ApiPropertyOptional()
+  userRatingCount?: number
+
+  @ApiPropertyOptional({ type: [GooglePhotoDto] })
+  photos?: GooglePhotoDto[]
+
+  @ApiPropertyOptional({ type: [GoogleReviewDto] })
+  reviews?: GoogleReviewDto[]
+
+  @ApiPropertyOptional()
+  reviewSummary?: {
+    text: {
+      text: string
+      languageCode: string
+    }
+  }
+
+  @ApiPropertyOptional()
+  generativeSummary?: {
+    overview: {
+      text: string
+      languageCode: string
+    }
+    overviewFlagContentUri?: string
+    disclosureText?: {
+      text: string
+      languageCode: string
+    }
+  }
+
+  @ApiPropertyOptional()
+  regularOpeningHours?: {
+    openNow: boolean
+    weekdayDescriptions: string[]
+  }
+
+  @ApiPropertyOptional()
+  priceLevel?: string
+
+  @ApiPropertyOptional()
+  nationalPhoneNumber?: string
+
+  @ApiPropertyOptional()
+  websiteUri?: string
+
+  @ApiPropertyOptional({ type: [String] })
+  types?: string[]
+
+  @ApiPropertyOptional()
+  primaryType?: string
+
+  @ApiPropertyOptional()
+  primaryTypeDisplayName?: {
+    text: string
+    languageCode: string
+  }
+}
+
+export class GoogleSearchResponseDto {
+  @ApiProperty({ type: [GooglePlaceDto] })
+  places: GooglePlaceDto[]
+
+  @ApiPropertyOptional()
+  nextPageToken?: string
+}

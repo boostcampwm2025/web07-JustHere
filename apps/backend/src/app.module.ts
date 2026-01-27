@@ -7,6 +7,7 @@ import { AppController } from '@/app.controller'
 import { AppService } from '@/app.service'
 import { PrismaModule } from '@/lib/prisma/prisma.module'
 import { KakaoModule } from '@/modules/kakao/kakao.module'
+import { GoogleModule } from '@/modules/google/google.module'
 import { SocketModule } from '@/modules/socket/socket.module'
 import { UserModule } from '@/modules/user/user.module'
 import { CategoryModule } from '@/modules/category/category.module'
@@ -21,6 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     PrismaModule,
     KakaoModule,
+    GoogleModule,
     SocketModule,
     UserModule,
     CategoryModule,
