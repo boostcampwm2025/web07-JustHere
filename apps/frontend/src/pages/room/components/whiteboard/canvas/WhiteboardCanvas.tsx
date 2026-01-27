@@ -13,6 +13,8 @@ import { PlaceCardItem } from './place-card'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { useCanvasTransformHandlers } from '@/pages/room/hooks/useCanvasTransformHandlers'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -22,18 +24,10 @@ interface WhiteboardCanvasProps {
   onPlaceCardCanceled: () => void
 }
 
-const PLACE_CARD_WIDTH = 240
-const PLACE_CARD_HEIGHT = 180
-
-type DragInitialState = { type: 'postit' | 'placeCard' | 'textBox'; x: number; y: number } | { type: 'line'; points: number[] }
-
 export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
   const shapeRefs = useRef(new Map<string, Konva.Group>())
-
-  const transformerDragStartPos = useRef<{ x: number; y: number } | null>(null)
-  const itemStatesBeforeDrag = useRef<Map<string, DragInitialState>>(new Map())
 
   const [activeTool, setActiveTool] = useState<ToolType>('cursor')
 
@@ -107,6 +101,20 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     userName,
   })
 
+  const { handlePostItTransformEnd, handlePlaceCardTransformEnd, handleTextBoxTransformEnd, handleTransformerDragStart, handleTransformerDragEnd } =
+    useCanvasTransformHandlers({
+      transformerRef,
+      selectedItems,
+      postIts,
+      placeCards,
+      textBoxes,
+      lines,
+      updatePostIt,
+      updatePlaceCard,
+      updateTextBox,
+      updateLine,
+    })
+
   const cancelDrawing = useCallback(
     (reason: 'tool-change' | 'mouse-leave' | 'space-press') => {
       if (!isDrawing) return
@@ -174,140 +182,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
     transformer.nodes(nodes)
   }, [selectedItems])
-
-  const handlePostItTransformEnd = useCallback(
-    (postIt: PostIt, e: Konva.KonvaEventObject<Event>) => {
-      const node = e.target as Konva.Group
-      const scaleX = node.scaleX()
-      const scaleY = node.scaleY()
-
-      node.scaleX(1)
-      node.scaleY(1)
-
-      // 새 크기 계산
-      const newWidth = postIt.width * scaleX
-      const newHeight = postIt.height * scaleY
-
-      const minScale = Math.min(scaleX, scaleY)
-      const newScale = postIt.scale * minScale
-
-      updatePostIt(postIt.id, {
-        x: node.x(),
-        y: node.y(),
-        width: newWidth,
-        height: newHeight,
-        scale: newScale,
-      })
-    },
-    [updatePostIt],
-  )
-
-  const handlePlaceCardTransformEnd = useCallback(
-    (card: PlaceCard, e: Konva.KonvaEventObject<Event>) => {
-      const node = e.target as Konva.Group
-      const scaleX = node.scaleX()
-      const scaleY = node.scaleY()
-
-      node.scaleX(1)
-      node.scaleY(1)
-
-      const cardWidth = card.width ?? PLACE_CARD_WIDTH
-      const cardHeight = card.height ?? PLACE_CARD_HEIGHT
-
-      // 새 크기 계산
-      const newWidth = cardWidth * scaleX
-      const newHeight = cardHeight * scaleY
-
-      const minScale = Math.min(scaleX, scaleY)
-      const newScale = card.scale * minScale
-
-      updatePlaceCard(card.id, {
-        x: node.x(),
-        y: node.y(),
-        width: newWidth,
-        height: newHeight,
-        scale: newScale,
-      })
-    },
-    [updatePlaceCard],
-  )
-
-  const handleTextBoxTransformEnd = useCallback(
-    (textBox: TextBox, e: Konva.KonvaEventObject<Event>) => {
-      const node = e.target as Konva.Group
-      const scaleX = node.scaleX()
-      const scaleY = node.scaleY()
-
-      node.scaleX(1)
-      node.scaleY(1)
-
-      const newWidth = textBox.width * scaleX
-      const newHeight = textBox.height * scaleY
-
-      const minScale = Math.min(scaleX, scaleY)
-      const newScale = textBox.scale * minScale
-
-      updateTextBox(textBox.id, {
-        x: node.x(),
-        y: node.y(),
-        width: newWidth,
-        height: newHeight,
-        scale: newScale,
-      })
-    },
-    [updateTextBox],
-  )
-
-  const handleTransformerDragStart = useCallback(() => {
-    const nodes = transformerRef.current?.nodes() || []
-    if (nodes.length > 0) {
-      transformerDragStartPos.current = { x: nodes[0].x(), y: nodes[0].y() }
-    }
-
-    itemStatesBeforeDrag.current.clear()
-    selectedItems.forEach(item => {
-      if (item.type === 'postit') {
-        const postit = postIts.find(p => p.id === item.id)
-        if (postit) itemStatesBeforeDrag.current.set(item.id, { type: 'postit', x: postit.x, y: postit.y })
-      } else if (item.type === 'placeCard') {
-        const card = placeCards.find(c => c.id === item.id)
-        if (card) itemStatesBeforeDrag.current.set(item.id, { type: 'placeCard', x: card.x, y: card.y })
-      } else if (item.type === 'line') {
-        const line = lines.find(l => l.id === item.id)
-        if (line) itemStatesBeforeDrag.current.set(item.id, { type: 'line', points: [...line.points] })
-      } else if (item.type === 'textBox') {
-        const textBox = textBoxes.find(t => t.id === item.id)
-        if (textBox) itemStatesBeforeDrag.current.set(item.id, { type: 'textBox', x: textBox.x, y: textBox.y })
-      }
-    })
-  }, [selectedItems, postIts, placeCards, lines, textBoxes])
-
-  const handleTransformerDragEnd = useCallback(() => {
-    if (!transformerDragStartPos.current || itemStatesBeforeDrag.current.size === 0) return
-
-    const nodes = transformerRef.current?.nodes() || []
-    if (nodes.length === 0) return
-
-    const endPos = { x: nodes[0].x(), y: nodes[0].y() }
-    const dx = endPos.x - transformerDragStartPos.current.x
-    const dy = endPos.y - transformerDragStartPos.current.y
-
-    itemStatesBeforeDrag.current.forEach((originalState, id) => {
-      const isSelected = selectedItems.some(i => i.id === id)
-      if (!isSelected) return
-
-      if (originalState.type === 'postit' || originalState.type === 'placeCard' || originalState.type === 'textBox') {
-        const updater = originalState.type === 'postit' ? updatePostIt : originalState.type === 'placeCard' ? updatePlaceCard : updateTextBox
-        updater(id, { x: originalState.x + dx, y: originalState.y + dy })
-      } else if (originalState.type === 'line') {
-        const newPoints = originalState.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
-        updateLine(id, { points: newPoints })
-      }
-    })
-
-    transformerDragStartPos.current = null
-    itemStatesBeforeDrag.current.clear()
-  }, [selectedItems, updateLine, updatePostIt, updatePlaceCard, updateTextBox])
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {

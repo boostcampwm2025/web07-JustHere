@@ -2,6 +2,14 @@ export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
 
 export type CanvasItemType = 'postit' | 'line' | 'placeCard' | 'textBox'
 
+export type DragInitialState =
+  | {
+      type: 'postit' | 'placeCard' | 'textBox'
+      x: number
+      y: number
+    }
+  | { type: 'line'; points: number[] }
+
 export interface SelectedItem {
   id: string
   type: CanvasItemType
@@ -42,8 +50,8 @@ export interface PlaceCard {
   address: string
   x: number
   y: number
-  width?: number // 카드 너비 (기본값: 240)
-  height?: number // 카드 높이 (기본값: 180)
+  width: number // 카드 너비 (기본값: 240)
+  height: number // 카드 높이 (기본값: 180)
   scale: number
   createdAt: string
   image?: string | null
