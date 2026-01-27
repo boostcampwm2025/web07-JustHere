@@ -15,6 +15,7 @@ import { Toolbar } from './toolbar'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransformHandlers } from '@/pages/room/hooks/useCanvasTransformHandlers'
+import { useCursorChat } from '@/pages/room/hooks/useCursorChat'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -60,13 +61,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [pendingPlaceCard, onPlaceCardCanceled])
-
-  const [isChatActive, setIsChatActive] = useState(false)
-  const [isChatFading, setIsChatFading] = useState(false)
-  const [chatMessage, setChatMessage] = useState('')
-  const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
-  const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
@@ -114,6 +108,18 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       updateTextBox,
       updateLine,
     })
+
+  const {
+    isChatActive,
+    isChatFading,
+    chatMessage,
+    chatInputPosition,
+    setChatInputPosition,
+    activateCursorChat,
+    deactivateCursorChat,
+    setChatMessage,
+    resetInactivityTimer,
+  } = useCursorChat({ stageRef, sendCursorChat })
 
   const cancelDrawing = useCallback(
     (reason: 'tool-change' | 'mouse-leave' | 'space-press') => {
@@ -233,60 +239,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       setContextMenu(null)
     }
   }
-
-  const deactivateCursorChat = useCallback(() => {
-    if (chatInactivityTimerRef.current) {
-      clearTimeout(chatInactivityTimerRef.current)
-      chatInactivityTimerRef.current = null
-    }
-    if (chatFadeTimerRef.current) {
-      clearTimeout(chatFadeTimerRef.current)
-      chatFadeTimerRef.current = null
-    }
-    setIsChatFading(false)
-    setIsChatActive(false)
-    setChatMessage('')
-    setChatInputPosition(null)
-    sendCursorChat(false, '')
-  }, [sendCursorChat])
-
-  const startFadeOut = useCallback(() => {
-    setIsChatFading(true)
-    chatFadeTimerRef.current = setTimeout(() => {
-      deactivateCursorChat()
-    }, 3000)
-  }, [deactivateCursorChat])
-
-  const resetInactivityTimer = useCallback(() => {
-    if (chatInactivityTimerRef.current) {
-      clearTimeout(chatInactivityTimerRef.current)
-    }
-    if (chatFadeTimerRef.current) {
-      clearTimeout(chatFadeTimerRef.current)
-      chatFadeTimerRef.current = null
-    }
-    setIsChatFading(false)
-
-    chatInactivityTimerRef.current = setTimeout(() => {
-      startFadeOut()
-    }, 3000)
-  }, [startFadeOut])
-
-  const activateCursorChat = useCallback(() => {
-    const stage = stageRef.current
-    if (!stage) return
-
-    const pointerPos = stage.getPointerPosition()
-    if (pointerPos) {
-      setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
-    }
-
-    setIsChatActive(true)
-    setChatMessage('')
-    sendCursorChat(true, '')
-
-    resetInactivityTimer()
-  }, [sendCursorChat, resetInactivityTimer])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
