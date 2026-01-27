@@ -1,7 +1,16 @@
 import { WebsocketExceptionsFilter } from '@/lib/filter'
 import { UseFilters, UseGuards } from '@nestjs/common'
-import { WebSocketGateway, WebSocketServer, OnGatewayInit, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets'
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayInit,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+} from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
+import { VoteOwnerGuard } from '@/lib/guards/vote-owner.guard'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import {
@@ -15,14 +24,13 @@ import {
   VoteEndPayload,
 } from './dto/vote.c2s.dto'
 import { VoteService } from './vote.service'
-import { VoteOwnerGuard } from '@/lib/guards/vote-owner.guard'
 
 @WebSocketGateway({
   namespace: '/vote',
   cors: { origin: '*' },
 })
 @UseFilters(new WebsocketExceptionsFilter('vote'))
-export class VoteGateway implements OnGatewayInit {
+export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
 
@@ -34,6 +42,18 @@ export class VoteGateway implements OnGatewayInit {
 
   afterInit(server: Server) {
     this.broadcaster.setServer(server)
+  }
+
+  async handleDisconnect(client: Socket) {
+    // 사용자 세션 조회
+    const userSession = this.userService.removeSession(client.id)
+    if (!userSession) return
+
+    // 사용자가 참여한 모든 투표 방에서 나가기
+    const voteRooms = Array.from(client.rooms).filter(room => room.startsWith('vote:'))
+    for (const room of voteRooms) {
+      await client.leave(room)
+    }
   }
 
   @SubscribeMessage('vote:join')
@@ -66,6 +86,7 @@ export class VoteGateway implements OnGatewayInit {
   @SubscribeMessage('vote:candidate:remove')
   onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
     const { roomId, candidateId } = payload
+    this.userService.getSession(client.id)
 
     const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)

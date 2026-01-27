@@ -35,6 +35,7 @@ describe('VoteGateway', () => {
 
   const userService = {
     getSession: jest.fn(),
+    removeSession: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -60,6 +61,51 @@ describe('VoteGateway', () => {
 
       expect(broadcaster.setServer).toHaveBeenCalledTimes(1)
       expect(broadcaster.setServer).toHaveBeenCalledWith(server)
+    })
+  })
+
+  describe('handleDisconnect', () => {
+    it('사용자 세션이 없으면 아무것도 하지 않는다', async () => {
+      const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
+      const client = {
+        rooms: new Set(['vote:room-1', 'vote:room-2']),
+        leave: ((room: string) => leaveMock(room)) as (room: string) => Promise<void>,
+        id: 'socket-1',
+      } as unknown as Socket
+
+      userService.removeSession.mockReturnValue(undefined)
+
+      await gateway.handleDisconnect(client)
+
+      expect(userService.removeSession).toHaveBeenCalledTimes(1)
+      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
+      expect(leaveMock).not.toHaveBeenCalled()
+    })
+
+    it('사용자 세션이 있으면 모든 투표 방에서 나간다', async () => {
+      const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
+      const client = {
+        rooms: new Set(['vote:room-1', 'vote:room-2', 'other:room']),
+        leave: ((room: string) => leaveMock(room)) as (room: string) => Promise<void>,
+        id: 'socket-1',
+      } as unknown as Socket
+      const mockUserSession = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+
+      userService.removeSession.mockReturnValue(mockUserSession)
+
+      await gateway.handleDisconnect(client)
+
+      expect(userService.removeSession).toHaveBeenCalledTimes(1)
+      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
+      expect(leaveMock).toHaveBeenCalledTimes(2)
+      expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
+      expect(leaveMock).toHaveBeenCalledWith('vote:room-2')
     })
   })
 
@@ -165,23 +211,33 @@ describe('VoteGateway', () => {
 
   describe('onCandidateRemove', () => {
     it('후보를 제거하고 브로드캐스터로 업데이트를 전송한다', () => {
-      const client = {} as Socket
+      const client = {
+        id: 'socket-1',
+      } as Socket
       const payload: VoteCandidateRemovePayload = {
         roomId: 'room-1',
         candidateId: 'candidate-1',
       }
-      const mockUpdatePayload = {
-        candidates: [],
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
       }
+      const mockCandidateId = 'candidate-1'
 
-      voteService.removeCandidatePlace.mockReturnValue(mockUpdatePayload)
+      userService.getSession.mockReturnValue(mockUser)
+      voteService.removeCandidatePlace.mockReturnValue(mockCandidateId)
 
       gateway.onCandidateRemove(client, payload)
 
+      expect(userService.getSession).toHaveBeenCalledTimes(1)
+      expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
       expect(voteService.removeCandidatePlace).toHaveBeenCalledWith('room-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidateId)
     })
   })
 
@@ -202,7 +258,9 @@ describe('VoteGateway', () => {
         isOwner: false,
       }
       const mockUpdatePayload = {
-        counts: { 'candidate-1': 1 },
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
       }
 
       userService.getSession.mockReturnValue(mockUser)
@@ -236,7 +294,9 @@ describe('VoteGateway', () => {
         isOwner: false,
       }
       const mockUpdatePayload = {
-        counts: { 'candidate-1': 0 },
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
       }
 
       userService.getSession.mockReturnValue(mockUser)
