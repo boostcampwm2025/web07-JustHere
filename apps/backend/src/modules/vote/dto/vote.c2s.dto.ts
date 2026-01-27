@@ -1,44 +1,27 @@
 import { IsString, IsNotEmpty, MinLength, IsOptional, IsNumber } from 'class-validator'
 
-// [C->S] vote:join
-export class VoteJoinPayload {
+// [C->S] 기본 페이로드
+export class BasePayload {
   @IsString({ message: 'roomId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
   @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
+  roomId: string // canvasId
 }
+
+// [C->S] vote:join
+export class VoteJoinPayload extends BasePayload {}
 
 // [C->S] vote:leave
-export class VoteLeavePayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-}
+export class VoteLeavePayload extends BasePayload {}
 
 // [C->S] vote:start
-export class VoteStartPayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-}
+export class VoteStartPayload extends BasePayload {}
 
 // [C->S] vote:end
-export class VoteEndPayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-}
+export class VoteEndPayload extends BasePayload {}
 
 // [C->S] vote:candidate:add
-export class VoteCandidateAddPayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-
+export class VoteCandidateAddPayload extends BasePayload {
   @IsString({ message: 'placeId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'placeId는 비어있을 수 없습니다' })
   @MinLength(1, { message: 'placeId는 최소 1자 이상이어야 합니다' })
@@ -76,12 +59,7 @@ export class VoteCandidateAddPayload {
 }
 
 // [C->S] vote:candidate:remove
-export class VoteCandidateRemovePayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-
+export class VoteCandidateRemovePayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
   @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
@@ -89,12 +67,7 @@ export class VoteCandidateRemovePayload {
 }
 
 // [C->S] vote:cast
-export class VoteCastPayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-
+export class VoteCastPayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
   @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
@@ -102,12 +75,7 @@ export class VoteCastPayload {
 }
 
 // [C->S] vote:revoke
-export class VoteRevokePayload {
-  @IsString({ message: 'roomId는 문자열이어야 합니다' })
-  @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
-  roomId: string
-
+export class VoteRevokePayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
   @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
