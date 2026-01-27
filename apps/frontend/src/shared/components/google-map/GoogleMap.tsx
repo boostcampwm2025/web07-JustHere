@@ -73,7 +73,7 @@ export const GoogleMap = ({
         defaultZoom={zoom}
         gestureHandling={draggable ? 'auto' : 'none'}
         disableDefaultUI={false}
-        mapId={import.meta.env.VITE_GOOGLE_MAP_ID || 'DEMO_MAP_ID'}
+        mapId={import.meta.env.VITE_GOOGLE_MAP_ID}
         onTilesLoaded={e => {
           if (onLoad && e.map) {
             onLoad(e.map)
