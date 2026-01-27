@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket, type ManagerOptions, type SocketOptions } from 'socket.io-client'
+import { addSocketBreadcrumb } from '@/shared/utils'
 
 type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
@@ -41,29 +42,55 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
 
     socketRef.current = socket
 
+    const addConnectionBreadcrumb = (message: string, data?: Record<string, unknown>, level: 'info' | 'warning' | 'error' = 'info') => {
+      let safeUrl = fullUrl
+      try {
+        const url = new URL(fullUrl)
+        url.search = ''
+        url.hash = ''
+        safeUrl = url.toString()
+      } catch {
+        // ignore invalid URL parsing
+      }
+      addSocketBreadcrumb(
+        message,
+        {
+          namespace: namespace ?? 'root',
+          url: safeUrl,
+          ...data,
+        },
+        level,
+      )
+    }
+
     const handleConnect = () => {
       setStatus('connected')
       reconnectAttemptsRef.current = 0
+      addConnectionBreadcrumb('connect')
     }
 
     const handleDisconnect = (reason: Socket.DisconnectReason) => {
       if (reason === 'io server disconnect' || reason === 'io client disconnect') {
         setStatus('disconnected')
         reconnectAttemptsRef.current = 0
+        addConnectionBreadcrumb('disconnect', { reason }, 'warning')
         return
       }
 
       setStatus('reconnecting')
+      addConnectionBreadcrumb('disconnect', { reason }, 'warning')
     }
 
     const handleConnectError = (error: Error) => {
       setStatus('reconnecting')
+      addConnectionBreadcrumb('connect_error', { message: error.message }, 'error')
       onError?.(error)
     }
 
     const handleReconnectAttempt = (attemptNumber: number) => {
       reconnectAttemptsRef.current = attemptNumber
       setStatus('reconnecting')
+      addConnectionBreadcrumb('reconnect_attempt', { attemptNumber }, 'warning')
 
       if (attemptNumber >= SOCKET_RECONNECTION_CONFIG.maxAttempts) {
         setStatus('disconnected')
@@ -72,6 +99,7 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
     }
 
     const handleError = (error: Error) => {
+      addConnectionBreadcrumb('socket_error', { message: error.message }, 'error')
       onError?.(error)
     }
 
@@ -95,7 +123,7 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
       socketRef.current = null
       reconnectAttemptsRef.current = 0
     }
-  }, [fullUrl, autoConnect, autoReconnect, ioOptions, onError])
+  }, [fullUrl, autoConnect, autoReconnect, ioOptions, onError, namespace])
 
   const connect = useCallback(() => {
     const socket = socketRef.current

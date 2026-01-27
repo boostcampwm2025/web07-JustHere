@@ -1,4 +1,5 @@
 export * from './cn'
 export * from './participant'
+export * from './sentry'
 export * from './throttle'
 export * from './userStorage'

@@ -18,6 +18,7 @@ import type {
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
+import { addSocketBreadcrumb } from '@/shared/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -40,6 +41,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const docRef = useRef<Y.Doc | null>(null)
   const undoManagerRef = useRef<Y.UndoManager | null>(null)
   const localOriginRef = useRef(Symbol('canvas-local'))
+  const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
+  const summaryTimerRef = useRef<number | null>(null)
+  const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
@@ -47,6 +51,40 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const handleSocketError = useCallback((error: Error) => {
     console.error('[canvas] socket error:', error)
   }, [])
+
+  const flushSummary = useCallback(() => {
+    if (summaryRef.current.size === 0) return
+
+    summaryRef.current.forEach((stats, key) => {
+      addSocketBreadcrumb(`${key}:summary`, {
+        roomId,
+        canvasId,
+        count: stats.count,
+        bytes: stats.bytes,
+      })
+    })
+
+    summaryRef.current.clear()
+    summaryTimerRef.current = null
+  }, [roomId, canvasId])
+
+  const trackHighFreq = useCallback(
+    (key: string, bytes = 0) => {
+      const current = summaryRef.current.get(key) ?? { count: 0, bytes: 0 }
+      current.count += 1
+      current.bytes += bytes
+      summaryRef.current.set(key, current)
+
+      if (summaryTimerRef.current == null) {
+        summaryTimerRef.current = window.setTimeout(flushSummary, 5000)
+      }
+    },
+    [flushSummary],
+  )
+
+  useEffect(() => {
+    trackHighFreqRef.current = trackHighFreq
+  }, [trackHighFreq])
   const updateHistoryState = useCallback(() => {
     const undoManager = undoManagerRef.current
     if (!undoManager) return
@@ -182,6 +220,16 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   }, [roomId, canvasId, updateHistoryState])
 
   useEffect(() => {
+    return () => {
+      flushSummary()
+      if (summaryTimerRef.current != null) {
+        window.clearTimeout(summaryTimerRef.current)
+        summaryTimerRef.current = null
+      }
+    }
+  }, [roomId, canvasId, flushSummary])
+
+  useEffect(() => {
     const socket = getSocket()
     if (!socket) return
 
@@ -196,6 +244,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
       socket.emit('canvas:attach', attachPayload)
+      addSocketBreadcrumb('canvas:attach', { roomId, canvasId })
     }
 
     const handleCanvasAttached = (payload: CanvasAttachedPayload) => {
@@ -204,19 +253,23 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       const updateArray = new Uint8Array(payload.update)
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
+      addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
     }
 
     const handleCanvasDetached = () => {
-      // TODO: 카테고리 나갔을 때 남겨진 사람들에게 필요한 로직
+      // TODO: 카테고리 나갔을 때 처리 로직
+      addSocketBreadcrumb('canvas:detached', { roomId, canvasId })
     }
 
     const handleYjsUpdate = (payload: YjsUpdateBroadcast) => {
       const updateArray = new Uint8Array(payload.update)
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
+      trackHighFreq('y:update:recv', updateArray.byteLength)
     }
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
+      trackHighFreq('y:awareness:recv')
       const cursor = payload.state.cursor
       if (cursor) {
         setCursors(prev => {
@@ -246,6 +299,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const updateHandler = (update: Uint8Array, origin: unknown) => {
       // 로컬 변경만 전송 (원격에서 받은 업데이트는 재전송하지 않음)
       if (origin !== socket) {
+        trackHighFreq('y:update:send', update.byteLength)
         const updatePayload: YjsUpdatePayload = {
           canvasId,
           update: Array.from(update),
@@ -290,7 +344,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socket.off('y:awareness', handleAwareness)
       socketRef.current = null
     }
-  }, [roomId, canvasId, getSocket, status])
+  }, [roomId, canvasId, getSocket, status, trackHighFreq])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
   // 커서 이동 시에도 현재 커서챗 상태를 함께 전송
@@ -319,6 +373,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
             },
           }
           socketRef.current.emit('y:awareness', awarenessPayload)
+          trackHighFreqRef.current('y:awareness:send')
         }
       },
       100,
@@ -368,6 +423,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         },
       }
       socketRef.current.emit('y:awareness', awarenessPayload)
+      trackHighFreqRef.current('y:awareness:send')
     },
     [canvasId, userName],
   )

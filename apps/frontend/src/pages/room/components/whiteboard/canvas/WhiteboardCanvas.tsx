@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
-import { getOrCreateStoredUser } from '@/shared/utils'
+import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
 import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox, TextBox } from '@/shared/types'
 import { AnimatedCursor } from './animated-cursor'
@@ -140,11 +140,35 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     userName,
   })
 
+  const cancelDrawing = useCallback(
+    (reason: 'tool-change' | 'mouse-leave' | 'space-press') => {
+      if (!isDrawing) return
+      addSocketBreadcrumb('draw:cancel', { roomId, canvasId, lineId: currentLineId ?? undefined, reason })
+      setIsDrawing(false)
+      setCurrentLineId(null)
+      stopCapturing()
+    },
+    [isDrawing, currentLineId, roomId, canvasId, stopCapturing],
+  )
+
+  const handleToolChange = useCallback(
+    (tool: ToolType) => {
+      if (tool !== 'pencil' && isDrawing) {
+        cancelDrawing('tool-change')
+      }
+      setActiveTool(tool)
+    },
+    [isDrawing, cancelDrawing],
+  )
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
 
       if (e.key === 'Backspace' && selectedItems.length > 0) {
+        const lineCount = selectedItems.filter(item => item.type === 'line').length
+        const postItCount = selectedItems.filter(item => item.type === 'postit').length
+        const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
         selectedItems.forEach(item => {
           if (item.type === 'postit') deletePostIt(item.id)
           if (item.type === 'line') deleteLine(item.id)
@@ -152,13 +176,23 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
           if (item.type === 'textBox') deleteTextBox(item.id)
         })
 
+        if (lineCount > 0) {
+          addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
+        }
+        if (postItCount > 0) {
+          addSocketBreadcrumb('postit:delete', { roomId, canvasId, count: postItCount })
+        }
+        if (placeCardCount > 0) {
+          addSocketBreadcrumb('placecard:delete', { roomId, canvasId, count: placeCardCount })
+        }
+
         setSelectedItems([])
         setContextMenu(null)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItems, deletePostIt, deleteLine, removePlaceCard, deleteTextBox])
+  }, [selectedItems, deletePostIt, deleteLine, removePlaceCard, roomId, canvasId, deleteTextBox])
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -354,11 +388,23 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   }
 
   const handleDeleteFromMenu = () => {
+    const lineCount = selectedItems.filter(item => item.type === 'line').length
+    const postItCount = selectedItems.filter(item => item.type === 'postit').length
+    const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
     selectedItems.forEach(item => {
       if (item.type === 'postit') deletePostIt(item.id)
       if (item.type === 'line') deleteLine(item.id)
       if (item.type === 'placeCard') removePlaceCard(item.id)
     })
+    if (lineCount > 0) {
+      addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
+    }
+    if (postItCount > 0) {
+      addSocketBreadcrumb('postit:delete', { roomId, canvasId, count: postItCount })
+    }
+    if (placeCardCount > 0) {
+      addSocketBreadcrumb('placecard:delete', { roomId, canvasId, count: placeCardCount })
+    }
     setSelectedItems([])
     setContextMenu(null)
   }
@@ -445,6 +491,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
+        if (isDrawing) {
+          cancelDrawing('space-press')
+        }
         setIsSpacePressed(true)
       }
     }
@@ -461,7 +510,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [])
+  }, [cancelDrawing, isDrawing])
 
   const handleMouseMove = () => {
     const stage = stageRef.current
@@ -515,8 +564,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       setPlaceCardCursorPos(null)
     }
     if (isDrawing) {
-      setIsDrawing(false)
-      setCurrentLineId(null)
+      cancelDrawing('mouse-leave')
     }
   }
 
@@ -539,6 +587,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         x: canvasPos.x - PLACE_CARD_WIDTH / 2,
         y: canvasPos.y - PLACE_CARD_HEIGHT / 2,
       })
+      addSocketBreadcrumb('placecard:add', { roomId, canvasId, id: pendingPlaceCard.id })
       onPlaceCardPlaced()
       return
     }
@@ -573,6 +622,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         authorName: `User ${socketId.substring(0, 4)}`,
       }
       addPostIt(newPostIt)
+      addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
     }
 
     if (effectiveTool === 'pencil') {
@@ -592,6 +642,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         tool: 'pen',
       }
       addLine(newLine)
+      addSocketBreadcrumb('draw:start', { roomId, canvasId, lineId: newLineId })
     }
 
     if (effectiveTool === 'textBox') {
@@ -612,6 +663,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
   const handleMouseUp = () => {
     if (effectiveTool === 'pencil' && isDrawing) {
+      if (currentLineId) {
+        addSocketBreadcrumb('draw:end', { roomId, canvasId, lineId: currentLineId })
+      }
       setIsDrawing(false)
       setCurrentLineId(null)
       stopCapturing()
@@ -721,7 +775,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     <div className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
       <Toolbar
         effectiveTool={effectiveTool}
-        setActiveTool={setActiveTool}
+        setActiveTool={handleToolChange}
         setCursorPos={setCursorPos}
         undo={undo}
         redo={redo}

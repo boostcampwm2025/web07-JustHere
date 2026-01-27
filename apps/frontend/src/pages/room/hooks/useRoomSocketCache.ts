@@ -1,28 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  type RoomJoinPayload,
-  type RoomJoinedPayload,
-  type ParticipantConnectedPayload,
-  type ParticipantDisconnectedPayload,
-  type ParticipantNameUpdatedPayload,
-  type ParticipantUpdateNamePayload,
-  type RoomOwnerTransferredPayload,
-  type RoomTransferOwnerPayload,
-  type RoomRegionUpdatedPayload,
-  type CategoryDeletedPayload,
-  type CategoryCreatedPayload,
-  type CategoryCreatePayload,
-  type CategoryDeletePayload,
-  type ErrorPayload,
-  type User,
-  type Participant,
-  type Category,
+import type {
+  RoomJoinPayload,
+  RoomJoinedPayload,
+  ParticipantConnectedPayload,
+  ParticipantDisconnectedPayload,
+  ParticipantNameUpdatedPayload,
+  ParticipantUpdateNamePayload,
+  RoomOwnerTransferredPayload,
+  RoomTransferOwnerPayload,
+  RoomRegionUpdatedPayload,
+  CategoryDeletedPayload,
+  CategoryCreatedPayload,
+  CategoryCreatePayload,
+  CategoryDeletePayload,
+  ErrorPayload,
+  Category,
+  Participant,
+  User,
 } from '@/shared/types'
-import { RoomNotFoundError } from '@/app/error-boundary'
-import { roomQueryKeys, useSocketClient, useToast } from '@/shared/hooks'
+import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
+import { useToast, roomQueryKeys } from '@/shared/hooks'
+import { RoomNotFoundError } from '@/app/error-boundary/SocketError'
+import { addSocketBreadcrumb } from '@/shared/utils'
 
 export const useRoomSocketCache = () => {
   const queryClient = useQueryClient()
@@ -66,6 +68,8 @@ export const useRoomSocketCache = () => {
       setRoomId(roomId)
       setIsReady(true)
       setCurrentRegion(place_name ?? null)
+
+      addSocketBreadcrumb('room:joined', { roomId, ownerId, participants: participants.length, categories: categories.length })
 
       queryClient.setQueryData(roomQueryKeys.room(roomId), { roomId, ownerId })
       queryClient.setQueryData(roomQueryKeys.participants(roomId), participants)
@@ -113,6 +117,8 @@ export const useRoomSocketCache = () => {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('room:owner_transferred', { roomId, newOwnerId })
+
       queryClient.setQueryData(roomQueryKeys.room(roomId), (prev: { roomId: string; ownerId: string } | undefined) => {
         if (!prev) return prev
         return { ...prev, ownerId: newOwnerId }
@@ -127,6 +133,8 @@ export const useRoomSocketCache = () => {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('category:created', { roomId, categoryId })
+
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => [
         ...prev,
         { id: categoryId, roomId, title: name, orderIndex: 0, createdAt: new Date().toISOString() },
@@ -137,12 +145,19 @@ export const useRoomSocketCache = () => {
       const roomId = roomIdRef.current
       if (!roomId) return
 
+      addSocketBreadcrumb('category:deleted', { roomId, categoryId })
+
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => prev.filter(x => x.id !== categoryId))
     }
 
-    const onCategoryError = (errorPayload: ErrorPayload) => handleErrorWithToast(errorPayload)
+    const onCategoryError = (errorPayload: ErrorPayload) => {
+      addSocketBreadcrumb('category:error', { errorType: errorPayload.errorType }, 'warning')
+      handleErrorWithToast(errorPayload)
+    }
 
     const onRoomError = (errorPayload: ErrorPayload) => {
+      addSocketBreadcrumb('room:error', { errorType: errorPayload.errorType }, 'warning')
+      // NOT_FOUND 에러는 Error Boundary로 전파
       if (errorPayload.errorType === 'NOT_FOUND') {
         roomIdRef.current = null
         userInfoRef.current = null
