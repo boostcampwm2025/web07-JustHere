@@ -6,6 +6,7 @@ import { useLocationSearch } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { RegionSelector } from './region-selector'
 import { PlaceDetailModal } from './place-detail'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 
 interface LocationListSectionProps {
   roomId: string
@@ -64,6 +65,8 @@ export const LocationListSection = ({
       scale: 1,
       image: null,
       category: place.category_group_name,
+      width: PLACE_CARD_WIDTH,
+      height: PLACE_CARD_HEIGHT,
     })
   }
 
