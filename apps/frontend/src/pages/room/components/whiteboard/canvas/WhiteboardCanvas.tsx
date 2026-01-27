@@ -4,7 +4,7 @@ import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
-import type { PostIt, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox, TextBox } from '@/shared/types'
+import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
@@ -12,12 +12,13 @@ import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
-import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
+import { getLineBoundingBox } from '@/pages/room/utils'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransformHandlers } from '@/pages/room/hooks/useCanvasTransformHandlers'
 import { useCursorChat } from '@/pages/room/hooks/useCursorChat'
 import { useCanvasKeyboard } from '@/pages/room/hooks/useCanvasKeyboard'
 import { useCanvasDraw } from '@/pages/room/hooks/useCanvasDraw'
+import { useCanvasMouse } from '@/pages/room/hooks/useCanvasMouse'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -36,14 +37,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
 
-  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
-  const [isSelecting, setIsSelecting] = useState(false)
-
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
-
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-
-  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
 
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
@@ -162,6 +156,50 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   })
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
+  const {
+    selectionBox,
+    isSelecting,
+    cursorPos,
+    setCursorPos,
+    placeCardCursorPos,
+    handleMouseMove,
+    handleMouseLeave,
+    handleMouseDown,
+    handleMouseUp,
+    handleWheel,
+    handleStageClick,
+    handleObjectMouseDown,
+    handleObjectClick,
+  } = useCanvasMouse({
+    stageRef,
+    effectiveTool,
+    pendingPlaceCard,
+    selectedItems,
+    setSelectedItems,
+    setContextMenu,
+    updateCursor,
+    isChatActive,
+    setChatInputPosition,
+    isDrawing,
+    cancelDrawing,
+    startDrawing,
+    continueDrawing,
+    endDrawing,
+    postIts,
+    placeCards,
+    lines,
+    textBoxes,
+    addPlaceCard,
+    addPostIt,
+    addTextBox,
+    stopCapturing,
+    roomId,
+    canvasId,
+    onPlaceCardPlaced,
+    userName,
+    socketId,
+  })
+
   useEffect(() => {
     const transformer = transformerRef.current
     if (!transformer) return
@@ -169,273 +207,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
     transformer.nodes(nodes)
   }, [selectedItems])
-
-  const handleObjectMouseDown = useCallback(
-    (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (pendingPlaceCard) return
-      if (effectiveTool !== 'cursor') return
-
-      e.cancelBubble = true
-
-      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
-      const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
-
-      if (!metaPressed && !isAlreadySelected) {
-        setSelectedItems([{ id, type }])
-      } else if (metaPressed && isAlreadySelected) {
-        setSelectedItems(prev => prev.filter(item => !(item.id === id && item.type === type)))
-      } else if (metaPressed && !isAlreadySelected) {
-        setSelectedItems(prev => [...prev, { id, type }])
-      }
-    },
-    [effectiveTool, pendingPlaceCard, selectedItems],
-  )
-
-  const handleObjectClick = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (pendingPlaceCard) return
-      if (effectiveTool !== 'cursor') return
-
-      e.cancelBubble = true
-
-      if (e.evt.button === 2) {
-        e.evt.preventDefault()
-        const stage = stageRef.current
-        if (stage) {
-          const pointerPos = stage.getRelativePointerPosition()
-          if (pointerPos) {
-            setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
-          }
-        }
-      } else {
-        setContextMenu(null)
-      }
-    },
-    [effectiveTool, pendingPlaceCard],
-  )
-
-  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    if (e.target === e.target.getStage()) {
-      setSelectedItems([])
-      setContextMenu(null)
-    }
-  }
-
-  const handleMouseMove = () => {
-    const stage = stageRef.current
-    if (!stage) return
-
-    const canvasPos = stage.getRelativePointerPosition()
-    if (canvasPos) {
-      updateCursor(canvasPos.x, canvasPos.y)
-
-      if ((effectiveTool === 'postIt' || effectiveTool === 'textBox') && !pendingPlaceCard) {
-        setCursorPos(canvasPos)
-      }
-
-      if (pendingPlaceCard) {
-        setPlaceCardCursorPos({ ...canvasPos, cardId: pendingPlaceCard.id })
-      }
-
-      if (effectiveTool === 'cursor' && isSelecting) {
-        setSelectionBox(prev => {
-          if (!prev) return null
-          return {
-            ...prev,
-            endX: canvasPos.x,
-            endY: canvasPos.y,
-          }
-        })
-      }
-
-      if (effectiveTool === 'pencil') {
-        continueDrawing(canvasPos)
-      }
-
-      if (isChatActive) {
-        const pointerPos = stage.getPointerPosition()
-        if (pointerPos) {
-          setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
-        }
-      }
-    }
-  }
-
-  const handleMouseLeave = () => {
-    if (effectiveTool === 'postIt') {
-      setCursorPos(null)
-    }
-    if (pendingPlaceCard) {
-      setPlaceCardCursorPos(null)
-    }
-    if (isDrawing) {
-      cancelDrawing('mouse-leave')
-    }
-  }
-
-  const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const isMouseEvent = e.evt.type.startsWith('mouse')
-    if (isMouseEvent) {
-      const mouseEvt = e.evt as MouseEvent
-      if (mouseEvt.button === 2) return
-    }
-
-    const stage = stageRef.current
-    if (!stage) return
-
-    const canvasPos = stage.getRelativePointerPosition()
-    if (!canvasPos) return
-
-    if (pendingPlaceCard) {
-      addPlaceCard({
-        ...pendingPlaceCard,
-        x: canvasPos.x - PLACE_CARD_WIDTH / 2,
-        y: canvasPos.y - PLACE_CARD_HEIGHT / 2,
-      })
-      addSocketBreadcrumb('placecard:add', { roomId, canvasId, id: pendingPlaceCard.id })
-      onPlaceCardPlaced()
-      return
-    }
-
-    if (effectiveTool === 'cursor') {
-      if (e.target === e.target.getStage()) {
-        setIsSelecting(true)
-        setSelectionBox({
-          startX: canvasPos.x,
-          startY: canvasPos.y,
-          endX: canvasPos.x,
-          endY: canvasPos.y,
-        })
-        setSelectedItems([])
-      }
-      return
-    }
-
-    if (effectiveTool === 'hand') return
-
-    if (effectiveTool === 'postIt') {
-      stopCapturing()
-      const newPostIt: PostIt = {
-        id: `postIt-${crypto.randomUUID()}`,
-        x: canvasPos.x - 75,
-        y: canvasPos.y - 75,
-        width: 150,
-        height: 150,
-        scale: 1,
-        fill: '#FFF9C4',
-        text: '',
-        authorName: userName,
-      }
-      addPostIt(newPostIt)
-      addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
-    }
-
-    if (effectiveTool === 'pencil') {
-      startDrawing(canvasPos)
-    }
-
-    if (effectiveTool === 'textBox') {
-      stopCapturing()
-      const newTextBox: TextBox = {
-        id: `textBox-${crypto.randomUUID()}`,
-        x: canvasPos.x - 100,
-        y: canvasPos.y - 25,
-        width: 200,
-        height: 50,
-        scale: 1,
-        text: '',
-        authorName: `User ${socketId.substring(0, 4)}`,
-      }
-      addTextBox(newTextBox)
-    }
-  }
-
-  const handleMouseUp = () => {
-    if (effectiveTool === 'pencil') {
-      endDrawing()
-    }
-
-    if (effectiveTool === 'cursor' && isSelecting) {
-      setSelectionBox(currentSelectionBox => {
-        if (!currentSelectionBox) return null
-
-        const newSelectedItems: SelectedItem[] = []
-
-        postIts.forEach(postIt => {
-          const postItBox: BoundingBox = {
-            x: postIt.x,
-            y: postIt.y,
-            width: postIt.width,
-            height: postIt.height,
-          }
-          if (isBoxIntersecting(currentSelectionBox, postItBox)) {
-            newSelectedItems.push({ id: postIt.id, type: 'postit' })
-          }
-        })
-
-        placeCards.forEach(card => {
-          const cardBox: BoundingBox = {
-            x: card.x,
-            y: card.y,
-            width: PLACE_CARD_WIDTH,
-            height: PLACE_CARD_HEIGHT,
-          }
-          if (isBoxIntersecting(currentSelectionBox, cardBox)) {
-            newSelectedItems.push({ id: card.id, type: 'placeCard' })
-          }
-        })
-
-        lines.forEach(line => {
-          const lineBox = getLineBoundingBox(line.points)
-          if (isBoxIntersecting(currentSelectionBox, lineBox)) {
-            newSelectedItems.push({ id: line.id, type: 'line' })
-          }
-        })
-
-        textBoxes.forEach(tb => {
-          const bound = { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
-          if (isBoxIntersecting(currentSelectionBox, bound)) {
-            newSelectedItems.push({ id: tb.id, type: 'textBox' })
-          }
-        })
-
-        setSelectedItems(newSelectedItems)
-        return null
-      })
-      setIsSelecting(false)
-    }
-  }
-
-  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
-    e.evt.preventDefault()
-
-    if (!e.evt.metaKey && !e.evt.ctrlKey) {
-      return
-    }
-
-    const stage = stageRef.current
-    if (!stage) return
-
-    const scaleBy = 1.05
-    const oldScale = stage.scaleX()
-    const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
-
-    const pointer = stage.getPointerPosition()
-    if (!pointer) return
-
-    const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
-    }
-
-    const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
-    }
-
-    stage.scale({ x: newScale, y: newScale })
-    stage.position(newPos)
-  }
 
   const getCursorStyle = () => {
     if (pendingPlaceCard) {

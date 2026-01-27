@@ -1,0 +1,397 @@
+import { useState, useCallback } from 'react'
+import type Konva from 'konva'
+import { addSocketBreadcrumb } from '@/shared/utils'
+import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
+import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } from '@/pages/room/constants'
+
+interface UseCanvasMouseProps {
+  stageRef: React.RefObject<Konva.Stage | null>
+  effectiveTool: ToolType
+  pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
+
+  // Selection
+  selectedItems: SelectedItem[]
+  setSelectedItems: React.Dispatch<React.SetStateAction<SelectedItem[]>>
+  setContextMenu: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>
+
+  // Cursor & Chat
+  updateCursor: (x: number, y: number) => void
+  isChatActive: boolean
+  setChatInputPosition: (pos: { x: number; y: number }) => void
+
+  // Drawing
+  isDrawing: boolean
+  cancelDrawing: (reason: 'tool-change' | 'mouse-leave' | 'space-press') => void
+  startDrawing: (pos: { x: number; y: number }) => void
+  continueDrawing: (pos: { x: number; y: number }) => void
+  endDrawing: () => void
+
+  // Canvas items
+  postIts: PostIt[]
+  placeCards: PlaceCard[]
+  lines: LineType[]
+  textBoxes: TextBox[]
+
+  // Add functions
+  addPlaceCard: (card: PlaceCard) => void
+  addPostIt: (postIt: PostIt) => void
+  addTextBox: (textBox: TextBox) => void
+  stopCapturing: () => void
+
+  // Logging
+  roomId: string
+  canvasId: string
+
+  // Callbacks
+  onPlaceCardPlaced: () => void
+
+  // User info
+  userName: string
+  socketId: string
+}
+
+export const useCanvasMouse = ({
+  stageRef,
+  effectiveTool,
+  pendingPlaceCard,
+  selectedItems,
+  setSelectedItems,
+  setContextMenu,
+  updateCursor,
+  isChatActive,
+  setChatInputPosition,
+  isDrawing,
+  cancelDrawing,
+  startDrawing,
+  continueDrawing,
+  endDrawing,
+  postIts,
+  placeCards,
+  lines,
+  textBoxes,
+  addPlaceCard,
+  addPostIt,
+  addTextBox,
+  stopCapturing,
+  roomId,
+  canvasId,
+  onPlaceCardPlaced,
+  userName,
+  socketId,
+}: UseCanvasMouseProps) => {
+  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const [isSelecting, setIsSelecting] = useState(false)
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
+
+  const handleObjectMouseDown = useCallback(
+    (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (pendingPlaceCard) return
+      if (effectiveTool !== 'cursor') return
+
+      e.cancelBubble = true
+
+      const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
+      const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
+
+      if (!metaPressed && !isAlreadySelected) {
+        setSelectedItems([{ id, type }])
+      } else if (metaPressed && isAlreadySelected) {
+        setSelectedItems(prev => prev.filter(item => !(item.id === id && item.type === type)))
+      } else if (metaPressed && !isAlreadySelected) {
+        setSelectedItems(prev => [...prev, { id, type }])
+      }
+    },
+    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems],
+  )
+
+  const handleObjectClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (pendingPlaceCard) return
+      if (effectiveTool !== 'cursor') return
+
+      e.cancelBubble = true
+
+      if (e.evt.button === 2) {
+        e.evt.preventDefault()
+        const stage = stageRef.current
+        if (stage) {
+          const pointerPos = stage.getRelativePointerPosition()
+          if (pointerPos) {
+            setContextMenu({ x: e.evt.clientX, y: e.evt.clientY })
+          }
+        }
+      } else {
+        setContextMenu(null)
+      }
+    },
+    [effectiveTool, pendingPlaceCard, setContextMenu, stageRef],
+  )
+
+  const handleStageClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (e.target === e.target.getStage()) {
+        setSelectedItems([])
+        setContextMenu(null)
+      }
+    },
+    [setSelectedItems, setContextMenu],
+  )
+
+  const handleMouseMove = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return
+
+    const canvasPos = stage.getRelativePointerPosition()
+    if (canvasPos) {
+      updateCursor(canvasPos.x, canvasPos.y)
+
+      if ((effectiveTool === 'postIt' || effectiveTool === 'textBox') && !pendingPlaceCard) {
+        setCursorPos(canvasPos)
+      }
+
+      if (pendingPlaceCard) {
+        setPlaceCardCursorPos({ ...canvasPos, cardId: pendingPlaceCard.id })
+      }
+
+      if (effectiveTool === 'cursor' && isSelecting) {
+        setSelectionBox(prev => {
+          if (!prev) return null
+          return {
+            ...prev,
+            endX: canvasPos.x,
+            endY: canvasPos.y,
+          }
+        })
+      }
+
+      if (effectiveTool === 'pencil') {
+        continueDrawing(canvasPos)
+      }
+
+      if (isChatActive) {
+        const pointerPos = stage.getPointerPosition()
+        if (pointerPos) {
+          setChatInputPosition({ x: pointerPos.x + 20, y: pointerPos.y - 30 })
+        }
+      }
+    }
+  }, [stageRef, updateCursor, effectiveTool, pendingPlaceCard, isSelecting, continueDrawing, isChatActive, setChatInputPosition])
+
+  const handleMouseLeave = useCallback(() => {
+    if (effectiveTool === 'postIt') {
+      setCursorPos(null)
+    }
+    if (pendingPlaceCard) {
+      setPlaceCardCursorPos(null)
+    }
+    if (isDrawing) {
+      cancelDrawing('mouse-leave')
+    }
+  }, [effectiveTool, pendingPlaceCard, isDrawing, cancelDrawing])
+
+  const handleMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      const isMouseEvent = e.evt.type.startsWith('mouse')
+      if (isMouseEvent) {
+        const mouseEvt = e.evt as MouseEvent
+        if (mouseEvt.button === 2) return
+      }
+
+      const stage = stageRef.current
+      if (!stage) return
+
+      const canvasPos = stage.getRelativePointerPosition()
+      if (!canvasPos) return
+
+      if (pendingPlaceCard) {
+        addPlaceCard({
+          ...pendingPlaceCard,
+          x: canvasPos.x - PLACE_CARD_WIDTH / 2,
+          y: canvasPos.y - PLACE_CARD_HEIGHT / 2,
+        })
+        addSocketBreadcrumb('placecard:add', { roomId, canvasId, id: pendingPlaceCard.id })
+        onPlaceCardPlaced()
+        return
+      }
+
+      if (effectiveTool === 'cursor') {
+        if (e.target === e.target.getStage()) {
+          setIsSelecting(true)
+          setSelectionBox({
+            startX: canvasPos.x,
+            startY: canvasPos.y,
+            endX: canvasPos.x,
+            endY: canvasPos.y,
+          })
+          setSelectedItems([])
+        }
+        return
+      }
+
+      if (effectiveTool === 'hand') return
+
+      if (effectiveTool === 'postIt') {
+        stopCapturing()
+        const newPostIt: PostIt = {
+          id: `postIt-${crypto.randomUUID()}`,
+          x: canvasPos.x - POST_IT_WIDTH / 2,
+          y: canvasPos.y - POST_IT_HEIGHT / 2,
+          width: POST_IT_WIDTH,
+          height: POST_IT_HEIGHT,
+          scale: 1,
+          fill: '#FFF9C4',
+          text: '',
+          authorName: userName,
+        }
+        addPostIt(newPostIt)
+        addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
+      }
+
+      if (effectiveTool === 'pencil') {
+        startDrawing(canvasPos)
+      }
+
+      if (effectiveTool === 'textBox') {
+        stopCapturing()
+        const newTextBox: TextBox = {
+          id: `textBox-${crypto.randomUUID()}`,
+          x: canvasPos.x - 100,
+          y: canvasPos.y - 25,
+          width: 200,
+          height: 50,
+          scale: 1,
+          text: '',
+          authorName: `User ${socketId.substring(0, 4)}`,
+        }
+        addTextBox(newTextBox)
+      }
+    },
+    [
+      stageRef,
+      pendingPlaceCard,
+      addPlaceCard,
+      roomId,
+      canvasId,
+      onPlaceCardPlaced,
+      effectiveTool,
+      setSelectedItems,
+      stopCapturing,
+      userName,
+      addPostIt,
+      startDrawing,
+      socketId,
+      addTextBox,
+    ],
+  )
+
+  const handleMouseUp = useCallback(() => {
+    if (effectiveTool === 'pencil') {
+      endDrawing()
+    }
+
+    if (effectiveTool === 'cursor' && isSelecting) {
+      setSelectionBox(currentSelectionBox => {
+        if (!currentSelectionBox) return null
+
+        const newSelectedItems: SelectedItem[] = []
+
+        postIts.forEach(postIt => {
+          const postItBox: BoundingBox = {
+            x: postIt.x,
+            y: postIt.y,
+            width: postIt.width,
+            height: postIt.height,
+          }
+          if (isBoxIntersecting(currentSelectionBox, postItBox)) {
+            newSelectedItems.push({ id: postIt.id, type: 'postit' })
+          }
+        })
+
+        placeCards.forEach(card => {
+          const cardBox: BoundingBox = {
+            x: card.x,
+            y: card.y,
+            width: PLACE_CARD_WIDTH,
+            height: PLACE_CARD_HEIGHT,
+          }
+          if (isBoxIntersecting(currentSelectionBox, cardBox)) {
+            newSelectedItems.push({ id: card.id, type: 'placeCard' })
+          }
+        })
+
+        lines.forEach(line => {
+          const lineBox = getLineBoundingBox(line.points)
+          if (isBoxIntersecting(currentSelectionBox, lineBox)) {
+            newSelectedItems.push({ id: line.id, type: 'line' })
+          }
+        })
+
+        textBoxes.forEach(tb => {
+          const bound = { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
+          if (isBoxIntersecting(currentSelectionBox, bound)) {
+            newSelectedItems.push({ id: tb.id, type: 'textBox' })
+          }
+        })
+
+        setSelectedItems(newSelectedItems)
+        return null
+      })
+      setIsSelecting(false)
+    }
+  }, [effectiveTool, endDrawing, isSelecting, postIts, placeCards, lines, textBoxes, setSelectedItems])
+
+  const handleWheel = useCallback(
+    (e: Konva.KonvaEventObject<WheelEvent>) => {
+      e.evt.preventDefault()
+
+      if (!e.evt.metaKey && !e.evt.ctrlKey) {
+        return
+      }
+
+      const stage = stageRef.current
+      if (!stage) return
+
+      const scaleBy = 1.05
+      const oldScale = stage.scaleX()
+      const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
+
+      const pointer = stage.getPointerPosition()
+      if (!pointer) return
+
+      const mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+      }
+
+      const newPos = {
+        x: pointer.x - mousePointTo.x * newScale,
+        y: pointer.y - mousePointTo.y * newScale,
+      }
+
+      stage.scale({ x: newScale, y: newScale })
+      stage.position(newPos)
+    },
+    [stageRef],
+  )
+
+  return {
+    // State
+    selectionBox,
+    isSelecting,
+    cursorPos,
+    setCursorPos,
+    placeCardCursorPos,
+
+    // Handlers
+    handleMouseMove,
+    handleMouseLeave,
+    handleMouseDown,
+    handleMouseUp,
+    handleWheel,
+    handleStageClick,
+    handleObjectMouseDown,
+    handleObjectClick,
+  }
+}
