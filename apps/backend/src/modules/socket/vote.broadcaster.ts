@@ -9,10 +9,10 @@ export class VoteBroadcaster {
     this.server = server
   }
 
-  emitToRoom<T>(roomId: string, event: string, payload: T, options?: { exceptSocketId?: string }) {
+  emitToCanvas<T>(canvasId: string, event: string, payload: T, options?: { exceptSocketId?: string }) {
     if (!this.server) return
 
-    const room = this.server.to(`vote:${roomId}`)
+    const room = this.server.to(`vote:${canvasId}`)
     if (options?.exceptSocketId) {
       room.except(options.exceptSocketId).emit(event, payload)
       return
