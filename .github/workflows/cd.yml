@@ -15,14 +15,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 표준 방식으로 pnpm 실행 파일을 보장한다.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
