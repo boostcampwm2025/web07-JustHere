@@ -16,6 +16,7 @@ import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransformHandlers } from '@/pages/room/hooks/useCanvasTransformHandlers'
 import { useCursorChat } from '@/pages/room/hooks/useCursorChat'
+import { useCanvasKeyboard } from '@/pages/room/hooks/useCanvasKeyboard'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -44,23 +45,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   const [isDrawing, setIsDrawing] = useState(false)
   const [currentLineId, setCurrentLineId] = useState<string | null>(null)
 
-  const [isSpacePressed, setIsSpacePressed] = useState(false)
-
-  const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
-
   const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
-
-  useEffect(() => {
-    if (!pendingPlaceCard) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      onPlaceCardCanceled()
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [pendingPlaceCard, onPlaceCardCanceled])
 
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
@@ -142,7 +127,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     [isDrawing, cancelDrawing],
   )
 
-  const handleDeleteFromMenu = useCallback(() => {
+  const handleDeleteSelectedItems = useCallback(() => {
     selectedItems.forEach(item => {
       deleteCanvasItem(item.type, item.id)
     })
@@ -169,17 +154,17 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     setContextMenu(null)
   }, [canvasId, deleteCanvasItem, roomId, selectedItems])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
-
-      if (e.key === 'Backspace' && selectedItems.length > 0) {
-        handleDeleteFromMenu()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItems, handleDeleteFromMenu])
+  const hasSelectedItems = selectedItems.length > 0
+  const { isSpacePressed } = useCanvasKeyboard({
+    onPlaceCardCanceled,
+    hasSelectedItems,
+    handleDeleteSelectedItems,
+    isChatActive,
+    activateCursorChat,
+    isDrawing,
+    cancelDrawing,
+  })
+  const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -239,55 +224,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       setContextMenu(null)
     }
   }
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isChatActive) return
-
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-        return
-      }
-
-      if (e.key === '/') {
-        e.preventDefault()
-        activateCursorChat()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isChatActive, activateCursorChat])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-        return
-      }
-
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        if (isDrawing) {
-          cancelDrawing('space-press')
-        }
-        setIsSpacePressed(true)
-      }
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        setIsSpacePressed(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [cancelDrawing, isDrawing])
 
   const handleMouseMove = () => {
     const stage = stageRef.current
@@ -560,7 +496,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         canRedo={canRedo}
       />
 
-      {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteFromMenu} onClose={() => setContextMenu(null)} />}
+      {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteSelectedItems} onClose={() => setContextMenu(null)} />}
 
       {isChatActive && chatInputPosition && (
         <CursorChatInput
