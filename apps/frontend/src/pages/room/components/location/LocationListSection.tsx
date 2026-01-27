@@ -10,14 +10,16 @@ import { CandidateListSection, VoteListSection } from '@/pages/room/components/l
 import { useLocationSearch } from '@/pages/room/hooks'
 import { useNavigate } from 'react-router-dom'
 
-// 후보 장소 기본 타입
+// 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
   id: string
   name: string
   category: string
-  distance: string
   address: string
-  phone: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  userRatingCount?: number
 }
 
 // 투표 중 후보 장소 타입 (투표 정보 포함)
@@ -31,27 +33,35 @@ export interface VotingCandidate extends Candidate {
 const mockCandidates: Candidate[] = [
   {
     id: '1',
-    name: '스타벅스 강남역점',
+    name: '스타벅스 스타필드마켓 동탄점',
     category: '카페',
-    distance: '500m',
-    address: '서울 강남구 강남대로94길 9',
+    address: '경기도 화성시 동탄중앙로 376',
     phone: '02-6204-1116',
+    imageUrl:
+      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweqE90gHnlB1nadfmsbwQ8zhmxLHOIhPHhtcZiS-bmVXTpl0dResvFN43WKuJH-JsYyJiOvNPQ3U_Nva_-wUHeO-AZQurRtvgy3LXYgq451u0_ILGmzxTuGOdvVyHsAMc2CvHYRh=w408-h306-k-no',
+    rating: 3.8,
+    userRatingCount: 79,
   },
   {
     id: '2',
-    name: '맛있는 돈까스집',
+    name: '양심장어 본점',
     category: '음식점',
-    distance: '300m',
-    address: '서울 강남구 강남대로94길 9',
+    address: '경기도 화성시 동탄중심상가2길 29',
     phone: '02-6204-1116',
+    imageUrl: 'https://lh3.googleusercontent.com/p/AF1QipMIshlThUQwycPXSBi3XbJwLaBhkTuKqOSgizW6=w408-h305-k-no',
+    rating: 4.9,
+    userRatingCount: 108,
   },
   {
     id: '3',
-    name: '이디야커피 선릉점',
-    category: '카페',
-    distance: '800m',
-    address: '서울 강남구 강남대로94길 9',
+    name: '무궁화1983 동탄점',
+    category: '음식점',
+    address: '화성시',
     phone: '02-6204-1116',
+    imageUrl:
+      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweoVQ_eaCKOS0N4sv5tsqM2zCTs4e6RV2YT252e5YB6W7w9Ooay-Y5pYqjYrPgeoCWtVhl-f4Obt4uCRQJICerxfP_D_uW3jKkbcfhjfnOYcY6JzVgNzX51BKNnVcFqmfwUKdoKXDg=w408-h306-k-no',
+    rating: 3.8,
+    userRatingCount: 89,
   },
 ]
 
@@ -61,9 +71,11 @@ const mockVotingCandidates: VotingCandidate[] = [
     id: '1',
     name: '스타벅스 강남역점',
     category: '카페',
-    distance: '500m',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
+    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo1',
+    rating: 4.2,
+    userRatingCount: 1234,
     votePercentage: 75,
     voters: [
       { socketId: 'socketid-1', userId: 'userId1', name: '빨간라면' },
@@ -76,9 +88,11 @@ const mockVotingCandidates: VotingCandidate[] = [
     id: '2',
     name: '맛있는 돈까스집',
     category: '음식점',
-    distance: '300m',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
+    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo2',
+    rating: 4.5,
+    userRatingCount: 567,
     votePercentage: 50,
     voters: [
       { socketId: 'socketid-4', userId: 'userId4', name: '분홍소세지' },
@@ -90,9 +104,11 @@ const mockVotingCandidates: VotingCandidate[] = [
     id: '3',
     name: '이디야커피 선릉점',
     category: '카페',
-    distance: '800m',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
+    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo3',
+    rating: 3.8,
+    userRatingCount: 89,
     votePercentage: 25,
     voters: [{ socketId: 'socketid-6', userId: 'userId6', name: '주황버섯' }],
     hasVoted: false,
