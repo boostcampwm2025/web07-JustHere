@@ -369,7 +369,9 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       clearPendingActions()
     }
 
-    setState(createInitialState(roomId, isOwner))
+    const nextInitial = createInitialState(roomId, isOwner)
+    nextInitial.isConnected = socket.connected
+    setState(nextInitial)
 
     if (!useMock && !socket.connected) {
       connectReal()
