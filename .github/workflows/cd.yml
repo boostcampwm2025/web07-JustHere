@@ -44,9 +44,10 @@ jobs:
         run: |
           # BusyBox find는 -quit을 지원하지 않을 수 있어 head -n 1로 존재 여부만 확인한다.
           if [ -d "apps/backend/dist" ] && find apps/backend/dist -name '*.map' | head -n 1 | grep -q .; then
-            npx sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing --log-level=debug
-            npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps apps/backend/dist --log-level=debug
-            npx sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
+            # pnpm 워크스페이스에서는 npx가 바이너리를 못 찾을 수 있어 exec로 고정한다.
+            pnpm --filter backend exec sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing --log-level=debug
+            pnpm --filter backend exec sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps apps/backend/dist --log-level=debug
+            pnpm --filter backend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/backend/dist. Skipping upload."
           fi
