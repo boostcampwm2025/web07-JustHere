@@ -4,7 +4,7 @@ import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
-import type { PostIt, Line as LineType, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox, TextBox } from '@/shared/types'
+import type { PostIt, PlaceCard, SelectedItem, CanvasItemType, ToolType, SelectionBox, BoundingBox, TextBox } from '@/shared/types'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
@@ -17,6 +17,7 @@ import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransformHandlers } from '@/pages/room/hooks/useCanvasTransformHandlers'
 import { useCursorChat } from '@/pages/room/hooks/useCursorChat'
 import { useCanvasKeyboard } from '@/pages/room/hooks/useCanvasKeyboard'
+import { useCanvasDraw } from '@/pages/room/hooks/useCanvasDraw'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -41,9 +42,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [currentLineId, setCurrentLineId] = useState<string | null>(null)
 
   const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
 
@@ -106,16 +104,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     resetInactivityTimer,
   } = useCursorChat({ stageRef, sendCursorChat })
 
-  const cancelDrawing = useCallback(
-    (reason: 'tool-change' | 'mouse-leave' | 'space-press') => {
-      if (!isDrawing) return
-      addSocketBreadcrumb('draw:cancel', { roomId, canvasId, lineId: currentLineId ?? undefined, reason })
-      setIsDrawing(false)
-      setCurrentLineId(null)
-      stopCapturing()
-    },
-    [isDrawing, currentLineId, roomId, canvasId, stopCapturing],
-  )
+  const { isDrawing, cancelDrawing, startDrawing, continueDrawing, endDrawing } = useCanvasDraw({
+    lines,
+    addLine,
+    updateLine,
+    stopCapturing,
+    roomId,
+    canvasId,
+  })
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
@@ -252,12 +248,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         })
       }
 
-      if (effectiveTool === 'pencil' && isDrawing && currentLineId) {
-        const currentLine = lines.find(line => line.id === currentLineId)
-        if (currentLine) {
-          const newPoints = [...currentLine.points, canvasPos.x, canvasPos.y]
-          updateLine(currentLineId, { points: newPoints })
-        }
+      if (effectiveTool === 'pencil') {
+        continueDrawing(canvasPos)
       }
 
       if (isChatActive) {
@@ -332,30 +324,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         scale: 1,
         fill: '#FFF9C4',
         text: '',
-        authorName: `User ${socketId.substring(0, 4)}`,
+        authorName: userName,
       }
       addPostIt(newPostIt)
       addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
     }
 
     if (effectiveTool === 'pencil') {
-      stopCapturing()
-      setIsDrawing(true)
-      const newLineId = `line-${crypto.randomUUID()}`
-      setCurrentLineId(newLineId)
-
-      const newLine: LineType = {
-        id: newLineId,
-        points: [canvasPos.x, canvasPos.y],
-        stroke: '#000000',
-        strokeWidth: 2,
-        tension: 0.5,
-        lineCap: 'round',
-        lineJoin: 'round',
-        tool: 'pen',
-      }
-      addLine(newLine)
-      addSocketBreadcrumb('draw:start', { roomId, canvasId, lineId: newLineId })
+      startDrawing(canvasPos)
     }
 
     if (effectiveTool === 'textBox') {
@@ -375,13 +351,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   }
 
   const handleMouseUp = () => {
-    if (effectiveTool === 'pencil' && isDrawing) {
-      if (currentLineId) {
-        addSocketBreadcrumb('draw:end', { roomId, canvasId, lineId: currentLineId })
-      }
-      setIsDrawing(false)
-      setCurrentLineId(null)
-      stopCapturing()
+    if (effectiveTool === 'pencil') {
+      endDrawing()
     }
 
     if (effectiveTool === 'cursor' && isSelecting) {
