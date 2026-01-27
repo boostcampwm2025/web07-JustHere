@@ -1,6 +1,7 @@
 import { HttpExceptionFilter } from '@/lib/filter'
 import { HttpLoggingInterceptor, ResponseBuilderInterceptor } from '@/lib/interceptors'
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
+import { VoteModule } from '@/modules/vote/vote.module'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AppController } from '@/app.controller'
@@ -27,6 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     RoomModule,
     YjsModule,
     SwaggerConfigModule,
+    VoteModule,
   ],
   controllers: [AppController],
   providers: [
