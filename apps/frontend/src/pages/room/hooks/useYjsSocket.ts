@@ -5,6 +5,7 @@ import type {
   PostIt,
   Line,
   PlaceCard,
+  TextBox,
   CanvasAttachPayload,
   CanvasDetachPayload,
   YjsUpdatePayload,
@@ -30,6 +31,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [postits, setPostits] = useState<PostIt[]>([])
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
+  const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
   const [socketId, setSocketId] = useState('unknown')
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
@@ -68,8 +70,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
 
-    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines], {
+    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes], {
       trackedOrigins: new Set([localOriginRef.current]),
       captureTimeout: 1000,
     })
@@ -133,22 +136,39 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       setLines(items)
     }
 
+    const syncTextBoxesToState = () => {
+      const items: TextBox[] = yTextBoxes.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        width: yMap.get('width') as number,
+        height: yMap.get('height') as number,
+        scale: yMap.get('scale') as number,
+        text: yMap.get('text') as string,
+        authorName: yMap.get('authorName') as string,
+      }))
+      setTextBoxes(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yPostits.observeDeep(syncPostitsToState)
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
+    yTextBoxes.observeDeep(syncTextBoxesToState)
 
     // 초기 동기화
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
+    syncTextBoxesToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
+      yTextBoxes.unobserveDeep(syncTextBoxesToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
@@ -497,6 +517,42 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
   }
 
+  // 텍스트박스 추가 함수
+  const addTextBox = (textBox: TextBox) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const yMap = new Y.Map()
+
+    Object.entries(textBox).forEach(([key, value]) => {
+      yMap.set(key, value)
+    })
+    doc.transact(() => {
+      yTextBoxes.push([yMap])
+    }, localOriginRef.current)
+  }
+
+  // 텍스트박스 업데이트 함수
+  const updateTextBox = (id: string, updates: Partial<Omit<TextBox, 'id'>>) => {
+    updateItem('textBoxes', id, updates)
+  }
+
+  // 텍스트박스 삭제 함수
+  const deleteTextBox = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const index = yTextBoxes.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index !== -1) {
+      doc.transact(() => {
+        yTextBoxes.delete(index, 1)
+      }, localOriginRef.current)
+    }
+  }
+
   return {
     isConnected,
     cursors,
@@ -520,5 +576,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     addLine,
     updateLine,
     deleteLine,
+    textBoxes,
+    addTextBox,
+    updateTextBox,
+    deleteTextBox,
   }
 }
