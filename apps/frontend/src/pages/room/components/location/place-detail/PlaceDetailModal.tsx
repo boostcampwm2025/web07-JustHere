@@ -28,23 +28,6 @@ const renderStars = (rating: number) => {
   )
 }
 
-const getPriceLevelText = (priceLevel?: string) => {
-  switch (priceLevel) {
-    case 'PRICE_LEVEL_FREE':
-      return '무료'
-    case 'PRICE_LEVEL_INEXPENSIVE':
-      return '₩'
-    case 'PRICE_LEVEL_MODERATE':
-      return '₩₩'
-    case 'PRICE_LEVEL_EXPENSIVE':
-      return '₩₩₩'
-    case 'PRICE_LEVEL_VERY_EXPENSIVE':
-      return '₩₩₩₩'
-    default:
-      return null
-  }
-}
-
 const getPriceRangeText = (priceRange?: GooglePlace['priceRange']) => {
   if (!priceRange) return null
   const start = priceRange.startPrice?.units
@@ -72,7 +55,6 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
 
   const details = placeDetails || place
-  const priceLevelText = getPriceLevelText(details.priceLevel)
   const priceRangeText = getPriceRangeText(details.priceRange)
   const parkingText = getParkingText(details.parkingOptions)
 
@@ -114,17 +96,14 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
               {/* 카테고리 */}
               {details.primaryTypeDisplayName && <p className="text-sm text-gray-500 mb-1">{details.primaryTypeDisplayName.text}</p>}
 
-              {/* 평점 + 가격대 */}
-              <div className="flex items-center gap-3 mb-2">
-                {details.rating && (
-                  <div className="flex items-center gap-2">
-                    {renderStars(details.rating)}
-                    <span className="font-semibold">{details.rating.toFixed(1)}</span>
-                    {details.userRatingCount && <span className="text-gray-500 text-sm">({details.userRatingCount}개 리뷰)</span>}
-                  </div>
-                )}
-                {priceLevelText && <span className="text-gray-600 font-medium">{priceLevelText}</span>}
-              </div>
+              {/* 평점 */}
+              {details.rating && (
+                <div className="flex items-center gap-2 mb-2">
+                  {renderStars(details.rating)}
+                  <span className="font-semibold">{details.rating.toFixed(1)}</span>
+                  {details.userRatingCount && <span className="text-gray-500 text-sm">({details.userRatingCount}개 리뷰)</span>}
+                </div>
+              )}
 
               {/* 가격 범위 */}
               {priceRangeText && <p className="text-sm text-gray-600 mb-2">{priceRangeText}</p>}

@@ -17,7 +17,6 @@ export interface GooglePlace {
     openNow: boolean
     weekdayDescriptions: string[]
   }
-  priceLevel?: 'PRICE_LEVEL_FREE' | 'PRICE_LEVEL_INEXPENSIVE' | 'PRICE_LEVEL_MODERATE' | 'PRICE_LEVEL_EXPENSIVE' | 'PRICE_LEVEL_VERY_EXPENSIVE'
   priceRange?: {
     startPrice?: {
       currencyCode: string

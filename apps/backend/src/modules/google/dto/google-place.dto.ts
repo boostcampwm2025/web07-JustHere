@@ -76,9 +76,6 @@ export class GooglePlaceDto {
   }
 
   @ApiPropertyOptional()
-  priceLevel?: string
-
-  @ApiPropertyOptional()
   priceRange?: {
     startPrice?: {
       currencyCode: string

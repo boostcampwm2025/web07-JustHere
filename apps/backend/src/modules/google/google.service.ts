@@ -107,7 +107,6 @@ export class GoogleService {
         'photos',
         'reviews',
         'regularOpeningHours',
-        'priceLevel',
         'priceRange',
         'nationalPhoneNumber',
         'websiteUri',
