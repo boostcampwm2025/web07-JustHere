@@ -1,3 +1,4 @@
+import { MetricModule } from '@/lib/metric/metric.module'
 import { Module } from '@nestjs/common'
 import { PrismaModule } from '@/lib/prisma/prisma.module'
 import { CategoryModule } from '@/modules/category/category.module'
@@ -10,7 +11,7 @@ import { RoomGateway } from './room.gateway'
 import { RoomActivitySchedulerService } from './room-activity-scheduler.service'
 
 @Module({
-  imports: [PrismaModule, CategoryModule, SocketModule, UserModule],
+  imports: [PrismaModule, CategoryModule, SocketModule, UserModule, MetricModule],
   controllers: [RoomController],
   providers: [RoomRepository, RoomService, RoomGateway, RoomActivitySchedulerService],
   exports: [RoomService, RoomRepository],

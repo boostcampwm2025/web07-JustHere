@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'nestjs-backend-local'
+    scrape_interval: 2s # 로컬이니까 빠르게 확인
+    metrics_path: '/metrics'
+    static_configs:
+      # Docker 컨테이너에서 내 컴퓨터(Host)의 3000번 포트 포워딩
+      - targets: ['host.docker.internal:3000']
+        labels:
+          env: 'local'
