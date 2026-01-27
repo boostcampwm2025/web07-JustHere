@@ -1,18 +1,18 @@
-export type VoteStatus = 'idle' | 'voting' | 'ended'
-
-export type VoteValue = 1 | -1 | 0
+export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
 
 export interface VoteCandidate {
   id: string
   placeId: string
-  title?: string
-  imageUrl?: string
-  createdBy?: string
+  name: string
+  address: string
+  category: string
+  createdBy: string
+  createdAt: string
 }
 
 export type VoteCounts = Record<string, number>
 
-export type MyVotes = Record<string, VoteValue>
+export type MyVotes = string[]
 
 export interface VoteError {
   code: string
@@ -37,6 +37,7 @@ export interface VoteState {
   candidates: VoteCandidate[]
   counts: VoteCounts
   myVotes: MyVotes
+  isOwner: boolean
   isConnected: boolean
   lastError: VoteError | null
 }
@@ -47,6 +48,7 @@ export interface VoteStatePayload {
   candidates: VoteCandidate[]
   counts: VoteCounts
   myVotes?: MyVotes
+  isOwner?: boolean
 }
 
 export interface VoteUpdatedPayload {
@@ -55,40 +57,55 @@ export interface VoteUpdatedPayload {
   candidates?: VoteCandidate[]
   counts?: VoteCounts
   myVotes?: MyVotes
+  isOwner?: boolean
 }
 
 export interface VoteStartedPayload {
   roomId: string
-  status: 'voting'
+  status: 'IN_PROGRESS'
 }
 
 export interface VoteEndedPayload {
   roomId: string
-  status: 'ended'
+  status: 'COMPLETED'
   result: VoteResult
 }
 
 export interface VoteJoinPayload {
   roomId: string
-  userId: string
+  userId?: string
+  isOwner?: boolean
 }
 
 export interface VoteLeavePayload {
   roomId: string
-  userId: string
+  userId?: string
 }
 
 export interface VoteAddCandidatePayload {
   roomId: string
   placeId: string
-  title?: string
-  imageUrl?: string
+  name: string
+  address: string
+  category: string
+}
+
+export interface VoteRemoveCandidatePayload {
+  roomId: string
+  candidateId: string
+  actionId?: string
+}
+
+export interface VoteCandidateUpdatedPayload {
+  roomId: string
+  action: 'add' | 'remove'
+  candidate?: VoteCandidate
+  candidateId?: string
 }
 
 export interface VoteCastPayload {
   roomId: string
   candidateId: string
-  value: VoteValue
   actionId?: string
 }
 
@@ -96,6 +113,17 @@ export interface VoteRevokePayload {
   roomId: string
   candidateId: string
   actionId?: string
+}
+
+export interface VoteCountsUpdatedPayload {
+  roomId: string
+  candidateId: string
+  count: number
+}
+
+export interface VoteMeUpdatedPayload {
+  roomId: string
+  myVotes: MyVotes
 }
 
 export interface VoteRoomActionPayload {
