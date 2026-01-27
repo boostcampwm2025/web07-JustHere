@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { cn } from '@/shared/utils/cn'
 import type { KakaoPlace } from '@/shared/types/kakao'
-import type { PlaceCard } from '@/shared//types/canvas.types'
+import type { PlaceCard } from '@/shared/types/canvas.types'
 import type { Participant } from '@/shared/types'
 import { PlaceDetailModal } from '@/pages/room/components/location/place-detail'
 import { RegionSelector } from '@/pages/room/components/location/region-selector'
@@ -274,7 +274,7 @@ export const LocationListSection = ({
                           className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
                           onClick={() => handlePlaceSelect(place)}
                         >
-                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
+                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
                         </div>
 
                         {/* Content */}
