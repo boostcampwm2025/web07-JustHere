@@ -1,6 +1,8 @@
 import { UserService } from './user.service'
 import { UserSessionStore } from './user-session.store'
 import type { CreateSessionParams, UserSession } from './user.type'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 
 describe('UserService', () => {
   let service: UserService
@@ -94,9 +96,7 @@ describe('UserService', () => {
     })
 
     it('존재하지 않는 socketId로 조회하면 undefined를 반환한다', () => {
-      const result = service.getSession('non-existent')
-
-      expect(result).toBeUndefined()
+      expect(() => service.getSession('non-existent')).toThrow(new CustomException(ErrorType.NotFound, '사용자가 존재하지 않습니다.'))
     })
   })
 
