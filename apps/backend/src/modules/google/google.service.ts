@@ -31,35 +31,37 @@ export class GoogleService {
 
   async searchText(dto: SearchTextDto): Promise<GoogleSearchResponseDto> {
     try {
-      let latitude: number | undefined
-      let longitude: number | undefined
-
-      if (dto.roomId) {
-        const room = await this.roomRepository.findById(dto.roomId)
-        if (!room) {
-          throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
-        }
-        latitude = room.y
-        longitude = room.x
-      }
-
-      const requestBody: Record<string, unknown> = {
-        textQuery: dto.textQuery,
-        languageCode: 'ko',
-        maxResultCount: dto.maxResultCount ?? 20,
-      }
-
-      if (latitude !== undefined && longitude !== undefined) {
-        requestBody.locationBias = {
-          circle: {
-            center: { latitude, longitude },
-            radius: dto.radius ?? 2000,
-          },
-        }
-      }
+      let requestBody: Record<string, unknown>
 
       if (dto.pageToken) {
-        requestBody.pageToken = dto.pageToken
+        requestBody = { pageToken: dto.pageToken }
+      } else {
+        let latitude: number | undefined
+        let longitude: number | undefined
+
+        if (dto.roomId) {
+          const room = await this.roomRepository.findById(dto.roomId)
+          if (!room) {
+            throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
+          }
+          latitude = room.y
+          longitude = room.x
+        }
+
+        requestBody = {
+          textQuery: dto.textQuery,
+          languageCode: 'ko',
+          maxResultCount: dto.maxResultCount ?? 20,
+        }
+
+        if (latitude !== undefined && longitude !== undefined) {
+          requestBody.locationBias = {
+            circle: {
+              center: { latitude, longitude },
+              radius: dto.radius ?? 2000,
+            },
+          }
+        }
       }
 
       const fieldMask = [
