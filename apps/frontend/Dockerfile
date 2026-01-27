@@ -36,8 +36,20 @@ COPY --from=builder /app/out/full/ .
 # 4) 빌드 시점에 필요한 VITE 환경 변수 주입
 COPY .env.production ./apps/frontend/.env.production
 
-# 5) 빌드 실행
-RUN turbo run build --filter=frontend
+# 4-1) Sentry sourcemap 업로드용 환경 변수 (빌드 단계 전용, 이미지에 남기지 않음)
+ARG SENTRY_AUTH_TOKEN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ARG VITE_SENTRY_RELEASE
+ARG SENTRY_RELEASE
+
+# 5) 빌드 실행 (필요 시에만 Sentry 환경변수 주입)
+RUN SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
+  SENTRY_ORG=$SENTRY_ORG \
+  SENTRY_PROJECT=$SENTRY_PROJECT \
+  VITE_SENTRY_RELEASE=$VITE_SENTRY_RELEASE \
+  SENTRY_RELEASE=$SENTRY_RELEASE \
+  turbo run build --filter=frontend
 
 
 # 3. Nginx

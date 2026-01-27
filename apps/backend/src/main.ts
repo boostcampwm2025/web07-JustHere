@@ -1,3 +1,4 @@
+import './instrument'
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
 import { SwaggerService } from '@/lib/swagger/swagger.service'
 import { NestFactory } from '@nestjs/core'
