@@ -2,13 +2,14 @@ import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } fro
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import type Konva from 'konva'
-import type { PostIt } from '@/shared/types'
+import type { TextBox } from '@/shared/types'
 
-interface EditablePostItProps {
-  postIt: PostIt
+interface EditableTextBoxProps {
+  textBox: TextBox
   draggable: boolean
+  isSelected: boolean
   onDragEnd: (x: number, y: number) => void
-  onChange: (updates: Partial<Omit<PostIt, 'id'>>) => void
+  onChange: (updates: Partial<Omit<TextBox, 'id'>>) => void
   onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onSelect: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onEditStart: () => void
@@ -17,9 +18,10 @@ interface EditablePostItProps {
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
-export const EditablePostIt = ({
-  postIt,
+export const EditableTextBox = ({
+  textBox,
   draggable,
+  isSelected,
   onDragEnd,
   onChange,
   onMouseDown,
@@ -28,17 +30,19 @@ export const EditablePostIt = ({
   onEditEnd,
   shapeRef,
   onTransformEnd,
-}: EditablePostItProps) => {
+}: EditableTextBoxProps) => {
   const [isEditing, setIsEditing] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const isComposingRef = useRef(false)
-  const draftRef = useRef(postIt.text)
-
+  const draftRef = useRef(textBox.text)
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (shapeRef) {
-      shapeRef(groupRef.current)
+    if (shapeRef) shapeRef(groupRef.current)
+    return () => {
+      if (shapeRef) shapeRef(null)
     }
   }, [shapeRef])
 
@@ -50,7 +54,7 @@ export const EditablePostIt = ({
   }, [isEditing])
 
   const handleDblClick = () => {
-    draftRef.current = postIt.text
+    draftRef.current = textBox.text
     onEditStart()
     setIsEditing(true)
   }
@@ -64,7 +68,7 @@ export const EditablePostIt = ({
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
-    if (value !== postIt.text) onChange({ text: value })
+    if (value !== textBox.text) onChange({ text: value })
   }
 
   const handleBlur = () => {
@@ -73,42 +77,45 @@ export const EditablePostIt = ({
     onEditEnd()
   }
 
-  const basePadding = 10
-  const scaledPadding = basePadding * (postIt.scale || 1)
-
-  // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposingRef.current) return
-
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       ;(e.target as HTMLTextAreaElement).blur()
     }
   }
 
+  const basePadding = 10
+  const scaledPadding = basePadding * (textBox.scale || 1)
+  const showBorder = isSelected || isHovered || isEditing
+
   return (
     <Group
       ref={groupRef}
-      x={postIt.x}
-      y={postIt.y}
-      width={postIt.width}
-      height={postIt.height}
+      x={textBox.x}
+      y={textBox.y}
+      width={textBox.width}
+      height={textBox.height}
       draggable={draggable && !isEditing}
+      onDragStart={() => setIsDragging(true)}
       onDragEnd={e => {
+        setIsDragging(false)
         onDragEnd(e.target.x(), e.target.y())
       }}
       onMouseDown={onMouseDown}
       onClick={onSelect}
       onContextMenu={onSelect}
       onTransformEnd={onTransformEnd}
+      onMouseEnter={() => !isDragging && setIsHovered(true)}
+      onMouseLeave={() => !isDragging && setIsHovered(false)}
     >
-      {/* 포스트잇 배경 */}
       <Rect
-        width={postIt.width}
-        height={postIt.height}
-        fill={postIt.fill}
-        shadowBlur={5}
-        cornerRadius={8 * (postIt.scale || 1)}
+        width={textBox.width}
+        height={textBox.height}
+        fill="transparent"
+        stroke={showBorder ? '#9CA3AF' : 'transparent'}
+        strokeWidth={showBorder ? 1 : 0}
+        dash={[4, 4]}
         onDblClick={handleDblClick}
       />
 
@@ -116,17 +123,13 @@ export const EditablePostIt = ({
         <Html
           transform
           divProps={{
-            className: 'absolute top-0 left-0',
-            style: {
-              width: `${postIt.width}px`,
-              height: `${postIt.height}px`,
-            },
+            style: { width: `${textBox.width}px`, height: `${textBox.height}px` },
           }}
         >
           <textarea
             ref={textareaRef}
-            defaultValue={postIt.text}
-            placeholder="내용을 입력하세요"
+            defaultValue={textBox.text}
+            placeholder="텍스트를 입력하세요"
             onChange={handleTextChange}
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
@@ -137,21 +140,21 @@ export const EditablePostIt = ({
             onKeyDown={handleKeyDown}
             className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
             style={{
-              fontSize: `${14 * (postIt.scale || 1)}px`,
+              fontSize: `${14 * (textBox.scale || 1)}px`,
               padding: `${scaledPadding}px`,
             }}
           />
         </Html>
       ) : (
         <Text
-          text={postIt.text || '내용을 입력하세요'}
+          text={textBox.text || '텍스트를 입력하세요'}
           x={scaledPadding}
           y={scaledPadding}
-          width={postIt.width - scaledPadding * 2}
-          height={postIt.height - scaledPadding * 2}
-          fontSize={14 * postIt.scale}
+          width={Math.max(1, textBox.width - scaledPadding * 2)}
+          height={Math.max(1, textBox.height - scaledPadding * 2)}
+          fontSize={14 * textBox.scale}
           fontFamily="Arial, sans-serif"
-          fill={postIt.text ? '#333' : '#9CA3AF'}
+          fill={textBox.text ? '#333' : '#9CA3AF'}
           lineHeight={1.4}
           wrap="word"
           onDblClick={handleDblClick}
