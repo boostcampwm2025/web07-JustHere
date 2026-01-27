@@ -316,7 +316,6 @@ export function createMockVoteSocket(): VoteSocketLike {
     schedule(() => {
       const startedPayload: VoteStartedPayload = { roomId: room.roomId, status: 'IN_PROGRESS' }
       dispatch(VOTE_EVENTS.started, startedPayload)
-      dispatch(VOTE_EVENTS.stared, startedPayload)
     })
 
     emitStatusChanged(room.roomId, room.status)

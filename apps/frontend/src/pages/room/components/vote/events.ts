@@ -13,7 +13,6 @@ export const VOTE_EVENTS = {
   meUpdated: 'vote:me_updated',
   start: 'vote:start',
   started: 'vote:started',
-  stared: 'vote:stared',
   end: 'vote:end',
   ended: 'vote:ended',
 } as const

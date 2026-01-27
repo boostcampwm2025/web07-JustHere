@@ -337,7 +337,6 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     socket.on(VOTE_EVENTS.countsUpdated, handleCountsUpdated)
     socket.on(VOTE_EVENTS.meUpdated, handleMeUpdated)
     socket.on(VOTE_EVENTS.started, handleStarted)
-    socket.on(VOTE_EVENTS.stared, handleStarted)
     socket.on(VOTE_EVENTS.ended, handleEnded)
     socket.on(VOTE_EVENTS.error, handleError)
 
@@ -350,7 +349,6 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       socket.off(VOTE_EVENTS.countsUpdated, handleCountsUpdated)
       socket.off(VOTE_EVENTS.meUpdated, handleMeUpdated)
       socket.off(VOTE_EVENTS.started, handleStarted)
-      socket.off(VOTE_EVENTS.stared, handleStarted)
       socket.off(VOTE_EVENTS.ended, handleEnded)
       socket.off(VOTE_EVENTS.error, handleError)
     }
