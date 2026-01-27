@@ -357,40 +357,6 @@ describe('VoteService', () => {
     })
   })
 
-  describe('getCandidates', () => {
-    it('후보 리스트를 올바르게 반환해야 한다', () => {
-      service.getOrCreateSession(roomId, userId)
-      const cand1 = service.addCandidatePlace(roomId, userId, mockPlaceData)
-      const cand2 = service.addCandidatePlace(roomId, userId, { ...mockPlaceData, placeId: 'place-456' })
-
-      const candidates = service.getCandidates(roomId)
-
-      expect(candidates.length).toBe(2)
-      expect(candidates).toContainEqual(cand1)
-      expect(candidates).toContainEqual(cand2)
-    })
-
-    it('후보가 없으면 빈 배열을 반환해야 한다', () => {
-      service.getOrCreateSession(roomId, userId)
-
-      const candidates = service.getCandidates(roomId)
-
-      expect(candidates).toEqual([])
-    })
-
-    it('존재하지 않는 세션에 대해 예외를 던져야 한다', () => {
-      expect(() => {
-        service.getCandidates('non-existent')
-      }).toThrow(CustomException)
-
-      try {
-        service.getCandidates('non-existent')
-      } catch (e) {
-        expect((e as CustomException).type).toBe(ErrorType.NotFound)
-      }
-    })
-  })
-
   describe('getSessionOrThrow', () => {
     it('존재하는 세션을 반환해야 한다', () => {
       service.getOrCreateSession(roomId, userId)

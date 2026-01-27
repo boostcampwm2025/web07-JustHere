@@ -234,17 +234,4 @@ export class VoteService {
     }
     return session
   }
-
-  /**
-   * 후보 리스트 반환 (vote:candidate:updated 반환값.)
-   * @param roomId 페이로드 내 카테고리 ID
-   */
-  getCandidates(roomId: string): Candidate[] {
-    const session = this.sessions.get(roomId)
-    if (!session) {
-      throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
-    }
-
-    return Array.from(session.candidates.values())
-  }
 }
