@@ -12,6 +12,7 @@ import { UserModule } from '@/modules/user/user.module'
 import { CategoryModule } from '@/modules/category/category.module'
 import { RoomModule } from '@/modules/room/room.module'
 import { YjsModule } from '@/modules/canvas/yjs.module'
+import { VoteModule } from '@/modules/vote/vote.module'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
 
@@ -26,6 +27,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     CategoryModule,
     RoomModule,
     YjsModule,
+    VoteModule,
     SwaggerConfigModule,
   ],
   controllers: [AppController],
