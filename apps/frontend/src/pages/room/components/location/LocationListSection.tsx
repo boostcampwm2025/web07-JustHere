@@ -73,7 +73,8 @@ const mockVotingCandidates: VotingCandidate[] = [
     category: '카페',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
-    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo1',
+    imageUrl:
+      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweqE90gHnlB1nadfmsbwQ8zhmxLHOIhPHhtcZiS-bmVXTpl0dResvFN43WKuJH-JsYyJiOvNPQ3U_Nva_-wUHeO-AZQurRtvgy3LXYgq451u0_ILGmzxTuGOdvVyHsAMc2CvHYRh=w408-h306-k-no',
     rating: 4.2,
     userRatingCount: 1234,
     votePercentage: 75,
@@ -90,7 +91,7 @@ const mockVotingCandidates: VotingCandidate[] = [
     category: '음식점',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
-    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo2',
+    imageUrl: 'https://lh3.googleusercontent.com/p/AF1QipMIshlThUQwycPXSBi3XbJwLaBhkTuKqOSgizW6=w408-h305-k-no',
     rating: 4.5,
     userRatingCount: 567,
     votePercentage: 50,
@@ -106,7 +107,8 @@ const mockVotingCandidates: VotingCandidate[] = [
     category: '카페',
     address: '서울 강남구 강남대로94길 9',
     phone: '02-6204-1116',
-    imageUrl: 'https://lh3.googleusercontent.com/places/ANXAkqG8k_aXqLGwLOdJSZzNQrGQ9UpkiYfQLHQWc-demo3',
+    imageUrl:
+      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweoVQ_eaCKOS0N4sv5tsqM2zCTs4e6RV2YT252e5YB6W7w9Ooay-Y5pYqjYrPgeoCWtVhl-f4Obt4uCRQJICerxfP_D_uW3jKkbcfhjfnOYcY6JzVgNzX51BKNnVcFqmfwUKdoKXDg=w408-h306-k-no',
     rating: 3.8,
     userRatingCount: 89,
     votePercentage: 25,
