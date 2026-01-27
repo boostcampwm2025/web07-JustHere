@@ -22,7 +22,6 @@ export type VoteSession = {
   canvasId: string
   meta: {
     status: VoteStatus
-    ownerId: string
     createdAt: Date
   }
   data: {
