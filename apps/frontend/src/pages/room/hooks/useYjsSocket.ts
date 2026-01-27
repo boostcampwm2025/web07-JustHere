@@ -29,6 +29,13 @@ interface UseYjsSocketOptions {
   userName: string
 }
 
+const typeToArrayName: Record<CanvasItemType, string> = {
+  postit: 'postits',
+  line: 'lines',
+  placeCard: 'placeCards',
+  textBox: 'textBoxes',
+}
+
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
@@ -529,13 +536,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   // 선 업데이트 함수 (주로 points 배열 업데이트)
   const updateLine = (id: string, updates: Partial<Omit<Line, 'id'>>) => {
     updateItem('lines', id, updates)
-  }
-
-  const typeToArrayName: Record<CanvasItemType, string> = {
-    postit: 'postits',
-    line: 'lines',
-    placeCard: 'placeCards',
-    textBox: 'textBoxes',
   }
 
   const deleteCanvasItem = (type: CanvasItemType, id: string) => {
