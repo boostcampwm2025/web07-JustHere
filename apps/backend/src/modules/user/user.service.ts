@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import { UserSessionStore } from './user-session.store'
 import { CreateSessionParams, UserSession } from './user.type'
 
@@ -29,8 +31,14 @@ export class UserService {
   /**
    * 세션 조회
    */
-  getSession(socketId: string): UserSession | undefined {
-    return this.sessions.get(socketId)
+  getSession(socketId: string): UserSession {
+    const user = this.sessions.get(socketId)
+
+    if (!user) {
+      throw new CustomException(ErrorType.NotFound, '사용자가 존재하지 않습니다.')
+    }
+
+    return user
   }
 
   /**
