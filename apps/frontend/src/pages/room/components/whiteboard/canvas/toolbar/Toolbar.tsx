@@ -1,8 +1,9 @@
 import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon } from '@/shared/assets'
+import type { ToolType } from '@/shared/types'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
-type Tool = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
+type Tool = ToolType
 
 type ToolConfig = {
   tool: Tool
