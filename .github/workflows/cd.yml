@@ -63,7 +63,7 @@ jobs:
             # apps/backend/dist -> dist
             # pnpm exec가 apps/backend 내부에서 실행되므로 상대 경로 'dist'만 사용
             pnpm --filter backend exec sentry-cli sourcemaps inject dist --log-level=debug
-            pnpm --filter backend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --no-ignore --log-level=debug
+            pnpm --filter backend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --log-level=debug
             pnpm --filter backend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/backend/dist. Skipping upload."
@@ -101,7 +101,7 @@ jobs:
 
             # apps/frontend/dist -> dist
             pnpm --filter frontend exec sentry-cli sourcemaps inject dist --log-level=debug
-            pnpm --filter frontend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --no-ignore --log-level=debug
+            pnpm --filter frontend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --log-level=debug
             pnpm --filter frontend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/frontend/dist. Skipping upload."
