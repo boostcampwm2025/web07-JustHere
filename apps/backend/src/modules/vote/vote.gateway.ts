@@ -12,6 +12,8 @@ import {
 import { Server, Socket } from 'socket.io'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import {
+  VoteJoinPayload,
+  VoteLeavePayload,
   VoteCandidateAddPayload,
   VoteCandidateRemovePayload,
   VoteCastPayload,
@@ -39,9 +41,18 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.broadcaster.setServer(server)
   }
 
-  handleDisconnect(client: Socket) {
-    // TODO: VoteService.leaveVote 구현 후 연결
-    this.voteService.leaveVote(client)
+  async handleDisconnect(client: Socket) {
+    await this.voteService.leaveVote(client)
+  }
+
+  @SubscribeMessage('vote:join')
+  async onVoteJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteJoinPayload) {
+    await this.voteService.joinVote(client, payload)
+  }
+
+  @SubscribeMessage('vote:leave')
+  async onVoteLeave(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteLeavePayload) {
+    await this.voteService.leaveVote(client, payload)
   }
 
   @SubscribeMessage('vote:candidate:add')
