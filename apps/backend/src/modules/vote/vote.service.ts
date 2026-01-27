@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { VoteStartedPayload, VoteCountsUpdatedPayload, VoteStatePayload } from './dto/vote.s2c.dto'
+import { VoteStartedPayload, VoteCountsUpdatedPayload, VoteStatePayload, VoteEndedPayload } from './dto/vote.s2c.dto'
 import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
 import { VoteSessionStore } from './vote-session.store'
 
@@ -15,7 +15,7 @@ export class VoteService {
    * 방이 없으면 초기화하고, 있으면 반환
    * @param roomId 페이로드 내 카테고리 ID
    */
-  getOrCreateSession(roomId: string): VoteSession {
+  getOrCreateSession(roomId: string, userId: string): VoteStatePayload {
     if (!this.sessions.has(roomId)) {
       this.sessions.set(roomId, {
         status: VoteStatus.WAITING,
@@ -24,7 +24,8 @@ export class VoteService {
         totalCounts: new Map(),
       })
     }
-    return this.sessions.get(roomId)!
+
+    return this.getVoteState(roomId, userId)
   }
 
   /**
@@ -43,30 +44,13 @@ export class VoteService {
    */
   getVoteState(roomId: string, userId: string): VoteStatePayload {
     const session = this.getSessionOrThrow(roomId)
-
-    // 1. 득표수 집계 (Aggregation)
-    const counts: Record<string, number> = {}
-    // 초기화: 모든 후보 0표
-    session.candidates.forEach((_, id) => (counts[id] = 0))
-
-    // 집계: 모든 유저의 투표 순회
-    session.userVotes.forEach(userVote => {
-      userVote.forEach(candidateId => {
-        if (counts[candidateId] !== undefined) {
-          counts[candidateId]++
-        }
-      })
-    })
-
-    // 2. 내 투표 목록 조회
     const myVotesSet = session.userVotes.get(userId)
-    const myVotes = myVotesSet ? Array.from(myVotesSet) : []
 
     return {
       status: session.status,
       candidates: Array.from(session.candidates.values()),
-      counts,
-      myVotes,
+      counts: Object.fromEntries(session.totalCounts.entries()),
+      myVotes: myVotesSet ? Array.from(myVotesSet) : [],
     }
   }
 
@@ -153,7 +137,7 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * - TODO: Gateway에 voteGuard 적용하기
    */
-  endVote(roomId: string): VoteSession {
+  endVote(roomId: string): VoteEndedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -162,7 +146,12 @@ export class VoteService {
 
     session.status = VoteStatus.COMPLETED
 
-    return session
+    const candidates: Candidate[] = Array.from(session.candidates.values())
+
+    return {
+      status: VoteStatus.COMPLETED,
+      candidates,
+    }
   }
 
   /**

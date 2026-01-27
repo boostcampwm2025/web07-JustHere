@@ -30,23 +30,25 @@ describe('VoteService', () => {
 
   describe('Session Management', () => {
     it('세션이 없으면 새로 생성해야 한다', () => {
-      const session = service.getOrCreateSession(roomId)
-      expect(session).toBeDefined()
-      expect(session.status).toBe(VoteStatus.WAITING)
-      expect(session.candidates.size).toBe(0)
+      const state = service.getOrCreateSession(roomId, userId)
+      expect(state).toBeDefined()
+      expect(state.status).toBe(VoteStatus.WAITING)
+      expect(state.candidates).toEqual([])
+      expect(state.counts).toEqual({})
+      expect(state.myVotes).toEqual([])
     })
 
-    it('이미 세션이 있으면 기존 세션을 반환해야 한다', () => {
-      const session1 = service.getOrCreateSession(roomId)
-      session1.status = VoteStatus.IN_PROGRESS // 상태 변경
+    it('이미 세션이 있으면 기존 세션 상태를 반환해야 한다', () => {
+      service.getOrCreateSession(roomId, userId)
+      const session = service.getSessionOrThrow(roomId)
+      session.status = VoteStatus.IN_PROGRESS // 상태 변경
 
-      const session2 = service.getOrCreateSession(roomId)
-      expect(session2.status).toBe(VoteStatus.IN_PROGRESS) // 변경된 상태 유지 확인
-      expect(session1).toBe(session2) // 같은 객체 참조 확인
+      const state2 = service.getOrCreateSession(roomId, userId)
+      expect(state2.status).toBe(VoteStatus.IN_PROGRESS) // 변경된 상태 유지 확인
     })
 
     it('세션을 삭제할 수 있어야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       service.deleteSession(roomId)
 
       // getSessionOrThrow 호출 시 예외 발생해야 함
@@ -56,7 +58,7 @@ describe('VoteService', () => {
 
   describe('Candidate Management', () => {
     beforeEach(() => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
     })
 
     it('WAITING 상태에서 후보를 등록할 수 있어야 한다', () => {
@@ -142,7 +144,7 @@ describe('VoteService', () => {
 
   describe('Voting Process', () => {
     beforeEach(() => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       service.addCandidatePlace(roomId, userId, mockPlaceData)
       service.startVote(roomId) // 상태: IN_PROGRESS
     })
@@ -171,10 +173,11 @@ describe('VoteService', () => {
       service.castVote(roomId, userId, mockPlaceData.placeId)
       const result = service.castVote(roomId, userId, mockPlaceData.placeId) // 중복 호출
 
-      // totalCounts는 증가하지만, getVoteState는 userVotes를 기반으로 집계하므로 1표
+      // totalCounts는 증가하지만, Set으로 중복 투표는 방지됨
       expect(result.count).toBe(2) // totalCounts는 증가함
       const state = service.getVoteState(roomId, userId)
-      expect(state.counts[mockPlaceData.placeId]).toBe(1) // userVotes 기반 집계는 1표
+      expect(state.counts[mockPlaceData.placeId]).toBe(2) // totalCounts 기반 집계
+      expect(state.myVotes).toContain(mockPlaceData.placeId) // myVotes에는 1개만
     })
 
     it('투표 취소(revokeVote)가 동작해야 한다', () => {
@@ -205,7 +208,7 @@ describe('VoteService', () => {
     it('WAITING 상태에서는 투표할 수 없다', () => {
       // 세션을 새로 생성하여 WAITING 상태로 만들기
       service.deleteSession(roomId)
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       service.addCandidatePlace(roomId, userId, mockPlaceData)
       // startVote를 호출하지 않아서 WAITING 상태 유지
 
@@ -237,7 +240,7 @@ describe('VoteService', () => {
 
   describe('Owner Actions & State Transitions', () => {
     beforeEach(() => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       service.addCandidatePlace(roomId, userId, mockPlaceData)
     })
 
@@ -283,6 +286,8 @@ describe('VoteService', () => {
       const result = service.endVote(roomId)
 
       expect(result.status).toBe(VoteStatus.COMPLETED)
+      expect(result.candidates).toBeDefined()
+      expect(Array.isArray(result.candidates)).toBe(true)
       const session = service.getSessionOrThrow(roomId)
       expect(session.status).toBe(VoteStatus.COMPLETED)
     })
@@ -303,7 +308,7 @@ describe('VoteService', () => {
 
   describe('getVoteState', () => {
     it('현재 투표 현황을 올바르게 반환해야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       const cand1 = service.addCandidatePlace(roomId, userId, mockPlaceData)
       const cand2 = service.addCandidatePlace(roomId, userId, { ...mockPlaceData, placeId: 'place-456' })
 
@@ -321,7 +326,7 @@ describe('VoteService', () => {
       expect(state.status).toBe(VoteStatus.IN_PROGRESS)
       expect(state.candidates.length).toBe(2)
 
-      // 집계 확인 (userVotes 기반 집계)
+      // 집계 확인 (totalCounts 기반 집계)
       expect(state.counts[cand1.placeId]).toBe(2) // User1 + User2
       expect(state.counts[cand2.placeId]).toBe(1) // User2
 
@@ -331,7 +336,7 @@ describe('VoteService', () => {
     })
 
     it('투표하지 않은 사용자의 myVotes는 빈 배열이어야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       service.addCandidatePlace(roomId, userId, mockPlaceData)
       service.startVote(roomId)
 
@@ -354,7 +359,7 @@ describe('VoteService', () => {
 
   describe('getCandidates', () => {
     it('후보 리스트를 올바르게 반환해야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       const cand1 = service.addCandidatePlace(roomId, userId, mockPlaceData)
       const cand2 = service.addCandidatePlace(roomId, userId, { ...mockPlaceData, placeId: 'place-456' })
 
@@ -366,7 +371,7 @@ describe('VoteService', () => {
     })
 
     it('후보가 없으면 빈 배열을 반환해야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
 
       const candidates = service.getCandidates(roomId)
 
@@ -388,7 +393,7 @@ describe('VoteService', () => {
 
   describe('getSessionOrThrow', () => {
     it('존재하는 세션을 반환해야 한다', () => {
-      service.getOrCreateSession(roomId)
+      service.getOrCreateSession(roomId, userId)
       const session = service.getSessionOrThrow(roomId)
 
       expect(session).toBeDefined()

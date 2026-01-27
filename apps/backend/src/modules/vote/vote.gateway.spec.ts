@@ -75,23 +75,33 @@ describe('VoteGateway', () => {
       const payload: VoteJoinPayload = {
         roomId: 'room-1',
       }
-      const mockSession = {
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+      const mockStatePayload = {
         status: 'WAITING',
-        candidates: new Map(),
-        userVotes: new Map(),
-        totalCounts: new Map(),
+        candidates: [],
+        counts: {},
+        myVotes: [],
       }
 
-      voteService.getOrCreateSession.mockReturnValue(mockSession)
+      userService.getSession.mockReturnValue(mockUser)
+      voteService.getOrCreateSession.mockReturnValue(mockStatePayload)
 
       await gateway.onVoteJoin(client, payload)
 
+      expect(userService.getSession).toHaveBeenCalledTimes(1)
+      expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(joinMock).toHaveBeenCalledTimes(1)
       expect(joinMock).toHaveBeenCalledWith('vote:room-1')
       expect(voteService.getOrCreateSession).toHaveBeenCalledTimes(1)
-      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1')
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
-      expect(emitMock).toHaveBeenCalledWith('vote:state', mockSession)
+      expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
     })
   })
 
@@ -124,18 +134,32 @@ describe('VoteGateway', () => {
         name: '카페',
         address: '서울시 강남구',
       }
-      const mockUpdatePayload = {
-        candidates: [],
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+      const mockCandidate = {
+        placeId: 'place-1',
+        name: '카페',
+        address: '서울시 강남구',
+        createdBy: 'user-1',
+        createdAt: new Date(),
       }
 
-      voteService.addCandidatePlace.mockReturnValue(mockUpdatePayload)
+      userService.getSession.mockReturnValue(mockUser)
+      voteService.addCandidatePlace.mockReturnValue(mockCandidate)
 
       gateway.onCandidateAdd(client, payload)
 
+      expect(userService.getSession).toHaveBeenCalledTimes(1)
+      expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.addCandidatePlace).toHaveBeenCalledTimes(1)
-      expect(voteService.addCandidatePlace).toHaveBeenCalledWith('room-1', 'socket-1', payload)
+      expect(voteService.addCandidatePlace).toHaveBeenCalledWith('room-1', 'user-1', payload)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidate)
     })
   })
 
@@ -258,6 +282,7 @@ describe('VoteGateway', () => {
       }
       const mockEndedPayload = {
         status: 'COMPLETED',
+        candidates: [],
       }
 
       voteService.endVote.mockReturnValue(mockEndedPayload)

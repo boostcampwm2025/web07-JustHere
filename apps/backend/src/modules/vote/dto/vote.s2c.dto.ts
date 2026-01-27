@@ -16,7 +16,7 @@ export type VoteStartedPayload = {
 // [S->C] vote:ended
 export type VoteEndedPayload = {
   status: 'COMPLETED'
-  finalResults: { candidateId: string; count: number }[]
+  candidates: Candidate[]
 }
 
 // [S->C] vote:candidate:updated

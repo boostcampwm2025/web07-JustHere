@@ -1,14 +1,6 @@
 import { WebsocketExceptionsFilter } from '@/lib/filter'
 import { UseFilters, UseGuards } from '@nestjs/common'
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayInit,
-  OnGatewayDisconnect,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
-} from '@nestjs/websockets'
+import { WebSocketGateway, WebSocketServer, OnGatewayInit, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
@@ -30,7 +22,7 @@ import { VoteOwnerGuard } from '@/lib/guards/vote-owner.guard'
   cors: { origin: '*' },
 })
 @UseFilters(new WebsocketExceptionsFilter('vote'))
-export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
+export class VoteGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server
 
@@ -44,18 +36,15 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.broadcaster.setServer(server)
   }
 
-  async handleDisconnect() {
-    // TODO: 투표 세션 삭제 로직 추가
-  }
-
   @SubscribeMessage('vote:join')
   async onVoteJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteJoinPayload) {
     const { roomId } = payload
+    const user = this.userService.getSession(client.id)
 
     await client.join(`vote:${roomId}`)
-    const response = this.voteService.getOrCreateSession(roomId)
 
-    client.emit('vote:state', response)
+    const statePayload = this.voteService.getOrCreateSession(roomId, user.userId)
+    client.emit('vote:state', statePayload)
   }
 
   @SubscribeMessage('vote:leave')
@@ -68,36 +57,35 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:candidate:add')
   onCandidateAdd(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateAddPayload) {
     const { roomId } = payload
-    const updatePayload = this.voteService.addCandidatePlace(roomId, client.id, payload)
+    const user = this.userService.getSession(client.id)
 
+    const updatePayload = this.voteService.addCandidatePlace(roomId, user.userId, payload)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
   }
 
   @SubscribeMessage('vote:candidate:remove')
   onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
     const { roomId, candidateId } = payload
-    const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
 
+    const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
   }
 
   @SubscribeMessage('vote:cast')
   onCastVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCastPayload) {
     const { roomId, candidateId } = payload
-
     const user = this.userService.getSession(client.id)
-    const updatePayload = this.voteService.castVote(roomId, user.userId, candidateId)
 
+    const updatePayload = this.voteService.castVote(roomId, user.userId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
   }
 
   @SubscribeMessage('vote:revoke')
   onRevokeVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteRevokePayload) {
     const { roomId, candidateId } = payload
-
     const user = this.userService.getSession(client.id)
-    const updatePayload = this.voteService.revokeVote(roomId, user.userId, candidateId)
 
+    const updatePayload = this.voteService.revokeVote(roomId, user.userId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
   }
 
@@ -107,7 +95,6 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId } = payload
 
     const startedPayload = this.voteService.startVote(roomId)
-
     this.broadcaster.emitToVote(roomId, 'vote:started', startedPayload)
   }
 
@@ -117,7 +104,6 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId } = payload
 
     const endedPayload = this.voteService.endVote(roomId)
-
     this.broadcaster.emitToVote(roomId, 'vote:ended', endedPayload)
   }
 }
