@@ -1,12 +1,14 @@
+import { Injectable } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { BadRequestException, Injectable } from '@nestjs/common'
-import { Candidate, PlaceData, VoteSession, VoteStatePayload, VoteStatus } from './vote.types'
+import { VoteStartedPayload, VoteCountsUpdatedPayload, VoteStatePayload } from './dto/vote.s2c.dto'
+import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
+import { VoteSessionStore } from './vote-session.store'
 
 @Injectable()
 export class VoteService {
   // categoryId : 투표 세션
-  private sessions: Map<string, VoteSession> = new Map()
+  constructor(private readonly sessions: VoteSessionStore) {}
 
   /**
    * 세션 생성 또는 조회 (vote:join)
@@ -19,6 +21,7 @@ export class VoteService {
         status: VoteStatus.WAITING,
         candidates: new Map(),
         userVotes: new Map(),
+        totalCounts: new Map(),
       })
     }
     return this.sessions.get(roomId)!
@@ -82,7 +85,7 @@ export class VoteService {
     }
 
     // 중복 장소 체크 (PlaceId 기준)
-    const isDuplicate = Array.from(session.candidates.values()).some(c => c.id === placeData.id)
+    const isDuplicate = Array.from(session.candidates.values()).some(c => c.placeId === placeData.placeId)
 
     if (isDuplicate) {
       throw new CustomException(ErrorType.DuplicatedCandidate, '이미 등록된 후보 장소입니다.')
@@ -95,7 +98,7 @@ export class VoteService {
       createdAt: new Date(),
     }
 
-    session.candidates.set(newCandidate.id, newCandidate)
+    session.candidates.set(newCandidate.placeId, newCandidate)
 
     return newCandidate
   }
@@ -129,7 +132,7 @@ export class VoteService {
    * - TODO: Gateway에 voteGuard 적용하기
    * @param roomId 페이로드 내 카테고리 ID
    */
-  startVote(roomId: string): VoteSession {
+  startVote(roomId: string): VoteStartedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -142,7 +145,7 @@ export class VoteService {
 
     session.status = VoteStatus.IN_PROGRESS
 
-    return session
+    return { status: session.status }
   }
 
   /**
@@ -154,7 +157,7 @@ export class VoteService {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
-      throw new BadRequestException('INVALID_STATUS: 진행 중인 투표만 종료할 수 있습니다.')
+      throw new CustomException(ErrorType.BadRequest, 'INVALID_STATUS: 진행 중인 투표만 종료할 수 있습니다.')
     }
 
     session.status = VoteStatus.COMPLETED
@@ -171,7 +174,7 @@ export class VoteService {
    * @param candidateId 페이로드의 placeId
    */
   // TODO : 동시성 문제 처리 해야함.
-  castVote(roomId: string, userId: string, candidateId: string): void {
+  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -191,6 +194,15 @@ export class VoteService {
 
     // 투표 추가 (Set 자료구조를 활용한 중복 투표 방지)
     userVotes.add(candidateId)
+
+    // 투표 득표수 증가
+    session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) + 1)
+
+    return {
+      candidateId,
+      count: session.totalCounts.get(candidateId) || 0,
+      userId,
+    }
   }
 
   /**
@@ -200,7 +212,7 @@ export class VoteService {
    * @param userId 투표하는 사용자 ID (client.id의 userSessionStore에서 가져오기)
    * @param candidateId 페이로드의 placeId
    */
-  revokeVote(roomId: string, userId: string, candidateId: string): void {
+  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -211,20 +223,15 @@ export class VoteService {
     if (userVotes) {
       userVotes.delete(candidateId)
     }
-  }
 
-  // TODO: 살릴까? 말까?
-  /**
-   * 투표 삭제 or 취소 (vote:delete)
-   * - 진행 중에도 강제 취소 가능 (후보 리스트 단계로 초기화)
-   * - TODO: Gateway에 voteGuard 적용하기
-   * @param roomId 페이로드 내 카테고리 ID
-   */
-  resetVote(roomId: string): void {
-    const session = this.getSessionOrThrow(roomId)
+    // 투표 득표수 감소
+    session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) - 1)
 
-    session.status = VoteStatus.WAITING
-    session.userVotes.clear()
+    return {
+      candidateId,
+      count: session.totalCounts.get(candidateId) || 0,
+      userId,
+    }
   }
 
   /**
@@ -250,166 +257,5 @@ export class VoteService {
     }
 
     return Array.from(session.candidates.values())
-import { Injectable } from '@nestjs/common'
-import type { Socket } from 'socket.io'
-import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
-import {
-  VoteJoinPayload,
-  VoteLeavePayload,
-  VoteCandidateAddPayload,
-  VoteCandidateRemovePayload,
-  VoteCastPayload,
-  VoteRevokePayload,
-  VoteStartPayload,
-  VoteEndPayload,
-} from './dto/vote.c2s.dto'
-import { VoteSessionStore } from './vote-session.store'
-import { UserService } from '@/modules/user/user.service'
-import { VoteStatePayload, VoteStartedPayload, VoteEndedPayload, VoteCandidateUpdatedPayload, VoteMeUpdatedPayload } from './dto/vote.s2c.dto'
-import { VoteStatus, VoteSession, VoteCandidate } from './vote.type'
-import { CustomException } from '@/lib/exceptions/custom.exception'
-import { ErrorType } from '@/lib/types/response.type'
-
-@Injectable()
-export class VoteService {
-  constructor(
-    private readonly broadcaster: VoteBroadcaster,
-    private readonly sessionStore: VoteSessionStore,
-    private readonly userService: UserService,
-  ) {}
-
-  addCandidate(client: Socket, payload: VoteCandidateAddPayload) {
-    // TODO: VoteService.addCandidate 구현
-    const candidate: VoteCandidate = { id: '1', placeId: '1', name: 'test', address: 'test', createdBy: '1', createdAt: new Date() }
-    const updatePayload: VoteCandidateUpdatedPayload = {
-      action: 'add',
-      candidate,
-    }
-
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:candidate:updated', updatePayload)
-  }
-
-  removeCandidate(client: Socket, payload: VoteCandidateRemovePayload) {
-    // TODO: VoteService.removeCandidate 구현
-    const updatePayload: VoteCandidateUpdatedPayload = {
-      action: 'remove',
-      candidateId: payload.candidateId,
-    }
-
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:candidate:updated', updatePayload)
-  }
-
-  async joinVote(client: Socket, payload: VoteJoinPayload) {
-    const { roomId: canvasId } = payload
-
-    // 유저 정보 확인
-    const userSession = this.userService.getSession(client.id)
-    if (!userSession) {
-      throw new CustomException(ErrorType.NotInRoom, '세션을 찾을 수 없습니다.')
-    }
-
-    // 투표 세션 조회
-    const voteSession = this.getVoteSession(canvasId)
-
-    // 소켓 room에 join
-    await client.join(`vote:${canvasId}`)
-
-    // 본인에게 vote:state 이벤트 emit
-    const statePayload: VoteStatePayload = {
-      status: voteSession.meta.status,
-      candidates: Array.from(voteSession.data.candidates.values()),
-      counts: Object.fromEntries(voteSession.aggs.totalCounts),
-      myVotes: Array.from(voteSession.aggs.userVotes.get(userSession.userId) || []),
-    }
-    client.emit('vote:state', statePayload)
-  }
-
-  async leaveVote(client: Socket, payload?: VoteLeavePayload) {
-    // TODO: disconnect 시 payload가 없을 때, 처리하기
-    if (!payload) return
-
-    const { roomId: canvasId } = payload
-
-    await client.leave(`vote:${canvasId}`)
-    this.sessionStore.delete(canvasId)
-  }
-
-  castVote(client: Socket, payload: VoteCastPayload) {
-    // TODO: VoteService.castVote 구현
-
-    // vote:counts:updated 브로드캐스트
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:counts:updated', {
-      candidateId: payload.candidateId,
-      count: 0,
-    })
-
-    // 본인에게 vote:me:updated 이벤트 emit
-    const myVotes = []
-    const mePayload: VoteMeUpdatedPayload = {
-      myVotes,
-    }
-    client.emit('vote:me:updated', mePayload)
-  }
-
-  revokeVote(client: Socket, payload: VoteRevokePayload) {
-    // TODO: VoteService.revokeVote 구현
-
-    // vote:counts:updated 브로드캐스트
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:counts:updated', {
-      candidateId: payload.candidateId,
-      count: 0,
-    })
-
-    // 본인에게 vote:me:updated 이벤트 emit
-    const myVotes = []
-    const mePayload: VoteMeUpdatedPayload = {
-      myVotes,
-    }
-    client.emit('vote:me:updated', mePayload)
-  }
-
-  startVote(client: Socket, payload: VoteStartPayload) {
-    // TODO: VoteService.startVote 구현
-
-    // vote:started 브로드캐스트
-    const startedPayload: VoteStartedPayload = {
-      status: 'IN_PROGRESS',
-    }
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:started', startedPayload)
-  }
-
-  endVote(client: Socket, payload: VoteEndPayload) {
-    // TODO: VoteService.endVote 구현
-
-    // vote:ended 브로드캐스트
-    const endedPayload: VoteEndedPayload = {
-      status: 'COMPLETED',
-      finalResults: [],
-    }
-    this.broadcaster.emitToCanvas(payload.roomId, 'vote:ended', endedPayload)
-  }
-
-  private getVoteSession(canvasId: string): VoteSession {
-    let session = this.sessionStore.get(canvasId)
-    if (!session) {
-      session = this.createSession(canvasId)
-      this.sessionStore.set(canvasId, session)
-    }
-
-    return session
-  }
-
-  private createSession(canvasId: string): VoteSession {
-    return {
-      canvasId,
-      meta: { status: VoteStatus.WAITING, createdAt: new Date() },
-      data: {
-        candidates: new Map(),
-      },
-      aggs: {
-        totalCounts: new Map(),
-        userVotes: new Map(),
-      },
-    }
   }
 }
