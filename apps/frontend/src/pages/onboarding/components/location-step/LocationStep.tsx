@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
-import { MapMarker } from 'react-kakao-maps-sdk'
-import { useSearchKeyword } from '@/shared/hooks'
-import { Button, SearchInput, KakaoMap } from '@/shared/components'
-import type { KakaoPlace } from '@/shared/types'
+import { useGoogleSearch } from '@/shared/hooks'
+import { Button, SearchInput } from '@/shared/components'
+import { GoogleMap } from '@/shared/components/google-map'
+import type { GooglePlace } from '@/shared/types'
 import { SearchResultsList } from './search-result'
 
 interface LocationStepProps {
@@ -12,17 +12,17 @@ interface LocationStepProps {
 export const LocationStep = ({ onNext }: LocationStepProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
+  const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
 
-  const { data: searchResults, isLoading } = useSearchKeyword(searchTerm)
+  const { data: searchResults, isLoading } = useGoogleSearch({ textQuery: searchTerm })
   const listContainerRef = useRef<HTMLDivElement>(null)
 
   const defaultCenter = { lat: 37.498095, lng: 127.02761 }
 
   const getCenter = () => {
     if (selectedPlace) {
-      return { lat: Number(selectedPlace.y), lng: Number(selectedPlace.x) }
+      return { lat: selectedPlace.location.latitude, lng: selectedPlace.location.longitude }
     }
     return defaultCenter
   }
@@ -47,28 +47,34 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
   const handleNext = () => {
     if (selectedPlace) {
       onNext({
-        name: selectedPlace.place_name,
-        address: selectedPlace.road_address_name || selectedPlace.address_name,
-        x: Number(selectedPlace.x),
-        y: Number(selectedPlace.y),
+        name: selectedPlace.displayName.text,
+        address: selectedPlace.formattedAddress,
+        x: selectedPlace.location.longitude,
+        y: selectedPlace.location.latitude,
       })
     }
   }
 
-  const documents = searchResults?.documents ?? []
+  const places = searchResults?.places ?? []
 
   return (
     <>
       <h1 className="text-2xl font-medium text-black text-center mb-8">만날 지역을 선택해보세요</h1>
       <div className="w-full h-80 bg-gray-100 rounded-xl mb-6 overflow-hidden relative z-0">
-        <KakaoMap center={getCenter()} level={3} draggable={false} onLoad={() => setIsMapLoaded(true)} className="w-full h-full">
-          {selectedPlace && <MapMarker position={getCenter()} />}
-        </KakaoMap>
+        <GoogleMap
+          center={getCenter()}
+          zoom={15}
+          draggable={false}
+          onLoad={() => setIsMapLoaded(true)}
+          className="w-full h-full"
+          markers={selectedPlace ? [selectedPlace] : []}
+          selectedMarkerId={selectedPlace?.id}
+        />
 
         {selectedPlace && isMapLoaded && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10" style={{ marginTop: '-45px' }}>
             <div className="bg-primary-bg border-2 border-primary rounded-lg px-2 py-1 text-xs text-primary font-medium mb-1 whitespace-nowrap shadow-sm">
-              {selectedPlace.place_name}
+              {selectedPlace.displayName.text}
             </div>
           </div>
         )}
@@ -87,10 +93,10 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
         containerClassName="mb-4"
       />
 
-      {documents.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({documents.length})</p>}
+      {places.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({places.length})</p>}
       {isLoading && <p className="text-sm text-gray mb-3">검색 중...</p>}
 
-      <SearchResultsList ref={listContainerRef} results={documents} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
+      <SearchResultsList ref={listContainerRef} results={places} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
 
       <Button onClick={handleNext} disabled={!selectedPlace} size="lg" className="py-4 text-base font-bold">
         장소 선택하기
