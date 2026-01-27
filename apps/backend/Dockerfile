@@ -53,22 +53,14 @@ ARG SENTRY_PROJECT
 ARG SENTRY_RELEASE
 
 RUN if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ] && [ -n "$SENTRY_RELEASE" ]; then \
-  if [ -d ./apps/backend/dist ] && find ./apps/backend/dist -name '*.map' -print -quit | grep -q .; then \
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-    SENTRY_ORG=$SENTRY_ORG \
-    SENTRY_PROJECT=$SENTRY_PROJECT \
-    SENTRY_RELEASE=$SENTRY_RELEASE \
-    npx sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing && \
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-    SENTRY_ORG=$SENTRY_ORG \
-    SENTRY_PROJECT=$SENTRY_PROJECT \
-    SENTRY_RELEASE=$SENTRY_RELEASE \
-    npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps ./apps/backend/dist --rewrite && \
-    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-    SENTRY_ORG=$SENTRY_ORG \
-    SENTRY_PROJECT=$SENTRY_PROJECT \
-    SENTRY_RELEASE=$SENTRY_RELEASE \
-    npx sentry-cli releases finalize "$SENTRY_RELEASE"; \
+  if [ -d ./apps/backend/dist ] && find ./apps/backend/dist -name '*.map' | head -n 1 | grep -q .; then \
+    export SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN; \
+    export SENTRY_ORG=$SENTRY_ORG; \
+    export SENTRY_PROJECT=$SENTRY_PROJECT; \
+    export SENTRY_RELEASE=$SENTRY_RELEASE; \
+    npx sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing || echo "[sentry] releases new failed"; \
+    npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps ./apps/backend/dist --rewrite || echo "[sentry] sourcemap upload failed"; \
+    npx sentry-cli releases finalize "$SENTRY_RELEASE" || echo "[sentry] releases finalize failed"; \
   else \
     echo "[sentry] No sourcemaps found in ./apps/backend/dist. Skipping upload."; \
   fi; \

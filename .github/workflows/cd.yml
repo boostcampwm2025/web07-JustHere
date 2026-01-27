@@ -15,6 +15,39 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 백엔드 sourcemap은 Alpine Docker 내부에서 sentry-cli를 돌리면 깨질 수 있어
+      # 러너(ubuntu)에서 먼저 빌드/업로드를 수행한다.
+      - name: Build Backend (for sourcemaps)
+        run: pnpm turbo run build --filter=backend
+
+      - name: Upload Backend Sourcemaps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+          SENTRY_RELEASE: backend@${{ github.sha }}
+        run: |
+          # BusyBox find는 -quit을 지원하지 않을 수 있어 head -n 1로 존재 여부만 확인한다.
+          if [ -d "apps/backend/dist" ] && find apps/backend/dist -name '*.map' | head -n 1 | grep -q .; then
+            npx sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing --log-level=debug
+            npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps apps/backend/dist --log-level=debug
+            npx sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
+          else
+            echo "[sentry] No sourcemaps found in apps/backend/dist. Skipping upload."
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -52,11 +85,6 @@ jobs:
           file: ./apps/backend/Dockerfile
           push: true
           tags: ${{ env.NCR_REGISTRY }}/my-backend:latest
-          build-args: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-            SENTRY_ORG=${{ secrets.SENTRY_ORG }}
-            SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT_BACKEND }}
-            SENTRY_RELEASE=backend@${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
