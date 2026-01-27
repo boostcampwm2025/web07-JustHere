@@ -21,6 +21,11 @@ export function useLocationSearch({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const onSearchCompleteRef = useRef(onSearchComplete)
+
+  useEffect(() => {
+    onSearchCompleteRef.current = onSearchComplete
+  }, [onSearchComplete])
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteGoogleSearch({
     textQuery: searchTerm,
@@ -29,13 +34,18 @@ export function useLocationSearch({
     maxResultCount,
   })
 
-  const searchResults = useMemo(() => data?.pages ?? [], [data?.pages])
+  const searchResults = useMemo(() => {
+    if (isLoading && !isFetchingNextPage) {
+      return []
+    }
+    return data?.pages ?? []
+  }, [data?.pages, isLoading, isFetchingNextPage])
 
   useEffect(() => {
-    if (isSuccess && searchTerm) {
-      onSearchComplete?.(searchResults)
+    if (isSuccess && searchTerm && !isLoading) {
+      onSearchCompleteRef.current?.(searchResults)
     }
-  }, [isSuccess, searchResults, searchTerm, onSearchComplete])
+  }, [isSuccess, searchResults, searchTerm, isLoading])
 
   useEffect(() => {
     const target = loadMoreRef.current

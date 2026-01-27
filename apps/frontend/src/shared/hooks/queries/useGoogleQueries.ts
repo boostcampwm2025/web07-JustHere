@@ -31,6 +31,8 @@ export const useInfiniteGoogleSearch = (params: Omit<SearchTextParams, 'pageToke
     initialPageParam: undefined as string | undefined,
     getNextPageParam: lastPage => lastPage.nextPageToken,
     enabled: !!textQuery,
+    staleTime: 0,
+    gcTime: 0,
     select: data => ({
       pages: data.pages.flatMap(page => page.places),
       pageParams: data.pageParams,
