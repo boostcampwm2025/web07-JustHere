@@ -4,7 +4,6 @@ import { IsString, IsNotEmpty, MinLength, IsOptional, IsNumber } from 'class-val
 export class BasePayload {
   @IsString({ message: 'roomId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'roomId는 최소 1자 이상이어야 합니다' })
   roomId: string // canvasId
 }
 
@@ -37,24 +36,24 @@ export class VoteCandidateAddPayload extends BasePayload {
   @MinLength(1, { message: 'address는 최소 1자 이상이어야 합니다' })
   address: string
 
-  @IsString({ message: 'category는 문자열이어야 합니다' })
   @IsOptional()
+  @IsString({ message: 'category는 문자열이어야 합니다' })
   category?: string
 
-  @IsString({ message: 'phone은 문자열이어야 합니다' })
   @IsOptional()
+  @IsString({ message: 'phone은 문자열이어야 합니다' })
   phone?: string
 
-  @IsString({ message: 'imageUrl은 문자열이어야 합니다' })
   @IsOptional()
+  @IsString({ message: 'imageUrl은 문자열이어야 합니다' })
   imageUrl?: string
 
-  @IsNumber({}, { message: 'rating은 숫자여야 합니다' })
   @IsOptional()
+  @IsNumber({}, { message: 'rating은 숫자여야 합니다' })
   rating?: number
 
-  @IsNumber({}, { message: 'ratingCount는 숫자여야 합니다' })
   @IsOptional()
+  @IsNumber({}, { message: 'ratingCount는 숫자여야 합니다' })
   ratingCount?: number
 }
 

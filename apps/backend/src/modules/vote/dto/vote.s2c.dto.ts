@@ -19,13 +19,6 @@ export type VoteEndedPayload = {
   candidates: Candidate[]
 }
 
-// [S->C] vote:candidate:updated
-export type VoteCandidateUpdatedPayload = {
-  action: 'add' | 'remove'
-  candidate?: Candidate
-  candidateId?: string
-}
-
 // [S->C] vote:counts:updated
 export type VoteCountsUpdatedPayload = {
   candidateId: string
