@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common'
+import { Controller, Get, Post, Query, Param, Body, Res } from '@nestjs/common'
+import { Response } from 'express'
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger'
 import { GoogleService } from './google.service'
 import { SearchTextDto } from './dto/search-text.dto'
@@ -48,26 +49,26 @@ export class GoogleController {
     return this.googleService.getPlaceDetails({ placeId })
   }
 
-  @Get('photos/*photoName')
+  @Get('photos/*path')
   @ApiOperation({
-    summary: 'Google Place Photo URL',
-    description: '장소 사진 URL을 반환합니다.',
+    summary: 'Google Place Photo',
+    description: '장소 사진을 리다이렉트합니다.',
   })
   @ApiParam({
-    name: 'photoName',
-    description: 'Photo resource name',
+    name: 'path',
+    description: 'Photo resource name (places/{placeId}/photos/{photoId})',
     example: 'places/ChIJN1t_tDeuEmsRUsoyG83frY4/photos/xxx',
   })
   @ApiQuery({ name: 'maxWidthPx', required: false, description: '최대 너비 (px)', example: 400 })
   @ApiQuery({ name: 'maxHeightPx', required: false, description: '최대 높이 (px)', example: 400 })
-  @ApiResponse({ status: 200, description: '사진 URL 반환' })
-  getPhotoUrl(
-    @Param('photoName') photoName: string,
+  @ApiResponse({ status: 302, description: '사진 URL로 리다이렉트' })
+  getPhoto(
+    @Param('path') photoName: string,
     @Query('maxWidthPx') maxWidthPx?: number,
     @Query('maxHeightPx') maxHeightPx?: number,
-  ): { url: string } {
-    return {
-      url: this.googleService.getPhotoUrl(photoName, maxWidthPx || 400, maxHeightPx || 400),
-    }
+    @Res() res?: Response,
+  ): void {
+    const url = this.googleService.getPhotoUrl(photoName, maxWidthPx || 400, maxHeightPx || 400)
+    res?.redirect(url)
   }
 }

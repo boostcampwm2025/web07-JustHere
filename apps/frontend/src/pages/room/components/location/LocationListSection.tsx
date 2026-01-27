@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput } from '@/shared/components'
+import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
@@ -24,8 +25,7 @@ type TabType = 'locations' | 'candidates'
 
 const getPhotoUrl = (place: GooglePlace) => {
   if (!place.photos || place.photos.length === 0) return null
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  return `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxWidthPx=200&key=${apiKey}`
+  return getGooglePhotoUrl(place.photos[0].name, 200)
 }
 
 export const LocationListSection = ({

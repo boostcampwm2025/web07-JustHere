@@ -3,15 +3,11 @@ import { Modal } from '@/shared/components'
 import { useGooglePlaceDetails } from '@/shared/hooks'
 import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
+import { getPhotoUrl } from '@/shared/api'
 
 type PlaceDetailModalProps = {
   place: GooglePlace
   onClose: () => void
-}
-
-const getPhotoUrl = (photoName: string, maxWidthPx = 400) => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${apiKey}`
 }
 
 const renderStars = (rating: number) => {
