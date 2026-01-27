@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { VoteSession } from './vote.type'
+import { VoteSession } from './vote.types'
 
 @Injectable()
 export class VoteSessionStore {
@@ -15,5 +15,9 @@ export class VoteSessionStore {
 
   delete(canvasId: string): void {
     this.voteSessions.delete(canvasId)
+  }
+
+  has(canvasId: string): boolean {
+    return this.voteSessions.has(canvasId)
   }
 }
