@@ -1,4 +1,5 @@
-import { APIProvider, Map } from '@vis.gl/react-google-maps'
+import { useEffect, useRef } from 'react'
+import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps'
 import type { ReactNode } from 'react'
 import type { GooglePlace } from '@/shared/types'
 import { GooglePlaceMarker } from './place-marker'
@@ -17,11 +18,33 @@ interface GoogleMapProps {
   onMarkerClick?: (place: GooglePlace) => void
 }
 
+const DEFAULT_CENTER = { lat: 37.566826, lng: 126.9786567 }
+
+const MapController = ({ center }: { center?: { lat: number; lng: number } }) => {
+  const map = useMap()
+  const isInitialMount = useRef(true)
+
+  useEffect(() => {
+    // 초기 마운트 시에는 panTo 하지 않음
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    // center가 명시적으로 전달된 경우에만 이동
+    if (map && center) {
+      map.panTo(center)
+    }
+  }, [map, center])
+
+  return null
+}
+
 export const GoogleMap = ({
   width = '100%',
   height = '100%',
   className = '',
-  center = { lat: 37.566826, lng: 126.9786567 },
+  center,
   zoom = 15,
   children,
   onLoad,
@@ -46,7 +69,7 @@ export const GoogleMap = ({
       <Map
         style={containerStyle}
         className={className}
-        defaultCenter={center}
+        defaultCenter={center ?? DEFAULT_CENTER}
         defaultZoom={zoom}
         gestureHandling={draggable ? 'auto' : 'none'}
         disableDefaultUI={false}
@@ -57,6 +80,7 @@ export const GoogleMap = ({
           }
         }}
       >
+        <MapController center={center} />
         {markers.map(place => (
           <GooglePlaceMarker key={place.id} place={place} isSelected={place.id === selectedMarkerId} onClick={onMarkerClick} />
         ))}
