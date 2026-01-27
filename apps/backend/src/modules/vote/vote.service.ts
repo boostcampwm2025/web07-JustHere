@@ -74,7 +74,7 @@ export class VoteService {
    * @param placeData 구글맵에서 받아온 장소 데이터
    */
   // TODO: 후보 리스트에 추가한 사용자가 누군지도 전달해야 하는건가?
-  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): Candidate[] {
+  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): Candidate {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -97,7 +97,7 @@ export class VoteService {
 
     session.candidates.set(newCandidate.id, newCandidate)
 
-    return Array.from(session.candidates.values())
+    return newCandidate
   }
 
   /**
@@ -106,7 +106,7 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * @param candidateId 페이로드의 placeId
    */
-  removeCandidatePlace(roomId: string, candidateId: string): Candidate[] {
+  removeCandidatePlace(roomId: string, candidateId: string) {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -120,7 +120,7 @@ export class VoteService {
 
     session.candidates.delete(candidateId)
 
-    return Array.from(session.candidates.values())
+    return candidateId
   }
 
   /**
