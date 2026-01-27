@@ -20,6 +20,7 @@ import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -151,8 +152,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         address: yMap.get('address') as string,
         x: yMap.get('x') as number,
         y: yMap.get('y') as number,
-        width: (yMap.get('width') as number | undefined) ?? 240,
-        height: (yMap.get('height') as number | undefined) ?? 180,
+        width: (yMap.get('width') as number | undefined) ?? PLACE_CARD_WIDTH,
+        height: (yMap.get('height') as number | undefined) ?? PLACE_CARD_HEIGHT,
         scale: yMap.get('scale') as number,
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
@@ -489,8 +490,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('address', card.address)
     yMap.set('x', card.x)
     yMap.set('y', card.y)
-    yMap.set('width', card.width ?? 240)
-    yMap.set('height', card.height ?? 180)
+    yMap.set('width', card.width ?? PLACE_CARD_WIDTH)
+    yMap.set('height', card.height ?? PLACE_CARD_HEIGHT)
     yMap.set('scale', card.scale ?? 1)
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
