@@ -1,9 +1,9 @@
-import { VoteStatus, VoteCandidate } from '../vote.type'
+import { Candidate, VoteStatus } from '../vote.types'
 
 // [S->C] vote:state
 export type VoteStatePayload = {
   status: VoteStatus
-  candidates: VoteCandidate[]
+  candidates: Candidate[]
   counts: Record<string, number>
   myVotes: string[]
 }
@@ -22,7 +22,7 @@ export type VoteEndedPayload = {
 // [S->C] vote:candidate:updated
 export type VoteCandidateUpdatedPayload = {
   action: 'add' | 'remove'
-  candidate?: VoteCandidate
+  candidate?: Candidate
   candidateId?: string
 }
 
@@ -30,6 +30,7 @@ export type VoteCandidateUpdatedPayload = {
 export type VoteCountsUpdatedPayload = {
   candidateId: string
   count: number
+  userId: string
 }
 
 // [S->C] vote:me:updated
