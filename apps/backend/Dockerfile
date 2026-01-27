@@ -53,21 +53,25 @@ ARG SENTRY_PROJECT
 ARG SENTRY_RELEASE
 
 RUN if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ] && [ -n "$SENTRY_RELEASE" ]; then \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases new "$SENTRY_RELEASE" && \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps ./apps/backend/dist --rewrite --validate && \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases finalize "$SENTRY_RELEASE"; \
+  if [ -d ./apps/backend/dist ] && find ./apps/backend/dist -name '*.map' -print -quit | grep -q .; then \
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT=$SENTRY_PROJECT \
+    SENTRY_RELEASE=$SENTRY_RELEASE \
+    npx sentry-cli releases new "$SENTRY_RELEASE" --ignore-existing && \
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT=$SENTRY_PROJECT \
+    SENTRY_RELEASE=$SENTRY_RELEASE \
+    npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps ./apps/backend/dist --rewrite && \
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
+    SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT=$SENTRY_PROJECT \
+    SENTRY_RELEASE=$SENTRY_RELEASE \
+    npx sentry-cli releases finalize "$SENTRY_RELEASE"; \
+  else \
+    echo "[sentry] No sourcemaps found in ./apps/backend/dist. Skipping upload."; \
+  fi; \
 fi
 
 # 3. Prod-Deps (실행용 의존성만 따로 설치)
