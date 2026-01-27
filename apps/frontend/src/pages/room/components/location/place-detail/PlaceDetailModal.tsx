@@ -53,6 +53,7 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
   const details = placeDetails || place
   const priceRangeText = getPriceRangeText(details.priceRange)
   const parkingText = getParkingText(details.parkingOptions)
+  const safePhotoIndex = details.photos ? Math.min(selectedPhotoIndex, details.photos.length - 1) : 0
 
   return (
     <Modal title={details.displayName.text} onClose={onClose} className="w-lg h-[85vh] max-h-[800px]">
@@ -67,7 +68,7 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
             {details.photos && details.photos.length > 0 && (
               <div className="relative">
                 <img
-                  src={getPhotoUrl(details.photos[selectedPhotoIndex].name, 800)}
+                  src={getPhotoUrl(details.photos[safePhotoIndex].name, 800)}
                   alt={details.displayName.text}
                   className="w-full h-64 object-cover"
                 />
@@ -79,7 +80,7 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
                         type="button"
                         aria-label={`사진 ${idx + 1} 보기`}
                         onClick={() => setSelectedPhotoIndex(idx)}
-                        className={cn('w-2 h-2 rounded-full transition-colors', idx === selectedPhotoIndex ? 'bg-white' : 'bg-white/50')}
+                        className={cn('w-2 h-2 rounded-full transition-colors', idx === safePhotoIndex ? 'bg-white' : 'bg-white/50')}
                       />
                     ))}
                   </div>
