@@ -3,7 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - feat/234-infra-sentry
+      - main
 
 jobs:
   build-and-push:
