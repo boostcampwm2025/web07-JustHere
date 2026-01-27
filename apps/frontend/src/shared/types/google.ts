@@ -13,28 +13,21 @@ export interface GooglePlace {
   userRatingCount?: number
   photos?: GooglePhoto[]
   reviews?: GoogleReview[]
-  reviewSummary?: {
-    text: {
-      text: string
-      languageCode: string
-    }
-  }
-  generativeSummary?: {
-    overview: {
-      text: string
-      languageCode: string
-    }
-    overviewFlagContentUri?: string
-    disclosureText?: {
-      text: string
-      languageCode: string
-    }
-  }
   regularOpeningHours?: {
     openNow: boolean
     weekdayDescriptions: string[]
   }
   priceLevel?: 'PRICE_LEVEL_FREE' | 'PRICE_LEVEL_INEXPENSIVE' | 'PRICE_LEVEL_MODERATE' | 'PRICE_LEVEL_EXPENSIVE' | 'PRICE_LEVEL_VERY_EXPENSIVE'
+  priceRange?: {
+    startPrice?: {
+      currencyCode: string
+      units: string
+    }
+    endPrice?: {
+      currencyCode: string
+      units: string
+    }
+  }
   nationalPhoneNumber?: string
   websiteUri?: string
   types?: string[]
@@ -43,6 +36,17 @@ export interface GooglePlace {
     text: string
     languageCode: string
   }
+  parkingOptions?: {
+    freeParkingLot?: boolean
+    paidParkingLot?: boolean
+    freeStreetParking?: boolean
+    paidStreetParking?: boolean
+    valetParking?: boolean
+    freeGarageParking?: boolean
+    paidGarageParking?: boolean
+  }
+  reservable?: boolean
+  allowsDogs?: boolean
 }
 
 export interface GooglePhoto {

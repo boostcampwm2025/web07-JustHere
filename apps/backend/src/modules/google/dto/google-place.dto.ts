@@ -70,27 +70,6 @@ export class GooglePlaceDto {
   reviews?: GoogleReviewDto[]
 
   @ApiPropertyOptional()
-  reviewSummary?: {
-    text: {
-      text: string
-      languageCode: string
-    }
-  }
-
-  @ApiPropertyOptional()
-  generativeSummary?: {
-    overview: {
-      text: string
-      languageCode: string
-    }
-    overviewFlagContentUri?: string
-    disclosureText?: {
-      text: string
-      languageCode: string
-    }
-  }
-
-  @ApiPropertyOptional()
   regularOpeningHours?: {
     openNow: boolean
     weekdayDescriptions: string[]
@@ -98,6 +77,18 @@ export class GooglePlaceDto {
 
   @ApiPropertyOptional()
   priceLevel?: string
+
+  @ApiPropertyOptional()
+  priceRange?: {
+    startPrice?: {
+      currencyCode: string
+      units: string
+    }
+    endPrice?: {
+      currencyCode: string
+      units: string
+    }
+  }
 
   @ApiPropertyOptional()
   nationalPhoneNumber?: string
@@ -116,6 +107,23 @@ export class GooglePlaceDto {
     text: string
     languageCode: string
   }
+
+  @ApiPropertyOptional()
+  parkingOptions?: {
+    freeParkingLot?: boolean
+    paidParkingLot?: boolean
+    freeStreetParking?: boolean
+    paidStreetParking?: boolean
+    valetParking?: boolean
+    freeGarageParking?: boolean
+    paidGarageParking?: boolean
+  }
+
+  @ApiPropertyOptional()
+  reservable?: boolean
+
+  @ApiPropertyOptional()
+  allowsDogs?: boolean
 }
 
 export class GoogleSearchResponseDto {

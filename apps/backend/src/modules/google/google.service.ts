@@ -106,15 +106,17 @@ export class GoogleService {
         'userRatingCount',
         'photos',
         'reviews',
-        'reviewSummary',
-        'generativeSummary',
         'regularOpeningHours',
         'priceLevel',
+        'priceRange',
         'nationalPhoneNumber',
         'websiteUri',
         'types',
         'primaryType',
         'primaryTypeDisplayName',
+        'parkingOptions',
+        'reservable',
+        'allowsDogs',
       ].join(',')
 
       const { data } = await this.axiosInstance.get<GooglePlaceDto>(`/places/${dto.placeId}`, {

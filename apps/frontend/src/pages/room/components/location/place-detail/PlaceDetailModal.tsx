@@ -45,11 +45,36 @@ const getPriceLevelText = (priceLevel?: string) => {
   }
 }
 
+const getPriceRangeText = (priceRange?: GooglePlace['priceRange']) => {
+  if (!priceRange) return null
+  const start = priceRange.startPrice?.units
+  const end = priceRange.endPrice?.units
+  if (start && end) return `${Number(start).toLocaleString()}원 ~ ${Number(end).toLocaleString()}원`
+  if (start) return `${Number(start).toLocaleString()}원 ~`
+  return null
+}
+
+const getParkingText = (parkingOptions?: GooglePlace['parkingOptions']) => {
+  if (!parkingOptions) return null
+  const options: string[] = []
+  if (parkingOptions.freeParkingLot) options.push('무료 주차장')
+  if (parkingOptions.paidParkingLot) options.push('유료 주차장')
+  if (parkingOptions.freeStreetParking) options.push('무료 노상 주차')
+  if (parkingOptions.paidStreetParking) options.push('유료 노상 주차')
+  if (parkingOptions.freeGarageParking) options.push('무료 주차 빌딩')
+  if (parkingOptions.paidGarageParking) options.push('유료 주차 빌딩')
+  if (parkingOptions.valetParking) options.push('발렛 파킹')
+  return options.length > 0 ? options.join(', ') : null
+}
+
 export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
   const { data: placeDetails, isLoading } = useGooglePlaceDetails(place.id)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
 
   const details = placeDetails || place
+  const priceLevelText = getPriceLevelText(details.priceLevel)
+  const priceRangeText = getPriceRangeText(details.priceRange)
+  const parkingText = getParkingText(details.parkingOptions)
 
   return (
     <Modal title={details.displayName.text} onClose={onClose} className="w-lg h-[85vh] max-h-[800px]">
@@ -84,14 +109,6 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
               </div>
             )}
 
-            {/* 장소 소개 (AI 생성) */}
-            {details.generativeSummary?.overview?.text && (
-              <div className="p-6 border-b border-gray-100 bg-blue-50">
-                <h4 className="font-semibold mb-2 text-blue-800">장소 소개</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">{details.generativeSummary.overview.text}</p>
-              </div>
-            )}
-
             {/* 기본 정보 */}
             <div className="p-6 border-b border-gray-100">
               {/* 카테고리 */}
@@ -106,12 +123,26 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
                     {details.userRatingCount && <span className="text-gray-500 text-sm">({details.userRatingCount}개 리뷰)</span>}
                   </div>
                 )}
-                {getPriceLevelText(details.priceLevel) && <span className="text-gray-600 font-medium">{getPriceLevelText(details.priceLevel)}</span>}
+                {priceLevelText && <span className="text-gray-600 font-medium">{priceLevelText}</span>}
               </div>
+
+              {/* 가격 범위 */}
+              {priceRangeText && <p className="text-sm text-gray-600 mb-2">{priceRangeText}</p>}
 
               {/* 주소 */}
               <p className="text-gray-700">{details.formattedAddress}</p>
             </div>
+
+            {/* 편의시설 태그 */}
+            {(details.reservable || details.allowsDogs || parkingText) && (
+              <div className="px-6 py-4 border-b border-gray-100">
+                <div className="flex flex-wrap gap-2">
+                  {details.reservable && <span className="px-3 py-1 bg-green-50 text-green-700 text-xs rounded-full">예약 가능</span>}
+                  {details.allowsDogs && <span className="px-3 py-1 bg-orange-50 text-orange-700 text-xs rounded-full">반려동물 동반</span>}
+                  {parkingText && <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">{parkingText}</span>}
+                </div>
+              </div>
+            )}
 
             {/* 영업시간 */}
             {details.regularOpeningHours && (
@@ -159,14 +190,6 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
                     </a>
                   </p>
                 )}
-              </div>
-            )}
-
-            {/* 리뷰 요약 */}
-            {details.reviewSummary?.text?.text && (
-              <div className="p-6 border-b border-gray-100 bg-gray-50">
-                <h4 className="font-semibold mb-2">리뷰 요약</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">{details.reviewSummary.text.text}</p>
               </div>
             )}
 
