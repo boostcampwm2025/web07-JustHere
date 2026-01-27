@@ -43,6 +43,7 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACKEND }}
           SENTRY_RELEASE: backend@${{ github.sha }}
         run: |
+          # 1. 쉘 스크립트 확인 (루트 기준 경로 사용)
           if [ ! -d "apps/backend/dist" ]; then
             echo "[sentry] apps/backend/dist not found. Skipping upload."
             exit 0
@@ -52,27 +53,24 @@ jobs:
           echo "[sentry] Found sourcemaps: ${MAP_COUNT}"
 
           if [ "${MAP_COUNT}" -gt 0 ]; then
-            # 1. Release 생성 (이미 존재하면 info로 확인)
+            # Release 생성
             if pnpm --filter backend exec sentry-cli releases info "$SENTRY_RELEASE" --log-level=debug; then
               echo "[sentry] Release already exists: $SENTRY_RELEASE"
             else
               pnpm --filter backend exec sentry-cli releases new "$SENTRY_RELEASE" --log-level=debug
             fi
 
-            # 2. Debug ID 주입 (Sentry v3 권장)
-            pnpm --filter backend exec sentry-cli sourcemaps inject apps/backend/dist --log-level=debug
-
-            # 3. 소스맵 업로드 (--no-ignore 옵션 추가로 .gitignore 무시)
-            pnpm --filter backend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" apps/backend/dist --no-ignore --log-level=debug
-            
-            # 4. Finalize
+            # apps/backend/dist -> dist
+            # pnpm exec가 apps/backend 내부에서 실행되므로 상대 경로 'dist'만 사용
+            pnpm --filter backend exec sentry-cli sourcemaps inject dist --log-level=debug
+            pnpm --filter backend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --no-ignore --log-level=debug
             pnpm --filter backend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/backend/dist. Skipping upload."
           fi
 
       # ----------------------------------------------------------------
-      # [Frontend] Build & Upload Sourcemaps (새로 추가됨)
+      # [Frontend] Build & Upload Sourcemaps
       # ----------------------------------------------------------------
       - name: Build Frontend (for sourcemaps)
         run: pnpm turbo run build --filter=frontend
@@ -84,31 +82,26 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
           SENTRY_RELEASE: frontend@${{ github.sha }}
         run: |
-          # Vite 빌드 결과물 경로 확인 (보통 apps/frontend/dist)
+          # 1. 쉘 스크립트 확인 (루트 기준 경로 사용)
           if [ ! -d "apps/frontend/dist" ]; then
             echo "[sentry] apps/frontend/dist not found. Skipping upload."
             exit 0
           fi
 
-          # Frontend 소스맵 개수 확인
           MAP_COUNT=$(find apps/frontend/dist -name '*.map' | wc -l | tr -d ' ')
           echo "[sentry] Found sourcemaps: ${MAP_COUNT}"
 
           if [ "${MAP_COUNT}" -gt 0 ]; then
-            # 1. Release 생성
+            # Release 생성
             if pnpm --filter frontend exec sentry-cli releases info "$SENTRY_RELEASE" --log-level=debug; then
               echo "[sentry] Release already exists: $SENTRY_RELEASE"
             else
               pnpm --filter frontend exec sentry-cli releases new "$SENTRY_RELEASE" --log-level=debug
             fi
 
-            # 2. Debug ID 주입
-            pnpm --filter frontend exec sentry-cli sourcemaps inject apps/frontend/dist --log-level=debug
-
-            # 3. 소스맵 업로드 (--no-ignore 필수)
-            pnpm --filter frontend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" apps/frontend/dist --no-ignore --log-level=debug
-            
-            # 4. Finalize
+            # apps/frontend/dist -> dist
+            pnpm --filter frontend exec sentry-cli sourcemaps inject dist --log-level=debug
+            pnpm --filter frontend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --no-ignore --log-level=debug
             pnpm --filter frontend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/frontend/dist. Skipping upload."
@@ -139,8 +132,7 @@ jobs:
           push: true
           tags: ${{ env.NCR_REGISTRY }}/my-frontend:latest
           build-args: |
-            # 소스맵 업로드는 위에서 완료했으므로, 런타임 식별을 위한 RELEASE 버전만 주입합니다.
-            # Dockerfile 내부에서는 Sentry Token이 필요 없습니다.
+            # 소스맵 업로드는 위에서 완료했으므로, 런타임 식별을 위한 RELEASE 버전만 주입
             VITE_SENTRY_RELEASE=frontend@${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
