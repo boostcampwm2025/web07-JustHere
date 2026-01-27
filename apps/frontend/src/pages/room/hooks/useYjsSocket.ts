@@ -20,7 +20,7 @@ import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -85,7 +85,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       summaryRef.current.set(key, current)
 
       if (summaryTimerRef.current == null) {
-        summaryTimerRef.current = window.setTimeout(flushSummary, 5000)
+        summaryTimerRef.current = window.setTimeout(flushSummary, SUMMARY_FREQUENCY)
       }
     },
     [flushSummary],
@@ -121,7 +121,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes], {
       trackedOrigins: new Set([localOriginRef.current]),
-      captureTimeout: 1000,
+      captureTimeout: CAPTURE_FREQUENCY,
     })
     undoManagerRef.current = undoManager
 
@@ -385,7 +385,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
           trackHighFreqRef.current('y:awareness:send')
         }
       },
-      100,
+      CURSOR_FREQUENCY,
     ),
   ).current
 
