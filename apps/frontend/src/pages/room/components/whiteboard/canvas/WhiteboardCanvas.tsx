@@ -123,17 +123,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     stopCapturing,
     addPostIt,
     updatePostIt,
-    deletePostIt,
     updatePlaceCard,
-    removePlaceCard,
     addPlaceCard,
     addLine,
     updateLine,
-    deleteLine,
     textBoxes,
     addTextBox,
     updateTextBox,
-    deleteTextBox,
+    deleteCanvasItem,
   } = useYjsSocket({
     roomId,
     canvasId,
@@ -161,38 +158,44 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     [isDrawing, cancelDrawing],
   )
 
+  const handleDeleteFromMenu = useCallback(() => {
+    selectedItems.forEach(item => {
+      deleteCanvasItem(item.type, item.id)
+    })
+
+    // sentry를 위한 로그 남기기
+    const lineCount = selectedItems.filter(item => item.type === 'line').length
+    const postItCount = selectedItems.filter(item => item.type === 'postit').length
+    const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
+    const textBoxCount = selectedItems.filter(item => item.type === 'textBox').length
+    if (lineCount > 0) {
+      addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
+    }
+    if (postItCount > 0) {
+      addSocketBreadcrumb('postit:delete', { roomId, canvasId, count: postItCount })
+    }
+    if (placeCardCount > 0) {
+      addSocketBreadcrumb('placecard:delete', { roomId, canvasId, count: placeCardCount })
+    }
+    if (textBoxCount > 0) {
+      addSocketBreadcrumb('textbox:delete', { roomId, canvasId, count: textBoxCount })
+    }
+
+    setSelectedItems([])
+    setContextMenu(null)
+  }, [canvasId, deleteCanvasItem, roomId, selectedItems])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return
 
       if (e.key === 'Backspace' && selectedItems.length > 0) {
-        const lineCount = selectedItems.filter(item => item.type === 'line').length
-        const postItCount = selectedItems.filter(item => item.type === 'postit').length
-        const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
-        selectedItems.forEach(item => {
-          if (item.type === 'postit') deletePostIt(item.id)
-          if (item.type === 'line') deleteLine(item.id)
-          if (item.type === 'placeCard') removePlaceCard(item.id)
-          if (item.type === 'textBox') deleteTextBox(item.id)
-        })
-
-        if (lineCount > 0) {
-          addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
-        }
-        if (postItCount > 0) {
-          addSocketBreadcrumb('postit:delete', { roomId, canvasId, count: postItCount })
-        }
-        if (placeCardCount > 0) {
-          addSocketBreadcrumb('placecard:delete', { roomId, canvasId, count: placeCardCount })
-        }
-
-        setSelectedItems([])
-        setContextMenu(null)
+        handleDeleteFromMenu()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItems, deletePostIt, deleteLine, removePlaceCard, roomId, canvasId, deleteTextBox])
+  }, [selectedItems, handleDeleteFromMenu])
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -385,28 +388,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       setSelectedItems([])
       setContextMenu(null)
     }
-  }
-
-  const handleDeleteFromMenu = () => {
-    const lineCount = selectedItems.filter(item => item.type === 'line').length
-    const postItCount = selectedItems.filter(item => item.type === 'postit').length
-    const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
-    selectedItems.forEach(item => {
-      if (item.type === 'postit') deletePostIt(item.id)
-      if (item.type === 'line') deleteLine(item.id)
-      if (item.type === 'placeCard') removePlaceCard(item.id)
-    })
-    if (lineCount > 0) {
-      addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
-    }
-    if (postItCount > 0) {
-      addSocketBreadcrumb('postit:delete', { roomId, canvasId, count: postItCount })
-    }
-    if (placeCardCount > 0) {
-      addSocketBreadcrumb('placecard:delete', { roomId, canvasId, count: placeCardCount })
-    }
-    setSelectedItems([])
-    setContextMenu(null)
   }
 
   const deactivateCursorChat = useCallback(() => {
@@ -924,7 +905,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   updatePlaceCard(card.id, { x, y })
                 }}
                 onRemove={() => {
-                  removePlaceCard(card.id)
+                  deleteCanvasItem('placeCard', card.id)
                 }}
                 onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
                 onClick={e => handleObjectClick(e)}

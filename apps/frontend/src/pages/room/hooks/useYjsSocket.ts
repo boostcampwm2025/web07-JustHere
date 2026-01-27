@@ -19,6 +19,7 @@ import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
+import type { CanvasItemType } from '@/shared/types'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -504,20 +505,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('placeCards', id, updates)
   }
 
-  const removePlaceCard = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    doc.transact(() => {
-      yPlaceCards.delete(index, 1)
-    }, localOriginRef.current)
-  }
-
   // 선 추가 함수
   const addLine = (line: Line) => {
     const doc = docRef.current
@@ -543,34 +530,26 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('lines', id, updates)
   }
 
-  // 포스트잇 삭제 함수
-  const deletePostIt = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index !== -1) {
-      doc.transact(() => {
-        yPostits.delete(index, 1) // 해당 인덱스 삭제
-      }, localOriginRef.current)
-    }
+  const typeToArrayName: Record<CanvasItemType, string> = {
+    postit: 'postits',
+    line: 'lines',
+    placeCard: 'placeCards',
+    textBox: 'textBoxes',
   }
 
-  // 선(드로잉) 삭제 함수
-  const deleteLine = (id: string) => {
+  const deleteCanvasItem = (type: CanvasItemType, id: string) => {
     const doc = docRef.current
     if (!doc) return
 
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
+    const arrayName = typeToArrayName[type]
+    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
+    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
 
-    if (index !== -1) {
-      doc.transact(() => {
-        yLines.delete(index, 1)
-      }, localOriginRef.current)
-    }
+    if (index === -1) return
+
+    doc.transact(() => {
+      yArray.delete(index, 1)
+    }, localOriginRef.current)
   }
 
   // 텍스트박스 추가 함수
@@ -594,21 +573,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('textBoxes', id, updates)
   }
 
-  // 텍스트박스 삭제 함수
-  const deleteTextBox = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-    const index = yTextBoxes.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index !== -1) {
-      doc.transact(() => {
-        yTextBoxes.delete(index, 1)
-      }, localOriginRef.current)
-    }
-  }
-
   return {
     isConnected,
     cursors,
@@ -625,16 +589,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     stopCapturing,
     addPostIt,
     updatePostIt,
-    deletePostIt,
     addPlaceCard,
     updatePlaceCard,
-    removePlaceCard,
     addLine,
     updateLine,
-    deleteLine,
     textBoxes,
     addTextBox,
     updateTextBox,
-    deleteTextBox,
+    deleteCanvasItem,
   }
 }
