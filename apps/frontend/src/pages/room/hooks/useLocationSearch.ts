@@ -1,39 +1,42 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useInfiniteSearchKeyword } from '@/shared/hooks'
-import type { KakaoPlace } from '@/shared/types'
+import { useInfiniteGoogleSearch } from '@/shared/hooks'
+import type { GooglePlace } from '@/shared/types'
 
-const DEFAULT_PAGE_SIZE = 15
+const DEFAULT_MAX_RESULT_COUNT = 20
 const DEFAULT_RADIUS = 2000
 
 interface UseLocationSearchOptions {
   roomId: string
   radius?: number
-  pageSize?: number
-  onSearchComplete?: (results: KakaoPlace[]) => void
+  maxResultCount?: number
+  onSearchComplete?: (results: GooglePlace[]) => void
 }
 
-export function useLocationSearch({ roomId, radius = DEFAULT_RADIUS, pageSize = DEFAULT_PAGE_SIZE, onSearchComplete }: UseLocationSearchOptions) {
+export function useLocationSearch({
+  roomId,
+  radius = DEFAULT_RADIUS,
+  maxResultCount = DEFAULT_MAX_RESULT_COUNT,
+  onSearchComplete,
+}: UseLocationSearchOptions) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteSearchKeyword({
-    keyword: searchTerm,
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteGoogleSearch({
+    textQuery: searchTerm,
     roomId,
     radius,
-    size: pageSize,
+    maxResultCount,
   })
 
   const searchResults = useMemo(() => data?.pages ?? [], [data?.pages])
 
-  // 지도뷰에 마커를 띄우기 위해 검색 완료 콜백 호출
   useEffect(() => {
     if (isSuccess && searchTerm) {
       onSearchComplete?.(searchResults)
     }
   }, [isSuccess, searchResults, searchTerm, onSearchComplete])
 
-  // 무한 스크롤 감지 로직
   useEffect(() => {
     const target = loadMoreRef.current
     if (!target) return
