@@ -93,17 +93,18 @@ jobs:
           echo "[sentry] Found sourcemaps: ${MAP_COUNT}"
 
           if [ "${MAP_COUNT}" -gt 0 ]; then
-            # Frontend 패키지에 sentry-cli 의존성이 없을 수 있으므로 루트에서 npx로 실행합니다.
-            # [중요] npx는 프로젝트 루트에서 실행되므로 전체 경로 'apps/frontend/dist'를 사용합니다.
-            if npx sentry-cli releases info "$SENTRY_RELEASE" --log-level=debug; then
+            # [수정] sentry-cli -> @sentry/cli (정확한 패키지명 명시)
+            # npx가 @sentry/cli 패키지를 설치하고 실행하게 만듭니다.
+            
+            if npx @sentry/cli releases info "$SENTRY_RELEASE" --log-level=debug; then
               echo "[sentry] Release already exists: $SENTRY_RELEASE"
             else
-              npx sentry-cli releases new "$SENTRY_RELEASE" --log-level=debug
+              npx @sentry/cli releases new "$SENTRY_RELEASE" --log-level=debug
             fi
 
-            npx sentry-cli sourcemaps inject apps/frontend/dist --log-level=debug
-            npx sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" apps/frontend/dist --log-level=debug
-            npx sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
+            npx @sentry/cli sourcemaps inject apps/frontend/dist --log-level=debug
+            npx @sentry/cli sourcemaps upload --release "$SENTRY_RELEASE" apps/frontend/dist --log-level=debug
+            npx @sentry/cli releases finalize "$SENTRY_RELEASE" --log-level=debug
           else
             echo "[sentry] No sourcemaps found in apps/frontend/dist. Skipping upload."
           fi
