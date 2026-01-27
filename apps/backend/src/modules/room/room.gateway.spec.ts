@@ -1,3 +1,4 @@
+import { MetricService } from '@/lib/metric/metric.service'
 import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { Test, TestingModule } from '@nestjs/testing'
 import type { Server, Socket } from 'socket.io'
@@ -26,6 +27,10 @@ describe('RoomGateway', () => {
     cleanUpGhostRooms: jest.fn(),
   }
 
+  const metricService = {
+    handleConnection: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
 
@@ -35,6 +40,7 @@ describe('RoomGateway', () => {
         { provide: RoomService, useValue: roomService },
         { provide: RoomBroadcaster, useValue: broadcaster },
         { provide: RoomActivitySchedulerService, useValue: roomScheduler },
+        { provide: MetricService, useValue: metricService },
       ],
     }).compile()
 
@@ -73,6 +79,8 @@ describe('RoomGateway', () => {
 
       await gateway.onRoomJoin(client, payload)
 
+      expect(metricService.handleConnection).toHaveBeenCalledWith('connect')
+
       expect(roomService.joinRoom).toHaveBeenCalledTimes(1)
       expect(roomService.joinRoom).toHaveBeenCalledWith(client, payload)
     })
@@ -83,6 +91,8 @@ describe('RoomGateway', () => {
       const client = {} as Socket
 
       await gateway.onRoomLeave(client)
+
+      expect(metricService.handleConnection).toHaveBeenCalledWith('disconnect')
 
       expect(roomService.leaveRoom).toHaveBeenCalledTimes(1)
       expect(roomService.leaveRoom).toHaveBeenCalledWith(client)

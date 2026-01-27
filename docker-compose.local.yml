@@ -1,0 +1,35 @@
+version: '3.8'
+
+# 로컬 환경 개발용
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: local-postgres
+    ports:
+      - "5432:5432" # 내 컴퓨터에서 접근 가능하게 포트 개방
+    environment:
+      POSTGRES_USER: "myuser"
+      POSTGRES_PASSWORD: "mypassword"
+      POSTGRES_DB: "mydb"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+
+  # Monitoring (로컬용 설정 마운트)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: local-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml
+    # Linux 환경일 경우 host.docker.internal을 사용하기 위한 옵션 (Mac은 없어도 됨)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: local-grafana
+    ports:
+      - "3001:3000" # localhost:3001 로 접속
+    depends_on:
+      - prometheus
