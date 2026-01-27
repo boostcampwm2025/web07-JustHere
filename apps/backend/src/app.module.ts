@@ -31,7 +31,6 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
     YjsModule,
     VoteModule,
     SwaggerConfigModule,
-    VoteModule,
     PrometheusModule.register({
       path: '/metrics',
       defaultMetrics: {
