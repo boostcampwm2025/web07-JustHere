@@ -41,7 +41,7 @@ const applyTransform = (
   })
 }
 
-export const useCanvasTransformHandlers = ({
+export const useCanvasTransform = ({
   transformerRef,
   selectedItems,
   postIts,
