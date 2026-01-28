@@ -43,8 +43,8 @@ export interface UseVoteSocketResult {
 }
 
 type PendingAction = {
-  snapshot: VoteState
   type: string
+  apply: (prev: VoteState) => VoteState
 }
 
 const DEFAULT_STATUS: VoteStatus = 'WAITING'
@@ -75,6 +75,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
   const joinedRoomIdRef = useRef<string | null>(null)
   const prevRoomIdRef = useRef(roomId)
   const pendingActionsRef = useRef<Map<string, PendingAction>>(new Map())
+  const baseStateRef = useRef<VoteState>(createInitialState(roomId, isOwner))
 
   const handleSocketError = useCallback((error: Error) => {
     console.error('[vote] socket error:', error)
@@ -102,6 +103,35 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     pendingActionsRef.current.clear()
   }, [])
 
+  const applyPendingActions = useCallback((base: VoteState) => {
+    let next = base
+    pendingActionsRef.current.forEach(action => {
+      next = action.apply(next)
+    })
+    return next
+  }, [])
+
+  const syncStateFromBase = useCallback(
+    (base: VoteState, errorOverride?: VoteError | null) => {
+      const next = applyPendingActions(base)
+      if (errorOverride !== undefined) {
+        setState({ ...next, lastError: errorOverride })
+        return
+      }
+      setState(next)
+    },
+    [applyPendingActions],
+  )
+
+  const updateBaseState = useCallback(
+    (updater: (prev: VoteState) => VoteState, errorOverride?: VoteError | null) => {
+      const nextBase = updater(baseStateRef.current)
+      baseStateRef.current = nextBase
+      syncStateFromBase(nextBase, errorOverride)
+    },
+    [syncStateFromBase],
+  )
+
   const resolveSocket = useCallback((): VoteSocketLike | null => {
     if (!enabled || !roomId) return null
 
@@ -121,38 +151,23 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     return socketRef.current
   }, [enabled, roomId, useMock, getSocket])
 
-  const applyOptimistic = useCallback((actionId: string, type: string, updater: (prev: VoteState) => VoteState) => {
-    setState(prev => {
-      pendingActionsRef.current.set(actionId, { snapshot: prev, type })
-      return updater(prev)
-    })
-  }, [])
+  const applyOptimistic = useCallback(
+    (actionId: string, type: string, updater: (prev: VoteState) => VoteState) => {
+      pendingActionsRef.current.set(actionId, { type, apply: updater })
+      syncStateFromBase(baseStateRef.current)
+    },
+    [syncStateFromBase],
+  )
 
-  const rollbackAction = useCallback((actionId: string | undefined, error: VoteError) => {
-    if (!actionId) {
-      setState(prev => ({
-        ...prev,
-        lastError: error,
-      }))
-      return
-    }
-
-    const pending = pendingActionsRef.current.get(actionId)
-    pendingActionsRef.current.delete(actionId)
-
-    if (!pending) {
-      setState(prev => ({
-        ...prev,
-        lastError: error,
-      }))
-      return
-    }
-
-    setState({
-      ...pending.snapshot,
-      lastError: error,
-    })
-  }, [])
+  const rollbackAction = useCallback(
+    (actionId: string | undefined, error: VoteError) => {
+      if (actionId) {
+        pendingActionsRef.current.delete(actionId)
+      }
+      syncStateFromBase(baseStateRef.current, error)
+    },
+    [syncStateFromBase],
+  )
 
   const emitWithAction = useCallback(
     <TPayload extends object>(event: VoteEventName, payload: TPayload, type: string, updater: (prev: VoteState) => VoteState) => {
@@ -203,22 +218,21 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     if (!socket) return
 
     const handleConnect = () => {
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         isConnected: true,
       }))
     }
 
     const handleDisconnect = () => {
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         isConnected: false,
       }))
     }
 
     const handleState = (payload: VoteStatePayload) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
@@ -231,8 +245,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleStatusChanged = (payload: { roomId: string; status: VoteStatus }) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
@@ -240,8 +253,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleCandidateUpdated = (payload: VoteCandidateUpdatedPayload) => {
-      clearPendingActions()
-      setState(prev => {
+      updateBaseState(prev => {
         if (payload.action === 'add' && payload.candidate) {
           const tempCandidates = prev.candidates.filter(
             candidate => candidate.placeId === payload.candidate?.placeId && candidate.id.startsWith('temp-candidate-'),
@@ -285,8 +297,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleCountsUpdated = (payload: VoteCountsUpdatedPayload) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         counts: {
           ...prev.counts,
@@ -296,8 +307,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleMeUpdated = (payload: VoteMeUpdatedPayload) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         myVotes: payload.myVotes,
         lastError: null,
@@ -305,8 +315,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleStarted = (payload: VoteStartedPayload) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
@@ -315,8 +324,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     }
 
     const handleEnded = (payload: VoteEndedPayload) => {
-      clearPendingActions()
-      setState(prev => ({
+      updateBaseState(prev => ({
         ...prev,
         roomId: payload.roomId,
         status: payload.status,
@@ -351,7 +359,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
       socket.off(VOTE_EVENTS.ended, handleEnded)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, resolveSocket, rollbackAction, clearPendingActions])
+  }, [enabled, resolveSocket, rollbackAction, updateBaseState])
 
   const join = useCallback(() => {
     if (!enabled || !roomId) return
@@ -370,6 +378,7 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
 
     const nextInitial = createInitialState(roomId, isOwner)
     nextInitial.isConnected = socket.connected
+    baseStateRef.current = nextInitial
     setState(nextInitial)
 
     if (!useMock && !socket.connected) {
@@ -395,12 +404,16 @@ export function useVoteSocket({ roomId, userId, isOwner = false, enabled = true,
     if (useMock) {
       socket.disconnect()
       socketRef.current = null
-      setState(createInitialState(roomId, isOwner))
+      const nextInitial = createInitialState(roomId, isOwner)
+      baseStateRef.current = nextInitial
+      setState(nextInitial)
       return
     }
 
     disconnectReal()
-    setState(createInitialState(roomId, isOwner))
+    const nextInitial = createInitialState(roomId, isOwner)
+    baseStateRef.current = nextInitial
+    setState(nextInitial)
   }, [roomId, userId, useMock, disconnectReal, isOwner, clearPendingActions])
 
   useEffect(() => {

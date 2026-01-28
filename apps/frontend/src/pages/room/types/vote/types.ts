@@ -88,6 +88,7 @@ export interface VoteAddCandidatePayload {
   name: string
   address: string
   category: string
+  actionId?: string
 }
 
 export interface VoteRemoveCandidatePayload {
