@@ -1,5 +1,4 @@
 import { PlaceDetailContent } from '@/shared/components'
-import { useGooglePlaceDetails } from '@/shared/hooks'
 import type { GooglePlace } from '@/shared/types'
 
 interface PlaceResultCardProps {
@@ -7,19 +6,7 @@ interface PlaceResultCardProps {
 }
 
 export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
-  const { data: placeDetails, isLoading } = useGooglePlaceDetails(place.id)
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-gray-500">로딩 중...</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (!placeDetails) {
+  if (!place) {
     return (
       <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -31,7 +18,7 @@ export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
 
   return (
     <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
-      <PlaceDetailContent place={placeDetails} />
+      <PlaceDetailContent place={place} />
     </div>
   )
 }
