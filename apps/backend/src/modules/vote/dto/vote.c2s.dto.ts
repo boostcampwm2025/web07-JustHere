@@ -5,6 +5,10 @@ export class BasePayload {
   @IsString({ message: 'roomId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
   roomId: string // canvasId
+
+  @IsOptional()
+  @IsString({ message: 'userId는 문자열이어야 합니다' })
+  userId?: string
 }
 
 // [C->S] vote:join

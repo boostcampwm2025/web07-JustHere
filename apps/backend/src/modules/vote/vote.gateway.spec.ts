@@ -38,6 +38,7 @@ describe('VoteGateway', () => {
   const userService = {
     getSession: jest.fn(),
     removeSession: jest.fn(),
+    getSessionByUserIdInRoom: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -67,7 +68,7 @@ describe('VoteGateway', () => {
   })
 
   describe('handleDisconnect', () => {
-    it('사용자 세션이 없으면 아무것도 하지 않는다', async () => {
+    it('네임스페이스가 없으면 아무것도 하지 않는다', async () => {
       const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
       const client = {
         rooms: new Set(['vote:room-1', 'vote:room-2']),
@@ -75,12 +76,7 @@ describe('VoteGateway', () => {
         id: 'socket-1',
       } as unknown as Socket
 
-      userService.removeSession.mockReturnValue(undefined)
-
       await gateway.handleDisconnect(client)
-
-      expect(userService.removeSession).toHaveBeenCalledTimes(1)
-      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
       expect(leaveMock).not.toHaveBeenCalled()
     })
 
@@ -94,22 +90,9 @@ describe('VoteGateway', () => {
         id: 'socket-1',
         nsp: undefined,
       } as unknown as Socket
-      const mockUserSession = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
-
       gateway.server = { in: inMock } as unknown as Server
 
-      userService.removeSession.mockReturnValue(mockUserSession)
-
       await gateway.handleDisconnect(client)
-
-      expect(userService.removeSession).toHaveBeenCalledTimes(1)
-      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
       expect(leaveMock).toHaveBeenCalledTimes(2)
       expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
       expect(leaveMock).toHaveBeenCalledWith('vote:room-2')

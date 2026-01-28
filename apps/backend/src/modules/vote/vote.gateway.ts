@@ -46,11 +46,24 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.broadcaster.setServer(server)
   }
 
-  async handleDisconnect(client: Socket) {
-    // 사용자 세션 조회
-    const userSession = this.userService.removeSession(client.id)
-    if (!userSession) return
+  private resolveUserSession(client: Socket, roomId: string, payloadUserId?: string) {
+    const dataUserId = (() => {
+      const data = client.data as { userId?: unknown } | undefined
+      if (!data) return undefined
+      return typeof data.userId === 'string' ? data.userId : undefined
+    })()
+    const userId = payloadUserId ?? dataUserId
 
+    if (userId) {
+      return this.userService.getSessionByUserIdInRoom(roomId, userId)
+    }
+
+    const session = this.userService.getSession(client.id)
+    if (!session || session.roomId !== roomId) return undefined
+    return session
+  }
+
+  async handleDisconnect(client: Socket) {
     const namespace = this.server ?? client.nsp
     if (!namespace) return
 
@@ -69,13 +82,15 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:join')
   async onVoteJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteJoinPayload) {
     const { roomId } = payload
-    const user = this.userService.getSession(client.id)
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
     await client.join(`vote:${roomId}`)
+    const socketData = client.data as { userId?: string }
+    socketData.userId = user.userId
 
     const statePayload = this.voteService.getOrCreateSession(roomId, user.userId)
     client.emit('vote:state', statePayload)
@@ -86,12 +101,20 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId } = payload
 
     await client.leave(`vote:${roomId}`)
+
+    const namespace = this.server ?? client.nsp
+    if (!namespace) return
+
+    const roomClients = await namespace.in(`vote:${roomId}`).fetchSockets()
+    if (roomClients.length === 0) {
+      this.voteService.deleteSession(roomId)
+    }
   }
 
   @SubscribeMessage('vote:candidate:add')
   onCandidateAdd(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateAddPayload) {
     const { roomId } = payload
-    const user = this.userService.getSession(client.id)
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
@@ -104,6 +127,11 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:candidate:remove')
   onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
     const { roomId, candidateId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
+
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
 
     const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
@@ -112,7 +140,7 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:cast')
   onCastVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCastPayload) {
     const { roomId, candidateId } = payload
-    const user = this.userService.getSession(client.id)
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
@@ -130,7 +158,7 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:revoke')
   onRevokeVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteRevokePayload) {
     const { roomId, candidateId } = payload
-    const user = this.userService.getSession(client.id)
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')

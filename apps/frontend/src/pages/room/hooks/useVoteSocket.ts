@@ -242,11 +242,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     if (isJoinedRef.current) return
 
     // [C->S] vote:join
-    socket.emit(VOTE_EVENTS.join, { roomId: roomId })
+    socket.emit(VOTE_EVENTS.join, { roomId: roomId, userId })
     addSocketBreadcrumb('vote:join', { roomId })
     isJoinedRef.current = true
     joinedRoomIdRef.current = roomId
-  }, [enabled, roomId, resolveSocket, connectReal, resetState])
+  }, [enabled, roomId, userId, resolveSocket, connectReal, resetState])
 
   const leave = useCallback(() => {
     const socket = resolveSocket()

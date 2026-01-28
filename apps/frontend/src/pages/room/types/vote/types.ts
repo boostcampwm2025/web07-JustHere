@@ -83,6 +83,7 @@ export interface VoteErrorPayload {
 // [C->S] vote:join
 export interface VoteJoinPayload {
   roomId: string
+  userId?: string
 }
 
 // [C->S] vote:leave
