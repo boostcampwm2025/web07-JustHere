@@ -55,6 +55,11 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const voteRooms = Array.from(client.rooms).filter(room => room.startsWith('vote:'))
     for (const room of voteRooms) {
       await client.leave(room)
+
+      const roomClients = await this.server.in(room).fetchSockets()
+      if (roomClients.length === 0) {
+        this.voteService.deleteSession(room.replace('vote:', ''))
+      }
     }
   }
 
