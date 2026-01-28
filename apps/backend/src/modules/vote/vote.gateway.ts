@@ -52,10 +52,17 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
       if (!data) return undefined
       return typeof data.userId === 'string' ? data.userId : undefined
     })()
-    const userId = payloadUserId ?? dataUserId
 
-    if (userId) {
-      return this.userService.getSessionByUserIdInRoom(roomId, userId)
+    if (dataUserId) {
+      if (payloadUserId && payloadUserId !== dataUserId) {
+        return undefined
+      }
+
+      return this.userService.getSessionByUserIdInRoom(roomId, dataUserId)
+    }
+
+    if (payloadUserId) {
+      return this.userService.getSessionByUserIdInRoom(roomId, payloadUserId)
     }
 
     const session = this.userService.getSession(client.id)

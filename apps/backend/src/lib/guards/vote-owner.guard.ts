@@ -40,10 +40,7 @@ export class VoteOwnerGuard implements CanActivate {
     // 2. 투표 세션 존재 여부 확인 (VoteService)
     // 투표 세션이 실제로 존재하는지 확인 (Optional)
     // 방장이 투표를 시작하려면 세션(WAITING 상태)이 이미 메모리에 있어야 함
-    const voteSession = this.voteService.getSessionOrThrow(roomId)
-    if (!voteSession) {
-      throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
-    }
+    this.voteService.getSessionOrThrow(roomId)
 
     // 3. 방장 권한 검증 (핵심)
     if (!clientSession.isOwner) {
