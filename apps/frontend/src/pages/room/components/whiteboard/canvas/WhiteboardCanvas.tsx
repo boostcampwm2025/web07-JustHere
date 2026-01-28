@@ -378,9 +378,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                 onDragEnd={(x, y) => {
                   updatePlaceCard(card.id, { x, y })
                 }}
-                onRemove={() => {
-                  deleteCanvasItem('placeCard', card.id)
-                }}
                 onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
                 onClick={e => handleObjectClick(e)}
                 onContextMenu={e => handleObjectClick(e)}
