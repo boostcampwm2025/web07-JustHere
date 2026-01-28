@@ -62,7 +62,7 @@ export interface GooglePhoto {
 export interface GoogleReview {
   name: string
   rating: number
-  text: {
+  text?: {
     text: string
     languageCode: string
   }

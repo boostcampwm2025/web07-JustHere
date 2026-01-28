@@ -31,6 +31,12 @@ export class GoogleReviewDto {
     languageCode: string
   }
 
+  @ApiPropertyOptional()
+  originalText?: {
+    text: string
+    languageCode: string
+  }
+
   @ApiProperty()
   authorAttribution: {
     displayName: string
