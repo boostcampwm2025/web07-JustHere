@@ -8,31 +8,7 @@ import { useRoomSocketCache } from '../room/hooks'
 import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { RoomHeader } from '../room/components'
-
-// Mock 데이터 - 최종 선택된 장소들
-interface ResultPlace {
-  id: string
-  name: string
-  placeId: string // 카카오 place id
-}
-
-const mockResultPlaces: ResultPlace[] = [
-  {
-    id: '1',
-    name: '서현실비',
-    placeId: '20400283',
-  },
-  {
-    id: '2',
-    name: '서머셋 센트럴 분당 더카라',
-    placeId: '635421084',
-  },
-  {
-    id: '3',
-    name: '굿웨더',
-    placeId: '620893242',
-  },
-]
+import { mockResultPlaces } from './mock/resultMockData'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
@@ -42,7 +18,8 @@ export const ResultPage = () => {
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
-
+  // TODO: 실제 서버에서 받아오는 데이터로 교체
+  const resultData = mockResultPlaces
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
@@ -105,7 +82,7 @@ export const ResultPage = () => {
 
         {/* Place Cards */}
         <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
-          {mockResultPlaces.map(place => (
+          {resultData.map(place => (
             <PlaceResultCard key={place.id} place={place} />
           ))}
         </div>
