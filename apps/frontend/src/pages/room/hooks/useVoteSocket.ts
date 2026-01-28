@@ -2,25 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient } from '@/shared/hooks'
-import {
-  VOTE_EVENTS,
-  createMockVoteSocket,
-  type VoteEventName,
-  type VoteAddCandidatePayload,
-  type VoteCandidate,
-  type VoteCandidateUpdatedPayload,
-  type VoteCountsUpdatedPayload,
-  type VoteEndedPayload,
-  type VoteError,
-  type VoteMeUpdatedPayload,
-  type VoteRemoveCandidatePayload,
-  type VoteRoomActionPayload,
-  type VoteSocketLike,
-  type VoteStartedPayload,
-  type VoteState,
-  type VoteStatePayload,
-  type VoteStatus,
-} from '../components/vote'
+import { VOTE_EVENTS, type VoteEventName } from '../constants/events'
+import { createMockVoteSocket } from '../mocks/vote/mockVoteSocket'
+import type {
+  VoteAddCandidatePayload,
+  VoteCandidate,
+  VoteCandidateUpdatedPayload,
+  VoteCountsUpdatedPayload,
+  VoteEndedPayload,
+  VoteError,
+  VoteMeUpdatedPayload,
+  VoteRemoveCandidatePayload,
+  VoteRoomActionPayload,
+  VoteStartedPayload,
+  VoteState,
+  VoteStatePayload,
+  VoteStatus,
+} from '../types/vote/types'
+import type { VoteSocketLike } from '../types/vote/socketTypes'
 
 export interface UseVoteSocketOptions {
   roomId: string

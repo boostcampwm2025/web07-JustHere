@@ -1,5 +1,5 @@
-import { VOTE_EVENTS, type VoteEventName } from './events'
-import type { VoteSocketLike, VoteSocketEventName } from './socketTypes'
+import { VOTE_EVENTS, type VoteEventName } from '../../constants/events'
+import type { VoteSocketLike, VoteSocketEventName } from '../../types/vote/socketTypes'
 import type {
   VoteAddCandidatePayload,
   VoteCandidate,
@@ -17,7 +17,7 @@ import type {
   VoteStartedPayload,
   VoteStatePayload,
   VoteStatus,
-} from './types'
+} from '../../types/vote/types'
 
 type Handler<T = unknown> = (payload: T) => void
 
