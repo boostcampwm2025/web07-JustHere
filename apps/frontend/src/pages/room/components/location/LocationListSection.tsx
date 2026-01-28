@@ -10,7 +10,7 @@ import { CandidateListSection } from './CandidateListSection'
 import { VoteListSection } from './VoteListSection'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { useNavigate } from 'react-router-dom'
-import { SearchInput } from '@/shared/components'
+import { SearchInput, Button } from '@/shared/components'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -276,23 +276,19 @@ export const LocationListSection = ({
 
                           {/* Bottom Section */}
                           <div className="flex items-center justify-end gap-2 mt-1">
-                            <button
-                              type="button"
+                            <Button
+                              variant="primary_outline"
+                              size="sm"
+                              icon={<PlusIcon className="w-3 h-3" />}
+                              iconPosition="right"
                               onClick={() => handleAddPlaceCard(place)}
-                              className={cn(
-                                'flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-primary',
-                                isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg hover:bg-primary/20',
-                              )}
+                              className={cn('h-auto px-3 py-1.5 text-xs rounded-md', isSelected && 'border-primary bg-white')}
                             >
-                              <span className="font-bold text-xs">캔버스</span>
-                              <PlusIcon className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              className="px-3 py-1.5 bg-gray-100 text-gray-800 font-bold text-xs rounded-md hover:bg-gray-200 transition-colors"
-                            >
+                              캔버스
+                            </Button>
+                            <Button variant="gray" size="sm" className="h-auto px-3 py-1.5 text-xs text-gray-800 rounded-md">
                               후보 등록
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </div>
