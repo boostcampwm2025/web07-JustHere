@@ -95,8 +95,10 @@ describe('UserService', () => {
       expect(result).toEqual(existingSession)
     })
 
-    it('존재하지 않는 socketId로 조회하면 CustomException을 throw한다', () => {
-      expect(() => service.getSession('non-existent')).toThrow(new CustomException(ErrorType.NotFound, '사용자가 존재하지 않습니다.'))
+    it('존재하지 않는 socketId로 조회하면 undefined를 반환한다', () => {
+      const result = service.getSession('non-existent')
+
+      expect(result).toBeUndefined()
     })
   })
 
