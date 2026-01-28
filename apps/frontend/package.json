@@ -20,7 +20,6 @@
     "konva": "^10.0.12",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-kakao-maps-sdk": "^1.2.0",
     "react-konva": "^19.2.1",
     "react-konva-utils": "^2.0.0",
     "react-router-dom": "^7.12.0",
