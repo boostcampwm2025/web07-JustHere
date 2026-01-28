@@ -180,12 +180,14 @@ export class VoteService {
     }
 
     const userVotes = session.userVotes.get(userId)!
+    const alreadyVoted = userVotes.has(candidateId)
+    if (!alreadyVoted) {
+      // 투표 추가 (중복 투표 방지)
+      userVotes.add(candidateId)
 
-    // 투표 추가 (Set 자료구조를 활용한 중복 투표 방지)
-    userVotes.add(candidateId)
-
-    // 투표 득표수 증가
-    session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) + 1)
+      // 투표 득표수 증가
+      session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) + 1)
+    }
 
     return {
       candidateId,
@@ -208,13 +210,25 @@ export class VoteService {
       throw new CustomException(ErrorType.VoteNotInProgress, '현재 투표 진행 중이 아닙니다.')
     }
 
-    const userVotes = session.userVotes.get(userId)
-    if (userVotes) {
-      userVotes.delete(candidateId)
+    if (!session.candidates.has(candidateId)) {
+      throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
     }
 
-    // 투표 득표수 감소
-    session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) - 1)
+    const userVotes = session.userVotes.get(userId)
+
+    if (!userVotes || !userVotes.has(candidateId)) {
+      return {
+        candidateId,
+        count: session.totalCounts.get(candidateId) || 0,
+        userId,
+      }
+    }
+
+    userVotes.delete(candidateId)
+
+    // 투표 득표수 감소 (0 미만 방지)
+    const current = session.totalCounts.get(candidateId) || 0
+    session.totalCounts.set(candidateId, Math.max(0, current - 1))
 
     return {
       candidateId,

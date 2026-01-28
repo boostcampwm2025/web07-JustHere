@@ -173,10 +173,10 @@ describe('VoteService', () => {
       service.castVote(roomId, userId, mockPlaceData.placeId)
       const result = service.castVote(roomId, userId, mockPlaceData.placeId) // 중복 호출
 
-      // totalCounts는 증가하지만, Set으로 중복 투표는 방지됨
-      expect(result.count).toBe(2) // totalCounts는 증가함
+      // 중복 투표는 무시되어야 하므로 count는 변하지 않아야 함
+      expect(result.count).toBe(1)
       const state = service.getVoteState(roomId, userId)
-      expect(state.counts[mockPlaceData.placeId]).toBe(2) // totalCounts 기반 집계
+      expect(state.counts[mockPlaceData.placeId]).toBe(1)
       expect(state.myVotes).toContain(mockPlaceData.placeId) // myVotes에는 1개만
     })
 

@@ -1,4 +1,6 @@
+import { CustomException } from '@/lib/exceptions/custom.exception'
 import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { ErrorType } from '@/lib/types/response.type'
 import { UseFilters, UseGuards } from '@nestjs/common'
 import {
   WebSocketGateway,
@@ -97,7 +99,12 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId, candidateId } = payload
     const user = this.userService.getSession(client.id)
 
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
     const updatePayload = this.voteService.castVote(roomId, user.userId, candidateId)
+
     this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
   }
 
@@ -106,7 +113,12 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId, candidateId } = payload
     const user = this.userService.getSession(client.id)
 
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
     const updatePayload = this.voteService.revokeVote(roomId, user.userId, candidateId)
+
     this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
   }
 
