@@ -1,5 +1,5 @@
 import type Konva from 'konva'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const useCursorChat = ({
   stageRef,
@@ -14,6 +14,19 @@ export const useCursorChat = ({
   const [chatInputPosition, setChatInputPosition] = useState<{ x: number; y: number } | null>(null)
   const chatInactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (chatInactivityTimerRef.current) {
+        clearTimeout(chatInactivityTimerRef.current)
+        chatInactivityTimerRef.current = null
+      }
+      if (chatFadeTimerRef.current) {
+        clearTimeout(chatFadeTimerRef.current)
+        chatFadeTimerRef.current = null
+      }
+    }
+  }, [])
 
   const deactivateCursorChat = useCallback(() => {
     if (chatInactivityTimerRef.current) {
