@@ -4,6 +4,8 @@ import { VoteGateway } from './vote.gateway'
 import { VoteService } from './vote.service'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import {
   VoteJoinPayload,
   VoteLeavePayload,
@@ -17,6 +19,19 @@ import {
 
 describe('VoteGateway', () => {
   let gateway: VoteGateway
+
+  const expectNotInRoomError = (fn: () => void) => {
+    try {
+      fn()
+    } catch (error) {
+      expect(error).toBeInstanceOf(CustomException)
+      expect((error as CustomException).type).toBe(ErrorType.NotInRoom)
+      expect((error as CustomException).message).toBe('Room에 접속되지 않았습니다.')
+      return
+    }
+
+    throw new Error('Expected CustomException to be thrown.')
+  }
 
   const voteService = {
     getOrCreateSession: jest.fn(),
@@ -146,6 +161,47 @@ describe('VoteGateway', () => {
       expect(voteService.getOrCreateSession).toHaveBeenCalledTimes(1)
       expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
+    })
+
+    it('payload.userId가 있으면 userId 기반 세션 조회 경로를 사용한다', async () => {
+      const joinMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
+      const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+      const client = {
+        join: ((room: string) => joinMock(room)) as (room: string) => Promise<void>,
+        emit: ((event: string, ...args: unknown[]) => emitMock(event, ...args)) as (event: string, ...args: unknown[]) => boolean,
+        data: {},
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteJoinPayload = {
+        roomId: 'room-1',
+        userId: 'user-1',
+      }
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+      const mockStatePayload = {
+        status: 'WAITING',
+        candidates: [],
+        counts: {},
+        myVotes: [],
+        voters: {},
+      }
+
+      userService.getSessionByUserIdInRoom.mockReturnValue(mockUser)
+      voteService.getOrCreateSession.mockReturnValue(mockStatePayload)
+
+      await gateway.onVoteJoin(client, payload)
+
+      expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledTimes(1)
+      expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(userService.getSession).not.toHaveBeenCalled()
+      expect(joinMock).toHaveBeenCalledWith('vote:room-1')
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
       expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
     })
   })
@@ -322,9 +378,9 @@ describe('VoteGateway', () => {
     it('user가 없으면 예외를 던진다', () => {
       userService.getSession.mockReturnValue(null)
 
-      expect(() => {
+      expectNotInRoomError(() => {
         gateway.onCastVote(client, payload)
-      }).toThrow()
+      })
 
       expect(voteService.castVote).not.toHaveBeenCalled()
     })
@@ -336,9 +392,9 @@ describe('VoteGateway', () => {
       }
       userService.getSession.mockReturnValue(wrongRoomUser)
 
-      expect(() => {
+      expectNotInRoomError(() => {
         gateway.onCastVote(client, payload)
-      }).toThrow()
+      })
 
       expect(voteService.castVote).not.toHaveBeenCalled()
     })
@@ -436,9 +492,9 @@ describe('VoteGateway', () => {
     it('user가 없으면 예외를 던진다', () => {
       userService.getSession.mockReturnValue(null)
 
-      expect(() => {
+      expectNotInRoomError(() => {
         gateway.onRevokeVote(client, payload)
-      }).toThrow()
+      })
 
       expect(voteService.revokeVote).not.toHaveBeenCalled()
     })
@@ -450,9 +506,9 @@ describe('VoteGateway', () => {
       }
       userService.getSession.mockReturnValue(wrongRoomUser)
 
-      expect(() => {
+      expectNotInRoomError(() => {
         gateway.onRevokeVote(client, payload)
-      }).toThrow()
+      })
 
       expect(voteService.revokeVote).not.toHaveBeenCalled()
     })

@@ -123,6 +123,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
     const handleDisconnect = () => {
       addSocketBreadcrumb('vote:disconnect', { roomId })
+      if (isJoinedRef.current) {
+        isJoinedRef.current = false
+        joinedRoomIdRef.current = null
+        shouldJoinRef.current = true
+      }
     }
 
     // [S->C] vote:state - join 시 초기 상태 수신
