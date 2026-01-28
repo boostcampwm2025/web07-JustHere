@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s # 15초마다 메트릭 수집
+
+scrape_configs:
+  - job_name: 'nestjs-backend'
+    scrape_interval: 5s # 애플리케이션 지표는 더 자주 수집
+    metrics_path: '/metrics'
+    static_configs:
+      # Docker Compose 서비스 이름(backend)을 사용하여 자동 연결
+      - targets: ['backend:3000']
+        labels:
+          env: 'production'

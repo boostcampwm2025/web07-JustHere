@@ -1,6 +1,7 @@
-import { Component, type ReactNode } from 'react'
+import { Component, type ReactNode, type ErrorInfo } from 'react'
+import * as Sentry from '@sentry/react'
 import { RoomErrorPage } from '@/pages'
-import { RoomNotFoundError } from './SocketError'
+import { RoomNotFoundError } from '@/app/error-boundary/SocketError'
 
 type Props = {
   children: ReactNode
@@ -16,6 +17,12 @@ export class RoomErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): Pick<State, 'error'> {
     return { error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    Sentry.captureException(error, {
+      extra: { componentStack: info.componentStack },
+    })
   }
 
   handleReset = async () => {

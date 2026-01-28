@@ -1,6 +1,6 @@
-export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt'
+export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
 
-export type CanvasItemType = 'postit' | 'line' | 'placeCard'
+export type CanvasItemType = 'postit' | 'line' | 'placeCard' | 'textBox'
 
 export interface SelectedItem {
   id: string
@@ -59,4 +59,15 @@ export interface Line {
   lineCap: 'round' | 'butt' | 'square' // 선 끝 모양
   lineJoin: 'round' | 'bevel' | 'miter' // 선 연결 모양
   tool: 'pen' // 나중에 eraser 등 추가 가능
+}
+
+export interface TextBox {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  scale: number
+  text: string
+  authorName: string
 }

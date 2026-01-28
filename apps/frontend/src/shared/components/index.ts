@@ -1,5 +1,5 @@
 export * from './header'
-export * from './kakao-map'
+export * from './google-map'
 export * from './modal'
 export * from './search-input'
 export * from './toast'

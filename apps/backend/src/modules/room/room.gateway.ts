@@ -1,4 +1,5 @@
 import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { MetricService } from '@/lib/metric/metric.service'
 import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
@@ -26,6 +27,7 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   constructor(
     private readonly roomService: RoomService,
     private readonly broadcaster: RoomBroadcaster,
+    private readonly metricService: MetricService,
   ) {}
 
   afterInit(server: Server) {
@@ -38,11 +40,13 @@ export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('room:join')
   async onRoomJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: RoomJoinPayload) {
+    this.metricService.handleConnection('connect')
     await this.roomService.joinRoom(client, payload)
   }
 
   @SubscribeMessage('room:leave')
   async onRoomLeave(@ConnectedSocket() client: Socket) {
+    this.metricService.handleConnection('disconnect')
     await this.roomService.leaveRoom(client)
   }
 

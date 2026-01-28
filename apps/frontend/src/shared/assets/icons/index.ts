@@ -38,6 +38,7 @@ import RedoIcon from '@/shared/assets/icons/redo.svg?react'
 import ShareVariantIcon from '@/shared/assets/icons/share-variant.svg?react'
 import SilverwareForkKnifeIcon from '@/shared/assets/icons/silverware-fork-knife.svg?react'
 import StarIcon from '@/shared/assets/icons/star.svg?react'
+import TextIcon from '@/shared/assets/icons/text.svg?react'
 import UndoIcon from '@/shared/assets/icons/undo.svg?react'
 import VoteIcon from '@/shared/assets/icons/vote.svg?react'
 
@@ -77,6 +78,7 @@ export {
   ShareVariantIcon,
   SilverwareForkKnifeIcon,
   StarIcon,
+  TextIcon,
   UndoIcon,
   VoteIcon,
 }

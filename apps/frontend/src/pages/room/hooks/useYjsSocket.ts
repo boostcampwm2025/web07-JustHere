@@ -5,6 +5,7 @@ import type {
   PostIt,
   Line,
   PlaceCard,
+  TextBox,
   CanvasAttachPayload,
   CanvasDetachPayload,
   YjsUpdatePayload,
@@ -17,6 +18,7 @@ import type {
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
+import { addSocketBreadcrumb } from '@/shared/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -30,6 +32,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [postits, setPostits] = useState<PostIt[]>([])
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
+  const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
   const [socketId, setSocketId] = useState('unknown')
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
@@ -38,6 +41,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const docRef = useRef<Y.Doc | null>(null)
   const undoManagerRef = useRef<Y.UndoManager | null>(null)
   const localOriginRef = useRef(Symbol('canvas-local'))
+  const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
+  const summaryTimerRef = useRef<number | null>(null)
+  const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
@@ -45,6 +51,40 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const handleSocketError = useCallback((error: Error) => {
     console.error('[canvas] socket error:', error)
   }, [])
+
+  const flushSummary = useCallback(() => {
+    if (summaryRef.current.size === 0) return
+
+    summaryRef.current.forEach((stats, key) => {
+      addSocketBreadcrumb(`${key}:summary`, {
+        roomId,
+        canvasId,
+        count: stats.count,
+        bytes: stats.bytes,
+      })
+    })
+
+    summaryRef.current.clear()
+    summaryTimerRef.current = null
+  }, [roomId, canvasId])
+
+  const trackHighFreq = useCallback(
+    (key: string, bytes = 0) => {
+      const current = summaryRef.current.get(key) ?? { count: 0, bytes: 0 }
+      current.count += 1
+      current.bytes += bytes
+      summaryRef.current.set(key, current)
+
+      if (summaryTimerRef.current == null) {
+        summaryTimerRef.current = window.setTimeout(flushSummary, 5000)
+      }
+    },
+    [flushSummary],
+  )
+
+  useEffect(() => {
+    trackHighFreqRef.current = trackHighFreq
+  }, [trackHighFreq])
   const updateHistoryState = useCallback(() => {
     const undoManager = undoManagerRef.current
     if (!undoManager) return
@@ -68,8 +108,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
 
-    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines], {
+    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes], {
       trackedOrigins: new Set([localOriginRef.current]),
       captureTimeout: 1000,
     })
@@ -133,22 +174,39 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       setLines(items)
     }
 
+    const syncTextBoxesToState = () => {
+      const items: TextBox[] = yTextBoxes.toArray().map(yMap => ({
+        id: yMap.get('id') as string,
+        x: yMap.get('x') as number,
+        y: yMap.get('y') as number,
+        width: yMap.get('width') as number,
+        height: yMap.get('height') as number,
+        scale: yMap.get('scale') as number,
+        text: yMap.get('text') as string,
+        authorName: yMap.get('authorName') as string,
+      }))
+      setTextBoxes(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yPostits.observeDeep(syncPostitsToState)
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
+    yTextBoxes.observeDeep(syncTextBoxesToState)
 
     // 초기 동기화
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
+    syncTextBoxesToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
+      yTextBoxes.unobserveDeep(syncTextBoxesToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
@@ -160,6 +218,16 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       doc.destroy()
     }
   }, [roomId, canvasId, updateHistoryState])
+
+  useEffect(() => {
+    return () => {
+      flushSummary()
+      if (summaryTimerRef.current != null) {
+        window.clearTimeout(summaryTimerRef.current)
+        summaryTimerRef.current = null
+      }
+    }
+  }, [roomId, canvasId, flushSummary])
 
   useEffect(() => {
     const socket = getSocket()
@@ -176,6 +244,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
       socket.emit('canvas:attach', attachPayload)
+      addSocketBreadcrumb('canvas:attach', { roomId, canvasId })
     }
 
     const handleCanvasAttached = (payload: CanvasAttachedPayload) => {
@@ -184,19 +253,23 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       const updateArray = new Uint8Array(payload.update)
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
+      addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
     }
 
     const handleCanvasDetached = () => {
-      // TODO: 카테고리 나갔을 때 남겨진 사람들에게 필요한 로직
+      // TODO: 카테고리 나갔을 때 처리 로직
+      addSocketBreadcrumb('canvas:detached', { roomId, canvasId })
     }
 
     const handleYjsUpdate = (payload: YjsUpdateBroadcast) => {
       const updateArray = new Uint8Array(payload.update)
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
+      trackHighFreq('y:update:recv', updateArray.byteLength)
     }
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
+      trackHighFreq('y:awareness:recv')
       const cursor = payload.state.cursor
       if (cursor) {
         setCursors(prev => {
@@ -226,6 +299,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const updateHandler = (update: Uint8Array, origin: unknown) => {
       // 로컬 변경만 전송 (원격에서 받은 업데이트는 재전송하지 않음)
       if (origin !== socket) {
+        trackHighFreq('y:update:send', update.byteLength)
         const updatePayload: YjsUpdatePayload = {
           canvasId,
           update: Array.from(update),
@@ -270,7 +344,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socket.off('y:awareness', handleAwareness)
       socketRef.current = null
     }
-  }, [roomId, canvasId, getSocket, status])
+  }, [roomId, canvasId, getSocket, status, trackHighFreq])
 
   // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
   // 커서 이동 시에도 현재 커서챗 상태를 함께 전송
@@ -299,6 +373,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
             },
           }
           socketRef.current.emit('y:awareness', awarenessPayload)
+          trackHighFreqRef.current('y:awareness:send')
         }
       },
       100,
@@ -348,6 +423,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         },
       }
       socketRef.current.emit('y:awareness', awarenessPayload)
+      trackHighFreqRef.current('y:awareness:send')
     },
     [canvasId, userName],
   )
@@ -497,6 +573,42 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
   }
 
+  // 텍스트박스 추가 함수
+  const addTextBox = (textBox: TextBox) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const yMap = new Y.Map()
+
+    Object.entries(textBox).forEach(([key, value]) => {
+      yMap.set(key, value)
+    })
+    doc.transact(() => {
+      yTextBoxes.push([yMap])
+    }, localOriginRef.current)
+  }
+
+  // 텍스트박스 업데이트 함수
+  const updateTextBox = (id: string, updates: Partial<Omit<TextBox, 'id'>>) => {
+    updateItem('textBoxes', id, updates)
+  }
+
+  // 텍스트박스 삭제 함수
+  const deleteTextBox = (id: string) => {
+    const doc = docRef.current
+    if (!doc) return
+
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const index = yTextBoxes.toArray().findIndex(yMap => yMap.get('id') === id)
+
+    if (index !== -1) {
+      doc.transact(() => {
+        yTextBoxes.delete(index, 1)
+      }, localOriginRef.current)
+    }
+  }
+
   return {
     isConnected,
     cursors,
@@ -520,5 +632,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     addLine,
     updateLine,
     deleteLine,
+    textBoxes,
+    addTextBox,
+    updateTextBox,
+    deleteTextBox,
   }
 }
