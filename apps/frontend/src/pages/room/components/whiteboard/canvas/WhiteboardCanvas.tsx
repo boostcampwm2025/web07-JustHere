@@ -3,8 +3,11 @@ import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
-import { useYjsSocket } from '@/pages/room/hooks'
+import { useYjsSocket, useVoteSocket } from '@/pages/room/hooks'
 import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
+import { getLineBoundingBox } from '@/pages/room/utils'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
@@ -12,9 +15,6 @@ import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
-import { getLineBoundingBox } from '@/pages/room/utils'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
-import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse } from '@/pages/room/hooks'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -66,6 +66,19 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     canvasId,
     userName,
   })
+
+  const { join } = useVoteSocket({
+    roomId: canvasId,
+    userId: user?.userId ?? '',
+    enabled: true,
+  })
+
+  // vote room에 자동으로 join
+  useEffect(() => {
+    if (canvasId && user?.userId) {
+      join()
+    }
+  }, [canvasId, user?.userId, join])
 
   const { handlePostItTransformEnd, handlePlaceCardTransformEnd, handleTextBoxTransformEnd, handleTransformerDragStart, handleTransformerDragEnd } =
     useCanvasTransform({

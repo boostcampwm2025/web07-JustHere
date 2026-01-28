@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient } from '@/shared/hooks'
+import { addSocketBreadcrumb } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
 import type {
   VoteCandidate,
@@ -29,7 +30,6 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [myVotes, setMyVotes] = useState<string[]>([])
-  const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<VoteErrorPayload | null>(null)
 
   const isJoinedRef = useRef(false)
@@ -45,6 +45,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
   const {
     getSocket,
+    status: socketStatus,
     connect: connectReal,
     disconnect: disconnectReal,
   } = useSocketClient({
@@ -53,6 +54,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     autoConnect: enabled,
     onError: handleSocketError,
   })
+
+  const isConnected = socketStatus === 'connected'
 
   const resolveSocket = useCallback((): VoteSocketLike | null => {
     if (!enabled || !roomId) return null
@@ -68,6 +71,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     tempCandidateIdsRef.current.clear()
   }, [])
 
+  // canvas가 변경될 때 이전 vote room에서 leave
   useEffect(() => {
     const prevRoomId = prevRoomIdRef.current
     prevRoomIdRef.current = roomId
@@ -82,16 +86,16 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     const socket = resolveSocket()
     if (!socket) return
 
+    // 이전 roomId의 vote room에서 leave
     socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId })
+    addSocketBreadcrumb('vote:leave', { roomId: joinedRoomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
-
-    disconnectReal()
 
     return () => {
       resetState()
     }
-  }, [enabled, roomId, resolveSocket, disconnectReal, resetState])
+  }, [enabled, roomId, resolveSocket, resetState])
 
   useEffect(() => {
     if (!enabled) return
@@ -100,11 +104,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     if (!socket) return
 
     const handleConnect = () => {
-      setIsConnected(true)
+      addSocketBreadcrumb('vote:connect', { roomId })
     }
 
     const handleDisconnect = () => {
-      setIsConnected(false)
+      addSocketBreadcrumb('vote:disconnect', { roomId })
     }
 
     // [S->C] vote:state - join 시 초기 상태 수신
@@ -116,6 +120,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       setError(null)
       // 임시 후보자 제거
       tempCandidateIdsRef.current.clear()
+      addSocketBreadcrumb('vote:state', { roomId, status: payload.status, candidatesCount: payload.candidates.length })
     }
 
     // [S->C] vote:candidate:updated - 후보 추가/삭제 시 브로드캐스트
@@ -158,6 +163,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         ...prev,
         [payload.candidateId]: payload.count,
       }))
+      addSocketBreadcrumb('vote:counts:updated', { roomId, candidateId: payload.candidateId, count: payload.count })
     }
 
     // [S->C] vote:me:updated - 내 투표 변경 시 (변경된 경우에만)
@@ -170,6 +176,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     const handleStarted = (payload: VoteStartedPayload) => {
       setStatus(payload.status)
       setError(null)
+      addSocketBreadcrumb('vote:started', { roomId })
     }
 
     // [S->C] vote:ended - 투표 종료 시 브로드캐스트
@@ -177,11 +184,13 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       setStatus(payload.status)
       setCandidates(payload.candidates)
       setError(null)
+      addSocketBreadcrumb('vote:ended', { roomId, candidatesCount: payload.candidates.length })
     }
 
     // [S->C] vote:error - 에러 발생 시
     const handleError = (payload: VoteErrorPayload) => {
       setError(payload)
+      addSocketBreadcrumb('vote:error', { roomId, code: payload.code, message: payload.message }, 'error')
     }
 
     socket.on('connect', handleConnect)
@@ -205,7 +214,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       socket.off(VOTE_EVENTS.ended, handleEnded)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, resolveSocket])
+  }, [enabled, roomId, resolveSocket])
 
   const join = useCallback(() => {
     if (!enabled || !roomId) return
@@ -213,25 +222,28 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     const socket = resolveSocket()
     if (!socket) return
 
+    // 이미 같은 roomId의 vote room에 join되어 있으면 스킵
     if (isJoinedRef.current && joinedRoomIdRef.current === roomId) return
 
+    // 다른 roomId의 vote room에 join되어 있으면 먼저 leave
     if (isJoinedRef.current && joinedRoomIdRef.current && joinedRoomIdRef.current !== roomId) {
       socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomIdRef.current })
+      addSocketBreadcrumb('vote:leave', { roomId: joinedRoomIdRef.current })
       isJoinedRef.current = false
       joinedRoomIdRef.current = null
       resetState()
     }
 
-    setIsConnected(socket.connected)
-
     if (!socket.connected) {
       connectReal()
+      return
     }
 
     if (isJoinedRef.current) return
 
-    // [C->S] vote:join - roomId만 전송 (서버에서 userId는 세션에서 가져옴)
-    socket.emit(VOTE_EVENTS.join, { roomId })
+    // [C->S] vote:join
+    socket.emit(VOTE_EVENTS.join, { roomId: roomId })
+    addSocketBreadcrumb('vote:join', { roomId })
     isJoinedRef.current = true
     joinedRoomIdRef.current = roomId
   }, [enabled, roomId, resolveSocket, connectReal, resetState])
@@ -241,7 +253,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     if (!socket || !roomId) return
 
     // [C->S] vote:leave
-    socket.emit(VOTE_EVENTS.leave, { roomId })
+    socket.emit(VOTE_EVENTS.leave, { roomId: roomId })
+    addSocketBreadcrumb('vote:leave', { roomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
     resetState()
@@ -290,6 +303,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         roomId,
         ...input,
       })
+      addSocketBreadcrumb('vote:candidate:add', { roomId, placeId: input.placeId })
     },
     [enabled, roomId, userId, status, candidates, resolveSocket],
   )
@@ -321,6 +335,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         roomId,
         candidateId,
       })
+      addSocketBreadcrumb('vote:candidate:remove', { roomId, candidateId })
     },
     [enabled, roomId, status, candidates, resolveSocket],
   )
@@ -338,7 +353,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       setError(null)
     }
 
-    socket.emit(VOTE_EVENTS.start, { roomId })
+    socket.emit(VOTE_EVENTS.start, { roomId: roomId })
+    addSocketBreadcrumb('vote:start', { roomId })
   }, [enabled, roomId, status, resolveSocket])
 
   // [C->S] vote:end
@@ -354,7 +370,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       setError(null)
     }
 
-    socket.emit(VOTE_EVENTS.end, { roomId })
+    socket.emit(VOTE_EVENTS.end, { roomId: roomId })
+    addSocketBreadcrumb('vote:end', { roomId })
   }, [enabled, roomId, status, resolveSocket])
 
   // [C->S] vote:cast
@@ -380,6 +397,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         roomId,
         candidateId,
       })
+      addSocketBreadcrumb('vote:cast', { roomId, candidateId })
     },
     [enabled, roomId, status, myVotes, counts, resolveSocket],
   )
@@ -407,6 +425,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         roomId,
         candidateId,
       })
+      addSocketBreadcrumb('vote:revoke', { roomId, candidateId })
     },
     [enabled, roomId, status, myVotes, counts, resolveSocket],
   )
