@@ -10,6 +10,7 @@ import { RegionSelector } from './region-selector'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceDetailModal } from './place-detail'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -183,6 +184,8 @@ export const LocationListSection = ({
       scale: 1,
       image: getPhotoUrl(place),
       category: place.primaryTypeDisplayName?.text || '',
+      width: PLACE_CARD_WIDTH,
+      height: PLACE_CARD_HEIGHT,
     })
   }
 

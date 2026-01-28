@@ -8,7 +8,6 @@ interface PlaceCardItemProps {
   card: PlaceCard
   draggable: boolean
   onDragEnd: (x: number, y: number) => void
-  onRemove: () => void
   onMouseDown?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onClick?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   onContextMenu?: (e: Konva.KonvaEventObject<MouseEvent>) => void
@@ -22,17 +21,7 @@ const BASE_IMAGE_HEIGHT = 90
 const BASE_PADDING = 12
 const PLACEHOLDER_SRC = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 
-export const PlaceCardItem = ({
-  card,
-  draggable,
-  onDragEnd,
-  onRemove,
-  onMouseDown,
-  onClick,
-  onContextMenu,
-  shapeRef,
-  onTransformEnd,
-}: PlaceCardItemProps) => {
+export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick, onContextMenu, shapeRef, onTransformEnd }: PlaceCardItemProps) => {
   const groupRef = useRef<Konva.Group>(null)
 
   const scale = card.scale || 1
@@ -118,11 +107,9 @@ export const PlaceCardItem = ({
         y={8 * scale}
         onClick={e => {
           e.cancelBubble = true
-          onRemove()
         }}
         onTap={e => {
           e.cancelBubble = true
-          onRemove()
         }}
       >
         <Rect width={16 * scale} height={16 * scale} fill="#F3F4F6" stroke="#E5E7EB" strokeWidth={1 * scale} cornerRadius={8 * scale} />
