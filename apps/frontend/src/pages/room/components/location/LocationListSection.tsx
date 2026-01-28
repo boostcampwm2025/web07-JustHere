@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
@@ -11,6 +11,7 @@ import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceDetailModal } from './place-detail'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { useToast } from '@/shared/hooks'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -66,6 +67,7 @@ export const LocationListSection = ({
   onPlaceSelect,
 }: LocationListSectionProps) => {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
     useLocationSearch({
@@ -78,6 +80,7 @@ export const LocationListSection = ({
     candidates: voteCandidates,
     counts: voteCounts,
     myVotes,
+    error: voteError,
     join,
     leave,
     addCandidate,
@@ -86,17 +89,34 @@ export const LocationListSection = ({
     endVote,
     castVote,
     revokeVote,
+    resetError,
   } = useVoteSocket({
     roomId,
     userId,
     enabled: Boolean(roomId && userId),
   })
 
+  const lastErrorKeyRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (!roomId || !userId) return
     join()
     return () => leave()
   }, [roomId, userId, join, leave])
+
+  useEffect(() => {
+    if (!voteError) {
+      lastErrorKeyRef.current = null
+      return
+    }
+
+    const nextKey = `${voteError.code}:${voteError.message}`
+    if (lastErrorKeyRef.current === nextKey) return
+
+    lastErrorKeyRef.current = nextKey
+    showToast(voteError.message, 'error')
+    resetError()
+  }, [voteError, showToast, resetError])
 
   const candidateList = useMemo<Candidate[]>(() => {
     return voteCandidates.map(candidate => ({
