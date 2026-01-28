@@ -70,6 +70,15 @@ describe('CanvasGateway', () => {
       })
       expect(mockBroadcaster.emitToCanvas).toHaveBeenCalledTimes(2)
     })
+
+    it('참여 중인 캔버스가 없는 경우 Awareness를 전파하지 않아야 한다', () => {
+      mockYjsService.disconnectClient.mockReturnValue([])
+
+      gateway.handleDisconnect(mockSocket)
+
+      expect(mockYjsService.disconnectClient).toHaveBeenCalledWith(mockSocket.id)
+      expect(mockBroadcaster.emitToCanvas).not.toHaveBeenCalled()
+    })
   })
 
   describe('onCanvasAttach', () => {
