@@ -53,6 +53,7 @@ export const GoogleMap = ({
   selectedMarkerId,
   onMarkerClick,
 }: GoogleMapProps) => {
+  const isLoadedRef = useRef(false)
   const containerStyle = { width, height }
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -75,7 +76,8 @@ export const GoogleMap = ({
         disableDefaultUI={false}
         mapId={import.meta.env.VITE_GOOGLE_MAP_ID}
         onTilesLoaded={e => {
-          if (onLoad && e.map) {
+          if (onLoad && e.map && !isLoadedRef.current) {
+            isLoadedRef.current = true
             onLoad(e.map)
           }
         }}
