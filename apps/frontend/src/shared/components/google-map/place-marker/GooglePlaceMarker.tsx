@@ -24,7 +24,7 @@ export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMar
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {isHovered && (
+        {(isHovered || isSelected) && (
           <div className="absolute bottom-full mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg border border-gray-200 whitespace-nowrap z-10">
             <p className="text-sm font-bold text-gray-800">{place.displayName.text}</p>
             {place.primaryTypeDisplayName && <p className="text-xs text-gray">{place.primaryTypeDisplayName.text}</p>}
