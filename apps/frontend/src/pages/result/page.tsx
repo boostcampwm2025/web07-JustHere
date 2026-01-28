@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon } from '@/shared/assets'
+import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { PlaceResultCard } from './components/PlaceResultCard'
@@ -15,6 +15,8 @@ export const ResultPage = () => {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
+
+  const [copied, setCopied] = useState(false)
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
@@ -35,9 +37,14 @@ export const ResultPage = () => {
     navigate(`/room/${slug}`)
   }
 
-  const handleShare = () => {
-    // TODO: 결과 공유 로직
-    console.log('Share result')
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(roomLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('링크 복사에 실패했습니다.', error)
+    }
   }
 
   if (!user) {
@@ -89,7 +96,13 @@ export const ResultPage = () => {
 
         {/* Footer Button */}
         <div className="flex justify-end mt-6">
-          <Button size="lg" variant="primary" icon={<ShareVariantIcon className="size-4.5" />} iconPosition="right" onClick={handleShare}>
+          <Button
+            size="lg"
+            variant="primary"
+            icon={copied ? <CheckIcon className="w-5 h-5 text-white" /> : <ShareVariantIcon className="w-5 h-5 text-white" />}
+            iconPosition="right"
+            onClick={handleShare}
+          >
             결과 공유하기
           </Button>
         </div>

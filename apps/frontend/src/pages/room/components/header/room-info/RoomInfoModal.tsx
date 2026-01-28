@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
+import { useEffect, useRef, useState } from 'react'
+import { PencilIcon, ContentCopyIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, Avatar, Modal } from '@/shared/components'
 import type { Participant } from '@/shared/types'
 import { cn } from '@/shared/utils'
@@ -28,6 +28,7 @@ export const RoomInfoModal = ({
   onTransferOwner,
 }: RoomInfoModalProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ socketId: '', userId: currentUserId, name: userName }, ...participants]
@@ -46,6 +47,8 @@ export const RoomInfoModal = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(roomLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('링크 복사에 실패했습니다.', error)
     }
@@ -123,7 +126,13 @@ export const RoomInfoModal = ({
                   <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-12 flex items-center overflow-hidden">
                     <span className="text-black truncate w-full">{roomLink}</span>
                   </div>
-                  <Button variant="primary" size="lg" className="h-11" icon={<ContentCopyIcon className="size-4" />} onClick={handleCopyLink}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="h-11"
+                    icon={copied ? <CheckIcon className="size-4 text-white" /> : <ContentCopyIcon className="size-4 text-white" />}
+                    onClick={handleCopyLink}
+                  >
                     링크 복사
                   </Button>
                 </div>
