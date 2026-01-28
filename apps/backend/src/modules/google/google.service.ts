@@ -156,6 +156,7 @@ export class GoogleService {
       const message = (error.response?.data as { error?: { message?: string } })?.error?.message || error.message
 
       if (status === 400) throw new CustomException(ErrorType.BadRequest, `잘못된 요청입니다: ${message}`)
+      else if (status === 404) throw new CustomException(ErrorType.NotFound, '장소를 찾을 수 없습니다.')
       else if (status === 401 || status === 403) throw new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패')
       else if (status === 429) throw new CustomException(ErrorType.TooManyRequests, 'API 호출 한도 초과')
       else throw new CustomException(ErrorType.BadGateway, `Google API 호출 실패: ${message}`)
