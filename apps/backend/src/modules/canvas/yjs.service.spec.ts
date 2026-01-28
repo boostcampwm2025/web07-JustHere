@@ -5,24 +5,38 @@ import { Logger } from '@nestjs/common'
 import * as Y from 'yjs'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 
-jest.useFakeTimers()
-
 describe('YjsService', () => {
   let service: YjsService
 
-  // Mock 객체 정의
-  const mockPrismaService = {
+  // 1. PrismaService의 필요한 메서드만 타입 정의 (Manual Mocking)
+  let prisma: {
     categoryUpdateLog: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-    },
+      findMany: jest.Mock
+      create: jest.Mock
+    }
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks()
+    // 2. 타이머 모킹 설정 (각 테스트마다 초기화)
+    jest.useFakeTimers()
+
+    // 3. Mock 구현체 초기화
+    prisma = {
+      categoryUpdateLog: {
+        findMany: jest.fn(),
+        create: jest.fn(),
+      },
+    }
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [YjsService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        YjsService,
+        {
+          provide: PrismaService,
+          // 4. 타입 호환성을 위해 강제 단언하여 주입
+          useValue: prisma as unknown as PrismaService,
+        },
+      ],
     }).compile()
 
     service = module.get(YjsService)
@@ -33,7 +47,8 @@ describe('YjsService', () => {
   })
 
   afterEach(() => {
-    jest.runOnlyPendingTimers()
+    // 타이머 정리
+    jest.clearAllTimers()
     jest.useRealTimers()
     jest.restoreAllMocks()
   })
@@ -44,14 +59,14 @@ describe('YjsService', () => {
     const socketId = 'socket-1'
 
     it('새 문서를 생성하고 초기 업데이트 데이터를 반환해야 한다', async () => {
-      mockPrismaService.categoryUpdateLog.findMany.mockResolvedValue([])
+      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
 
       const result = await service.initializeConnection(roomId, categoryId, socketId)
 
       expect(result.docKey).toBe(`${roomId}-${categoryId}`)
       expect(result.update).toBeDefined()
 
-      expect(mockPrismaService.categoryUpdateLog.findMany).toHaveBeenCalledWith({
+      expect(prisma.categoryUpdateLog.findMany).toHaveBeenCalledWith({
         where: { categoryId },
         orderBy: { createdAt: 'asc' },
       })
@@ -69,7 +84,7 @@ describe('YjsService', () => {
         createdAt: new Date(),
       }
 
-      mockPrismaService.categoryUpdateLog.findMany.mockResolvedValue([mockLog])
+      prisma.categoryUpdateLog.findMany.mockResolvedValue([mockLog])
 
       const result = await service.initializeConnection(roomId, categoryId, socketId)
 
@@ -77,6 +92,7 @@ describe('YjsService', () => {
       if (result.update) {
         Y.applyUpdate(clientDoc, new Uint8Array(result.update))
       }
+
       // eslint-disable-next-line @typescript-eslint/no-base-to-string
       expect(clientDoc.getText('test').toString()).toBe('hello')
     })
@@ -88,7 +104,7 @@ describe('YjsService', () => {
     const socketId = 'socket-1'
 
     beforeEach(async () => {
-      mockPrismaService.categoryUpdateLog.findMany.mockResolvedValue([])
+      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
       await service.initializeConnection(roomId, categoryId, socketId)
     })
 
@@ -111,7 +127,7 @@ describe('YjsService', () => {
       const roomId = 'room-1'
       const categoryId = 'cat-1'
 
-      mockPrismaService.categoryUpdateLog.findMany.mockResolvedValue([])
+      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
       await service.initializeConnection(roomId, categoryId, 'socket-1')
 
       const doc = new Y.Doc()
@@ -119,10 +135,16 @@ describe('YjsService', () => {
       const update = Y.encodeStateAsUpdate(doc)
       service.processUpdate(categoryId, update)
 
+      // 1. 인터벌 시작
       service.onModuleInit()
+
+      // 2. 시간 앞당기기
       jest.advanceTimersByTime(5000)
 
-      expect(mockPrismaService.categoryUpdateLog.create).toHaveBeenCalledWith({
+      // 3. ✨ 핵심 수정: 비동기 콜백(DB 저장)이 완료될 때까지 마이크로태스크 큐 비우기
+      await Promise.resolve()
+
+      expect(prisma.categoryUpdateLog.create).toHaveBeenCalledWith({
         data: {
           categoryId,
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -135,7 +157,7 @@ describe('YjsService', () => {
   describe('disconnectClient', () => {
     it('클라이언트 연결을 해제하고 참여 중이던 캔버스 ID 목록을 반환해야 한다', async () => {
       const socketId = 'user-1'
-      mockPrismaService.categoryUpdateLog.findMany.mockResolvedValue([])
+      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
 
       await service.initializeConnection('room-1', 'cat-1', socketId)
       await service.initializeConnection('room-1', 'cat-2', socketId)
