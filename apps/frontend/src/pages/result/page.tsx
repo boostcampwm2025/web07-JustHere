@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
@@ -35,6 +35,7 @@ const mockResultPlaces: ResultPlace[] = [
 ]
 
 export const ResultPage = () => {
+  const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
@@ -54,7 +55,7 @@ export const ResultPage = () => {
   }, [joinRoom, leaveRoom, slug, user])
 
   const handleGoBack = () => {
-    window.history.back()
+    navigate(`/room/${slug}`)
   }
 
   const handleShare = () => {
