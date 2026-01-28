@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient } from '@/shared/hooks'
 import { VOTE_EVENTS } from '@/pages/room/constants'
-import { createMockVoteSocket } from '@/pages/room/mocks'
 import type {
   VoteCandidate,
   VoteCandidateAddPayload,
@@ -21,12 +20,11 @@ interface UseVoteSocketOptions {
   roomId: string
   userId: string
   enabled?: boolean
-  useMock?: boolean
 }
 
 const DEFAULT_STATUS: VoteStatus = 'WAITING'
 
-export function useVoteSocket({ roomId, userId, enabled = true, useMock = false }: UseVoteSocketOptions) {
+export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketOptions) {
   const [status, setStatus] = useState<VoteStatus>(DEFAULT_STATUS)
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
@@ -34,7 +32,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState<VoteErrorPayload | null>(null)
 
-  const socketRef = useRef<VoteSocketLike | null>(null)
   const isJoinedRef = useRef(false)
   const joinedRoomIdRef = useRef<string | null>(null)
   const prevRoomIdRef = useRef(roomId)
@@ -53,28 +50,14 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
   } = useSocketClient({
     namespace: 'vote',
     baseUrl: socketBaseUrl,
-    autoConnect: enabled && !useMock,
+    autoConnect: enabled,
     onError: handleSocketError,
   })
 
   const resolveSocket = useCallback((): VoteSocketLike | null => {
     if (!enabled || !roomId) return null
-
-    if (socketRef.current) return socketRef.current
-
-    if (useMock) {
-      const mock = createMockVoteSocket()
-      mock.connect()
-      socketRef.current = mock
-      return mock
-    }
-
-    const socket = getSocket()
-    if (!socket) return null
-
-    socketRef.current = socket
-    return socketRef.current
-  }, [enabled, roomId, useMock, getSocket])
+    return getSocket()
+  }, [enabled, roomId, getSocket])
 
   const resetState = useCallback(() => {
     setStatus(DEFAULT_STATUS)
@@ -91,27 +74,24 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
 
     if (!enabled) return
     if (!isJoinedRef.current) return
-    if (!socketRef.current) return
     if (prevRoomId === roomId) return
 
     const joinedRoomId = joinedRoomIdRef.current
     if (!joinedRoomId || joinedRoomId === roomId) return
 
-    socketRef.current.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId })
+    const socket = resolveSocket()
+    if (!socket) return
+
+    socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
 
-    if (useMock) {
-      socketRef.current.disconnect()
-      socketRef.current = null
-    } else {
-      disconnectReal()
-    }
+    disconnectReal()
 
     return () => {
       resetState()
     }
-  }, [enabled, roomId, useMock, disconnectReal, resetState])
+  }, [enabled, roomId, resolveSocket, disconnectReal, resetState])
 
   useEffect(() => {
     if (!enabled) return
@@ -244,7 +224,7 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
 
     setIsConnected(socket.connected)
 
-    if (!useMock && !socket.connected) {
+    if (!socket.connected) {
       connectReal()
     }
 
@@ -254,10 +234,10 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
     socket.emit(VOTE_EVENTS.join, { roomId })
     isJoinedRef.current = true
     joinedRoomIdRef.current = roomId
-  }, [enabled, roomId, useMock, resolveSocket, connectReal, resetState])
+  }, [enabled, roomId, resolveSocket, connectReal, resetState])
 
   const leave = useCallback(() => {
-    const socket = socketRef.current
+    const socket = resolveSocket()
     if (!socket || !roomId) return
 
     // [C->S] vote:leave
@@ -266,14 +246,8 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
     joinedRoomIdRef.current = null
     resetState()
 
-    if (useMock) {
-      socket.disconnect()
-      socketRef.current = null
-      return
-    }
-
     disconnectReal()
-  }, [roomId, useMock, disconnectReal, resetState])
+  }, [resolveSocket, roomId, disconnectReal, resetState])
 
   useEffect(() => {
     if (!enabled) return
@@ -312,7 +286,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
         }
       }
 
-      // [C->S] vote:candidate:add 전송
       socket.emit(VOTE_EVENTS.addCandidate, {
         roomId,
         ...input,
@@ -344,7 +317,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
         }
       }
 
-      // [C->S] vote:candidate:remove 전송
       socket.emit(VOTE_EVENTS.removeCandidate, {
         roomId,
         candidateId,
@@ -366,7 +338,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
       setError(null)
     }
 
-    // [C->S] vote:start 전송
     socket.emit(VOTE_EVENTS.start, { roomId })
   }, [enabled, roomId, status, resolveSocket])
 
@@ -383,7 +354,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
       setError(null)
     }
 
-    // [C->S] vote:end 전송
     socket.emit(VOTE_EVENTS.end, { roomId })
   }, [enabled, roomId, status, resolveSocket])
 
@@ -406,7 +376,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
         setError(null)
       }
 
-      // [C->S] vote:cast 전송
       socket.emit(VOTE_EVENTS.cast, {
         roomId,
         candidateId,
@@ -434,7 +403,6 @@ export function useVoteSocket({ roomId, userId, enabled = true, useMock = false 
         setError(null)
       }
 
-      // [C->S] vote:revoke 전송
       socket.emit(VOTE_EVENTS.revoke, {
         roomId,
         candidateId,
