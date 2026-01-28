@@ -2,8 +2,11 @@ import { HttpExceptionFilter } from '@/lib/filter'
 import { HttpLoggingInterceptor, ResponseBuilderInterceptor } from '@/lib/interceptors'
 import { MetricModule } from '@/lib/metric/metric.module'
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
+import { VoteModule } from '@/modules/vote/vote.module'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { ScheduleModule } from '@nestjs/schedule'
+import { PrometheusModule } from '@willsoto/nestjs-prometheus'
 import { AppController } from '@/app.controller'
 import { AppService } from '@/app.service'
 import { PrismaModule } from '@/lib/prisma/prisma.module'
@@ -14,8 +17,6 @@ import { CategoryModule } from '@/modules/category/category.module'
 import { RoomModule } from '@/modules/room/room.module'
 import { YjsModule } from '@/modules/canvas/yjs.module'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
-import { ScheduleModule } from '@nestjs/schedule'
-import { PrometheusModule } from '@willsoto/nestjs-prometheus'
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus'
     CategoryModule,
     RoomModule,
     YjsModule,
+    VoteModule,
     SwaggerConfigModule,
     PrometheusModule.register({
       path: '/metrics',

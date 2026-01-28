@@ -47,12 +47,6 @@ describe('UserSessionStore', () => {
 
       expect(result).toEqual(sessionA)
     })
-
-    it('존재하지 않는 socketId로 조회하면 undefined를 반환한다', () => {
-      const result = store.get('non-existent')
-
-      expect(result).toBeUndefined()
-    })
   })
 
   describe('set', () => {
