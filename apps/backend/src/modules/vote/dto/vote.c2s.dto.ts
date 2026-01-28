@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, MinLength, IsOptional, IsNumber } from 'class-validator'
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator'
 
 // [C->S] 기본 페이로드
 export class BasePayload {
@@ -23,17 +23,14 @@ export class VoteEndPayload extends BasePayload {}
 export class VoteCandidateAddPayload extends BasePayload {
   @IsString({ message: 'placeId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'placeId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'placeId는 최소 1자 이상이어야 합니다' })
   placeId: string
 
   @IsString({ message: 'name은 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'name은 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'name은 최소 1자 이상이어야 합니다' })
   name: string
 
   @IsString({ message: 'address는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'address는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'address는 최소 1자 이상이어야 합니다' })
   address: string
 
   @IsOptional()
@@ -61,7 +58,6 @@ export class VoteCandidateAddPayload extends BasePayload {
 export class VoteCandidateRemovePayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
   candidateId: string
 }
 
@@ -69,7 +65,6 @@ export class VoteCandidateRemovePayload extends BasePayload {
 export class VoteCastPayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
   candidateId: string
 }
 
@@ -77,6 +72,5 @@ export class VoteCastPayload extends BasePayload {
 export class VoteRevokePayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
-  @MinLength(1, { message: 'candidateId는 최소 1자 이상이어야 합니다' })
   candidateId: string
 }
