@@ -195,7 +195,6 @@ export const LocationListSection = ({
         rating: place.rating,
         ratingCount: place.userRatingCount,
       })
-      setActiveTab('candidates')
     },
     [addCandidate],
   )
