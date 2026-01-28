@@ -17,8 +17,7 @@ describe('GooglePlaceDto', () => {
     expect(dto).toBeInstanceOf(GooglePlaceDto)
     expect(dto.id).toBe('place-1')
     expect(dto.displayName.text).toBe('Test Place')
-    // @ts-ignore
-    expect(dto.photos[0].name).toBe('photo-1')
+    expect(dto.photos?.[0].name).toBe('photo-1')
   })
 })
 

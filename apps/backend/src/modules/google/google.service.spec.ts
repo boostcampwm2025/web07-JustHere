@@ -6,36 +6,52 @@ import axios from 'axios'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
 
+// Axios 모듈 전체 모킹
 jest.mock('axios')
-const mockedAxios = axios as jest.Mocked<typeof axios>
 
 describe('GoogleService', () => {
   let service: GoogleService
-  let roomRepository: RoomRepository
-  let mockAxiosInstance: any
 
-  const mockConfigService = {
-    getOrThrow: jest.fn().mockReturnValue('test-api-key'),
+  // 1. 내부 의존성(Repository, Config)에 대한 Manual Mock 타입 정의
+  let mockRoomRepository: {
+    findById: jest.Mock
   }
 
-  const mockRoomRepository = {
-    findById: jest.fn(),
+  let mockConfigService: {
+    getOrThrow: jest.Mock
+  }
+
+  // 2. Axios 인스턴스(create()로 생성되는 객체)에 대한 Mock 정의
+  let mockAxiosInstance: {
+    post: jest.Mock
+    get: jest.Mock
   }
 
   beforeEach(async () => {
+    // 3. Mock 구현체 초기화
+    mockRoomRepository = {
+      findById: jest.fn(),
+    }
+
+    mockConfigService = {
+      getOrThrow: jest.fn().mockReturnValue('test-api-key'),
+    }
+
     mockAxiosInstance = {
       post: jest.fn(),
       get: jest.fn(),
     }
-    mockedAxios.create.mockReturnValue(mockAxiosInstance)
-    mockedAxios.isAxiosError.mockReturnValue(true) // 기본적으로 Axios 에러로 처리
+
+    // 4. axios.create가 우리가 만든 mockAxiosInstance를 반환하도록 설정
+    ;(axios.create as jest.Mock).mockReturnValue(mockAxiosInstance)
+    // 에러 처리를 위해 isAxiosError가 true를 반환하도록 설정
+    ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true)
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [GoogleService, { provide: ConfigService, useValue: mockConfigService }, { provide: RoomRepository, useValue: mockRoomRepository }],
     }).compile()
 
     service = module.get<GoogleService>(GoogleService)
-    roomRepository = module.get<RoomRepository>(RoomRepository)
   })
 
   afterEach(() => {
@@ -51,13 +67,17 @@ describe('GoogleService', () => {
 
     it('Room이 존재하고 API 호출이 성공하면 결과를 반환해야 한다', async () => {
       mockRoomRepository.findById.mockResolvedValue({ x: 127.0, y: 37.0 })
-      mockAxiosInstance.post.mockResolvedValue({
+
+      const apiResponse = {
         data: { places: [{ id: 'place-1' }], nextPageToken: 'token' },
-      })
+      }
+      mockAxiosInstance.post.mockResolvedValue(apiResponse)
 
       const result = await service.searchText(dto)
 
       expect(mockRoomRepository.findById).toHaveBeenCalledWith('room-1')
+
+      // Axios post 호출 검증
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/places:searchText',
         expect.objectContaining({
@@ -68,9 +88,10 @@ describe('GoogleService', () => {
               radius: 2000,
             },
           },
-        }),
-        expect.any(Object),
+        }) as Record<string, unknown>, // 구체적인 타입 단언으로 unsafe-assignment 해결
+        expect.any(Object) as unknown,
       )
+
       expect(result).toEqual({ places: [{ id: 'place-1' }], nextPageToken: 'token' })
     })
 
@@ -82,9 +103,13 @@ describe('GoogleService', () => {
 
     it('API 호출 실패 시 예외를 처리해야 한다', async () => {
       mockRoomRepository.findById.mockResolvedValue({ x: 127.0, y: 37.0 })
-      const errorResponse = { response: { status: 400, data: { error: { message: 'Bad Request' } } } }
+
+      const errorResponse = {
+        response: { status: 400, data: { error: { message: 'Bad Request' } } },
+      }
       mockAxiosInstance.post.mockRejectedValue(errorResponse)
-      mockedAxios.isAxiosError.mockReturnValue(true)
+
+      // isAxiosError는 beforeEach에서 true로 설정됨
 
       await expect(service.searchText(dto)).rejects.toThrow(new CustomException(ErrorType.BadRequest, '잘못된 요청입니다: Bad Request'))
     })
@@ -103,7 +128,7 @@ describe('GoogleService', () => {
         '/places/place-1',
         expect.objectContaining({
           params: { languageCode: 'ko' },
-        }),
+        }) as Record<string, unknown>,
       )
       expect(result).toEqual(mockData)
     })
@@ -111,7 +136,6 @@ describe('GoogleService', () => {
     it('장소를 찾을 수 없으면 NotFound 예외를 던져야 한다', async () => {
       const errorResponse = { response: { status: 404 } }
       mockAxiosInstance.get.mockRejectedValue(errorResponse)
-      mockedAxios.isAxiosError.mockReturnValue(true)
 
       await expect(service.getPlaceDetails(dto)).rejects.toThrow(new CustomException(ErrorType.NotFound, '장소를 찾을 수 없습니다.'))
     })
@@ -122,17 +146,21 @@ describe('GoogleService', () => {
 
     it('API 호출이 성공하면 이미지 버퍼와 컨텐츠 타입을 반환해야 한다', async () => {
       const mockBuffer = Buffer.from('image-data')
-      // axios.get은 인스턴스가 아닌 axios 자체 함수로 호출됨 (코드 구현상)
-      // 하지만 코드 구현을 보면 this.axiosInstance가 아니라 axios.get을 직접 쓰고 있음.
-      // 따라서 axios.get을 Mocking해야 함.
-      mockedAxios.get.mockResolvedValue({
+
+      // getPhoto 메서드는 정적 axios.get을 사용하므로 이를 모킹
+      ;(axios.get as jest.Mock).mockResolvedValue({
         data: mockBuffer,
         headers: { 'content-type': 'image/png' },
       })
 
       const result = await service.getPhoto(photoName)
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining(photoName), expect.objectContaining({ responseType: 'arraybuffer' }))
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(axios.get as jest.Mock).toHaveBeenCalledWith(
+        expect.stringContaining(photoName),
+        expect.objectContaining({ responseType: 'arraybuffer' }) as Record<string, unknown>,
+      )
+
       expect(result).toEqual({
         data: mockBuffer,
         contentType: 'image/png',
@@ -141,8 +169,7 @@ describe('GoogleService', () => {
 
     it('API 호출 실패 시 예외를 처리해야 한다', async () => {
       const errorResponse = { response: { status: 403 } }
-      mockedAxios.get.mockRejectedValue(errorResponse)
-      mockedAxios.isAxiosError.mockReturnValue(true)
+      ;(axios.get as jest.Mock).mockRejectedValue(errorResponse)
 
       await expect(service.getPhoto(photoName)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
     })

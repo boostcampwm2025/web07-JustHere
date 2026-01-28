@@ -6,22 +6,32 @@ import { Response } from 'express'
 
 describe('GoogleController', () => {
   let controller: GoogleController
-  let service: GoogleService
 
-  const mockGoogleService = {
-    searchText: jest.fn(),
-    getPlaceDetails: jest.fn(),
-    getPhoto: jest.fn(),
+  let service: {
+    searchText: jest.Mock
+    getPlaceDetails: jest.Mock
+    getPhoto: jest.Mock
   }
 
   beforeEach(async () => {
+    service = {
+      searchText: jest.fn(),
+      getPlaceDetails: jest.fn(),
+      getPhoto: jest.fn(),
+    }
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [GoogleController],
-      providers: [{ provide: GoogleService, useValue: mockGoogleService }],
+      providers: [
+        {
+          provide: GoogleService,
+          // 3. 타입 호환성을 위해 강제 단언하여 주입
+          useValue: service as unknown as GoogleService,
+        },
+      ],
     }).compile()
 
     controller = module.get<GoogleController>(GoogleController)
-    service = module.get<GoogleService>(GoogleService)
   })
 
   afterEach(() => {
@@ -36,7 +46,8 @@ describe('GoogleController', () => {
     it('서비스의 searchText를 호출하고 결과를 반환해야 한다', async () => {
       const dto = { textQuery: 'test' }
       const expectedResult = { places: [], nextPageToken: 'token' }
-      mockGoogleService.searchText.mockResolvedValue(expectedResult)
+
+      service.searchText.mockResolvedValue(expectedResult)
 
       const result = await controller.searchText(dto)
 
@@ -49,7 +60,8 @@ describe('GoogleController', () => {
     it('서비스의 getPlaceDetails를 호출하고 결과를 반환해야 한다', async () => {
       const placeId = 'place-1'
       const expectedResult = { id: placeId, displayName: { text: 'Place' } }
-      mockGoogleService.getPlaceDetails.mockResolvedValue(expectedResult)
+
+      service.getPlaceDetails.mockResolvedValue(expectedResult)
 
       const result = await controller.getPlaceDetails(placeId)
 
@@ -65,19 +77,23 @@ describe('GoogleController', () => {
       const mockBuffer = Buffer.from('image')
       const mockContentType = 'image/jpeg'
 
-      mockGoogleService.getPhoto.mockResolvedValue({
+      service.getPhoto.mockResolvedValue({
         data: mockBuffer,
         contentType: mockContentType,
       })
 
+      // mockSet을 별도로 정의하여 unbound-method 에러 방지
+      const mockSet = jest.fn()
       const mockRes = {
-        set: jest.fn(),
+        set: mockSet,
       } as unknown as Response
 
       const result = await controller.getPhoto(mockRes, placeId, photoId)
 
       expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, 400, 400)
-      expect(mockRes.set).toHaveBeenCalledWith('Content-Type', mockContentType)
+
+      // mockRes.set 대신 mockSet을 검증
+      expect(mockSet).toHaveBeenCalledWith('Content-Type', mockContentType)
       expect(result).toBeInstanceOf(StreamableFile)
     })
 
@@ -87,16 +103,17 @@ describe('GoogleController', () => {
       const maxWidth = 800
       const maxHeight = 600
 
-      mockGoogleService.getPhoto.mockResolvedValue({
+      service.getPhoto.mockResolvedValue({
         data: Buffer.from(''),
         contentType: 'image/jpeg',
       })
 
-      const mockRes = { set: jest.fn() } as unknown as Response
+      const mockSet = jest.fn()
+      const mockRes = { set: mockSet } as unknown as Response
 
       await controller.getPhoto(mockRes, placeId, photoId, maxWidth, maxHeight)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(expect.any(String), maxWidth, maxHeight)
+      expect(service.getPhoto).toHaveBeenCalledWith(expect.any(String) as string, maxWidth, maxHeight)
     })
   })
 })
