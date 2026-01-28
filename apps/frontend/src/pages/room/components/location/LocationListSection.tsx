@@ -84,6 +84,7 @@ export const LocationListSection = ({
     candidates: voteCandidates,
     counts: voteCounts,
     myVotes,
+    votersByCandidate,
     error: voteError,
     join,
     leave,
@@ -150,9 +151,9 @@ export const LocationListSection = ({
     return voteCandidates.map(candidate => {
       const count = voteCounts[candidate.placeId] ?? 0
       const hasVoted = myVotes.includes(candidate.placeId)
-      const pool = hasVoted ? [currentParticipant, ...otherParticipants] : otherParticipants.length > 0 ? otherParticipants : [currentParticipant]
-      const displayCount = Math.min(Math.max(count, hasVoted ? 1 : 0), pool.length)
-      const voters = pool.slice(0, displayCount)
+      const voters = (votersByCandidate[candidate.placeId] ?? [])
+        .map(voterId => participants.find(p => p.userId === voterId) ?? (voterId === userId ? currentParticipant : null))
+        .filter((value): value is Participant => value !== null)
       const votePercentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
 
       return {
@@ -169,7 +170,7 @@ export const LocationListSection = ({
         hasVoted,
       }
     })
-  }, [voteCandidates, voteCounts, totalVotes, myVotes, currentParticipant, otherParticipants])
+  }, [voteCandidates, voteCounts, totalVotes, myVotes, votersByCandidate, participants, userId, currentParticipant, otherParticipants])
 
   const handleVote = useCallback(
     (candidateId: string) => {

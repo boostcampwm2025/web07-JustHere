@@ -58,6 +58,7 @@ export class VoteService {
       candidates: Array.from(session.candidates.values()),
       counts: Object.fromEntries(session.totalCounts.entries()),
       myVotes: myVotesSet ? Array.from(myVotesSet) : [],
+      voters: this.getVoterIdsByCandidate(session),
     }
   }
 
@@ -197,6 +198,7 @@ export class VoteService {
         candidateId,
         count: session.totalCounts.get(candidateId) || 0,
         userId,
+        voters: this.getVoterIdsForCandidate(session, candidateId),
         changed: false,
       }
     }
@@ -208,6 +210,7 @@ export class VoteService {
       candidateId,
       count: session.totalCounts.get(candidateId) || 0,
       userId,
+      voters: this.getVoterIdsForCandidate(session, candidateId),
       changed: true,
     }
   }
@@ -239,6 +242,7 @@ export class VoteService {
         candidateId,
         count: session.totalCounts.get(candidateId) || 0,
         userId,
+        voters: this.getVoterIdsForCandidate(session, candidateId),
         changed: false,
       }
     }
@@ -253,6 +257,7 @@ export class VoteService {
       candidateId,
       count: session.totalCounts.get(candidateId) || 0,
       userId,
+      voters: this.getVoterIdsForCandidate(session, candidateId),
       changed: true,
     }
   }
@@ -279,5 +284,40 @@ export class VoteService {
       throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
     }
     return session
+  }
+
+  private getVoterIdsByCandidate(session: VoteSession): Record<string, string[]> {
+    const voters: Record<string, string[]> = {}
+
+    for (const candidateId of session.candidates.keys()) {
+      voters[candidateId] = []
+    }
+
+    for (const [userId, userVotes] of session.userVotes.entries()) {
+      for (const candidateId of userVotes) {
+        if (!session.candidates.has(candidateId)) continue
+        if (!voters[candidateId]) {
+          voters[candidateId] = []
+        }
+        voters[candidateId].push(userId)
+      }
+    }
+
+    return voters
+  }
+
+  private getVoterIdsForCandidate(session: VoteSession, candidateId: string): string[] {
+    if (!session.candidates.has(candidateId)) {
+      return []
+    }
+
+    const voters: string[] = []
+    for (const [userId, userVotes] of session.userVotes.entries()) {
+      if (userVotes.has(candidateId)) {
+        voters.push(userId)
+      }
+    }
+
+    return voters
   }
 }

@@ -130,6 +130,7 @@ describe('VoteGateway', () => {
         candidates: [],
         counts: {},
         myVotes: [],
+        voters: {},
       }
 
       userService.getSession.mockReturnValue(mockUser)
@@ -256,6 +257,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        voters: ['user-1'],
         changed: true,
       }
 
@@ -272,6 +274,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        voters: ['user-1'],
       })
     })
 
@@ -280,6 +283,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        voters: ['user-1'],
         changed: true,
       }
       const mockMyVotes = {
@@ -302,6 +306,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        voters: ['user-1'],
         changed: false,
       }
 
@@ -366,6 +371,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        voters: [],
         changed: true,
       }
 
@@ -382,6 +388,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        voters: [],
       })
     })
 
@@ -390,6 +397,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        voters: [],
         changed: true,
       }
       const mockMyVotes = {
@@ -412,6 +420,7 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        voters: [],
         changed: false,
       }
 

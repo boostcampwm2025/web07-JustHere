@@ -33,6 +33,7 @@ export interface VoteState {
   candidates: VoteCandidate[]
   counts: VoteCounts
   myVotes: MyVotes
+  voters: Record<string, string[]>
   isOwner: boolean
   isConnected: boolean
   lastError: VoteError | null
@@ -44,6 +45,7 @@ export interface VoteStatePayload {
   candidates: VoteCandidate[]
   counts: VoteCounts
   myVotes: MyVotes
+  voters: Record<string, string[]>
 }
 
 // [S->C] vote:started
@@ -67,6 +69,7 @@ export interface VoteCountsUpdatedPayload {
   candidateId: string
   count: number
   userId: string
+  voters: string[]
 }
 
 // [S->C] vote:me:updated

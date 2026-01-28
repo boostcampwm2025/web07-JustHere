@@ -6,6 +6,7 @@ export type VoteStatePayload = {
   candidates: Candidate[]
   counts: Record<string, number>
   myVotes: string[]
+  voters: Record<string, string[]>
 }
 
 // [S->C] vote:started
@@ -29,6 +30,7 @@ export type VoteCountsUpdatedPayload = {
   candidateId: string
   count: number
   userId: string
+  voters: string[]
 }
 
 // [S->C] vote:me:updated
