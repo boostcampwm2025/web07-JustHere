@@ -75,7 +75,9 @@ describe('VoteOwnerGuard', () => {
 
     it('투표 세션이 존재하지 않으면 NotFound 예외를 던져야 한다', () => {
       mockUserService.getSession.mockReturnValue({ isOwner: true })
-      mockVoteService.getSessionOrThrow.mockReturnValue(null)
+      mockVoteService.getSessionOrThrow.mockImplementation(() => {
+        throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
+      })
 
       expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.'))
     })
