@@ -177,9 +177,17 @@ export const PlaceDetailModal = ({ place, onClose }: PlaceDetailModalProps) => {
                   {details.reviews.map((review, idx) => (
                     <div key={idx} className="border-b border-gray-100 pb-4 last:border-0">
                       <div className="flex items-center gap-2 mb-2">
-                        {review.authorAttribution.photoUri && (
-                          <img src={review.authorAttribution.photoUri} alt={review.authorAttribution.displayName} className="w-8 h-8 rounded-full" />
-                        )}
+                        <img
+                          src={
+                            review.authorAttribution.photoUri ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(review.authorAttribution.displayName)}&background=random`
+                          }
+                          alt={review.authorAttribution.displayName}
+                          className="w-8 h-8 rounded-full"
+                          onError={e => {
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.authorAttribution.displayName)}&background=random`
+                          }}
+                        />
                         <div>
                           <p className="font-medium text-sm">{review.authorAttribution.displayName}</p>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
