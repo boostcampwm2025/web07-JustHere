@@ -1,1 +1,0 @@
-export { PlaceDetailModal } from './PlaceDetailModal'
