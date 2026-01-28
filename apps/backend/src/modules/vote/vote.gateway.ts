@@ -51,12 +51,15 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const userSession = this.userService.removeSession(client.id)
     if (!userSession) return
 
+    const namespace = this.server ?? client.nsp
+    if (!namespace) return
+
     // 사용자가 참여한 모든 투표 방에서 나가기
     const voteRooms = Array.from(client.rooms).filter(room => room.startsWith('vote:'))
     for (const room of voteRooms) {
       await client.leave(room)
 
-      const roomClients = await this.server.in(room).fetchSockets()
+      const roomClients = await namespace.in(room).fetchSockets()
       if (roomClients.length === 0) {
         this.voteService.deleteSession(room.replace('vote:', ''))
       }
