@@ -45,14 +45,9 @@ export const CandidateListSection = ({ candidates, onStartVote, onRemoveCandidat
                 </div>
 
                 {/* 삭제 버튼 */}
-                <button
-                  type="button"
-                  onClick={() => onRemoveCandidate?.(candidate.id)}
-                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors self-start"
-                  aria-label="후보 삭제"
-                >
+                <Button onClick={() => onRemoveCandidate?.(candidate.id)} variant="ghost" size="icon" className="p-0" aria-label="후보 삭제">
                   <CloseIcon className="w-5 h-5" />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
