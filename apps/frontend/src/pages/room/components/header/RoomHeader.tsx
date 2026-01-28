@@ -40,9 +40,7 @@ export const RoomHeader = ({
   }
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
 
-  // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
-  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
-  const hasParticipants = uniqueParticipants.length > 0
+  const hasParticipants = participants.length > 0
 
   return (
     <Header>
@@ -58,7 +56,7 @@ export const RoomHeader = ({
         )}
         {hasParticipants && (
           <Button variant="ghost" className="px-0 rounded-full" onClick={() => setIsRoomInfoModalOpen(true)}>
-            <AvatarList participants={uniqueParticipants} ownerId={ownerId} />
+            <AvatarList participants={participants} ownerId={ownerId} />
           </Button>
         )}
         <div className="relative">

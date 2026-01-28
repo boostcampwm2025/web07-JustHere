@@ -63,9 +63,6 @@ export const ResultPage = () => {
     console.log('Share result')
   }
 
-  // userId 기준으로 중복 제거
-  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
-
   if (!user) {
     return null
   }
@@ -73,7 +70,7 @@ export const ResultPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <RoomHeader
-        participants={uniqueParticipants}
+        participants={participants}
         currentUserId={user.userId}
         roomLink={roomLink}
         onUpdateName={updateParticipantName}
@@ -102,7 +99,7 @@ export const ResultPage = () => {
             <p className="text-gray-500">투표를 통해 가장 많은 선택을 받은 장소입니다. 상세 정보를 확인하세요.</p>
           </div>
           <div className="text-sm text-gray-600">
-            총 참여 인원 <span className="font-bold text-gray-900">{uniqueParticipants.length}명</span>
+            총 참여 인원 <span className="font-bold text-gray-900">{participants.length}명</span>
           </div>
         </div>
 
