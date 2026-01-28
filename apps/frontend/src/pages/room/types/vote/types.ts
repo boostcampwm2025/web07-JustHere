@@ -1,13 +1,19 @@
 export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
 
-export interface VoteCandidate {
-  id: string
+export interface PlaceData {
   placeId: string
   name: string
   address: string
-  category: string
+  category?: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
+}
+
+export interface VoteCandidate extends PlaceData {
   createdBy: string
-  createdAt: string
+  createdAt: Date | string
 }
 
 export type VoteCounts = Record<string, number>
@@ -21,16 +27,6 @@ export interface VoteError {
   recoverable?: boolean
 }
 
-export interface VoteResultItem {
-  candidateId: string
-  count: number
-}
-
-export interface VoteResult {
-  roomId: string
-  items: VoteResultItem[]
-}
-
 export interface VoteState {
   roomId: string
   status: VoteStatus
@@ -42,92 +38,95 @@ export interface VoteState {
   lastError: VoteError | null
 }
 
+// [S->C] vote:state
 export interface VoteStatePayload {
-  roomId: string
   status: VoteStatus
   candidates: VoteCandidate[]
   counts: VoteCounts
-  myVotes?: MyVotes
-  isOwner?: boolean
+  myVotes: MyVotes
 }
 
-export interface VoteUpdatedPayload {
-  roomId: string
-  status?: VoteStatus
-  candidates?: VoteCandidate[]
-  counts?: VoteCounts
-  myVotes?: MyVotes
-  isOwner?: boolean
-}
-
+// [S->C] vote:started
 export interface VoteStartedPayload {
-  roomId: string
   status: 'IN_PROGRESS'
 }
 
+// [S->C] vote:ended
 export interface VoteEndedPayload {
-  roomId: string
   status: 'COMPLETED'
-  result: VoteResult
+  candidates: VoteCandidate[]
 }
 
+// [S->C] vote:candidate:updated
+export interface VoteCandidateUpdatedPayload {
+  candidate: VoteCandidate
+}
+
+// [S->C] vote:counts:updated
+export interface VoteCountsUpdatedPayload {
+  candidateId: string
+  count: number
+  userId: string
+}
+
+// [S->C] vote:me:updated
+export interface VoteMeUpdatedPayload {
+  myVotes: MyVotes
+}
+
+// [S->C] vote:error
+export interface VoteErrorPayload {
+  code: string
+  message: string
+}
+
+// [C->S] vote:join
 export interface VoteJoinPayload {
   roomId: string
-  userId?: string
-  isOwner?: boolean
 }
 
+// [C->S] vote:leave
 export interface VoteLeavePayload {
   roomId: string
-  userId?: string
 }
 
-export interface VoteAddCandidatePayload {
+// [C->S] vote:candidate:add
+export interface VoteCandidateAddPayload {
   roomId: string
   placeId: string
   name: string
   address: string
-  category: string
-  actionId?: string
+  category?: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
 }
 
-export interface VoteRemoveCandidatePayload {
+// [C->S] vote:candidate:remove
+export interface VoteCandidateRemovePayload {
   roomId: string
   candidateId: string
-  actionId?: string
 }
 
-export interface VoteCandidateUpdatedPayload {
-  roomId: string
-  action: 'add' | 'remove'
-  candidate?: VoteCandidate
-  candidateId?: string
-}
-
+// [C->S] vote:cast
 export interface VoteCastPayload {
   roomId: string
   candidateId: string
-  actionId?: string
 }
 
+// [C->S] vote:revoke
 export interface VoteRevokePayload {
   roomId: string
   candidateId: string
-  actionId?: string
 }
 
-export interface VoteCountsUpdatedPayload {
+// [C->S] vote:start
+export interface VoteStartPayload {
   roomId: string
-  candidateId: string
-  count: number
 }
 
-export interface VoteMeUpdatedPayload {
+// [C->S] vote:end
+export interface VoteEndPayload {
   roomId: string
-  myVotes: MyVotes
-}
-
-export interface VoteRoomActionPayload {
-  roomId: string
-  actionId?: string
 }
