@@ -91,10 +91,19 @@ describe('CanvasGateway', () => {
       await gateway.onCanvasAttach(mockSocket, payload)
 
       expect(mockYjsService.initializeConnection).toHaveBeenCalledWith(payload.roomId, payload.canvasId, mockSocket.id)
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+      // eslint-disable-next-line `@typescript-eslint/unbound-method`
       expect(mockSocket.join).toHaveBeenCalledWith(`canvas:${payload.canvasId}`)
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+      // eslint-disable-next-line `@typescript-eslint/unbound-method`
       expect(mockSocket.emit).toHaveBeenCalledWith('canvas:attached', mockResponse)
+    })
+
+    it('초기화 실패 시 에러가 전파되어야 한다', async () => {
+      const payload: CanvasAttachPayload = { roomId: 'room-1', canvasId: 'canvas-1' }
+      const error = new Error('초기화 실패')
+
+      mockYjsService.initializeConnection.mockRejectedValue(error)
+
+      await expect(gateway.onCanvasAttach(mockSocket, payload)).rejects.toThrow(error)
     })
   })
 
