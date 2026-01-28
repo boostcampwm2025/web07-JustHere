@@ -8,9 +8,9 @@ interface KeyboardShortcutsDropdownProps {
 const SHORTCUTS = [
   { key: 'Space', description: '핸드 도구로 임시 전환' },
   { key: 'Backspace', description: '선택된 캔버스 아이템 삭제' },
-  { key: 'ESC', description: 'placeCard 배치 취소' },
+  { key: 'ESC', description: '장소카드 배치 취소' },
   { key: '/', description: '커서챗 활성화' },
-  { key: 'Ctrl + 휠', description: '줌' },
+  { key: 'Ctrl + 마우스 휠', description: '캔버스 줌' },
 ]
 
 export const KeyboardShortcutsDropdown = ({ trigger }: KeyboardShortcutsDropdownProps) => {
