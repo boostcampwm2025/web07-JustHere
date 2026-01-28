@@ -113,6 +113,7 @@ describe('VoteGateway', () => {
       const client = {
         join: ((room: string) => joinMock(room)) as (room: string) => Promise<void>,
         emit: ((event: string, ...args: unknown[]) => emitMock(event, ...args)) as (event: string, ...args: unknown[]) => boolean,
+        data: {},
         id: 'socket-1',
       } as unknown as Socket
       const payload: VoteJoinPayload = {

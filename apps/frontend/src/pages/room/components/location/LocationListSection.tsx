@@ -108,7 +108,6 @@ export const LocationListSection = ({
 
     return { socketId: '', userId, name: userName }
   }, [participants, userId, userName])
-  const otherParticipants = useMemo(() => participants.filter(p => p.userId !== userId), [participants, userId])
 
   useEffect(() => {
     if (!roomId || !userId) return
@@ -170,7 +169,7 @@ export const LocationListSection = ({
         hasVoted,
       }
     })
-  }, [voteCandidates, voteCounts, totalVotes, myVotes, votersByCandidate, participants, userId, currentParticipant, otherParticipants])
+  }, [voteCandidates, voteCounts, totalVotes, myVotes, votersByCandidate, participants, userId, currentParticipant])
 
   const handleVote = useCallback(
     (candidateId: string) => {
