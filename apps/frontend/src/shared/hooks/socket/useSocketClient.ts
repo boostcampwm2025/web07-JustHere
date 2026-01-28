@@ -11,7 +11,7 @@ const SOCKET_RECONNECTION_CONFIG = {
 } as const
 
 interface UseSocketClientProps {
-  namespace?: 'room' | 'canvas'
+  namespace?: 'room' | 'canvas' | 'vote'
   baseUrl?: string
   autoConnect?: boolean
   autoReconnect?: boolean
