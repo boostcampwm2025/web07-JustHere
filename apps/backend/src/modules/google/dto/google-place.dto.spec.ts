@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer'
-import { GooglePlaceDto, GoogleSearchResponseDto } from './google-place.dto'
+import { GooglePhotoDto, GooglePlaceDto, GoogleSearchResponseDto } from './google-place.dto'
 
 describe('GooglePlaceDto', () => {
   it('일반 객체를 GooglePlaceDto 인스턴스로 변환할 수 있어야 한다', () => {
@@ -18,6 +18,7 @@ describe('GooglePlaceDto', () => {
     expect(dto.id).toBe('place-1')
     expect(dto.displayName.text).toBe('Test Place')
     expect(dto.photos?.[0].name).toBe('photo-1')
+    expect(dto.photos?.[0]).toBeInstanceOf(GooglePhotoDto)
   })
 })
 
@@ -51,5 +52,15 @@ describe('GoogleSearchResponseDto', () => {
 
     expect(dto).toBeInstanceOf(GoogleSearchResponseDto)
     expect(dto.places).toBeUndefined()
+  })
+
+  it('places가 빈 배열이어도 변환할 수 있어야 한다', () => {
+    const plainObject = {
+      places: [],
+      nextPageToken: 'next-token',
+    }
+    const dto = plainToInstance(GoogleSearchResponseDto, plainObject)
+    expect(dto).toBeInstanceOf(GoogleSearchResponseDto)
+    expect(dto.places).toEqual([])
   })
 })

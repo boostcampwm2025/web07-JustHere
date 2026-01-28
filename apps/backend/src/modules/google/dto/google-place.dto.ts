@@ -78,9 +78,11 @@ export class GooglePlaceDto {
   userRatingCount?: number
 
   @ApiPropertyOptional({ type: [GooglePhotoDto] })
+  @Type(() => GooglePhotoDto)
   photos?: GooglePhotoDto[]
 
   @ApiPropertyOptional({ type: [GoogleReviewDto] })
+  @Type(() => GoogleReviewDto)
   reviews?: GoogleReviewDto[]
 
   @ApiPropertyOptional()

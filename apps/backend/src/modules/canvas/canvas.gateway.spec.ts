@@ -91,9 +91,9 @@ describe('CanvasGateway', () => {
       await gateway.onCanvasAttach(mockSocket, payload)
 
       expect(mockYjsService.initializeConnection).toHaveBeenCalledWith(payload.roomId, payload.canvasId, mockSocket.id)
-      // eslint-disable-next-line `@typescript-eslint/unbound-method`
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockSocket.join).toHaveBeenCalledWith(`canvas:${payload.canvasId}`)
-      // eslint-disable-next-line `@typescript-eslint/unbound-method`
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockSocket.emit).toHaveBeenCalledWith('canvas:attached', mockResponse)
     })
 
