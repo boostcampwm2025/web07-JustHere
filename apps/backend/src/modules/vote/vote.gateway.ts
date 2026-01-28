@@ -111,9 +111,13 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    const updatePayload = this.voteService.castVote(roomId, user.userId, candidateId)
+    const { changed, ...countsPayload } = this.voteService.castVote(roomId, user.userId, candidateId)
+    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', countsPayload)
 
-    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
+    if (changed) {
+      const meUpdatedPayload = this.voteService.getMyVotes(roomId, user.userId)
+      client.emit('vote:me:updated', meUpdatedPayload)
+    }
   }
 
   @SubscribeMessage('vote:revoke')
@@ -125,9 +129,13 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    const updatePayload = this.voteService.revokeVote(roomId, user.userId, candidateId)
+    const { changed, ...countsPayload } = this.voteService.revokeVote(roomId, user.userId, candidateId)
+    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', countsPayload)
 
-    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
+    if (changed) {
+      const meUpdatedPayload = this.voteService.getMyVotes(roomId, user.userId)
+      client.emit('vote:me:updated', meUpdatedPayload)
+    }
   }
 
   @UseGuards(VoteOwnerGuard)

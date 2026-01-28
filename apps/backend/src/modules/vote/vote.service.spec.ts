@@ -62,13 +62,14 @@ describe('VoteService', () => {
     })
 
     it('WAITING 상태에서 후보를 등록할 수 있어야 한다', () => {
-      const candidate = service.addCandidatePlace(roomId, userId, mockPlaceData)
+      const result = service.addCandidatePlace(roomId, userId, mockPlaceData)
 
-      expect(candidate).toBeDefined()
-      expect(candidate.placeId).toBe(mockPlaceData.placeId)
-      expect(candidate.name).toBe(mockPlaceData.name)
-      expect(candidate.createdBy).toBe(userId)
-      expect(candidate.createdAt).toBeInstanceOf(Date)
+      expect(result).toBeDefined()
+      expect(result.candidate).toBeDefined()
+      expect(result.candidate.placeId).toBe(mockPlaceData.placeId)
+      expect(result.candidate.name).toBe(mockPlaceData.name)
+      expect(result.candidate.createdBy).toBe(userId)
+      expect(result.candidate.createdAt).toBeInstanceOf(Date)
 
       const session = service.getSessionOrThrow(roomId)
       expect(session.candidates.has(mockPlaceData.placeId)).toBe(true)
@@ -107,9 +108,11 @@ describe('VoteService', () => {
 
     it('후보를 삭제할 수 있어야 한다', () => {
       service.addCandidatePlace(roomId, userId, mockPlaceData)
-      const deletedId = service.removeCandidatePlace(roomId, mockPlaceData.placeId)
+      const result = service.removeCandidatePlace(roomId, mockPlaceData.placeId)
 
-      expect(deletedId).toBe(mockPlaceData.placeId)
+      expect(result).toBeDefined()
+      expect(result.candidate).toBeDefined()
+      expect(result.candidate.placeId).toBe(mockPlaceData.placeId)
       const session = service.getSessionOrThrow(roomId)
       expect(session.candidates.has(mockPlaceData.placeId)).toBe(false)
     })
@@ -175,9 +178,27 @@ describe('VoteService', () => {
 
       // 중복 투표는 무시되어야 하므로 count는 변하지 않아야 함
       expect(result.count).toBe(1)
+      expect(result.changed).toBe(false) // 중복 투표는 변경되지 않음
       const state = service.getVoteState(roomId, userId)
       expect(state.counts[mockPlaceData.placeId]).toBe(1)
       expect(state.myVotes).toContain(mockPlaceData.placeId) // myVotes에는 1개만
+    })
+
+    it('새로운 투표 시 changed 필드가 true여야 한다', () => {
+      const result = service.castVote(roomId, userId, mockPlaceData.placeId)
+
+      expect(result.changed).toBe(true)
+      expect(result.candidateId).toBe(mockPlaceData.placeId)
+      expect(result.userId).toBe(userId)
+      expect(result.count).toBe(1)
+    })
+
+    it('중복 투표 시 changed 필드가 false여야 한다', () => {
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      const result = service.castVote(roomId, userId, mockPlaceData.placeId)
+
+      expect(result.changed).toBe(false)
+      expect(result.count).toBe(1)
     })
 
     it('투표 취소(revokeVote)가 동작해야 한다', () => {
@@ -187,10 +208,28 @@ describe('VoteService', () => {
       expect(result.candidateId).toBe(mockPlaceData.placeId)
       expect(result.userId).toBe(userId)
       expect(result.count).toBe(0)
+      expect(result.changed).toBe(true) // 투표 취소 성공 시 변경됨
 
       const state = service.getVoteState(roomId, userId)
       expect(state.counts[mockPlaceData.placeId]).toBe(0)
       expect(state.myVotes).not.toContain(mockPlaceData.placeId)
+    })
+
+    it('투표하지 않은 후보 취소 시도 시 changed 필드가 false여야 한다', () => {
+      const result = service.revokeVote(roomId, userId, mockPlaceData.placeId)
+
+      expect(result.changed).toBe(false)
+      expect(result.candidateId).toBe(mockPlaceData.placeId)
+      expect(result.userId).toBe(userId)
+      expect(result.count).toBe(0)
+    })
+
+    it('투표 취소 성공 시 changed 필드가 true여야 한다', () => {
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      const result = service.revokeVote(roomId, userId, mockPlaceData.placeId)
+
+      expect(result.changed).toBe(true)
+      expect(result.count).toBe(0)
     })
 
     it('존재하지 않는 후보에 투표하면 예외를 던져야 한다', () => {
@@ -315,10 +354,10 @@ describe('VoteService', () => {
       service.startVote(roomId)
 
       // User1: cand1 투표
-      service.castVote(roomId, userId, cand1.placeId)
+      service.castVote(roomId, userId, cand1.candidate.placeId)
       // User2: cand1, cand2 투표 (다중 투표)
-      service.castVote(roomId, userId2, cand1.placeId)
-      service.castVote(roomId, userId2, cand2.placeId)
+      service.castVote(roomId, userId2, cand1.candidate.placeId)
+      service.castVote(roomId, userId2, cand2.candidate.placeId)
 
       // User1 시점 조회
       const state = service.getVoteState(roomId, userId)
@@ -327,12 +366,12 @@ describe('VoteService', () => {
       expect(state.candidates.length).toBe(2)
 
       // 집계 확인 (totalCounts 기반 집계)
-      expect(state.counts[cand1.placeId]).toBe(2) // User1 + User2
-      expect(state.counts[cand2.placeId]).toBe(1) // User2
+      expect(state.counts[cand1.candidate.placeId]).toBe(2) // User1 + User2
+      expect(state.counts[cand2.candidate.placeId]).toBe(1) // User2
 
       // 내 투표 확인
-      expect(state.myVotes).toContain(cand1.placeId)
-      expect(state.myVotes).not.toContain(cand2.placeId)
+      expect(state.myVotes).toContain(cand1.candidate.placeId)
+      expect(state.myVotes).not.toContain(cand2.candidate.placeId)
     })
 
     it('투표하지 않은 사용자의 myVotes는 빈 배열이어야 한다', () => {
@@ -351,6 +390,68 @@ describe('VoteService', () => {
 
       try {
         service.getVoteState('non-existent', userId)
+      } catch (e) {
+        expect((e as CustomException).type).toBe(ErrorType.NotFound)
+      }
+    })
+  })
+
+  describe('getMyVotes', () => {
+    beforeEach(() => {
+      service.getOrCreateSession(roomId, userId)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+      service.startVote(roomId)
+    })
+
+    it('투표하지 않은 사용자의 myVotes는 빈 배열이어야 한다', () => {
+      const result = service.getMyVotes(roomId, userId)
+
+      expect(result.myVotes).toEqual([])
+    })
+
+    it('투표한 후보가 myVotes에 포함되어야 한다', () => {
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      const result = service.getMyVotes(roomId, userId)
+
+      expect(result.myVotes).toHaveLength(1)
+      expect(result.myVotes).toContain(mockPlaceData.placeId)
+    })
+
+    it('여러 후보에 투표한 경우 모든 후보가 myVotes에 포함되어야 한다', () => {
+      // beforeEach에서 이미 startVote를 호출했으므로, 세션을 새로 생성해야 함
+      service.deleteSession(roomId)
+      service.getOrCreateSession(roomId, userId)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+      service.startVote(roomId)
+
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      service.castVote(roomId, userId, place2.placeId)
+
+      const result = service.getMyVotes(roomId, userId)
+
+      expect(result.myVotes).toHaveLength(2)
+      expect(result.myVotes).toContain(mockPlaceData.placeId)
+      expect(result.myVotes).toContain(place2.placeId)
+    })
+
+    it('투표 취소 후 myVotes에서 제거되어야 한다', () => {
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      service.revokeVote(roomId, userId, mockPlaceData.placeId)
+
+      const result = service.getMyVotes(roomId, userId)
+
+      expect(result.myVotes).toEqual([])
+    })
+
+    it('존재하지 않는 세션에 대해 예외를 던져야 한다', () => {
+      expect(() => {
+        service.getMyVotes('non-existent', userId)
+      }).toThrow(CustomException)
+
+      try {
+        service.getMyVotes('non-existent', userId)
       } catch (e) {
         expect((e as CustomException).type).toBe(ErrorType.NotFound)
       }

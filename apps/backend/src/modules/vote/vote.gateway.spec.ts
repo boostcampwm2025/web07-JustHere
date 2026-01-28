@@ -27,6 +27,7 @@ describe('VoteGateway', () => {
     startVote: jest.fn(),
     endVote: jest.fn(),
     deleteSession: jest.fn(),
+    getMyVotes: jest.fn(),
   }
 
   const broadcaster = {
@@ -255,28 +256,36 @@ describe('VoteGateway', () => {
   })
 
   describe('onCastVote', () => {
+    const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+    const client = {
+      id: 'socket-1',
+      emit: emitMock,
+    } as unknown as Socket
+    const payload: VoteCastPayload = {
+      roomId: 'room-1',
+      candidateId: 'candidate-1',
+    }
+    const mockUser = {
+      userId: 'user-1',
+      name: 'user',
+      socketId: 'socket-1',
+      roomId: 'room-1',
+      isOwner: false,
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      userService.getSession.mockReturnValue(mockUser)
+    })
+
     it('투표를 수행하고 브로드캐스터로 득표수 업데이트를 전송한다', () => {
-      const client = {
-        id: 'socket-1',
-      } as Socket
-      const payload: VoteCastPayload = {
-        roomId: 'room-1',
-        candidateId: 'candidate-1',
-      }
-      const mockUser = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
       const mockUpdatePayload = {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        changed: true,
       }
 
-      userService.getSession.mockReturnValue(mockUser)
       voteService.castVote.mockReturnValue(mockUpdatePayload)
 
       gateway.onCastVote(client, payload)
@@ -286,33 +295,107 @@ describe('VoteGateway', () => {
       expect(voteService.castVote).toHaveBeenCalledTimes(1)
       expect(voteService.castVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+      })
+    })
+
+    it('changed가 true일 때 getMyVotes를 호출하고 vote:me:updated 이벤트를 emit한다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+        changed: true,
+      }
+      const mockMyVotes = {
+        myVotes: ['candidate-1'],
+      }
+
+      voteService.castVote.mockReturnValue(mockUpdatePayload)
+      voteService.getMyVotes.mockReturnValue(mockMyVotes)
+
+      gateway.onCastVote(client, payload)
+
+      expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
+      expect(voteService.getMyVotes).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
+    })
+
+    it('changed가 false일 때 getMyVotes를 호출하지 않고 vote:me:updated 이벤트를 emit하지 않는다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+        changed: false,
+      }
+
+      voteService.castVote.mockReturnValue(mockUpdatePayload)
+
+      gateway.onCastVote(client, payload)
+
+      expect(voteService.getMyVotes).not.toHaveBeenCalled()
+      expect(emitMock).not.toHaveBeenCalled()
+    })
+
+    it('user가 없으면 예외를 던진다', () => {
+      userService.getSession.mockReturnValue(null)
+
+      expect(() => {
+        gateway.onCastVote(client, payload)
+      }).toThrow()
+
+      expect(voteService.castVote).not.toHaveBeenCalled()
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', () => {
+      const wrongRoomUser = {
+        ...mockUser,
+        roomId: 'room-2',
+      }
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      expect(() => {
+        gateway.onCastVote(client, payload)
+      }).toThrow()
+
+      expect(voteService.castVote).not.toHaveBeenCalled()
     })
   })
 
   describe('onRevokeVote', () => {
+    const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+    const client = {
+      id: 'socket-1',
+      emit: emitMock,
+    } as unknown as Socket
+    const payload: VoteRevokePayload = {
+      roomId: 'room-1',
+      candidateId: 'candidate-1',
+    }
+    const mockUser = {
+      userId: 'user-1',
+      name: 'user',
+      socketId: 'socket-1',
+      roomId: 'room-1',
+      isOwner: false,
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      userService.getSession.mockReturnValue(mockUser)
+    })
+
     it('투표를 취소하고 브로드캐스터로 득표수 업데이트를 전송한다', () => {
-      const client = {
-        id: 'socket-1',
-      } as Socket
-      const payload: VoteRevokePayload = {
-        roomId: 'room-1',
-        candidateId: 'candidate-1',
-      }
-      const mockUser = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
       const mockUpdatePayload = {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        changed: true,
       }
 
-      userService.getSession.mockReturnValue(mockUser)
       voteService.revokeVote.mockReturnValue(mockUpdatePayload)
 
       gateway.onRevokeVote(client, payload)
@@ -322,7 +405,73 @@ describe('VoteGateway', () => {
       expect(voteService.revokeVote).toHaveBeenCalledTimes(1)
       expect(voteService.revokeVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+      })
+    })
+
+    it('changed가 true일 때 getMyVotes를 호출하고 vote:me:updated 이벤트를 emit한다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+        changed: true,
+      }
+      const mockMyVotes = {
+        myVotes: [],
+      }
+
+      voteService.revokeVote.mockReturnValue(mockUpdatePayload)
+      voteService.getMyVotes.mockReturnValue(mockMyVotes)
+
+      gateway.onRevokeVote(client, payload)
+
+      expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
+      expect(voteService.getMyVotes).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
+    })
+
+    it('changed가 false일 때 getMyVotes를 호출하지 않고 vote:me:updated 이벤트를 emit하지 않는다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+        changed: false,
+      }
+
+      voteService.revokeVote.mockReturnValue(mockUpdatePayload)
+
+      gateway.onRevokeVote(client, payload)
+
+      expect(voteService.getMyVotes).not.toHaveBeenCalled()
+      expect(emitMock).not.toHaveBeenCalled()
+    })
+
+    it('user가 없으면 예외를 던진다', () => {
+      userService.getSession.mockReturnValue(null)
+
+      expect(() => {
+        gateway.onRevokeVote(client, payload)
+      }).toThrow()
+
+      expect(voteService.revokeVote).not.toHaveBeenCalled()
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', () => {
+      const wrongRoomUser = {
+        ...mockUser,
+        roomId: 'room-2',
+      }
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      expect(() => {
+        gateway.onRevokeVote(client, payload)
+      }).toThrow()
+
+      expect(voteService.revokeVote).not.toHaveBeenCalled()
     })
   })
 
