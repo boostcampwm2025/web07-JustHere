@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MagnifyIcon, CloseIcon, ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { cn } from '@/shared/utils/cn'
 import type { KakaoPlace } from '@/shared/types/kakao'
 import type { PlaceCard } from '@/shared/types/canvas.types'
@@ -10,6 +10,7 @@ import { CandidateListSection } from './CandidateListSection'
 import { VoteListSection } from './VoteListSection'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { useNavigate } from 'react-router-dom'
+import { SearchInput } from '@/shared/components'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -159,10 +160,8 @@ export const LocationListSection = ({
     onPlaceSelect(place)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSearch()
-    }
+  const handleClear = () => {
+    setSearchQuery('')
   }
 
   const handleAddPlaceCard = (place: KakaoPlace) => {
@@ -227,27 +226,13 @@ export const LocationListSection = ({
 
         {/* Search Input - 장소 리스트 탭에서만 표시 */}
         {activeTab === 'locations' && (
-          <div className="relative">
-            <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="검색"
-              className="w-full h-12 pl-10 pr-10 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray hover:text-black"
-                aria-label="검색어 지우기"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onClear={handleClear}
+            onSearch={handleSearch}
+            placeholder="검색"
+          />
         )}
       </div>
 
