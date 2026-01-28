@@ -32,13 +32,13 @@ describe('MetricService', () => {
   describe('handleConnection', () => {
     it('connect 액션일 때 게이지를 증가시켜야 한다', () => {
       service.handleConnection('connect')
-      expect(mockGauge.inc).toHaveBeenCalled()
+      expect(mockGauge.inc).toHaveBeenCalledTimes(1)
       expect(mockGauge.dec).not.toHaveBeenCalled()
     })
 
     it('disconnect 액션일 때 게이지를 감소시켜야 한다', () => {
       service.handleConnection('disconnect')
-      expect(mockGauge.dec).toHaveBeenCalled()
+      expect(mockGauge.dec).toHaveBeenCalledTimes(1)
       expect(mockGauge.inc).not.toHaveBeenCalled()
     })
   })
