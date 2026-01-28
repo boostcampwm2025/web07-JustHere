@@ -32,6 +32,12 @@ describe('YjsService', () => {
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined)
   })
 
+  afterEach(() => {
+    jest.runOnlyPendingTimers()
+    jest.useRealTimers()
+    jest.restoreAllMocks()
+  })
+
   describe('initializeConnection', () => {
     const roomId = 'room-1'
     const categoryId = 'cat-1'
