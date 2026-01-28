@@ -9,6 +9,13 @@ export class GooglePhotoDto {
 
   @ApiProperty()
   heightPx: number
+
+  @ApiPropertyOptional()
+  authorAttributions?: {
+    displayName: string
+    uri: string
+    photoUri: string
+  }[]
 }
 
 export class GoogleReviewDto {

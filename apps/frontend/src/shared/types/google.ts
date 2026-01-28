@@ -52,7 +52,7 @@ export interface GooglePhoto {
   name: string
   widthPx: number
   heightPx: number
-  authorAttributions: {
+  authorAttributions?: {
     displayName: string
     uri: string
     photoUri: string
