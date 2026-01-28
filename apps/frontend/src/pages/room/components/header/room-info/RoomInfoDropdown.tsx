@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
+import { PencilIcon, ContentCopyIcon, ShareVariantIcon } from '@/shared/assets'
 import { Button, Divider, Avatar, Dropdown } from '@/shared/components'
 import type { Participant } from '@/shared/types'
 
 interface RoomInfoDropdownProps {
-  trigger: React.ReactNode
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
   userName: string
   roomLink: string
   participants: Participant[]
@@ -18,7 +17,6 @@ interface RoomInfoDropdownProps {
 }
 
 export const RoomInfoDropdown = ({
-  trigger,
   open,
   onOpenChange,
   userName,
@@ -56,9 +54,11 @@ export const RoomInfoDropdown = ({
 
   return (
     <div className="relative">
-      <div onClick={() => onOpenChange?.(!open)}>{trigger}</div>
+      <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
+        Share
+      </Button>
       {open && (
-        <Dropdown onOpenChange={onOpenChange || (() => {})} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
+        <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
           <div className="p-6">
             <h3 className="text-lg font-bold text-center mb-6">참여자</h3>
             <div className="flex flex-col gap-2">

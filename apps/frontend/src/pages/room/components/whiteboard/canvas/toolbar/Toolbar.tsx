@@ -1,6 +1,6 @@
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon, HelpCircleIcon } from '@/shared/assets'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon } from '@/shared/assets'
 import type { ToolType } from '@/shared/types'
-import { Button, Tooltip } from '@/shared/components'
+import { Button, Divider, Tooltip } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import { KeyboardShortcutsDropdown } from './keyboard-shortcuts'
 
@@ -76,13 +76,14 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
               size="icon"
               variant="gray"
               icon={icon}
+              aria-label={label}
               className={cn('rounded-full bg-transparent', effectiveTool === tool ? 'text-primary' : 'text-gray-400 hover:text-gray-900')}
               onClick={() => onClickTool(tool, resetCursor ?? false)}
             />
           </Tooltip>
         ))}
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <Divider orientation="vertical" />
 
         {ACTION_ITEMS.map(({ key, icon, label, onClick, disabled }) => (
           <Tooltip key={key} content={label} position="bottom">
@@ -90,6 +91,7 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
               size="icon"
               variant="gray"
               icon={icon}
+              aria-label={label}
               className={cn('rounded-full bg-transparent', disabled ? 'text-gray-400' : 'text-gray-900')}
               onClick={onClick}
               disabled={disabled}
@@ -97,22 +99,9 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
           </Tooltip>
         ))}
 
-        <div className="w-px h-5 bg-gray-200 mx-1" />
+        <Divider orientation="vertical" />
 
-        <Tooltip content="키보드 단축키" position="bottom">
-          <KeyboardShortcutsDropdown
-            trigger={
-              <Button
-                size="icon"
-                variant="gray"
-                className="rounded-full bg-transparent text-gray-400 hover:text-gray-900"
-                aria-label="키보드 단축키 안내"
-              >
-                <HelpCircleIcon className="size-5" />
-              </Button>
-            }
-          />
-        </Tooltip>
+        <KeyboardShortcutsDropdown />
       </div>
     </div>
   )

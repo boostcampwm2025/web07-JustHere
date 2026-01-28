@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { MapMarkerIcon, ShareVariantIcon } from '@/shared/assets'
+import { MapMarkerIcon } from '@/shared/assets'
 import { AvatarList, Button, Divider } from '@/shared/components'
 import type { Participant } from '@/shared/types'
 import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
@@ -59,24 +59,19 @@ export const RoomHeader = ({
             <AvatarList participants={participants} ownerId={ownerId} />
           </Button>
         )}
-        <RoomInfoDropdown
-          trigger={
-            <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />}>
-              Share
-            </Button>
-          }
-          open={isRoomInfoDropdownOpen}
-          onOpenChange={setIsRoomInfoDropdownOpen}
-          userName={userName}
-          roomLink={roomLink}
-          participants={participants}
-          currentUserId={currentUserId}
-          onUpdateName={handleUpdateName}
-          isOwner={isOwner}
-          ownerId={ownerId}
-          onTransferOwner={onTransferOwner}
-        />
       </div>
+      <RoomInfoDropdown
+        open={isRoomInfoDropdownOpen}
+        onOpenChange={setIsRoomInfoDropdownOpen}
+        userName={userName}
+        roomLink={roomLink}
+        participants={participants}
+        currentUserId={currentUserId}
+        onUpdateName={handleUpdateName}
+        isOwner={isOwner}
+        ownerId={ownerId}
+        onTransferOwner={onTransferOwner}
+      />
     </Header>
   )
 }
