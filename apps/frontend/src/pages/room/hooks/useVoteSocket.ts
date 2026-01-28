@@ -36,7 +36,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
   const isJoinedRef = useRef(false)
   const joinedRoomIdRef = useRef<string | null>(null)
   const pendingJoinRef = useRef(false)
-  const pendingJoinHandlerRef = useRef<(() => void) | null>(null)
+  const shouldJoinRef = useRef(false)
   const prevRoomIdRef = useRef(roomId)
 
   // 임시 후보자 ID 추적 (optimistic update용)
@@ -95,11 +95,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     addSocketBreadcrumb('vote:leave', { roomId: joinedRoomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
-    if (pendingJoinHandlerRef.current) {
-      socket.off('connect', pendingJoinHandlerRef.current)
-      pendingJoinHandlerRef.current = null
-    }
     pendingJoinRef.current = false
+    shouldJoinRef.current = false
 
     return () => {
       resetState()
@@ -114,6 +111,14 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
     const handleConnect = () => {
       addSocketBreadcrumb('vote:connect', { roomId })
+      pendingJoinRef.current = false
+      if (shouldJoinRef.current && !isJoinedRef.current) {
+        socket.emit(VOTE_EVENTS.join, { roomId: roomId, userId })
+        addSocketBreadcrumb('vote:join', { roomId })
+        isJoinedRef.current = true
+        joinedRoomIdRef.current = roomId
+        shouldJoinRef.current = false
+      }
     }
 
     const handleDisconnect = () => {
@@ -138,20 +143,9 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       const candidate = payload.candidate
 
       setCandidates(prev => {
-        // placeId 기준으로 중복 체크
-        const exists = prev.some(c => c.placeId === candidate.placeId)
-
-        if (exists) {
-          // 이미 존재하면 업데이트 (임시 후보자를 실제 후보로 교체)
-          const tempIds = Array.from(tempCandidateIdsRef.current)
-          const filtered = prev.filter(c => c.placeId !== candidate.placeId || !tempIds.includes(c.placeId))
-          return [...filtered, candidate]
-        } else {
-          // 새로 추가 (임시 후보자 제거 후 추가)
-          const tempIds = Array.from(tempCandidateIdsRef.current)
-          const filtered = prev.filter(c => !tempIds.includes(c.placeId))
-          return [...filtered, candidate]
-        }
+        // placeId 기준으로 항상 교체해 중복을 방지
+        const filtered = prev.filter(c => c.placeId !== candidate.placeId)
+        return [...filtered, candidate]
       })
 
       // counts 업데이트: 새 후보는 0으로 초기화, 기존 후보는 유지
@@ -252,22 +246,12 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       resetState()
     }
 
+    shouldJoinRef.current = true
+
     if (!socket.connected) {
       if (pendingJoinRef.current) return
       pendingJoinRef.current = true
       connectReal()
-      const handleConnect = () => {
-        socket.off('connect', handleConnect)
-        pendingJoinHandlerRef.current = null
-        pendingJoinRef.current = false
-        if (isJoinedRef.current || !roomId) return
-        socket.emit(VOTE_EVENTS.join, { roomId: roomId, userId })
-        addSocketBreadcrumb('vote:join', { roomId })
-        isJoinedRef.current = true
-        joinedRoomIdRef.current = roomId
-      }
-      pendingJoinHandlerRef.current = handleConnect
-      socket.on('connect', handleConnect)
       return
     }
 
@@ -278,6 +262,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     addSocketBreadcrumb('vote:join', { roomId })
     isJoinedRef.current = true
     joinedRoomIdRef.current = roomId
+    shouldJoinRef.current = false
   }, [enabled, roomId, userId, resolveSocket, connectReal, resetState])
 
   const leave = useCallback(() => {
@@ -289,11 +274,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     addSocketBreadcrumb('vote:leave', { roomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
-    if (pendingJoinHandlerRef.current) {
-      socket.off('connect', pendingJoinHandlerRef.current)
-      pendingJoinHandlerRef.current = null
-    }
     pendingJoinRef.current = false
+    shouldJoinRef.current = false
     resetState()
 
     disconnectReal()
