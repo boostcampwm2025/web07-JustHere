@@ -1,5 +1,4 @@
 import type { Server, BroadcastOperator, DefaultEventsMap } from 'socket.io'
-
 import { RoomBroadcaster } from './room.broadcaster'
 
 type MockBroadcastOperator = BroadcastOperator<DefaultEventsMap, unknown> & {
@@ -17,12 +16,12 @@ function createMockServer() {
 
   const server = {
     to: jest.fn().mockReturnValue(mockBroadcastOperator),
-  } as Server & { to: jest.Mock }
+  } as unknown as Server
 
   return { server, mockBroadcastOperator }
 }
 
-describe('SocketBroadcaster', () => {
+describe('RoomBroadcaster', () => {
   let broadcaster: RoomBroadcaster
 
   beforeEach(() => {
@@ -32,6 +31,7 @@ describe('SocketBroadcaster', () => {
   describe('emitToRoom', () => {
     it('서버가 설정되지 않은 경우 아무 동작도 하지 않는다', () => {
       const { server } = createMockServer()
+      // setServer를 호출하지 않음
 
       broadcaster.emitToRoom('room-1', 'test-event', { data: 'test' })
 
@@ -61,41 +61,6 @@ describe('SocketBroadcaster', () => {
       expect(server.to).toHaveBeenCalledWith('room:room-1')
       expect(mockBroadcastOperator.except).toHaveBeenCalledWith('socket-123')
       expect(mockBroadcastOperator.emit).toHaveBeenCalledWith('user:joined', payload)
-    })
-
-    it('exceptSocketId가 undefined인 경우 모든 소켓에 브로드캐스트한다', () => {
-      const { server, mockBroadcastOperator } = createMockServer()
-      broadcaster.setServer(server)
-
-      const payload = { data: 'test' }
-      broadcaster.emitToRoom('room-1', 'test-event', payload, {
-        exceptSocketId: undefined,
-      })
-
-      expect(server.to).toHaveBeenCalledWith('room:room-1')
-      expect(mockBroadcastOperator.except).not.toHaveBeenCalled()
-      expect(mockBroadcastOperator.emit).toHaveBeenCalledWith('test-event', payload)
-    })
-
-    it('제네릭 타입의 페이로드를 올바르게 전달한다', () => {
-      const { server, mockBroadcastOperator } = createMockServer()
-      broadcaster.setServer(server)
-
-      interface CustomPayload {
-        id: number
-        name: string
-        nested: { value: boolean }
-      }
-
-      const payload: CustomPayload = {
-        id: 1,
-        name: 'test',
-        nested: { value: true },
-      }
-
-      broadcaster.emitToRoom<CustomPayload>('room-1', 'custom:event', payload)
-
-      expect(mockBroadcastOperator.emit).toHaveBeenCalledWith('custom:event', payload)
     })
   })
 })

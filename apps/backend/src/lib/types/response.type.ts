@@ -59,9 +59,11 @@ export interface BaseResponse {
 /**
  * 성공 응답 객체 타입
  */
-export interface SuccessResponse<T = unknown> extends BaseResponse {
-  status: ResponseStatus.Success
+export interface ResponseType<T> {
+  status: ResponseStatus
+  statusCode: number
   data: T
+  timestamp: string
 }
 
 /**
@@ -77,4 +79,4 @@ export interface ErrorResponse extends BaseResponse {
 /**
  * API 리턴 타입 유니온
  */
-export type ApiResponse<T> = SuccessResponse<T> | ErrorResponse
+export type ApiResponse<T> = ResponseType<T> | ErrorResponse
