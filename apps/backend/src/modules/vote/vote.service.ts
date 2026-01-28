@@ -69,9 +69,7 @@ export class VoteService {
     }
 
     // 중복 장소 체크 (PlaceId 기준)
-    const isDuplicate = Array.from(session.candidates.values()).some(c => c.placeId === placeData.placeId)
-
-    if (isDuplicate) {
+    if (session.candidates.has(placeData.placeId)) {
       throw new CustomException(ErrorType.DuplicatedCandidate, '이미 등록된 후보 장소입니다.')
     }
 
