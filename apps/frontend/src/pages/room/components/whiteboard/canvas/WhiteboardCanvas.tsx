@@ -14,11 +14,7 @@ import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
 import { getLineBoundingBox } from '@/pages/room/utils'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
-import { useCanvasTransform } from '@/pages/room/hooks/useCanvasTransform'
-import { useCursorChat } from '@/pages/room/hooks/useCursorChat'
-import { useCanvasKeyboard } from '@/pages/room/hooks/useCanvasKeyboard'
-import { useCanvasDraw } from '@/pages/room/hooks/useCanvasDraw'
-import { useCanvasMouse } from '@/pages/room/hooks/useCanvasMouse'
+import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse } from '@/pages/room/hooks'
 
 interface WhiteboardCanvasProps {
   roomId: string
