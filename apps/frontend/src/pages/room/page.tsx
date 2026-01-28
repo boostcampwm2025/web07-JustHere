@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
-import type { KakaoPlace, PlaceCard } from '@/shared/types'
+import type { GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
 import { useRoomSocketCache } from './hooks'
@@ -18,8 +18,8 @@ export default function RoomPage() {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
-  const [searchResults, setSearchResults] = useState<KakaoPlace[]>([])
-  const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null)
+  const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
+  const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }

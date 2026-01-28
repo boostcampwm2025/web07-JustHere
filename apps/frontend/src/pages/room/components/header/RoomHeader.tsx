@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { MapMarkerIcon, ShareVariantIcon } from '@/shared/assets'
-import { Avatar, Button, Divider } from '@/shared/components'
+import { AvatarList, Button, Divider } from '@/shared/components'
 import type { Participant } from '@/shared/types'
 import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
@@ -40,14 +40,7 @@ export const RoomHeader = ({
   }
   const [isRoomInfoModalOpen, setIsRoomInfoModalOpen] = useState(false)
 
-  const MAX_DISPLAY_AVATARS = 3
-  // userId 기준으로 중복 제거 (같은 userId가 여러 개 있으면 첫 번째만 유지)
-  const uniqueParticipants = participants.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index)
-  const currentUser = uniqueParticipants.find(p => p.userId === currentUserId) ?? { socketId: '', userId: currentUserId, name: userName }
-  const combinedParticipants = [currentUser, ...uniqueParticipants.filter(p => p.userId !== currentUser.userId)]
-  const hasParticipants = combinedParticipants.length > 0
-  const displayCount = Math.min(MAX_DISPLAY_AVATARS, combinedParticipants.length)
-  const extraCount = Math.max(combinedParticipants.length - displayCount, 0)
+  const hasParticipants = participants.length > 0
 
   return (
     <Header>
@@ -63,16 +56,7 @@ export const RoomHeader = ({
         )}
         {hasParticipants && (
           <Button variant="ghost" className="px-0 rounded-full" onClick={() => setIsRoomInfoModalOpen(true)}>
-            <div className="flex items-center -space-x-2">
-              {combinedParticipants.slice(0, displayCount).map(p => (
-                <Avatar key={p.userId} name={p.name} isOwner={p.userId === ownerId} />
-              ))}
-              {extraCount > 0 && (
-                <div className="z-10 flex items-center justify-center -ml-2 border-2 border-white rounded-full w-9 h-9 bg-gray-100">
-                  <span className="text-xs font-medium text-gray-800">+{extraCount}</span>
-                </div>
-              )}
-            </div>
+            <AvatarList participants={participants} ownerId={ownerId} />
           </Button>
         )}
         <div className="relative">

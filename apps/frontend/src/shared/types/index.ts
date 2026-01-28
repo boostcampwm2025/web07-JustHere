@@ -1,6 +1,6 @@
 export * from './canvas.types'
 export * from './domain.types'
 export * from './socket.types'
-export * from './kakao.d'
+export * from './google'
 export * from './yjs.types'
 export * from './toast.types'

@@ -15,6 +15,103 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 표준 방식으로 pnpm 실행 파일을 보장합니다. (setup-node보다 먼저 실행)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ----------------------------------------------------------------
+      # [Backend] Build & Upload Sourcemaps
+      # ----------------------------------------------------------------
+      # 백엔드 sourcemap은 Alpine Docker 내부에서 sentry-cli를 돌리면 깨질 수 있어
+      # 러너(ubuntu)에서 먼저 빌드/업로드를 수행합니다.
+      - name: Build Backend (for sourcemaps)
+        run: pnpm turbo run build --filter=backend
+
+      - name: Upload Backend Sourcemaps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_BACKEND }}
+          SENTRY_RELEASE: backend@${{ github.sha }}
+        run: |
+          # BusyBox find는 -quit을 지원하지 않을 수 있어 head -n 1로 존재 여부만 확인합니다.
+          if [ ! -d "apps/backend/dist" ]; then
+            echo "[sentry] apps/backend/dist not found. Skipping upload."
+            exit 0
+          fi
+
+          MAP_COUNT=$(find apps/backend/dist -name '*.map' | wc -l | tr -d ' ')
+          echo "[sentry] Found sourcemaps: ${MAP_COUNT}"
+
+          if [ "${MAP_COUNT}" -gt 0 ]; then
+            # pnpm 워크스페이스에서는 npx가 바이너리를 못 찾을 수 있어 exec로 고정합니다.
+            if pnpm --filter backend exec sentry-cli releases info "$SENTRY_RELEASE" --log-level=debug; then
+              echo "[sentry] Release already exists: $SENTRY_RELEASE"
+            else
+              pnpm --filter backend exec sentry-cli releases new "$SENTRY_RELEASE" --log-level=debug
+            fi
+            
+            # sentry-cli v3 소스맵 업로드는 debug ID 주입(inject) 후 upload가 권장됩니다.
+            # [중요] pnpm exec는 해당 패키지(apps/backend) 내부에서 실행되므로 상대 경로 'dist'를 사용합니다.
+            pnpm --filter backend exec sentry-cli sourcemaps inject dist --log-level=debug
+            pnpm --filter backend exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" dist --log-level=debug
+            pnpm --filter backend exec sentry-cli releases finalize "$SENTRY_RELEASE" --log-level=debug
+          else
+            echo "[sentry] No sourcemaps found in apps/backend/dist. Skipping upload."
+          fi
+
+      # ----------------------------------------------------------------
+      # [Frontend] Build & Upload Sourcemaps
+      # ----------------------------------------------------------------
+      - name: Build Frontend (for sourcemaps)
+        run: pnpm turbo run build --filter=frontend
+
+      - name: Upload Frontend Sourcemaps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_FRONTEND }}
+          SENTRY_RELEASE: frontend@${{ github.sha }}
+        run: |
+          if [ ! -d "apps/frontend/dist" ]; then
+            echo "[sentry] apps/frontend/dist not found. Skipping upload."
+            exit 0
+          fi
+
+          MAP_COUNT=$(find apps/frontend/dist -name '*.map' | wc -l | tr -d ' ')
+          echo "[sentry] Found sourcemaps: ${MAP_COUNT}"
+
+          if [ "${MAP_COUNT}" -gt 0 ]; then
+            # [수정] sentry-cli -> @sentry/cli (정확한 패키지명 명시)
+            # npx가 @sentry/cli 패키지를 설치하고 실행하게 만듭니다.
+            
+            if npx @sentry/cli releases info "$SENTRY_RELEASE" --log-level=debug; then
+              echo "[sentry] Release already exists: $SENTRY_RELEASE"
+            else
+              npx @sentry/cli releases new "$SENTRY_RELEASE" --log-level=debug
+            fi
+
+            npx @sentry/cli sourcemaps inject apps/frontend/dist --log-level=debug
+            npx @sentry/cli sourcemaps upload --release "$SENTRY_RELEASE" apps/frontend/dist --log-level=debug
+            npx @sentry/cli releases finalize "$SENTRY_RELEASE" --log-level=debug
+          else
+            echo "[sentry] No sourcemaps found in apps/frontend/dist. Skipping upload."
+          fi
+
+      # ----------------------------------------------------------------
+      # Docker Build & Push
+      # ----------------------------------------------------------------
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -37,11 +134,8 @@ jobs:
           push: true
           tags: ${{ env.NCR_REGISTRY }}/my-frontend:latest
           build-args: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-            SENTRY_ORG=${{ secrets.SENTRY_ORG }}
-            SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT_FRONTEND }}
+            # 소스맵 업로드는 위에서 완료했으므로, 런타임 식별을 위한 RELEASE 버전만 주입합니다.
             VITE_SENTRY_RELEASE=frontend@${{ github.sha }}
-            SENTRY_RELEASE=frontend@${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -52,11 +146,6 @@ jobs:
           file: ./apps/backend/Dockerfile
           push: true
           tags: ${{ env.NCR_REGISTRY }}/my-backend:latest
-          build-args: |
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-            SENTRY_ORG=${{ secrets.SENTRY_ORG }}
-            SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT_BACKEND }}
-            SENTRY_RELEASE=backend@${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -89,7 +178,7 @@ jobs:
             mkdir -p /root/my-project
 
       # 3. 파일 전송 (SCP)
-      # 로컬에 있는 3개 파일(.env, .env.backend, docker-compose.yml)을 서버로 전송
+      # 로컬에 있는 4개 파일(.env, .env.backend, docker-compose.prod.yml, docker 폴더)을 서버로 전송
       - name: Copy Files to Server
         uses: appleboy/scp-action@master
         with:
@@ -97,7 +186,7 @@ jobs:
           username: ${{ secrets.NCP_USERNAME }}
           password: ${{ secrets.NCP_PASSWORD }}
           port: ${{ secrets.NCP_SSH_PORT }}
-          source: 'docker-compose.yml, .env.backend, .env'
+          source: 'docker-compose.prod.yml, .env.backend, .env, docker'
           target: '/root/my-project'
           overwrite: true
 
@@ -116,13 +205,13 @@ jobs:
             docker login ${{ secrets.NCP_CR_ENDPOINT }} -u ${{ secrets.NCP_ACCESS_KEY }} -p ${{ secrets.NCP_SECRET_KEY }}
 
             # 이미지 Pull
-            docker-compose pull
+            docker-compose -f docker-compose.prod.yml pull
 
             # 마이그레이션 실행 (컨테이너 시작 전)
-            docker-compose run --rm backend npx prisma migrate deploy --config prisma.config.ts
+            docker-compose -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy --config prisma.config.ts
 
             # 컨테이너 실행
-            docker-compose up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # 이미지 정리
             docker image prune -f

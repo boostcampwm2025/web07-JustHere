@@ -12,6 +12,10 @@ export class HttpLoggingInterceptor implements NestInterceptor {
     const { method, originalUrl, ip } = req
     const userAgent = req.get('user-agent') || ''
 
+    if (originalUrl.includes('/metrics')) {
+      return next.handle()
+    }
+
     const now = Date.now()
 
     this.logger.log(`Request Start: ${method} ${originalUrl} - IP: ${ip}`)

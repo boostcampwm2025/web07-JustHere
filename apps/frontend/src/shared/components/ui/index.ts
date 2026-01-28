@@ -1,3 +1,4 @@
 export * from './Avatar'
+export * from './AvatarList'
 export * from './Button'
 export * from './Divider'

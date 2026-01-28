@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: backend
+    image: ${NCP_CR_ENDPOINT}/my-backend:latest
+    expose:
+      - '3000' # 호스트(외부)에는 포트를 노출하지 않고, 내부 도커 네트워크끼리만 통신함.
+    env_file:
+      - .env.backend
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    container_name: frontend
+    image: ${NCP_CR_ENDPOINT}/my-frontend:latest
+    ports:
+      - '80:80' # 외부 80번 포트를 컨테이너 Nginx 80번으로 연결
+      - '443:443'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: always
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - ./data/certbot/www:/var/www/certbot:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    networks:
+      - app-network
+    restart: always
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+             while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet;
+               sleep 12h & wait $${!};
+             done"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: monitoring-prometheus
+    restart: always
+    volumes:
+      # 1. 로컬 설정 파일을 컨테이너 내부로 마운트
+      - ./docker/prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.prod.yml
+      # 2. 수집된 데이터를 영구 저장 (컨테이너 삭제돼도 유지)
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.prod.yml'
+      - '--storage.tsdb.retention.time=15d' # 데이터 15일 보관
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: monitoring-grafana
+    restart: always
+    depends_on:
+      - prometheus
+    volumes:
+      # 대시보드 설정을 영구 저장
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SERVER_DOMAIN=justhere.p-e.kr
+      - GF_SERVER_ROOT_URL=https://justhere.p-e.kr/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
