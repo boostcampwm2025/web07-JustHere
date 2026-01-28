@@ -31,37 +31,35 @@ export class GoogleService {
 
   async searchText(dto: SearchTextDto): Promise<GoogleSearchResponseDto> {
     try {
-      let requestBody: Record<string, unknown>
+      let latitude: number | undefined
+      let longitude: number | undefined
+
+      if (dto.roomId) {
+        const room = await this.roomRepository.findById(dto.roomId)
+        if (!room) {
+          throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
+        }
+        latitude = room.y
+        longitude = room.x
+      }
+
+      const requestBody: Record<string, unknown> = {
+        textQuery: dto.textQuery,
+        languageCode: 'ko',
+        maxResultCount: dto.maxResultCount ?? 20,
+      }
+
+      if (latitude !== undefined && longitude !== undefined) {
+        requestBody.locationBias = {
+          circle: {
+            center: { latitude, longitude },
+            radius: dto.radius ?? 2000,
+          },
+        }
+      }
 
       if (dto.pageToken) {
-        requestBody = { pageToken: dto.pageToken }
-      } else {
-        let latitude: number | undefined
-        let longitude: number | undefined
-
-        if (dto.roomId) {
-          const room = await this.roomRepository.findById(dto.roomId)
-          if (!room) {
-            throw new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.')
-          }
-          latitude = room.y
-          longitude = room.x
-        }
-
-        requestBody = {
-          textQuery: dto.textQuery,
-          languageCode: 'ko',
-          maxResultCount: dto.maxResultCount ?? 20,
-        }
-
-        if (latitude !== undefined && longitude !== undefined) {
-          requestBody.locationBias = {
-            circle: {
-              center: { latitude, longitude },
-              radius: dto.radius ?? 2000,
-            },
-          }
-        }
+        requestBody.pageToken = dto.pageToken
       }
 
       const fieldMask = [
@@ -135,8 +133,17 @@ export class GoogleService {
     }
   }
 
-  getPhotoUrl(photoName: string, maxWidthPx = 400, maxHeightPx = 400): string {
-    return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&key=${this.apiKey}`
+  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ data: Buffer; contentType: string }> {
+    const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&key=${this.apiKey}`
+
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+    })
+
+    return {
+      data: Buffer.from(response.data),
+      contentType: response.headers['content-type'] || 'image/jpeg',
+    }
   }
 
   private handleError(error: unknown): never {
