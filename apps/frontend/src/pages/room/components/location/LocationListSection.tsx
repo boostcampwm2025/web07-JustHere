@@ -6,7 +6,7 @@ import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
-import { RegionSelector } from './region-selector'
+import { RegionSelectorDropdown } from './region-selector'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceDetailModal } from './place-detail'
@@ -209,24 +209,21 @@ export const LocationListSection = ({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <button
-              type="button"
+            <Button
               key={tab.id}
+              variant={activeTab === tab.id ? 'primary' : 'gray'}
               onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors shrink-0',
-                activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200',
-              )}
+              className="px-4 text-sm transition-colors shrink-0"
             >
               {tab.icon}
               <span>{tab.label}</span>
-            </button>
+            </Button>
           ))}
 
           {/* Region Selector - 장소 리스트 탭에서만 표시 */}
           {activeTab === 'locations' && (
             <div className="ml-auto">
-              <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
+              <RegionSelectorDropdown currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
             </div>
           )}
         </div>
