@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import { useGooglePlaceDetails } from '@/shared/hooks'
 import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 import { getPhotoUrl } from '@/shared/api'
 import { renderStars, getPriceRangeText, getParkingText } from './place-detail.utils'
-import { Button } from '../ui'
+import { Button, ImageSlider } from '../ui'
 import { ArrowLeftIcon } from '@/shared/assets'
 
 type PlaceDetailContentProps = {
@@ -16,12 +15,16 @@ type PlaceDetailContentProps = {
 
 export const PlaceDetailContent = ({ place, className, showHeader = false, onBack }: PlaceDetailContentProps) => {
   const { data: placeDetails, isLoading } = useGooglePlaceDetails(place.id)
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
 
   const details = placeDetails || place
   const priceRangeText = getPriceRangeText(details.priceRange)
   const parkingText = getParkingText(details.parkingOptions)
-  const safePhotoIndex = details.photos ? Math.min(selectedPhotoIndex, details.photos.length - 1) : 0
+
+  const sliderImages =
+    details.photos?.slice(0, 5).map(photo => ({
+      src: getPhotoUrl(photo.name, 800),
+      alt: details.displayName.text,
+    })) || []
 
   if (isLoading) {
     return (
@@ -42,24 +45,7 @@ export const PlaceDetailContent = ({ place, className, showHeader = false, onBac
       )}
 
       {/* 사진 갤러리 */}
-      {details.photos && details.photos.length > 0 && (
-        <div className="relative shrink-0">
-          <img src={getPhotoUrl(details.photos[safePhotoIndex].name, 800)} alt={details.displayName.text} className="w-full h-64 object-cover" />
-          {details.photos.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-              {details.photos.slice(0, 5).map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  aria-label={`사진 ${idx + 1} 보기`}
-                  onClick={() => setSelectedPhotoIndex(idx)}
-                  className={cn('w-2 h-2 rounded-full transition-colors', idx === safePhotoIndex ? 'bg-white' : 'bg-white/50')}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {sliderImages.length > 0 && <ImageSlider images={sliderImages} className="h-64 shrink-0" />}
 
       {/* 기본 정보 */}
       <div className="p-6 border-b border-gray-100">

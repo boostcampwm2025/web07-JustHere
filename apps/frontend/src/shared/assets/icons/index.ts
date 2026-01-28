@@ -12,6 +12,8 @@ import CategoryIcon from '@/shared/assets/icons/category.svg?react'
 import CheckCircleIcon from '@/shared/assets/icons/check-circle.svg?react'
 import CheckIcon from '@/shared/assets/icons/check.svg?react'
 import ChevronDownIcon from '@/shared/assets/icons/chevron-down.svg?react'
+import ChevronLeftIcon from '@/shared/assets/icons/chevron-left.svg?react'
+import ChevronRightIcon from '@/shared/assets/icons/chevron-right.svg?react'
 import ClockOutlineIcon from '@/shared/assets/icons/clock-outline.svg?react'
 import CloseIcon from '@/shared/assets/icons/close.svg?react'
 import CoffeeIcon from '@/shared/assets/icons/coffee.svg?react'
@@ -52,6 +54,8 @@ export {
   CheckCircleIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ClockOutlineIcon,
   CloseIcon,
   CoffeeIcon,
