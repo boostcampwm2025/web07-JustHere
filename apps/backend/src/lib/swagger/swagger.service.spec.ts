@@ -90,7 +90,7 @@ describe('SwaggerService', () => {
       const mockDocument: MockSwaggerDocument = { paths: {} }
 
       // 특정 테스트를 위한 리턴값 재설정
-      ;(SwaggerModule.createDocument as jest.Mock).mockReturnValue(mockDocument)
+      ;(SwaggerModule.createDocument as jest.Mock).mockReturnValueOnce(mockDocument)
 
       service.setup(mockApp)
 
