@@ -1,7 +1,7 @@
-import { VOTE_EVENTS, type VoteEventName } from '../../constants/events'
-import type { VoteSocketLike, VoteSocketEventName } from '../../types/vote/socketTypes'
+import { VOTE_EVENTS, type VoteEventName } from '@/pages/room/constants'
 import type {
-  VoteAddCandidatePayload,
+  VoteSocketLike,
+  VoteSocketEventName,
   VoteCandidate,
   VoteCandidateUpdatedPayload,
   VoteCastPayload,
@@ -11,13 +11,11 @@ import type {
   VoteError,
   VoteJoinPayload,
   VoteMeUpdatedPayload,
-  VoteRemoveCandidatePayload,
   VoteRevokePayload,
-  VoteRoomActionPayload,
   VoteStartedPayload,
   VoteStatePayload,
   VoteStatus,
-} from '../../types/vote/types'
+} from '@/pages/room/types'
 
 type Handler<T = unknown> = (payload: T) => void
 
