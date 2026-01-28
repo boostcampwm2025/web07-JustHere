@@ -232,22 +232,12 @@ describe('VoteGateway', () => {
         roomId: 'room-1',
         candidateId: 'candidate-1',
       }
-      const mockUser = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
       const mockCandidateId = 'candidate-1'
 
-      userService.getSession.mockReturnValue(mockUser)
       voteService.removeCandidatePlace.mockReturnValue(mockCandidateId)
 
       gateway.onCandidateRemove(client, payload)
 
-      expect(userService.getSession).toHaveBeenCalledTimes(1)
-      expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
       expect(voteService.removeCandidatePlace).toHaveBeenCalledWith('room-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)

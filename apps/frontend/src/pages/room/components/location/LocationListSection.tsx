@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput } from '@/shared/components'
-import type { KakaoPlace, PlaceCard } from '@/shared/types'
+import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
+import type { GooglePlace, PlaceCard } from '@/shared/types'
 import { useLocationSearch } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { RegionSelector } from './region-selector'
@@ -15,12 +16,17 @@ interface LocationListSectionProps {
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
-  onSearchComplete?: (results: KakaoPlace[]) => void
-  selectedPlace: KakaoPlace | null
-  onPlaceSelect: (place: KakaoPlace | null) => void
+  onSearchComplete?: (results: GooglePlace[]) => void
+  selectedPlace: GooglePlace | null
+  onPlaceSelect: (place: GooglePlace | null) => void
 }
 
 type TabType = 'locations' | 'candidates'
+
+const getPhotoUrl = (place: GooglePlace) => {
+  if (!place.photos || place.photos.length === 0) return null
+  return getGooglePhotoUrl(place.photos[0].name, 200)
+}
 
 export const LocationListSection = ({
   roomId,
@@ -41,7 +47,7 @@ export const LocationListSection = ({
       onSearchComplete,
     })
 
-  const handlePlaceSelect = (place: KakaoPlace | null) => {
+  const handlePlaceSelect = (place: GooglePlace | null) => {
     onPlaceSelect(place)
   }
 
@@ -49,21 +55,21 @@ export const LocationListSection = ({
     setSearchQuery('')
   }
 
-  const handleAddPlaceCard = (place: KakaoPlace) => {
-    if (pendingPlaceCard?.placeId === String(place.id)) {
+  const handleAddPlaceCard = (place: GooglePlace) => {
+    if (pendingPlaceCard?.placeId === place.id) {
       onCancelPlaceCard()
       return
     }
 
     onStartPlaceCard({
       id: `placeCard-${crypto.randomUUID()}`,
-      placeId: String(place.id),
-      name: place.place_name,
-      address: place.road_address_name || place.address_name,
+      placeId: place.id,
+      name: place.displayName.text,
+      address: place.formattedAddress,
       createdAt: new Date().toISOString(),
       scale: 1,
-      image: null,
-      category: place.category_group_name,
+      image: getPhotoUrl(place),
+      category: place.primaryTypeDisplayName?.text || '',
     })
   }
 
@@ -124,7 +130,8 @@ export const LocationListSection = ({
         ) : (
           <div className="flex flex-col gap-4">
             {searchResults.map((place, index) => {
-              const isSelected = pendingPlaceCard?.placeId === String(place.id)
+              const isSelected = pendingPlaceCard?.placeId === place.id
+              const photoUrl = getPhotoUrl(place)
 
               return (
                 <div key={place.id}>
@@ -133,14 +140,33 @@ export const LocationListSection = ({
                       className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
                       onClick={() => handlePlaceSelect(place)}
                     >
-                      <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
+                      {photoUrl ? (
+                        <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex-1 flex flex-col justify-between py-0.5">
                       <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
-                        <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.place_name}</h3>
-                        <p className="text-gray text-xs line-clamp-1">{place.category_group_name}</p>
-                        <p className="text-gray-400 text-xs line-clamp-1">{place.road_address_name || place.address_name}</p>
+                        <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
+                        <div className="flex items-center gap-2">
+                          {place.rating && (
+                            <span className="text-xs text-yellow-500 flex items-center gap-0.5">
+                              ★ {place.rating.toFixed(1)}
+                              {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
+                            </span>
+                          )}
+                          {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
+                        </div>
+                        <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
+                        {place.regularOpeningHours && (
+                          <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
+                            {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-end gap-2 mt-1">

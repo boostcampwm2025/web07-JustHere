@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { useSearchKeyword, useUpdateRoom } from '@/shared/hooks'
+import { useGoogleSearch, useUpdateRoom } from '@/shared/hooks'
 import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
-import type { KakaoPlace } from '@/shared/types'
+import type { GooglePlace } from '@/shared/types'
 
 interface RegionSelectorProps {
   currentRegion?: string | null
@@ -15,7 +15,7 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const { data: results, isLoading } = useSearchKeyword(searchTerm)
+  const { data: results, isLoading } = useGoogleSearch({ textQuery: searchTerm })
 
   const { mutate: updateRoom } = useUpdateRoom(slug)
 
@@ -44,12 +44,12 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
     setSearchTerm(keyword.trim())
   }
 
-  const handleSelect = async (place: KakaoPlace) => {
+  const handleSelect = async (place: GooglePlace) => {
     updateRoom(
       {
-        x: parseFloat(place.x),
-        y: parseFloat(place.y),
-        place_name: place.place_name,
+        x: place.location.longitude,
+        y: place.location.latitude,
+        place_name: place.displayName.text,
       },
       {
         onSuccess: room => {
@@ -74,6 +74,8 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
     setSearchTerm('')
     inputRef.current?.focus()
   }
+
+  const places = results?.places ?? []
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -114,13 +116,17 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
           <div className="max-h-64 overflow-y-auto">
             {isLoading ? (
               <div className="p-4 text-center text-sm text-gray-500">검색 중...</div>
-            ) : results && results.documents.length > 0 ? (
+            ) : places.length > 0 ? (
               <ul>
-                {results.documents.map((place: KakaoPlace) => (
+                {places.map((place: GooglePlace) => (
                   <li key={place.id}>
-                    <button onClick={() => handleSelect(place)} className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
-                      <div className="text-sm font-medium text-gray-900">{place.place_name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{place.address_name}</div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(place)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="text-sm font-medium text-gray-900">{place.displayName.text}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{place.formattedAddress}</div>
                     </button>
                   </li>
                 ))}

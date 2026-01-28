@@ -10,7 +10,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus'
 import { AppController } from '@/app.controller'
 import { AppService } from '@/app.service'
 import { PrismaModule } from '@/lib/prisma/prisma.module'
-import { KakaoModule } from '@/modules/kakao/kakao.module'
+import { GoogleModule } from '@/modules/google/google.module'
 import { SocketModule } from '@/modules/socket/socket.module'
 import { UserModule } from '@/modules/user/user.module'
 import { CategoryModule } from '@/modules/category/category.module'
@@ -23,7 +23,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     PrismaModule,
-    KakaoModule,
+    GoogleModule,
     SocketModule,
     UserModule,
     CategoryModule,

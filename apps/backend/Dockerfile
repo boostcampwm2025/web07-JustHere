@@ -46,30 +46,6 @@ RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 RUN turbo run build --filter=backend
 
-# Sentry sourcemap 업로드 (빌드 단계 전용, 이미지에 남기지 않음)
-ARG SENTRY_AUTH_TOKEN
-ARG SENTRY_ORG
-ARG SENTRY_PROJECT
-ARG SENTRY_RELEASE
-
-RUN if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ] && [ -n "$SENTRY_RELEASE" ]; then \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases new "$SENTRY_RELEASE" && \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps ./apps/backend/dist --rewrite --validate && \
-  SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN \
-  SENTRY_ORG=$SENTRY_ORG \
-  SENTRY_PROJECT=$SENTRY_PROJECT \
-  SENTRY_RELEASE=$SENTRY_RELEASE \
-  npx sentry-cli releases finalize "$SENTRY_RELEASE"; \
-fi
-
 # 3. Prod-Deps (실행용 의존성만 따로 설치)
 # 이 단계가 없으면 node_modules가 너무 크거나, 심볼릭 링크가 깨짐
 FROM base AS prod-deps

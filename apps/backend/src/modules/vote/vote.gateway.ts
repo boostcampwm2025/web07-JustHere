@@ -71,6 +71,10 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId } = payload
     const user = this.userService.getSession(client.id)
 
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
     await client.join(`vote:${roomId}`)
 
     const statePayload = this.voteService.getOrCreateSession(roomId, user.userId)
@@ -89,6 +93,10 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId } = payload
     const user = this.userService.getSession(client.id)
 
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
     const updatePayload = this.voteService.addCandidatePlace(roomId, user.userId, payload)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
   }
@@ -96,7 +104,6 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @SubscribeMessage('vote:candidate:remove')
   onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
     const { roomId, candidateId } = payload
-    this.userService.getSession(client.id)
 
     const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
     this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
