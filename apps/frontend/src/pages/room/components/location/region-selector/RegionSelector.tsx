@@ -120,7 +120,11 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
               <ul>
                 {places.map((place: GooglePlace) => (
                   <li key={place.id}>
-                    <button onClick={() => handleSelect(place)} className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(place)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
                       <div className="text-sm font-medium text-gray-900">{place.displayName.text}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{place.formattedAddress}</div>
                     </button>
