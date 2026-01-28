@@ -48,7 +48,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     postits: postIts,
     placeCards,
     lines,
-    socketId,
     canUndo,
     canRedo,
     updateCursor,
@@ -197,7 +196,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     canvasId,
     onPlaceCardPlaced,
     userName,
-    socketId,
   })
 
   useEffect(() => {

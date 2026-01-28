@@ -48,7 +48,6 @@ interface UseCanvasMouseProps {
 
   // User info
   userName: string
-  socketId: string
 }
 
 export const useCanvasMouse = ({
@@ -78,7 +77,6 @@ export const useCanvasMouse = ({
   canvasId,
   onPlaceCardPlaced,
   userName,
-  socketId,
 }: UseCanvasMouseProps) => {
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
@@ -263,7 +261,7 @@ export const useCanvasMouse = ({
           height: 50,
           scale: 1,
           text: '',
-          authorName: `User ${socketId.substring(0, 4)}`,
+          authorName: userName,
         }
         addTextBox(newTextBox)
       }
@@ -281,7 +279,6 @@ export const useCanvasMouse = ({
       userName,
       addPostIt,
       startDrawing,
-      socketId,
       addTextBox,
     ],
   )

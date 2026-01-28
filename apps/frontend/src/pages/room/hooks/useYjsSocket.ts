@@ -42,7 +42,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
-  const [socketId, setSocketId] = useState('unknown')
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
@@ -248,8 +247,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     socketRef.current = socket
 
     const handleConnect = () => {
-      setSocketId(socket.id || 'unknown')
-
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
       socket.emit('canvas:attach', attachPayload)
@@ -580,7 +577,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     postits,
     placeCards,
     lines,
-    socketId,
     canUndo,
     canRedo,
     updateCursor,
