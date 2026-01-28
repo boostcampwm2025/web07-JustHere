@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
-import { useLocationSearch } from '@/pages/room/hooks'
+import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
 import { RegionSelector } from './region-selector'
@@ -31,96 +31,9 @@ export interface VotingCandidate extends Candidate {
   hasVoted: boolean
 }
 
-// 임시 목데이터 (실제 구현 시 API로 대체)
-const mockCandidates: Candidate[] = [
-  {
-    id: '1',
-    name: '스타벅스 스타필드마켓 동탄점',
-    category: '카페',
-    address: '경기도 화성시 동탄중앙로 376',
-    phone: '02-6204-1116',
-    imageUrl:
-      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweqE90gHnlB1nadfmsbwQ8zhmxLHOIhPHhtcZiS-bmVXTpl0dResvFN43WKuJH-JsYyJiOvNPQ3U_Nva_-wUHeO-AZQurRtvgy3LXYgq451u0_ILGmzxTuGOdvVyHsAMc2CvHYRh=w408-h306-k-no',
-    rating: 3.8,
-    userRatingCount: 79,
-  },
-  {
-    id: '2',
-    name: '양심장어 본점',
-    category: '음식점',
-    address: '경기도 화성시 동탄중심상가2길 29',
-    phone: '02-6204-1116',
-    imageUrl: 'https://lh3.googleusercontent.com/p/AF1QipMIshlThUQwycPXSBi3XbJwLaBhkTuKqOSgizW6=w408-h305-k-no',
-    rating: 4.9,
-    userRatingCount: 108,
-  },
-  {
-    id: '3',
-    name: '무궁화1983 동탄점',
-    category: '음식점',
-    address: '화성시',
-    phone: '02-6204-1116',
-    imageUrl:
-      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweoVQ_eaCKOS0N4sv5tsqM2zCTs4e6RV2YT252e5YB6W7w9Ooay-Y5pYqjYrPgeoCWtVhl-f4Obt4uCRQJICerxfP_D_uW3jKkbcfhjfnOYcY6JzVgNzX51BKNnVcFqmfwUKdoKXDg=w408-h306-k-no',
-    rating: 3.8,
-    userRatingCount: 89,
-  },
-]
-
-// 투표 중 목데이터
-const mockVotingCandidates: VotingCandidate[] = [
-  {
-    id: '1',
-    name: '스타벅스 강남역점',
-    category: '카페',
-    address: '서울 강남구 강남대로94길 9',
-    phone: '02-6204-1116',
-    imageUrl:
-      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweqE90gHnlB1nadfmsbwQ8zhmxLHOIhPHhtcZiS-bmVXTpl0dResvFN43WKuJH-JsYyJiOvNPQ3U_Nva_-wUHeO-AZQurRtvgy3LXYgq451u0_ILGmzxTuGOdvVyHsAMc2CvHYRh=w408-h306-k-no',
-    rating: 4.2,
-    userRatingCount: 1234,
-    votePercentage: 75,
-    voters: [
-      { socketId: 'socketid-1', userId: 'userId1', name: '빨간라면' },
-      { socketId: 'socketid-2', userId: 'userId2', name: '파린부대찌개' },
-      { socketId: 'socketid-3', userId: 'userId3', name: '초록삼겹살' },
-    ],
-    hasVoted: true,
-  },
-  {
-    id: '2',
-    name: '맛있는 돈까스집',
-    category: '음식점',
-    address: '서울 강남구 강남대로94길 9',
-    phone: '02-6204-1116',
-    imageUrl: 'https://lh3.googleusercontent.com/p/AF1QipMIshlThUQwycPXSBi3XbJwLaBhkTuKqOSgizW6=w408-h305-k-no',
-    rating: 4.5,
-    userRatingCount: 567,
-    votePercentage: 50,
-    voters: [
-      { socketId: 'socketid-4', userId: 'userId4', name: '분홍소세지' },
-      { socketId: 'socketid-5', userId: 'userId5', name: '검정초밥' },
-    ],
-    hasVoted: false,
-  },
-  {
-    id: '3',
-    name: '이디야커피 선릉점',
-    category: '카페',
-    address: '서울 강남구 강남대로94길 9',
-    phone: '02-6204-1116',
-    imageUrl:
-      'https://lh3.googleusercontent.com/gps-cs-s/AHVAweoVQ_eaCKOS0N4sv5tsqM2zCTs4e6RV2YT252e5YB6W7w9Ooay-Y5pYqjYrPgeoCWtVhl-f4Obt4uCRQJICerxfP_D_uW3jKkbcfhjfnOYcY6JzVgNzX51BKNnVcFqmfwUKdoKXDg=w408-h306-k-no',
-    rating: 3.8,
-    userRatingCount: 89,
-    votePercentage: 25,
-    voters: [{ socketId: 'socketid-6', userId: 'userId6', name: '주황버섯' }],
-    hasVoted: false,
-  },
-]
-
 interface LocationListSectionProps {
   roomId: string
+  userId: string
   slug: string
   currentRegion?: string | null
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
@@ -141,6 +54,7 @@ const getPhotoUrl = (place: GooglePlace) => {
 
 export const LocationListSection = ({
   roomId,
+  userId,
   slug,
   currentRegion,
   onRegionChange,
@@ -153,13 +67,102 @@ export const LocationListSection = ({
 }: LocationListSectionProps) => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabType>('locations')
-  // 임시 투표 상태 > socket 연동 후 제거 예정
-  const [isVoting, setIsVoting] = useState(false)
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
       onSearchComplete,
     })
+
+  const {
+    status: voteStatus,
+    candidates: voteCandidates,
+    counts: voteCounts,
+    myVotes,
+    join,
+    leave,
+    addCandidate,
+    removeCandidate,
+    startVote,
+    endVote,
+    castVote,
+    revokeVote,
+  } = useVoteSocket({
+    roomId,
+    userId,
+    enabled: Boolean(roomId && userId),
+  })
+
+  useEffect(() => {
+    if (!roomId || !userId) return
+    join()
+    return () => leave()
+  }, [roomId, userId, join, leave])
+
+  const candidateList = useMemo<Candidate[]>(() => {
+    return voteCandidates.map(candidate => ({
+      id: candidate.placeId,
+      name: candidate.name,
+      category: candidate.category ?? '',
+      address: candidate.address,
+      phone: candidate.phone,
+      imageUrl: candidate.imageUrl,
+      rating: candidate.rating,
+      userRatingCount: candidate.ratingCount,
+    }))
+  }, [voteCandidates])
+
+  const totalVotes = useMemo(() => {
+    return Object.values(voteCounts).reduce((sum, count) => sum + count, 0)
+  }, [voteCounts])
+
+  const votingCandidates = useMemo<VotingCandidate[]>(() => {
+    return voteCandidates.map(candidate => {
+      const count = voteCounts[candidate.placeId] ?? 0
+      const votePercentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+
+      return {
+        id: candidate.placeId,
+        name: candidate.name,
+        category: candidate.category ?? '',
+        address: candidate.address,
+        phone: candidate.phone,
+        imageUrl: candidate.imageUrl,
+        rating: candidate.rating,
+        userRatingCount: candidate.ratingCount,
+        votePercentage,
+        voters: [],
+        hasVoted: myVotes.includes(candidate.placeId),
+      }
+    })
+  }, [voteCandidates, voteCounts, totalVotes, myVotes])
+
+  const handleVote = useCallback(
+    (candidateId: string) => {
+      if (myVotes.includes(candidateId)) {
+        revokeVote(candidateId)
+        return
+      }
+
+      castVote(candidateId)
+    },
+    [myVotes, castVote, revokeVote],
+  )
+
+  const handleCandidateRegister = useCallback(
+    (place: GooglePlace) => {
+      addCandidate({
+        placeId: place.id,
+        name: place.displayName.text,
+        address: place.formattedAddress,
+        category: place.primaryTypeDisplayName?.text,
+        imageUrl: getPhotoUrl(place) ?? undefined,
+        rating: place.rating,
+        ratingCount: place.userRatingCount,
+      })
+      setActiveTab('candidates')
+    },
+    [addCandidate],
+  )
 
   const handlePlaceSelect = (place: GooglePlace | null) => {
     onPlaceSelect(place)
@@ -188,6 +191,8 @@ export const LocationListSection = ({
       height: PLACE_CARD_HEIGHT,
     })
   }
+
+  const isVoting = voteStatus === 'IN_PROGRESS' || voteStatus === 'COMPLETED'
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     {
@@ -304,7 +309,13 @@ export const LocationListSection = ({
                           >
                             캔버스
                           </Button>
-                          <Button variant="gray" size="sm" className="text-xs">
+                          <Button
+                            variant="gray"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => handleCandidateRegister(place)}
+                            disabled={voteStatus !== 'WAITING'}
+                          >
                             후보등록
                           </Button>
                         </div>
@@ -328,9 +339,16 @@ export const LocationListSection = ({
       {/* 후보 리스트 탭 */}
       {activeTab === 'candidates' &&
         (isVoting ? (
-          <VoteListSection candidates={mockVotingCandidates} onEndVote={() => navigate(`/result/${slug}`)} />
+          <VoteListSection
+            candidates={votingCandidates}
+            onVote={handleVote}
+            onEndVote={() => {
+              endVote()
+              navigate(`/result/${slug}`)
+            }}
+          />
         ) : (
-          <CandidateListSection candidates={mockCandidates} onStartVote={() => setIsVoting(true)} />
+          <CandidateListSection candidates={candidateList} onStartVote={startVote} onRemoveCandidate={removeCandidate} />
         ))}
 
       {/* Place Detail Modal */}

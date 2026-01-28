@@ -34,6 +34,8 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
   const isJoinedRef = useRef(false)
   const joinedRoomIdRef = useRef<string | null>(null)
+  const pendingJoinRef = useRef(false)
+  const pendingJoinHandlerRef = useRef<(() => void) | null>(null)
   const prevRoomIdRef = useRef(roomId)
 
   // 임시 후보자 ID 추적 (optimistic update용)
@@ -91,6 +93,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     addSocketBreadcrumb('vote:leave', { roomId: joinedRoomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
+    if (pendingJoinHandlerRef.current) {
+      socket.off('connect', pendingJoinHandlerRef.current)
+      pendingJoinHandlerRef.current = null
+    }
+    pendingJoinRef.current = false
 
     return () => {
       resetState()
@@ -235,7 +242,21 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     }
 
     if (!socket.connected) {
+      if (pendingJoinRef.current) return
+      pendingJoinRef.current = true
       connectReal()
+      const handleConnect = () => {
+        socket.off('connect', handleConnect)
+        pendingJoinHandlerRef.current = null
+        pendingJoinRef.current = false
+        if (isJoinedRef.current || !roomId) return
+        socket.emit(VOTE_EVENTS.join, { roomId: roomId, userId })
+        addSocketBreadcrumb('vote:join', { roomId })
+        isJoinedRef.current = true
+        joinedRoomIdRef.current = roomId
+      }
+      pendingJoinHandlerRef.current = handleConnect
+      socket.on('connect', handleConnect)
       return
     }
 
@@ -257,6 +278,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     addSocketBreadcrumb('vote:leave', { roomId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
+    if (pendingJoinHandlerRef.current) {
+      socket.off('connect', pendingJoinHandlerRef.current)
+      pendingJoinHandlerRef.current = null
+    }
+    pendingJoinRef.current = false
     resetState()
 
     disconnectReal()
