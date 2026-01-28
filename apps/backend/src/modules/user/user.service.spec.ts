@@ -1,8 +1,6 @@
 import { UserService } from './user.service'
 import { UserSessionStore } from './user-session.store'
 import type { CreateSessionParams, UserSession } from './user.type'
-import { CustomException } from '@/lib/exceptions/custom.exception'
-import { ErrorType } from '@/lib/types/response.type'
 
 describe('UserService', () => {
   let service: UserService
