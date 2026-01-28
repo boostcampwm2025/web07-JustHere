@@ -23,6 +23,7 @@ import CrosshairsGpsIcon from '@/shared/assets/icons/crosshairs-gps.svg?react'
 import CursorIcon from '@/shared/assets/icons/cursor.svg?react'
 import ForumIcon from '@/shared/assets/icons/forum.svg?react'
 import HandBackRightIcon from '@/shared/assets/icons/hand-back-right.svg?react'
+import HelpCircleIcon from '@/shared/assets/icons/help-circle.svg?react'
 import LiquorIcon from '@/shared/assets/icons/liquor.svg?react'
 import ListBoxOutlineIcon from '@/shared/assets/icons/list-box-outline.svg?react'
 import MagnifyIcon from '@/shared/assets/icons/magnify.svg?react'
@@ -63,6 +64,7 @@ export {
   CursorIcon,
   ForumIcon,
   HandBackRightIcon,
+  HelpCircleIcon,
   LiquorIcon,
   ListBoxOutlineIcon,
   MagnifyIcon,
