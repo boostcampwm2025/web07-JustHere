@@ -44,6 +44,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
   const handleSocketError = useCallback((error: Error) => {
     setError({ code: 'SOCKET_ERROR', message: error.message })
+    pendingJoinRef.current = false
   }, [])
 
   const {
@@ -128,6 +129,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
         joinedRoomIdRef.current = null
         shouldJoinRef.current = true
       }
+      pendingJoinRef.current = false
     }
 
     // [S->C] vote:state - join 시 초기 상태 수신
@@ -305,25 +307,33 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
       // Optimistic update: 임시 후보자 추가
       if (status === 'WAITING') {
-        const duplicated = candidates.some(c => c.placeId === input.placeId)
-        if (!duplicated) {
+        if (!tempCandidateIdsRef.current.has(input.placeId)) {
           const tempCandidate: VoteCandidate = {
             ...input,
             createdBy: userId,
             createdAt: new Date().toISOString(),
           }
 
-          tempCandidateIdsRef.current.add(input.placeId)
-          setCandidates(prev => [...prev, tempCandidate])
-          setCounts(prev => ({
-            ...prev,
-            [input.placeId]: 0,
-          }))
-          setVotersByCandidate(prev => ({
-            ...prev,
-            [input.placeId]: [],
-          }))
-          setError(null)
+          let didAdd = false
+          setCandidates(prev => {
+            const duplicated = prev.some(c => c.placeId === input.placeId)
+            if (duplicated) return prev
+            didAdd = true
+            return [...prev, tempCandidate]
+          })
+
+          if (didAdd) {
+            tempCandidateIdsRef.current.add(input.placeId)
+            setCounts(prev => {
+              if (prev[input.placeId] !== undefined) return prev
+              return { ...prev, [input.placeId]: 0 }
+            })
+            setVotersByCandidate(prev => {
+              if (prev[input.placeId]) return prev
+              return { ...prev, [input.placeId]: [] }
+            })
+            setError(null)
+          }
         }
       }
 
@@ -333,7 +343,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:candidate:add', { roomId, placeId: input.placeId })
     },
-    [enabled, roomId, userId, status, candidates, resolveSocket],
+    [enabled, roomId, userId, status, resolveSocket],
   )
 
   // [C->S] vote:candidate:remove
@@ -423,6 +433,11 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
           ...prev,
           [candidateId]: currentCount + 1,
         }))
+        setVotersByCandidate(prev => {
+          const current = prev[candidateId] ?? []
+          if (current.includes(userId)) return prev
+          return { ...prev, [candidateId]: [...current, userId] }
+        })
         setError(null)
       }
 
@@ -432,7 +447,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:cast', { roomId, candidateId })
     },
-    [enabled, roomId, status, myVotes, counts, resolveSocket],
+    [enabled, roomId, userId, status, myVotes, counts, resolveSocket],
   )
 
   // [C->S] vote:revoke
@@ -451,6 +466,12 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
           ...prev,
           [candidateId]: Math.max(0, currentCount - 1),
         }))
+        setVotersByCandidate(prev => {
+          const current = prev[candidateId] ?? []
+          if (!current.includes(userId)) return prev
+          const next = current.filter(id => id !== userId)
+          return { ...prev, [candidateId]: next }
+        })
         setError(null)
       }
 
@@ -460,7 +481,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:revoke', { roomId, candidateId })
     },
-    [enabled, roomId, status, myVotes, counts, resolveSocket],
+    [enabled, roomId, userId, status, myVotes, counts, resolveSocket],
   )
 
   const resetError = useCallback(() => {

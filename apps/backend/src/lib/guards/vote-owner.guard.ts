@@ -29,9 +29,11 @@ export class VoteOwnerGuard implements CanActivate {
       if (!data) return undefined
       return typeof data.userId === 'string' ? data.userId : undefined
     })()
-    const userId = payloadUserId ?? dataUserId
+    if (payloadUserId && dataUserId && payloadUserId !== dataUserId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
 
-    const clientSession = userId ? this.userService.getSessionByUserIdInRoom(roomId, userId) : this.userService.getSession(client.id)
+    const clientSession = dataUserId ? this.userService.getSessionByUserIdInRoom(roomId, dataUserId) : this.userService.getSession(client.id)
 
     if (!clientSession || clientSession.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
