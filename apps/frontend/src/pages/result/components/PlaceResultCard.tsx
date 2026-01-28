@@ -11,8 +11,8 @@ export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden min-w-sm flex-1">
-        <div className="flex-1 min-h-[500px] flex items-center justify-center">
+      <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
+        <div className="flex-1 flex items-center justify-center">
           <span className="text-gray-500">로딩 중...</span>
         </div>
       </div>
@@ -21,8 +21,8 @@ export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
 
   if (!placeDetails) {
     return (
-      <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden min-w-sm flex-1">
-        <div className="flex-1 min-h-[500px] flex items-center justify-center">
+      <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
+        <div className="flex-1 flex items-center justify-center">
           <span className="text-gray-500">장소 정보를 불러올 수 없습니다</span>
         </div>
       </div>
@@ -30,8 +30,8 @@ export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
   }
 
   return (
-    <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden min-w-sm flex-1">
-      <PlaceDetailContent place={placeDetails} className="min-h-[500px]" />
+    <div className="flex flex-col bg-white rounded-2xl shadow-sm overflow-hidden max-w-md shrink-0 h-full">
+      <PlaceDetailContent place={placeDetails} />
     </div>
   )
 }

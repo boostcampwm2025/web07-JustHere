@@ -32,7 +32,7 @@ export const PlaceDetailContent = ({ place, className, showHeader = false, onBac
   }
 
   return (
-    <div className={cn('flex flex-col h-full overflow-y-auto', className)}>
+    <div className={cn('flex flex-col h-full overflow-y-auto scrollbar-hide', className)}>
       {/* 헤더 (뒤로가기 버튼 + 가게 이름) */}
       {showHeader && (
         <div className="sticky top-0 z-10 flex items-center gap-3 pt-4 pb-4 pr-4 pl-2 bg-white border-b border-gray-100">

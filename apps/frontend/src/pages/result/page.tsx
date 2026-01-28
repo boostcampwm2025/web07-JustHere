@@ -45,7 +45,7 @@ export const ResultPage = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
       <RoomHeader
         participants={participants}
         currentUserId={user.userId}
@@ -56,7 +56,7 @@ export const ResultPage = () => {
         onTransferOwner={transferOwner}
       />
       {/* Main Content */}
-      <main className="flex-1 flex flex-col p-8">
+      <main className="flex-1 flex flex-col p-8 min-h-0 overflow-hidden">
         {/* Back Button */}
         <button type="button" onClick={handleGoBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 w-fit">
           <ArrowLeftIcon className="w-5 h-5" />
@@ -81,7 +81,7 @@ export const ResultPage = () => {
         </div>
 
         {/* Place Cards */}
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
+        <div className="flex-1 flex gap-6 overflow-x-auto pb-4 min-h-0">
           {resultData.map(place => (
             <PlaceResultCard key={place.id} place={place} />
           ))}
