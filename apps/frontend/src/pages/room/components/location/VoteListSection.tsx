@@ -117,5 +117,3 @@ export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandida
     </>
   )
 }
-
-export default VoteListSection

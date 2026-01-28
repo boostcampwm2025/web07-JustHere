@@ -68,5 +68,3 @@ export const CandidateListSection = ({ candidates, onStartVote, onRemoveCandidat
     </>
   )
 }
-
-export default CandidateListSection
