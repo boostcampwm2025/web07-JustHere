@@ -36,6 +36,7 @@ export const useRoomParticipants = (roomId: string | null) => {
     queryFn: async () => [],
     enabled: false,
     initialData: [],
+    select: data => data.filter((p, index, self) => self.findIndex(x => x.userId === p.userId) === index),
   })
 }
 

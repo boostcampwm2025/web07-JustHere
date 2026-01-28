@@ -19,6 +19,8 @@ import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
+import type { CanvasItemType } from '@/shared/types'
+import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -27,13 +29,19 @@ interface UseYjsSocketOptions {
   userName: string
 }
 
+const typeToArrayName: Record<CanvasItemType, string> = {
+  postit: 'postits',
+  line: 'lines',
+  placeCard: 'placeCards',
+  textBox: 'textBoxes',
+}
+
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
-  const [socketId, setSocketId] = useState('unknown')
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
@@ -76,7 +84,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       summaryRef.current.set(key, current)
 
       if (summaryTimerRef.current == null) {
-        summaryTimerRef.current = window.setTimeout(flushSummary, 5000)
+        summaryTimerRef.current = window.setTimeout(flushSummary, SUMMARY_FREQUENCY)
       }
     },
     [flushSummary],
@@ -112,7 +120,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes], {
       trackedOrigins: new Set([localOriginRef.current]),
-      captureTimeout: 1000,
+      captureTimeout: CAPTURE_FREQUENCY,
     })
     undoManagerRef.current = undoManager
 
@@ -150,8 +158,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         address: yMap.get('address') as string,
         x: yMap.get('x') as number,
         y: yMap.get('y') as number,
-        width: (yMap.get('width') as number | undefined) ?? 240,
-        height: (yMap.get('height') as number | undefined) ?? 180,
+        width: (yMap.get('width') as number | undefined) ?? PLACE_CARD_WIDTH,
+        height: (yMap.get('height') as number | undefined) ?? PLACE_CARD_HEIGHT,
         scale: yMap.get('scale') as number,
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
@@ -239,8 +247,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     socketRef.current = socket
 
     const handleConnect = () => {
-      setSocketId(socket.id || 'unknown')
-
       // 캔버스 참여
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
       socket.emit('canvas:attach', attachPayload)
@@ -376,7 +382,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
           trackHighFreqRef.current('y:awareness:send')
         }
       },
-      100,
+      CURSOR_FREQUENCY,
     ),
   ).current
 
@@ -488,8 +494,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('address', card.address)
     yMap.set('x', card.x)
     yMap.set('y', card.y)
-    yMap.set('width', card.width ?? 240)
-    yMap.set('height', card.height ?? 180)
+    yMap.set('width', card.width ?? PLACE_CARD_WIDTH)
+    yMap.set('height', card.height ?? PLACE_CARD_HEIGHT)
     yMap.set('scale', card.scale ?? 1)
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
@@ -502,20 +508,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   // 장소 카드 업데이트 함수
   const updatePlaceCard = (id: string, updates: Partial<Omit<PlaceCard, 'id'>>) => {
     updateItem('placeCards', id, updates)
-  }
-
-  const removePlaceCard = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const index = yPlaceCards.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    doc.transact(() => {
-      yPlaceCards.delete(index, 1)
-    }, localOriginRef.current)
   }
 
   // 선 추가 함수
@@ -543,34 +535,19 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('lines', id, updates)
   }
 
-  // 포스트잇 삭제 함수
-  const deletePostIt = (id: string) => {
+  const deleteCanvasItem = (type: CanvasItemType, id: string) => {
     const doc = docRef.current
     if (!doc) return
 
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const index = yPostits.toArray().findIndex(yMap => yMap.get('id') === id)
+    const arrayName = typeToArrayName[type]
+    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
+    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
 
-    if (index !== -1) {
-      doc.transact(() => {
-        yPostits.delete(index, 1) // 해당 인덱스 삭제
-      }, localOriginRef.current)
-    }
-  }
+    if (index === -1) return
 
-  // 선(드로잉) 삭제 함수
-  const deleteLine = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const index = yLines.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index !== -1) {
-      doc.transact(() => {
-        yLines.delete(index, 1)
-      }, localOriginRef.current)
-    }
+    doc.transact(() => {
+      yArray.delete(index, 1)
+    }, localOriginRef.current)
   }
 
   // 텍스트박스 추가 함수
@@ -594,28 +571,12 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('textBoxes', id, updates)
   }
 
-  // 텍스트박스 삭제 함수
-  const deleteTextBox = (id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-    const index = yTextBoxes.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index !== -1) {
-      doc.transact(() => {
-        yTextBoxes.delete(index, 1)
-      }, localOriginRef.current)
-    }
-  }
-
   return {
     isConnected,
     cursors,
     postits,
     placeCards,
     lines,
-    socketId,
     canUndo,
     canRedo,
     updateCursor,
@@ -625,16 +586,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     stopCapturing,
     addPostIt,
     updatePostIt,
-    deletePostIt,
     addPlaceCard,
     updatePlaceCard,
-    removePlaceCard,
     addLine,
     updateLine,
-    deleteLine,
     textBoxes,
     addTextBox,
     updateTextBox,
-    deleteTextBox,
+    deleteCanvasItem,
   }
 }

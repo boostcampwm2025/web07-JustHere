@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/shared/utils'
 
-type Variant = 'primary' | 'gray' | 'ghost' | 'outline'
+type Variant = 'primary' | 'gray' | 'ghost' | 'outline' | 'primary_outline'
 type Size = 'icon' | 'sm' | 'md' | 'lg'
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -18,6 +18,7 @@ const VARIANT_STYLES: Record<Variant, string> = {
   gray: 'bg-gray-100 text-gray hover:bg-gray-disable/20 active:bg-gray-disable/30 focus-visible:ring-gray',
   ghost: 'text-gray hover:bg-gray-bg active:bg-gray-disable/10 focus-visible:ring-gray',
   outline: 'border border-gray-200 text-gray-700 hover:bg-gray-100 focus-visible:ring-gray',
+  primary_outline: 'border border-primary text-primary bg-primary-bg hover:bg-primary-bg active:bg-primary-bg focus-visible:ring-primary',
 }
 
 const SIZE_STYLES: Record<Size, string> = {
