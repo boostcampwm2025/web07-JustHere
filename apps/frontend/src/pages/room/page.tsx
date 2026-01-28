@@ -87,6 +87,8 @@ export default function RoomPage() {
         <LocationListSection
           roomId={roomId}
           userId={user.userId}
+          userName={user.name}
+          participants={participants}
           slug={slug}
           currentRegion={currentRegion}
           pendingPlaceCard={pendingPlaceCard}

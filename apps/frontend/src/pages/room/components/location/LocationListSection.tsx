@@ -35,6 +35,8 @@ export interface VotingCandidate extends Candidate {
 interface LocationListSectionProps {
   roomId: string
   userId: string
+  userName: string
+  participants: Participant[]
   slug: string
   currentRegion?: string | null
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
@@ -56,6 +58,8 @@ const getPhotoUrl = (place: GooglePlace) => {
 export const LocationListSection = ({
   roomId,
   userId,
+  userName,
+  participants,
   slug,
   currentRegion,
   onRegionChange,
@@ -97,6 +101,13 @@ export const LocationListSection = ({
   })
 
   const lastErrorKeyRef = useRef<string | null>(null)
+  const currentParticipant = useMemo<Participant>(() => {
+    const existing = participants.find(p => p.userId === userId)
+    if (existing) return existing
+
+    return { socketId: '', userId, name: userName }
+  }, [participants, userId, userName])
+  const otherParticipants = useMemo(() => participants.filter(p => p.userId !== userId), [participants, userId])
 
   useEffect(() => {
     if (!roomId || !userId) return
@@ -138,6 +149,10 @@ export const LocationListSection = ({
   const votingCandidates = useMemo<VotingCandidate[]>(() => {
     return voteCandidates.map(candidate => {
       const count = voteCounts[candidate.placeId] ?? 0
+      const hasVoted = myVotes.includes(candidate.placeId)
+      const pool = hasVoted ? [currentParticipant, ...otherParticipants] : otherParticipants.length > 0 ? otherParticipants : [currentParticipant]
+      const displayCount = Math.min(Math.max(count, hasVoted ? 1 : 0), pool.length)
+      const voters = pool.slice(0, displayCount)
       const votePercentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
 
       return {
@@ -150,11 +165,11 @@ export const LocationListSection = ({
         rating: candidate.rating,
         userRatingCount: candidate.ratingCount,
         votePercentage,
-        voters: [],
-        hasVoted: myVotes.includes(candidate.placeId),
+        voters,
+        hasVoted,
       }
     })
-  }, [voteCandidates, voteCounts, totalVotes, myVotes])
+  }, [voteCandidates, voteCounts, totalVotes, myVotes, currentParticipant, otherParticipants])
 
   const handleVote = useCallback(
     (candidateId: string) => {
@@ -182,6 +197,24 @@ export const LocationListSection = ({
       setActiveTab('candidates')
     },
     [addCandidate],
+  )
+
+  const handleViewDetail = useCallback(
+    (candidateId: string) => {
+      const candidate = voteCandidates.find(item => item.placeId === candidateId)
+      if (!candidate) return
+
+      onPlaceSelect({
+        id: candidate.placeId,
+        displayName: { text: candidate.name, languageCode: 'ko' },
+        formattedAddress: candidate.address,
+        location: { latitude: 0, longitude: 0 },
+        rating: candidate.rating,
+        userRatingCount: candidate.ratingCount,
+        primaryTypeDisplayName: candidate.category ? { text: candidate.category, languageCode: 'ko' } : undefined,
+      })
+    },
+    [voteCandidates, onPlaceSelect],
   )
 
   const handlePlaceSelect = (place: GooglePlace | null) => {
@@ -362,6 +395,7 @@ export const LocationListSection = ({
           <VoteListSection
             candidates={votingCandidates}
             onVote={handleVote}
+            onViewDetail={handleViewDetail}
             onEndVote={() => {
               endVote()
               navigate(`/result/${slug}`)
