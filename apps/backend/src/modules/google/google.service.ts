@@ -3,10 +3,8 @@ import { ErrorType } from '@/lib/types/response.type'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import axios, { AxiosInstance } from 'axios'
-import { SearchTextDto } from './dto/search-text.dto'
-import { PlaceDetailsDto } from './dto/place-details.dto'
-import { GoogleSearchResponseDto, GooglePlaceDto } from './dto/google-place.dto'
-import { RoomRepository } from '../room/room.repository'
+import { SearchTextDto, PlaceDetailsDto, GoogleSearchResponseDto, GooglePlaceDto } from './dto'
+import { RoomRepository } from '@/modules/room/room.repository'
 
 @Injectable()
 export class GoogleService {
@@ -151,6 +149,11 @@ export class GoogleService {
   }
 
   private handleError(error: unknown): never {
+    // 1. 이미 처리된 CustomException이면 그대로 던짐
+    if (error instanceof CustomException) {
+      throw error
+    }
+
     if (axios.isAxiosError(error)) {
       const status = error.response?.status
       const message = (error.response?.data as { error?: { message?: string } })?.error?.message || error.message

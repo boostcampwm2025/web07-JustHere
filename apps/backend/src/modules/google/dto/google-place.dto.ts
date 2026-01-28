@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Type } from 'class-transformer'
 
 export class GooglePhotoDto {
   @ApiProperty()
@@ -138,6 +139,7 @@ export class GooglePlaceDto {
 
 export class GoogleSearchResponseDto {
   @ApiProperty({ type: [GooglePlaceDto] })
+  @Type(() => GooglePlaceDto)
   places: GooglePlaceDto[]
 
   @ApiPropertyOptional()
