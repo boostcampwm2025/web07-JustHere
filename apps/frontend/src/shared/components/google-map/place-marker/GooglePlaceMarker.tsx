@@ -1,34 +1,38 @@
 import { useState } from 'react'
-import { CustomOverlayMap } from 'react-kakao-maps-sdk'
-import type { KakaoPlace } from '@/shared/types'
+import { AdvancedMarker } from '@vis.gl/react-google-maps'
+import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 
-interface PlaceMarkerProps {
-  place: KakaoPlace
+interface GooglePlaceMarkerProps {
+  place: GooglePlace
   isSelected?: boolean
-  onClick?: (place: KakaoPlace) => void
+  onClick?: (place: GooglePlace) => void
 }
 
-export const PlaceMarker = ({ place, isSelected, onClick }: PlaceMarkerProps) => {
+export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMarkerProps) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const position = {
-    lat: Number(place.y),
-    lng: Number(place.x),
+    lat: place.location.latitude,
+    lng: place.location.longitude,
   }
 
   return (
-    <CustomOverlayMap position={position} yAnchor={1.3}>
+    <AdvancedMarker position={position} onClick={() => onClick?.(place)}>
       <div
         className="relative flex flex-col items-center cursor-pointer"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={() => onClick?.(place)}
       >
         {isHovered && (
           <div className="absolute bottom-full mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg border border-gray-200 whitespace-nowrap z-10">
-            <p className="text-sm font-bold text-gray-800">{place.place_name}</p>
-            <p className="text-xs text-gray">{place.category_group_name}</p>
+            <p className="text-sm font-bold text-gray-800">{place.displayName.text}</p>
+            {place.primaryTypeDisplayName && <p className="text-xs text-gray">{place.primaryTypeDisplayName.text}</p>}
+            {place.rating && (
+              <p className="text-xs text-yellow-500">
+                {'★'.repeat(Math.round(place.rating))} {place.rating.toFixed(1)}
+              </p>
+            )}
             <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white border-r border-b border-gray-200 rotate-45" />
           </div>
         )}
@@ -50,6 +54,6 @@ export const PlaceMarker = ({ place, isSelected, onClick }: PlaceMarkerProps) =>
           )}
         />
       </div>
-    </CustomOverlayMap>
+    </AdvancedMarker>
   )
 }

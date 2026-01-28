@@ -1,5 +1,5 @@
 import { ResponseStatus } from '@/lib/types/response.type'
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common'
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, StreamableFile } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { Request, Response } from 'express'
 import { map } from 'rxjs/operators'
@@ -27,12 +27,17 @@ export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, Respons
       const response = ctx.getResponse<Response>()
 
       return next.handle().pipe(
-        map(data => ({
-          status: ResponseStatus.Success,
-          statusCode: response.statusCode,
-          data,
-          timestamp: now,
-        })),
+        map(data => {
+          if (data instanceof StreamableFile) {
+            return data as unknown as ResponseType<T>
+          }
+          return {
+            status: ResponseStatus.Success,
+            statusCode: response.statusCode,
+            data,
+            timestamp: now,
+          }
+        }),
       )
     }
 

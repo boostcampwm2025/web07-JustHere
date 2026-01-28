@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/assets'
-import { Button, KakaoMap } from '@/shared/components'
+import { Button } from '@/shared/components'
+import { GoogleMap } from '@/shared/components/google-map'
 import { cn } from '@/shared/utils'
-import type { Category, KakaoPlace, PlaceCard } from '@/shared/types'
+import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories } from '@/shared/hooks'
 import { AddCategoryModal } from './add-category'
 import { DeleteCategoryModal } from './delete-category'
@@ -17,9 +18,9 @@ interface WhiteboardSectionProps {
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
-  searchResults?: KakaoPlace[]
-  selectedPlace: KakaoPlace | null
-  onMarkerClick?: (place: KakaoPlace | null) => void
+  searchResults?: GooglePlace[]
+  selectedPlace: GooglePlace | null
+  onMarkerClick?: (place: GooglePlace | null) => void
 }
 
 export const WhiteboardSection = ({
@@ -145,7 +146,7 @@ export const WhiteboardSection = ({
           )
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            <KakaoMap
+            <GoogleMap
               markers={searchResults}
               selectedMarkerId={selectedPlace?.id}
               onMarkerClick={onMarkerClick}
@@ -187,7 +188,7 @@ function resolveActiveCategoryId(categories: Category[], currentId: string) {
   return exists ? currentId : categories[0].id
 }
 
-function getFirstResultCenter(results: KakaoPlace[]) {
+function getFirstResultCenter(results: GooglePlace[]) {
   if (!results[0]) return undefined
-  return { lat: Number(results[0].y), lng: Number(results[0].x) }
+  return { lat: results[0].location.latitude, lng: results[0].location.longitude }
 }

@@ -2,14 +2,14 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
-export class SearchKeywordDto {
+export class SearchTextDto {
   @ApiProperty({
     description: '검색 키워드',
-    example: '맛집',
+    example: '강남역 맛집',
   })
   @IsString()
   @IsNotEmpty()
-  keyword: string
+  textQuery: string
 
   @ApiPropertyOptional({ description: '주변 검색 시 Room ID' })
   @IsOptional()
@@ -22,15 +22,14 @@ export class SearchKeywordDto {
   @IsNumber()
   radius?: number
 
-  @ApiPropertyOptional({ description: '페이지 번호', example: 1 })
+  @ApiPropertyOptional({ description: '최대 결과 수', example: 20, default: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  page?: number
+  maxResultCount?: number
 
-  @ApiPropertyOptional({ description: '페이지당 결과 수', example: 15 })
+  @ApiPropertyOptional({ description: '다음 페이지 토큰 (페이지네이션)' })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  size?: number
+  @IsString()
+  pageToken?: string
 }
