@@ -19,6 +19,8 @@ describe('VoteOwnerGuard', () => {
   }
 
   beforeEach(async () => {
+    jest.clearAllMocks()
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [VoteOwnerGuard, { provide: VoteService, useValue: mockVoteService }, { provide: UserService, useValue: mockUserService }],
     }).compile()
