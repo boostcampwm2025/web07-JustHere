@@ -41,14 +41,14 @@ describe('PrismaService', () => {
   it('OnModuleInit에서 $connect를 호출해야 한다', async () => {
     await service.onModuleInit()
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(service.$connect as jest.Mock).toHaveBeenCalled()
+    // eslint-disable-next-line `@typescript-eslint/unbound-method`
+    expect(service.$connect as jest.Mock).toHaveBeenCalledTimes(1)
   })
 
   it('OnModuleDestroy에서 $disconnect를 호출해야 한다', async () => {
     await service.onModuleDestroy()
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(service.$disconnect as jest.Mock).toHaveBeenCalled()
+    // eslint-disable-next-line `@typescript-eslint/unbound-method`
+    expect(service.$disconnect as jest.Mock).toHaveBeenCalledTimes(1)
   })
 })
