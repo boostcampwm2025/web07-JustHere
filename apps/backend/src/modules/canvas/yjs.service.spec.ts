@@ -97,7 +97,7 @@ describe('YjsService', () => {
       clientDoc.getText('content').insert(0, 'A')
       const update = Y.encodeStateAsUpdate(clientDoc)
 
-      service.processUpdate(categoryId, update)
+      expect(() => service.processUpdate(categoryId, update)).not.toThrow()
     })
 
     it('존재하지 않는 캔버스에 업데이트 시 NotFound 예외를 던져야 한다', () => {
