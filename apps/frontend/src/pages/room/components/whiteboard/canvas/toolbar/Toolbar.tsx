@@ -1,7 +1,8 @@
-import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon } from '@/shared/assets'
+import { CursorIcon, HandBackRightIcon, NoteTextIcon, PencilIcon, RedoIcon, UndoIcon, TextIcon, HelpCircleIcon } from '@/shared/assets'
 import type { ToolType } from '@/shared/types'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
+import { KeyboardShortcutsDropdown } from './keyboard-shortcuts'
 
 type Tool = ToolType
 
@@ -87,6 +88,21 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
             disabled={disabled}
           />
         ))}
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <KeyboardShortcutsDropdown
+          trigger={
+            <Button
+              size="icon"
+              variant="gray"
+              className="rounded-full bg-transparent text-gray-400 hover:text-gray-900"
+              aria-label="키보드 단축키 안내"
+            >
+              <HelpCircleIcon className="size-5" />
+            </Button>
+          }
+        />
       </div>
     </div>
   )
