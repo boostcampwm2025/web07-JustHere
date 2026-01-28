@@ -49,6 +49,7 @@ export const useCanvasKeyboard = ({
 
       // Backspace: 선택 아이템 삭제
       if (e.key === 'Backspace' && hasSelectedItems) {
+        e.preventDefault()
         handleDeleteSelectedItems()
         return
       }
