@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
-import { Button, Divider, Avatar, Modal } from '@/shared/components'
+import { PencilIcon, ContentCopyIcon, ShareVariantIcon } from '@/shared/assets'
+import { Button, Divider, Avatar, Dropdown } from '@/shared/components'
 import type { Participant } from '@/shared/types'
-import { cn } from '@/shared/utils'
 
-interface RoomInfoModalProps {
-  onClose: () => void
+interface RoomInfoDropdownProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   userName: string
   roomLink: string
   participants: Participant[]
@@ -16,8 +16,9 @@ interface RoomInfoModalProps {
   onTransferOwner?: (targetUserId: string) => void
 }
 
-export const RoomInfoModal = ({
-  onClose,
+export const RoomInfoDropdown = ({
+  open,
+  onOpenChange,
   userName,
   roomLink,
   participants,
@@ -26,7 +27,7 @@ export const RoomInfoModal = ({
   isOwner = false,
   ownerId,
   onTransferOwner,
-}: RoomInfoModalProps) => {
+}: RoomInfoDropdownProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
@@ -52,19 +53,14 @@ export const RoomInfoModal = ({
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-transparent" onClick={onClose} />
-      <div className="absolute top-full right-0 z-50 w-xs">
-        <div
-          role="dialog"
-          aria-modal="true"
-          className={cn(
-            'bg-white shadow-xl border border-gray-100 rounded-3xl overflow-hidden flex flex-col',
-            'max-h-[600px] overflow-y-auto scrollbar-hide',
-          )}
-        >
-          <Modal.Body>
-            <h3 className="text-xl font-bold text-center my-6">참여자</h3>
+    <div className="relative">
+      <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
+        Share
+      </Button>
+      {open && (
+        <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
+          <div className="p-6">
+            <h3 className="text-lg font-bold text-center mb-6">참여자</h3>
             <div className="flex flex-col gap-2">
               {visibleParticipants.map(p => (
                 <div key={p.userId} className="flex items-center gap-3 px-2 py-1">
@@ -129,9 +125,9 @@ export const RoomInfoModal = ({
                 </div>
               </div>
             </div>
-          </Modal.Body>
-        </div>
-      </div>
-    </>
+          </div>
+        </Dropdown>
+      )}
+    </div>
   )
 }
