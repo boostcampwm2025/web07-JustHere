@@ -10,9 +10,10 @@ export type VoteStatePayload = {
   voters: Record<string, string[]>
 }
 
-// [S->C] vote:started
+// [S->C] vote:started / vote:runoff
 export type VoteStartedPayload = {
   status: 'IN_PROGRESS'
+  singleVote?: boolean
 }
 
 // [S->C] vote:ended
@@ -41,3 +42,16 @@ export type VoteMeUpdatedPayload = {
 
 // [S->C] vote:error
 export type VoteErrorPayload = ErrorResponse
+
+// [S->C] vote:runoff
+export type VoteRunOffPayload = {
+  tiedCandidates: Candidate[]
+  round: number
+  singleVote: boolean
+}
+
+// [S->C] vote:owner-pick
+export type VoteOwnerPickPayload = {
+  tiedCandidates: Candidate[]
+  status: 'OWNER_PICK'
+}

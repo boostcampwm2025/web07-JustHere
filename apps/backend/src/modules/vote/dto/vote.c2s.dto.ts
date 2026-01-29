@@ -82,3 +82,10 @@ export class VoteRevokePayload extends BasePayload {
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
   candidateId: string
 }
+
+// [C->S] vote:owner-select
+export class VoteOwnerSelectPayload extends BasePayload {
+  @IsString({ message: 'candidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
+  candidateId: string
+}
