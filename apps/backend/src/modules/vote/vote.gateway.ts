@@ -112,9 +112,6 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
     await client.leave(`vote:${voteRoomId}`)
-
-    // 카테고리 이동 후 재진입 시 후보 목록 유지를 위해, vote room이 비어도 세션은 삭제하지 않음
-    // (세션 삭제는 handleDisconnect 등 다른 경로에서 처리 가능)
   }
 
   @SubscribeMessage('vote:candidate:add')

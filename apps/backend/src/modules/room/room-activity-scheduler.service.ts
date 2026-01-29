@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { VoteService } from '@/modules/vote/vote.service'
 import { RoomRepository } from './room.repository'
 
 @Injectable()
@@ -12,7 +13,10 @@ export class RoomActivitySchedulerService {
   // 만료 기준
   private readonly EXPIRATION_DAYS = 90
 
-  constructor(private readonly roomRepository: RoomRepository) {}
+  constructor(
+    private readonly roomRepository: RoomRepository,
+    private readonly voteService: VoteService,
+  ) {}
 
   /**
    * 활동이 감지된 방 ID를 메모리에 적재
@@ -58,9 +62,18 @@ export class RoomActivitySchedulerService {
     const thresholdDate = new Date(now.setDate(now.getDate() - this.EXPIRATION_DAYS))
 
     try {
+      const inactiveRoomIds = await this.roomRepository.findRoomIdsInactiveSince(thresholdDate)
+      if (inactiveRoomIds.length === 0) {
+        this.logger.log('[Error] No ghost rooms found to delete.')
+        return
+      }
+
       const deletedCount = await this.roomRepository.deleteRoomsInactiveSince(thresholdDate)
 
       if (deletedCount > 0) {
+        for (const roomId of inactiveRoomIds) {
+          this.voteService.deleteSessionsByRoom(roomId)
+        }
         this.logger.log(`[Success] Deleted ${deletedCount} ghost rooms (inactive since ${thresholdDate.toISOString()}).`)
       } else {
         this.logger.log('[Error] No ghost rooms found to delete.')

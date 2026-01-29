@@ -87,4 +87,16 @@ export class RoomRepository {
     })
     return result.count
   }
+
+  async findRoomIdsInactiveSince(thresholdDate: Date) {
+    const rooms = await this.prisma.room.findMany({
+      where: {
+        lastActiveAt: {
+          lt: thresholdDate,
+        },
+      },
+      select: { id: true },
+    })
+    return rooms.map(r => r.id)
+  }
 }

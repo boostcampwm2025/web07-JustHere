@@ -45,6 +45,19 @@ export class VoteService {
   }
 
   /**
+   * 방 삭제 시, 방에 속한 모든 카테고리 투표 세션을 제거
+   * - voteRoomId 규칙: `${roomId}:${categoryId}`
+   */
+  deleteSessionsByRoom(roomId: string) {
+    const prefix = `${roomId}:`
+    for (const sessionKey of this.sessions.keys()) {
+      if (sessionKey.startsWith(prefix)) {
+        this.sessions.delete(sessionKey)
+      }
+    }
+  }
+
+  /**
    * 현재 투표 상태 조회 (vote:state)
    * 득표수를 실시간으로 집계
    * @param roomId 페이로드 내 카테고리 ID
