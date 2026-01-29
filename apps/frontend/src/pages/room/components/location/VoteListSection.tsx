@@ -5,13 +5,14 @@ import type { VotingCandidate } from './LocationListSection'
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
   round?: number
+  disabled?: boolean
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onDeleteCandidate?: () => void
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, round, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, round, disabled, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -93,6 +94,7 @@ export const VoteListSection = ({ candidates, round, onVote, onEndVote, onDelete
                       size="sm"
                       icon={<CheckCircleIcon className="size-3.5" />}
                       iconPosition="right"
+                      disabled={disabled}
                       onClick={() => onVote?.(candidate.id)}
                     >
                       투표하기
@@ -104,6 +106,7 @@ export const VoteListSection = ({ candidates, round, onVote, onEndVote, onDelete
                       size="sm"
                       icon={<VoteIcon className="size-3.5" />}
                       iconPosition="right"
+                      disabled={disabled}
                       onClick={() => onVote?.(candidate.id)}
                     >
                       투표하기
@@ -118,10 +121,10 @@ export const VoteListSection = ({ candidates, round, onVote, onEndVote, onDelete
 
       {/* Footer Buttons */}
       <div className="flex items-center gap-3 p-4">
-        <Button size="lg" className="flex-1" variant="gray" onClick={onDeleteCandidate}>
+        <Button size="lg" className="flex-1" variant="gray" disabled={disabled} onClick={onDeleteCandidate}>
           삭제하기
         </Button>
-        <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
+        <Button size="lg" className="flex-1" variant="primary" disabled={disabled} onClick={onEndVote}>
           투표 종료
         </Button>
       </div>

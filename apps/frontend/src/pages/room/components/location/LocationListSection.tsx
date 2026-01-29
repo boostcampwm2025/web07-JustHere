@@ -432,6 +432,7 @@ export const LocationListSection = ({
           <VoteListSection
             candidates={votingCandidates}
             round={round}
+            disabled={voteStatus === 'OWNER_PICK'}
             onVote={handleVote}
             onViewDetail={handleViewDetail}
             onEndVote={() => {
