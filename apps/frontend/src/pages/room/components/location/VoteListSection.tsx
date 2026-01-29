@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
+  isOwner?: boolean
   voteStatus: VoteStatus
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
@@ -15,7 +16,7 @@ interface VoteListSectionProps {
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
   // 가장 득표수가 많은 후보 ID 계산 (TODO: 투표 동률 시 처리)
   const winnerId = useMemo(() => {
     if (voteStatus !== 'COMPLETED' || candidates.length === 0) return null
@@ -127,7 +128,7 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
       </div>
 
       {/* Footer Buttons */}
-      {voteStatus === 'IN_PROGRESS' && (
+      {voteStatus === 'IN_PROGRESS' && isOwner && (
         <div className="flex items-center gap-3 p-4">
           <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
             투표 종료
@@ -137,9 +138,11 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
 
       {voteStatus === 'COMPLETED' && (
         <div className="flex items-center gap-3 p-4">
-          <Button size="lg" className="flex-1" variant="gray" onClick={onResetVote}>
-            투표 삭제
-          </Button>
+          {isOwner && (
+            <Button size="lg" className="flex-1" variant="gray" onClick={onResetVote}>
+              투표 삭제
+            </Button>
+          )}
           <Button size="lg" className="flex-1" variant="primary" onClick={() => navigate(`/result/${slug}`)}>
             결과 확인
           </Button>

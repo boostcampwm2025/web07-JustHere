@@ -419,6 +419,7 @@ export const LocationListSection = ({
         ) : (
           <VoteListSection
             candidates={votingCandidates}
+            isOwner={isOwner}
             voteStatus={voteStatus}
             onVote={handleVote}
             onViewDetail={handleViewDetail}
