@@ -6,7 +6,8 @@ import { VOTE_EVENTS } from '@/pages/room/constants'
 import type {
   VoteCandidate,
   VoteCandidateAddPayload,
-  VoteCandidateUpdatedPayload,
+  VoteCandidateAddedPayload,
+  VoteCandidateRemovedPayload,
   VoteCountsUpdatedPayload,
   VoteEndedPayload,
   VoteErrorPayload,
@@ -130,18 +131,15 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     if (!socket) return
 
     // 이전 room/category의 vote room에서 leave
-    socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId, categoryId: joinedCategoryId })
+    socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId, categoryId: joinedCategoryId, userId })
     addSocketBreadcrumb('vote:leave', { roomId: joinedRoomId, categoryId: joinedCategoryId })
     isJoinedRef.current = false
     joinedRoomIdRef.current = null
     joinedCategoryIdRef.current = null
     pendingJoinRef.current = false
     shouldJoinRef.current = false
-
-    return () => {
-      resetState()
-    }
-  }, [enabled, roomId, categoryId, resolveSocket, resetState])
+    // 카테고리 변경 시 state는 유지 → vote:state 수신 시 덮어씌움 (등록된 후보 없음 플래시 방지)
+  }, [enabled, roomId, categoryId, userId, resolveSocket])
 
   useEffect(() => {
     if (!enabled) return
@@ -189,17 +187,14 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       addSocketBreadcrumb('vote:state', { roomId, status: payload.status, candidatesCount: payload.candidates.length })
     }
 
-    // [S->C] vote:candidate:updated - 후보 추가/삭제 시 브로드캐스트
-    const handleCandidateUpdated = (payload: VoteCandidateUpdatedPayload) => {
-      const candidate = payload.candidate
+    // [S->C] vote:candidate:added
+    const handleCandidateAdded = (payload: VoteCandidateAddedPayload) => {
+      const { candidate } = payload
 
       setCandidates(prev => {
-        // placeId 기준으로 항상 교체해 중복을 방지
         const filtered = prev.filter(c => c.placeId !== candidate.placeId)
         return [...filtered, candidate]
       })
-
-      // counts 업데이트: 새 후보는 0으로 초기화, 기존 후보는 유지
       setCounts(prev => {
         const next = { ...prev }
         if (!next[candidate.placeId]) {
@@ -211,7 +206,25 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
         if (candidate.placeId in prev) return prev
         return { ...prev, [candidate.placeId]: [] }
       })
+      setError(null)
+      tempCandidateIdsRef.current.delete(candidate.placeId)
+    }
 
+    // [S->C] vote:candidate:removed
+    const handleCandidateRemoved = (payload: VoteCandidateRemovedPayload) => {
+      const { candidate } = payload
+
+      setCandidates(prev => prev.filter(c => c.placeId !== candidate.placeId))
+      setCounts(prev => {
+        const next = { ...prev }
+        delete next[candidate.placeId]
+        return next
+      })
+      setVotersByCandidate(prev => {
+        const next = { ...prev }
+        delete next[candidate.placeId]
+        return next
+      })
       setError(null)
       tempCandidateIdsRef.current.delete(candidate.placeId)
     }
@@ -259,7 +272,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
     socket.on(VOTE_EVENTS.state, handleState)
-    socket.on(VOTE_EVENTS.candidateUpdated, handleCandidateUpdated)
+    socket.on(VOTE_EVENTS.candidateAdded, handleCandidateAdded)
+    socket.on(VOTE_EVENTS.candidateRemoved, handleCandidateRemoved)
     socket.on(VOTE_EVENTS.countsUpdated, handleCountsUpdated)
     socket.on(VOTE_EVENTS.meUpdated, handleMeUpdated)
     socket.on(VOTE_EVENTS.started, handleStarted)
@@ -270,7 +284,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
       socket.off(VOTE_EVENTS.state, handleState)
-      socket.off(VOTE_EVENTS.candidateUpdated, handleCandidateUpdated)
+      socket.off(VOTE_EVENTS.candidateAdded, handleCandidateAdded)
+      socket.off(VOTE_EVENTS.candidateRemoved, handleCandidateRemoved)
       socket.off(VOTE_EVENTS.countsUpdated, handleCountsUpdated)
       socket.off(VOTE_EVENTS.meUpdated, handleMeUpdated)
       socket.off(VOTE_EVENTS.started, handleStarted)
@@ -291,7 +306,11 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     // 다른 roomId의 vote room에 join되어 있으면 먼저 leave
     if (isJoinedRef.current && joinedRoomIdRef.current && joinedCategoryIdRef.current) {
       if (joinedRoomIdRef.current !== roomId || joinedCategoryIdRef.current !== categoryId) {
-        socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomIdRef.current, categoryId: joinedCategoryIdRef.current })
+        socket.emit(VOTE_EVENTS.leave, {
+          roomId: joinedRoomIdRef.current,
+          categoryId: joinedCategoryIdRef.current,
+          userId,
+        })
         addSocketBreadcrumb('vote:leave', { roomId: joinedRoomIdRef.current, categoryId: joinedCategoryIdRef.current })
       }
       isJoinedRef.current = false
@@ -320,33 +339,42 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     shouldJoinRef.current = false
   }, [enabled, roomId, categoryId, userId, resolveSocket, connectReal, resetState])
 
-  const leave = useCallback(() => {
-    const socket = resolveSocket()
-    if (!socket) return
+  const leave = useCallback(
+    (options?: { disconnect?: boolean }) => {
+      const socket = resolveSocket()
+      if (!socket) return
 
-    const targetRoomId = joinedRoomIdRef.current ?? roomId
-    const targetCategoryId = joinedCategoryIdRef.current ?? categoryId
-    if (!targetRoomId || !targetCategoryId) return
+      const targetRoomId = joinedRoomIdRef.current ?? roomId
+      const targetCategoryId = joinedCategoryIdRef.current ?? categoryId
+      if (!targetRoomId || !targetCategoryId) return
 
-    // [C->S] vote:leave
-    socket.emit(VOTE_EVENTS.leave, { roomId: targetRoomId, categoryId: targetCategoryId })
-    addSocketBreadcrumb('vote:leave', { roomId: targetRoomId, categoryId: targetCategoryId })
-    isJoinedRef.current = false
-    joinedRoomIdRef.current = null
-    joinedCategoryIdRef.current = null
-    pendingJoinRef.current = false
-    shouldJoinRef.current = false
-    resetState()
+      // [C->S] vote:leave
+      socket.emit(VOTE_EVENTS.leave, { roomId: targetRoomId, categoryId: targetCategoryId, userId })
+      addSocketBreadcrumb('vote:leave', { roomId: targetRoomId, categoryId: targetCategoryId })
+      isJoinedRef.current = false
+      joinedRoomIdRef.current = null
+      joinedCategoryIdRef.current = null
+      pendingJoinRef.current = false
+      shouldJoinRef.current = false
 
-    disconnectReal()
-  }, [resolveSocket, roomId, categoryId, disconnectReal, resetState])
+      // 카테고리만 바꿀 때(disconnect: false)는 state 유지
+      // 페이지 이탈 시에만 초기화
+      const shouldDisconnect = options?.disconnect !== false
+      if (shouldDisconnect) {
+        resetState()
+        disconnectReal()
+      }
+    },
+    [resolveSocket, roomId, categoryId, userId, disconnectReal, resetState],
+  )
 
   useEffect(() => {
     if (!enabled) return
 
     return () => {
       if (!isJoinedRef.current) return
-      leave()
+      // 페이지 이탈 시에만 소켓 연결 해제
+      leave({ disconnect: true })
     }
   }, [enabled, leave])
 

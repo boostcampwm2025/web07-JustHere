@@ -124,7 +124,7 @@ export const LocationListSection = ({
   useEffect(() => {
     if (!roomId || !userId || !activeCategoryId) return
     joinRef.current()
-    return () => leaveRef.current()
+    return () => leaveRef.current({ disconnect: false })
   }, [roomId, userId, activeCategoryId])
 
   useEffect(() => {
