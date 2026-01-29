@@ -57,8 +57,13 @@ export interface VoteEndedPayload {
   selectedCandidateId?: string
 }
 
-// [S->C] vote:candidate:updated
-export interface VoteCandidateUpdatedPayload {
+// [S->C] vote:candidate:added
+export interface VoteCandidateAddedPayload {
+  candidate: VoteCandidate
+}
+
+// [S->C] vote:candidate:removed
+export interface VoteCandidateRemovedPayload {
   candidate: VoteCandidate
 }
 
@@ -157,4 +162,18 @@ export interface VoteOwnerSelectPayload {
   roomId: string
   categoryId: string
   candidateId: string
+}
+
+// [C->S] vote:reset
+export interface VoteResetPayload {
+  roomId: string
+  categoryId: string
+}
+
+// [S->C] vote:resetted
+export interface VoteResettedPayload {
+  status: 'WAITING'
+  candidates: VoteCandidate[]
+  counts: VoteCounts
+  voters: Record<string, string[]>
 }

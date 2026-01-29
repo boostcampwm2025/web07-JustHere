@@ -89,3 +89,6 @@ export class VoteOwnerSelectPayload extends BasePayload {
   @IsNotEmpty({ message: 'candidateId는 비어있을 수 없습니다' })
   candidateId: string
 }
+
+// [C->S] vote:reset
+export class VoteResetPayload extends BasePayload {}

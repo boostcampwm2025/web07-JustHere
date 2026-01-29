@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { GoogleMap } from '@/shared/components/google-map'
 import { cn } from '@/shared/utils'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
-import { useRoomCategories } from '@/shared/hooks'
-import { AddCategoryModal } from './add-category'
+import { AddCategoryModal } from '@/pages/room/components/add-category'
 import { DeleteCategoryModal } from './delete-category'
 import { WhiteboardCanvas } from './canvas'
 
@@ -15,21 +14,25 @@ interface WhiteboardSectionProps {
   roomId: string
   onCreateCategory: (name: string) => void
   onDeleteCategory: (categoryId: string) => void
-  onActiveCategoryChange?: (categoryId: string) => void
+  categories: Category[]
+  activeCategoryId: string
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
   searchResults?: GooglePlace[]
   selectedPlace: GooglePlace | null
   onMarkerClick?: (place: GooglePlace | null) => void
+  onActiveCategoryChange: (categoryId: string) => void
 }
 
 export const WhiteboardSection = ({
   roomId,
   onCreateCategory,
   onDeleteCategory,
-  onActiveCategoryChange,
+  categories,
+  activeCategoryId,
   pendingPlaceCard,
+  onActiveCategoryChange,
   onPlaceCardPlaced,
   onPlaceCardCanceled,
   searchResults = [],
@@ -38,18 +41,8 @@ export const WhiteboardSection = ({
 }: WhiteboardSectionProps) => {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
-  const { data: categories } = useRoomCategories(roomId)
 
-  const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
-
-  useEffect(() => {
-    setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
-  }, [categories, activeCategoryId])
-
-  useEffect(() => {
-    onActiveCategoryChange?.(activeCategoryId)
-  }, [activeCategoryId, onActiveCategoryChange])
 
   const getIconByType = (type: string) => {
     switch (type) {
@@ -79,11 +72,11 @@ export const WhiteboardSection = ({
               key={category.id}
               role="tab"
               aria-selected={activeCategoryId === category.id}
-              onClick={() => setActiveCategoryId(category.id)}
+              onClick={() => onActiveCategoryChange(category.id)}
               onKeyDown={e => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  setActiveCategoryId(category.id)
+                  onActiveCategoryChange(category.id)
                 }
               }}
               tabIndex={0}
@@ -134,22 +127,13 @@ export const WhiteboardSection = ({
 
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
-          activeCategoryId ? (
-            <WhiteboardCanvas
-              roomId={roomId}
-              canvasId={activeCategoryId}
-              pendingPlaceCard={pendingPlaceCard}
-              onPlaceCardPlaced={onPlaceCardPlaced}
-              onPlaceCardCanceled={onPlaceCardCanceled}
-            />
-          ) : (
-            <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-              <div className="text-center">
-                <p className="text-lg font-semibold mb-2">카테고리가 없습니다</p>
-                <p className="text-sm">새 카테고리를 추가해주세요</p>
-              </div>
-            </div>
-          )
+          <WhiteboardCanvas
+            roomId={roomId}
+            canvasId={activeCategoryId}
+            pendingPlaceCard={pendingPlaceCard}
+            onPlaceCardPlaced={onPlaceCardPlaced}
+            onPlaceCardCanceled={onPlaceCardCanceled}
+          />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
             <GoogleMap
@@ -185,13 +169,6 @@ export const WhiteboardSection = ({
       </main>
     </section>
   )
-}
-
-function resolveActiveCategoryId(categories: Category[], currentId: string) {
-  if (!categories || categories.length === 0) return ''
-
-  const exists = categories.some(c => c.id === currentId)
-  return exists ? currentId : categories[0].id
 }
 
 function getFirstResultCenter(results: GooglePlace[]) {

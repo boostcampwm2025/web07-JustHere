@@ -44,7 +44,7 @@ export const useRoomCategories = (roomId: string | null) => {
   return useQuery<Category[]>({
     queryKey: roomId ? roomQueryKeys.categories(roomId) : roomQueryKeys.categories('none'),
     queryFn: async () => [],
-    enabled: false,
+    enabled: !!roomId,
     initialData: [],
   })
 }

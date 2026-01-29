@@ -4,10 +4,12 @@ import { ErrorType } from '@/lib/types/response.type'
 import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
 import { VoteSessionStore } from './vote-session.store'
 import {
-  VoteCandidateUpdatedPayload,
+  VoteCandidateAddedPayload,
+  VoteCandidateRemovedPayload,
   VoteCountsUpdatedPayload,
   VoteEndedPayload,
   VoteMeUpdatedPayload,
+  VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
   type VoteRunOffPayload,
@@ -23,6 +25,7 @@ export class VoteService {
    * 세션 생성 또는 조회 (vote:join)
    * 방이 없으면 초기화하고, 있으면 반환
    * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 유저 정보
    */
   getOrCreateSession(roomId: string, userId: string): VoteStatePayload {
     if (!this.sessions.has(roomId)) {
@@ -45,6 +48,19 @@ export class VoteService {
    */
   deleteSession(roomId: string): void {
     this.sessions.delete(roomId)
+  }
+
+  /**
+   * 방 삭제 시, 방에 속한 모든 카테고리 투표 세션을 제거
+   * - voteRoomId 규칙: `${roomId}:${categoryId}`
+   */
+  deleteSessionsByRoom(roomId: string) {
+    const prefix = `${roomId}:`
+    for (const sessionKey of this.sessions.keys()) {
+      if (sessionKey.startsWith(prefix)) {
+        this.sessions.delete(sessionKey)
+      }
+    }
   }
 
   /**
@@ -75,7 +91,7 @@ export class VoteService {
    * @param placeData 구글맵에서 받아온 장소 데이터
    */
   // TODO: 후보 리스트에 추가한 사용자가 누군지도 전달해야 하는건가?
-  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): VoteCandidateUpdatedPayload {
+  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): VoteCandidateAddedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -105,7 +121,7 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * @param candidateId 페이로드의 placeId
    */
-  removeCandidatePlace(roomId: string, candidateId: string): VoteCandidateUpdatedPayload {
+  removeCandidatePlace(roomId: string, candidateId: string): VoteCandidateRemovedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -269,6 +285,33 @@ export class VoteService {
       }
     }
     return tied
+  }
+
+  /**
+   * 투표 리셋 (vote:reset)
+   * - candidates는 유지
+   * - status를 WAITING으로 변경
+   * - userVotes와 totalCounts 초기화
+   * @param roomId 페이로드 내 카테고리 ID
+   */
+  resetVote(roomId: string): VoteResettedPayload {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status !== VoteStatus.COMPLETED) {
+      throw new CustomException(ErrorType.BadRequest, '완료된 투표만 리셋할 수 있습니다.')
+    }
+
+    // 리셋: candidates 유지, 나머지 초기화
+    session.status = VoteStatus.WAITING
+    session.userVotes.clear()
+    session.totalCounts.clear()
+
+    return {
+      status: 'WAITING',
+      candidates: Array.from(session.candidates.values()),
+      counts: {},
+      voters: {},
+    }
   }
 
   /**

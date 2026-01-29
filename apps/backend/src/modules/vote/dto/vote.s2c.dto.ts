@@ -1,4 +1,3 @@
-import type { ErrorResponse } from '@/lib/types/response.type'
 import { Candidate, VoteStatus } from '../vote.types'
 
 // [S->C] vote:state
@@ -25,8 +24,13 @@ export type VoteEndedPayload = {
   selectedCandidateId?: string
 }
 
-// [S->C] vote:candidate:updated
-export type VoteCandidateUpdatedPayload = {
+// [S->C] vote:candidate:added
+export type VoteCandidateAddedPayload = {
+  candidate: Candidate
+}
+
+// [S->C] vote:candidate:removed
+export type VoteCandidateRemovedPayload = {
   candidate: Candidate
 }
 
@@ -43,9 +47,6 @@ export type VoteMeUpdatedPayload = {
   myVotes: string[]
 }
 
-// [S->C] vote:error
-export type VoteErrorPayload = ErrorResponse
-
 // [S->C] vote:runoff
 export type VoteRunOffPayload = {
   tiedCandidates: Candidate[]
@@ -57,4 +58,12 @@ export type VoteRunOffPayload = {
 export type VoteOwnerPickPayload = {
   tiedCandidates: Candidate[]
   status: 'OWNER_PICK'
+}
+
+// [S->C] vote:resetted
+export type VoteResettedPayload = {
+  status: 'WAITING'
+  candidates: Candidate[]
+  counts: Record<string, number>
+  voters: Record<string, string[]>
 }

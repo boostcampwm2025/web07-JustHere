@@ -31,3 +31,8 @@ export type VoteSession = {
   singleVote: boolean
   round: number
 }
+
+export interface VoteCandidate {
+  category: string
+  result: Candidate[]
+}
