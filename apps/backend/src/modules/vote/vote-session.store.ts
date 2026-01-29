@@ -20,4 +20,8 @@ export class VoteSessionStore {
   has(canvasId: string): boolean {
     return this.voteSessions.has(canvasId)
   }
+
+  keys(): string[] {
+    return Array.from(this.voteSessions.keys())
+  }
 }

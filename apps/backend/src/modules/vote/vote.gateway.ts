@@ -24,6 +24,7 @@ import {
   VoteRevokePayload,
   VoteStartPayload,
   VoteEndPayload,
+  VoteResetPayload,
 } from './dto/vote.c2s.dto'
 import { VoteService } from './vote.service'
 
@@ -75,18 +76,11 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    const namespace = this.server ?? client.nsp
-    if (!namespace) return
-
     // 사용자가 참여한 모든 투표 방에서 나가기
+    // 카테고리 재진입 시 후보 목록 유지를 위해 세션은 삭제하지 않음
     const voteRooms = Array.from(client.rooms).filter(room => room.startsWith('vote:'))
     for (const room of voteRooms) {
       await client.leave(room)
-
-      const roomClients = await namespace.in(room).fetchSockets()
-      if (roomClients.length === 0) {
-        this.voteService.deleteSession(room.replace('vote:', ''))
-      }
     }
   }
 
@@ -119,14 +113,6 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
     await client.leave(`vote:${voteRoomId}`)
-
-    const namespace = this.server ?? client.nsp
-    if (!namespace) return
-
-    const roomClients = await namespace.in(`vote:${voteRoomId}`).fetchSockets()
-    if (roomClients.length === 0) {
-      this.voteService.deleteSession(voteRoomId)
-    }
   }
 
   @SubscribeMessage('vote:candidate:add')
@@ -139,8 +125,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     }
 
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
-    const updatePayload = this.voteService.addCandidatePlace(voteRoomId, user.userId, payload)
-    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
+    const addedPayload = this.voteService.addCandidatePlace(voteRoomId, user.userId, payload)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:added', addedPayload)
   }
 
   @SubscribeMessage('vote:candidate:remove')
@@ -153,8 +139,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     }
 
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
-    const updatePayload = this.voteService.removeCandidatePlace(voteRoomId, candidateId)
-    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
+    const removedPayload = this.voteService.removeCandidatePlace(voteRoomId, candidateId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:removed', removedPayload)
   }
 
   @SubscribeMessage('vote:cast')
@@ -213,5 +199,15 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
     const endedPayload = this.voteService.endVote(voteRoomId)
     this.broadcaster.emitToVote(voteRoomId, 'vote:ended', endedPayload)
+  }
+
+  @UseGuards(VoteOwnerGuard)
+  @SubscribeMessage('vote:reset')
+  onResetVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteResetPayload) {
+    const { roomId, categoryId } = payload
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+
+    const resettedPayload = this.voteService.resetVote(voteRoomId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:resetted', resettedPayload)
   }
 }

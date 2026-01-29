@@ -20,8 +20,13 @@ export type VoteEndedPayload = {
   candidates: Candidate[]
 }
 
-// [S->C] vote:candidate:updated
-export type VoteCandidateUpdatedPayload = {
+// [S->C] vote:candidate:added
+export type VoteCandidateAddedPayload = {
+  candidate: Candidate
+}
+
+// [S->C] vote:candidate:removed
+export type VoteCandidateRemovedPayload = {
   candidate: Candidate
 }
 
@@ -36,4 +41,12 @@ export type VoteCountsUpdatedPayload = {
 // [S->C] vote:me:updated
 export type VoteMeUpdatedPayload = {
   myVotes: string[]
+}
+
+// [S->C] vote:resetted
+export type VoteResettedPayload = {
+  status: 'WAITING'
+  candidates: Candidate[]
+  counts: Record<string, number>
+  voters: Record<string, string[]>
 }

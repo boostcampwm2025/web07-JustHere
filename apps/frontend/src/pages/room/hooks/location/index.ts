@@ -1,0 +1,1 @@
+export { useLocationSearch } from './useLocationSearch'
