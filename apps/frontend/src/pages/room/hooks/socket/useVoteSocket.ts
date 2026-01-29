@@ -372,8 +372,6 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     if (!enabled) return
 
     return () => {
-      if (!isJoinedRef.current) return
-      // 페이지 이탈 시에만 소켓 연결 해제
       leave({ disconnect: true })
     }
   }, [enabled, leave])
