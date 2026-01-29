@@ -368,13 +368,19 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     [resolveSocket, roomId, categoryId, userId, disconnectReal, resetState],
   )
 
+  const leaveRef = useRef(leave)
+
+  useEffect(() => {
+    leaveRef.current = leave
+  }, [leave])
+
   useEffect(() => {
     if (!enabled) return
 
     return () => {
-      leave({ disconnect: true })
+      leaveRef.current({ disconnect: true })
     }
-  }, [enabled, leave])
+  }, [enabled])
 
   // [C->S] vote:candidate:add
   const addCandidate = useCallback(
