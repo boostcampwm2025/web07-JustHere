@@ -21,10 +21,12 @@ export type VoteCounts = Record<string, number>
 export type MyVotes = string[]
 
 export interface VoteError {
-  code: string
+  status: string
+  statusCode: number
+  errorType: string
   message: string
-  actionId?: string
-  recoverable?: boolean
+  data?: unknown
+  timestamp: string
 }
 
 export interface VoteState {
@@ -79,8 +81,12 @@ export interface VoteMeUpdatedPayload {
 
 // [S->C] vote:error
 export interface VoteErrorPayload {
-  code: string
+  status: string
+  statusCode: number
+  errorType: string
   message: string
+  data?: unknown
+  timestamp: string
 }
 
 // [C->S] vote:join

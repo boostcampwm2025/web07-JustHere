@@ -43,7 +43,13 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
   const tempCandidateIdsRef = useRef<Set<string>>(new Set())
 
   const handleSocketError = useCallback((error: Error) => {
-    setError({ code: 'SOCKET_ERROR', message: error.message })
+    setError({
+      status: 'ERROR',
+      statusCode: 0,
+      errorType: 'SOCKET_ERROR',
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    })
     pendingJoinRef.current = false
   }, [])
 
@@ -209,7 +215,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     // [S->C] vote:error - 에러 발생 시
     const handleError = (payload: VoteErrorPayload) => {
       setError(payload)
-      addSocketBreadcrumb('vote:error', { roomId, code: payload.code, message: payload.message }, 'error')
+      addSocketBreadcrumb('vote:error', { roomId, code: payload.errorType, message: payload.message }, 'error')
     }
 
     socket.on('connect', handleConnect)

@@ -121,7 +121,7 @@ export const LocationListSection = ({
       return
     }
 
-    const nextKey = `${voteError.code}:${voteError.message}`
+    const nextKey = `${voteError.errorType}:${voteError.message}`
     if (lastErrorKeyRef.current === nextKey) return
 
     lastErrorKeyRef.current = nextKey

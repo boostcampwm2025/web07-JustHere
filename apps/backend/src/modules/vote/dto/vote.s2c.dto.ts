@@ -1,3 +1,4 @@
+import { ErrorType, ResponseStatus } from '@/lib/types/response.type'
 import { Candidate, VoteStatus } from '../vote.types'
 
 // [S->C] vote:state
@@ -40,6 +41,10 @@ export type VoteMeUpdatedPayload = {
 
 // [S->C] vote:error
 export type VoteErrorPayload = {
-  code: string
+  status: ResponseStatus.Error
+  statusCode: number
+  errorType: ErrorType
   message: string
+  data?: unknown
+  timestamp: string
 }
