@@ -265,6 +265,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
 
     // [S->C] vote:runoff - 결선 투표 시작
     const handleRunoff = (payload: VoteRunoffPayload) => {
+      setStatus('IN_PROGRESS')
       setCandidates(payload.tiedCandidates)
       setSingleVote(payload.singleVote)
       setRound(payload.round)
