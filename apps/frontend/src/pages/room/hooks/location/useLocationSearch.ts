@@ -30,6 +30,8 @@ export function useLocationSearch({
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const searchQueryRef = useRef(searchQuery)
+  const searchTermRef = useRef(searchTerm)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const onSearchCompleteRef = useRef(onSearchComplete)
 
@@ -41,20 +43,24 @@ export function useLocationSearch({
     if (prevCategoryKeyRef.current === categoryId) return
 
     cacheRef.current[prevCategoryKeyRef.current] = {
-      searchQuery,
-      searchTerm,
+      searchQuery: searchQueryRef.current,
+      searchTerm: searchTermRef.current,
     }
     prevCategoryKeyRef.current = categoryId
 
     const restored = cacheRef.current[categoryId]
     if (restored) {
       setSearchQuery(restored.searchQuery)
+      searchQueryRef.current = restored.searchQuery
       setSearchTerm(restored.searchTerm)
+      searchTermRef.current = restored.searchTerm
     } else {
       setSearchQuery('')
+      searchQueryRef.current = ''
       setSearchTerm('')
+      searchTermRef.current = ''
     }
-  }, [categoryId, searchQuery, searchTerm])
+  }, [categoryId])
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteGoogleSearch({
     textQuery: searchTerm,
@@ -96,16 +102,19 @@ export function useLocationSearch({
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleSearch = () => {
-    const trimmed = searchQuery.trim()
+    const trimmed = searchQueryRef.current.trim()
     if (!trimmed) {
       setSearchTerm('')
+      searchTermRef.current = ''
       return
     }
     setSearchTerm(trimmed)
+    searchTermRef.current = trimmed
   }
 
   const updateSearchQuery = (value: string) => {
     setSearchQuery(value)
+    searchQueryRef.current = value
   }
 
   return {
