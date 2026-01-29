@@ -38,11 +38,3 @@ export type VoteCountsUpdatedPayload = {
 export type VoteMeUpdatedPayload = {
   myVotes: string[]
 }
-
-// [S->C] vote:error
-export type VoteErrorPayload = ErrorResponse
-
-export interface VoteCandidate {
-  category: string
-  result: Candidate[]
-}

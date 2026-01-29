@@ -1,10 +1,9 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
-import { VoteSession, VoteStatus, Candidate } from '@/modules/vote/vote.types'
+import { VoteSession, VoteStatus, Candidate, VoteCandidate } from '@/modules/vote/vote.types'
 import { Controller, Get, Param } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger'
 import { VoteService } from './vote.service'
 import { CategoryService } from '@/modules/category/category.service'
-import { VoteCandidate } from './dto/vote.s2c.dto'
 
 @ApiTags('vote')
 @Controller('vote')

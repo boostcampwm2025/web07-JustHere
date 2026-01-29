@@ -28,3 +28,8 @@ export type VoteSession = {
   userVotes: Map<string, Set<string>> // 사용자별 투표 기록 (userId -> Set<candidate place Id>)
   totalCounts: Map<string, number> // 후보 득표수 (candidate place Id -> 득표수)
 }
+
+export interface VoteCandidate {
+  category: string
+  result: Candidate[]
+}
