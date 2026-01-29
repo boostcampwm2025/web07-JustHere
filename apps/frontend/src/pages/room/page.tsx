@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
-import type { GooglePlace, PlaceCard } from '@/shared/types'
-import { useRoomMeta, useRoomParticipants } from '@/shared/hooks'
+import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
+import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
 import { useRoomSocketCache } from './hooks'
 
@@ -15,6 +15,7 @@ export default function RoomPage() {
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
+  const { data: categories } = useRoomCategories(roomId)
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
@@ -33,6 +34,10 @@ export default function RoomPage() {
     joinRoom(slug, user)
     return () => leaveRoom()
   }, [leaveRoom, joinRoom, slug, user])
+
+  useEffect(() => {
+    setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
+  }, [categories, activeCategoryId])
 
   if (!slug) {
     return <Navigate to="/onboarding" replace />
@@ -61,6 +66,23 @@ export default function RoomPage() {
     )
   }
 
+  if (!categories.length) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-bg">
+        <RoomHeader
+          participants={participants}
+          currentUserId={user.userId}
+          roomLink={roomLink}
+          onUpdateName={updateParticipantName}
+          isOwner={isOwner}
+          ownerId={ownerId}
+          onTransferOwner={transferOwner}
+        />
+        <div className="p-6 text-gray">카테고리가 없습니다</div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
       <RoomHeader
@@ -76,9 +98,11 @@ export default function RoomPage() {
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
           roomId={roomId}
+          onActiveCategoryChange={setActiveCategoryId}
           onCreateCategory={createCategory}
           onDeleteCategory={deleteCategory}
-          onActiveCategoryChange={setActiveCategoryId}
+          categories={categories}
+          activeCategoryId={activeCategoryId}
           pendingPlaceCard={pendingPlaceCard}
           onPlaceCardPlaced={clearPendingPlaceCard}
           onPlaceCardCanceled={clearPendingPlaceCard}
@@ -105,4 +129,11 @@ export default function RoomPage() {
       </div>
     </div>
   )
+}
+
+function resolveActiveCategoryId(categories: Category[], currentId: string) {
+  if (!categories || categories.length === 0) return ''
+
+  const exists = categories.some(c => c.id === currentId)
+  return exists ? currentId : categories[0].id
 }
