@@ -161,9 +161,13 @@ export const LocationListSection = ({
     }))
   }, [voteCandidates])
 
-  const totalVotes = useMemo(() => {
-    return Object.values(voteCounts).reduce((sum, count) => sum + count, 0)
-  }, [voteCounts])
+  const totalVoters = useMemo(() => {
+    const voterIds = new Set<string>()
+    Object.values(votersByCandidate).forEach(list => {
+      list.forEach(id => voterIds.add(id))
+    })
+    return voterIds.size
+  }, [votersByCandidate])
 
   const votingCandidates = useMemo<VotingCandidate[]>(() => {
     return voteCandidates.map(candidate => {
@@ -172,7 +176,7 @@ export const LocationListSection = ({
       const voters = (votersByCandidate[candidate.placeId] ?? [])
         .map(voterId => participants.find(p => p.userId === voterId) ?? (voterId === userId ? currentParticipant : null))
         .filter((value): value is Participant => value !== null)
-      const votePercentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+      const votePercentage = totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0
 
       return {
         id: candidate.placeId,
@@ -188,7 +192,7 @@ export const LocationListSection = ({
         hasVoted,
       }
     })
-  }, [voteCandidates, voteCounts, totalVotes, myVotes, votersByCandidate, participants, userId, currentParticipant])
+  }, [voteCandidates, voteCounts, totalVoters, myVotes, votersByCandidate, participants, userId, currentParticipant])
 
   const handleVote = useCallback(
     (candidateId: string) => {
