@@ -33,6 +33,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
   const [votersByCandidate, setVotersByCandidate] = useState<Record<string, string[]>>({})
   const [error, setError] = useState<VoteErrorPayload | null>(null)
 
+  const candidatesRef = useRef<VoteCandidate[]>([])
   const countsRef = useRef<Record<string, number>>({})
   const myVotesRef = useRef<string[]>([])
   const votersByCandidateRef = useRef<Record<string, string[]>>({})
@@ -82,12 +83,17 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     setCounts({})
     setMyVotes([])
     setVotersByCandidate({})
+    candidatesRef.current = []
     countsRef.current = {}
     myVotesRef.current = []
     votersByCandidateRef.current = {}
     setError(null)
     tempCandidateIdsRef.current.clear()
   }, [])
+
+  useEffect(() => {
+    candidatesRef.current = candidates
+  }, [candidates])
 
   useEffect(() => {
     countsRef.current = counts
@@ -384,22 +390,28 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
 
       // Optimistic update: 후보자 제거
       if (status === 'WAITING') {
-        const exists = candidates.some(c => c.placeId === candidateId)
-        if (exists) {
-          setCandidates(prev => prev.filter(c => c.placeId !== candidateId))
-          setCounts(prev => {
-            const next = { ...prev }
-            delete next[candidateId]
-            return next
-          })
-          setVotersByCandidate(prev => {
-            const next = { ...prev }
-            delete next[candidateId]
-            return next
-          })
-          setMyVotes(prev => prev.filter(id => id !== candidateId))
-          setError(null)
-        }
+        if (!candidatesRef.current.some(c => c.placeId === candidateId)) return
+
+        candidatesRef.current = candidatesRef.current.filter(c => c.placeId !== candidateId)
+        setCandidates(prev => prev.filter(c => c.placeId !== candidateId))
+
+        countsRef.current = Object.fromEntries(Object.entries(countsRef.current).filter(([id]) => id !== candidateId))
+        setCounts(prev => {
+          const next = { ...prev }
+          delete next[candidateId]
+          return next
+        })
+
+        votersByCandidateRef.current = Object.fromEntries(Object.entries(votersByCandidateRef.current).filter(([id]) => id !== candidateId))
+        setVotersByCandidate(prev => {
+          const next = { ...prev }
+          delete next[candidateId]
+          return next
+        })
+
+        myVotesRef.current = myVotesRef.current.filter(id => id !== candidateId)
+        setMyVotes(prev => prev.filter(id => id !== candidateId))
+        setError(null)
       }
 
       socket.emit(VOTE_EVENTS.removeCandidate, {
@@ -408,7 +420,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:candidate:remove', { roomId, candidateId })
     },
-    [enabled, roomId, status, candidates, resolveSocket],
+    [enabled, roomId, status, resolveSocket],
   )
 
   // [C->S] vote:start
