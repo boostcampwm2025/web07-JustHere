@@ -1,1 +1,1 @@
-export { RegionSelector } from './RegionSelector'
+export { RegionSelectorDropdown } from './RegionSelectorDropdown'
