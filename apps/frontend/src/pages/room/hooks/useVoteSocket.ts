@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useSocketClient } from '@/shared/hooks'
+import { useSocketClient, useToast } from '@/shared/hooks'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
 import type {
@@ -27,6 +27,7 @@ interface UseVoteSocketOptions {
 const DEFAULT_STATUS: VoteStatus = 'WAITING'
 
 export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: UseVoteSocketOptions) {
+  const { showToast } = useToast()
   const [status, setStatus] = useState<VoteStatus>(DEFAULT_STATUS)
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
@@ -240,6 +241,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       setStatus(payload.status)
       setError(null)
       addSocketBreadcrumb('vote:started', { roomId })
+      showToast('투표가 시작되었습니다!', 'success')
     }
 
     // [S->C] vote:ended - 투표 종료 시 브로드캐스트
@@ -277,7 +279,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.ended, handleEnded)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, roomId, categoryId, userId, resolveSocket])
+  }, [enabled, roomId, categoryId, userId, resolveSocket, showToast])
 
   const join = useCallback(() => {
     if (!enabled || !roomId || !categoryId) return
