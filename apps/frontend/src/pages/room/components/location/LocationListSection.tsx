@@ -431,7 +431,6 @@ export const LocationListSection = ({
         (isVoting ? (
           <VoteListSection
             candidates={votingCandidates}
-            singleVote={singleVote}
             round={round}
             onVote={handleVote}
             onViewDetail={handleViewDetail}

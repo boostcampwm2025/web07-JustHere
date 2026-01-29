@@ -4,7 +4,6 @@ import type { VotingCandidate } from './LocationListSection'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
-  singleVote?: boolean
   round?: number
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
@@ -12,7 +11,7 @@ interface VoteListSectionProps {
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, singleVote, round, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, round, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
