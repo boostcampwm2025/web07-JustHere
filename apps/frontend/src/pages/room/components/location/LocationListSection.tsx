@@ -102,6 +102,9 @@ export const LocationListSection = ({
   })
 
   const lastErrorKeyRef = useRef<string | null>(null)
+  const joinRef = useRef(join)
+  const leaveRef = useRef(leave)
+  const pendingEndRef = useRef(false)
   const currentParticipant = useMemo<Participant>(() => {
     const existing = participants.find(p => p.userId === userId)
     if (existing) return existing
@@ -110,10 +113,15 @@ export const LocationListSection = ({
   }, [participants, userId, userName])
 
   useEffect(() => {
+    joinRef.current = join
+    leaveRef.current = leave
+  }, [join, leave])
+
+  useEffect(() => {
     if (!roomId || !userId) return
-    join()
-    return () => leave()
-  }, [roomId, userId, join, leave])
+    joinRef.current()
+    return () => leaveRef.current()
+  }, [roomId, userId])
 
   useEffect(() => {
     if (!voteError) {
@@ -127,7 +135,18 @@ export const LocationListSection = ({
     lastErrorKeyRef.current = nextKey
     showToast(voteError.message, 'error')
     resetError()
+    if (pendingEndRef.current) {
+      pendingEndRef.current = false
+    }
   }, [voteError, showToast, resetError])
+
+  useEffect(() => {
+    if (voteStatus !== 'COMPLETED') return
+    if (!pendingEndRef.current) return
+
+    pendingEndRef.current = false
+    navigate(`/result/${slug}`)
+  }, [voteStatus, navigate, slug])
 
   const candidateList = useMemo<Candidate[]>(() => {
     return voteCandidates.map(candidate => ({
@@ -396,8 +415,8 @@ export const LocationListSection = ({
             onVote={handleVote}
             onViewDetail={handleViewDetail}
             onEndVote={() => {
+              pendingEndRef.current = true
               endVote()
-              navigate(`/result/${slug}`)
             }}
           />
         ) : (

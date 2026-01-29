@@ -20,15 +20,6 @@ export type VoteCounts = Record<string, number>
 
 export type MyVotes = string[]
 
-export interface VoteError {
-  status: string
-  statusCode: number
-  errorType: string
-  message: string
-  data?: unknown
-  timestamp: string
-}
-
 export interface VoteState {
   roomId: string
   status: VoteStatus
@@ -88,6 +79,8 @@ export interface VoteErrorPayload {
   data?: unknown
   timestamp: string
 }
+
+export type VoteError = VoteErrorPayload
 
 // [C->S] vote:join
 export interface VoteJoinPayload {

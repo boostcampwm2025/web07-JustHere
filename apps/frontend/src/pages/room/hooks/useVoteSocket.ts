@@ -33,6 +33,10 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
   const [votersByCandidate, setVotersByCandidate] = useState<Record<string, string[]>>({})
   const [error, setError] = useState<VoteErrorPayload | null>(null)
 
+  const countsRef = useRef<Record<string, number>>({})
+  const myVotesRef = useRef<string[]>([])
+  const votersByCandidateRef = useRef<Record<string, string[]>>({})
+
   const isJoinedRef = useRef(false)
   const joinedRoomIdRef = useRef<string | null>(null)
   const pendingJoinRef = useRef(false)
@@ -78,9 +82,24 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     setCounts({})
     setMyVotes([])
     setVotersByCandidate({})
+    countsRef.current = {}
+    myVotesRef.current = []
+    votersByCandidateRef.current = {}
     setError(null)
     tempCandidateIdsRef.current.clear()
   }, [])
+
+  useEffect(() => {
+    countsRef.current = counts
+  }, [counts])
+
+  useEffect(() => {
+    myVotesRef.current = myVotes
+  }, [myVotes])
+
+  useEffect(() => {
+    votersByCandidateRef.current = votersByCandidate
+  }, [votersByCandidate])
 
   // canvas가 변경될 때 이전 vote room에서 leave
   useEffect(() => {
@@ -145,6 +164,9 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       setCounts(payload.counts)
       setMyVotes(payload.myVotes)
       setVotersByCandidate(payload.voters ?? {})
+      countsRef.current = payload.counts
+      myVotesRef.current = payload.myVotes
+      votersByCandidateRef.current = payload.voters ?? {}
       setError(null)
       // 임시 후보자 제거
       tempCandidateIdsRef.current.clear()
@@ -413,15 +435,9 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
     const socket = resolveSocket()
     if (!socket) return
 
-    // Optimistic update
-    if (status === 'IN_PROGRESS') {
-      setStatus('COMPLETED')
-      setError(null)
-    }
-
     socket.emit(VOTE_EVENTS.end, { roomId: roomId })
     addSocketBreadcrumb('vote:end', { roomId })
-  }, [enabled, roomId, status, resolveSocket])
+  }, [enabled, roomId, resolveSocket])
 
   // [C->S] vote:cast
   const castVote = useCallback(
@@ -432,20 +448,33 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       if (!socket) return
 
       // Optimistic update
-      if (status === 'IN_PROGRESS' && !myVotes.includes(candidateId)) {
-        const currentCount = counts[candidateId] ?? 0
-        setMyVotes(prev => [...prev, candidateId])
-        setCounts(prev => ({
-          ...prev,
-          [candidateId]: currentCount + 1,
-        }))
+      if (status !== 'IN_PROGRESS') return
+      if (myVotesRef.current.includes(candidateId)) return
+
+      const nextMyVotes = [...myVotesRef.current, candidateId]
+      myVotesRef.current = nextMyVotes
+      setMyVotes(prev => (prev.includes(candidateId) ? prev : [...prev, candidateId]))
+
+      const currentCount = countsRef.current[candidateId] ?? 0
+      const nextCount = currentCount + 1
+      countsRef.current = { ...countsRef.current, [candidateId]: nextCount }
+      setCounts(prev => ({
+        ...prev,
+        [candidateId]: (prev[candidateId] ?? 0) + 1,
+      }))
+
+      const currentVoters = votersByCandidateRef.current[candidateId] ?? []
+      if (!currentVoters.includes(userId)) {
+        const nextVoters = [...currentVoters, userId]
+        votersByCandidateRef.current = { ...votersByCandidateRef.current, [candidateId]: nextVoters }
         setVotersByCandidate(prev => {
-          const current = prev[candidateId] ?? []
-          if (current.includes(userId)) return prev
-          return { ...prev, [candidateId]: [...current, userId] }
+          const existing = prev[candidateId] ?? []
+          if (existing.includes(userId)) return prev
+          return { ...prev, [candidateId]: [...existing, userId] }
         })
-        setError(null)
       }
+
+      setError(null)
 
       socket.emit(VOTE_EVENTS.cast, {
         roomId,
@@ -453,7 +482,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:cast', { roomId, candidateId })
     },
-    [enabled, roomId, userId, status, myVotes, counts, resolveSocket],
+    [enabled, roomId, userId, status, resolveSocket],
   )
 
   // [C->S] vote:revoke
@@ -465,21 +494,33 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       if (!socket) return
 
       // Optimistic update
-      if (status === 'IN_PROGRESS' && myVotes.includes(candidateId)) {
-        const currentCount = counts[candidateId] ?? 0
-        setMyVotes(prev => prev.filter(id => id !== candidateId))
-        setCounts(prev => ({
-          ...prev,
-          [candidateId]: Math.max(0, currentCount - 1),
-        }))
+      if (status !== 'IN_PROGRESS') return
+      if (!myVotesRef.current.includes(candidateId)) return
+
+      const nextMyVotes = myVotesRef.current.filter(id => id !== candidateId)
+      myVotesRef.current = nextMyVotes
+      setMyVotes(prev => prev.filter(id => id !== candidateId))
+
+      const currentCount = countsRef.current[candidateId] ?? 0
+      const nextCount = Math.max(0, currentCount - 1)
+      countsRef.current = { ...countsRef.current, [candidateId]: nextCount }
+      setCounts(prev => ({
+        ...prev,
+        [candidateId]: Math.max(0, (prev[candidateId] ?? 0) - 1),
+      }))
+
+      const currentVoters = votersByCandidateRef.current[candidateId] ?? []
+      if (currentVoters.includes(userId)) {
+        const nextVoters = currentVoters.filter(id => id !== userId)
+        votersByCandidateRef.current = { ...votersByCandidateRef.current, [candidateId]: nextVoters }
         setVotersByCandidate(prev => {
-          const current = prev[candidateId] ?? []
-          if (!current.includes(userId)) return prev
-          const next = current.filter(id => id !== userId)
-          return { ...prev, [candidateId]: next }
+          const existing = prev[candidateId] ?? []
+          if (!existing.includes(userId)) return prev
+          return { ...prev, [candidateId]: existing.filter(id => id !== userId) }
         })
-        setError(null)
       }
+
+      setError(null)
 
       socket.emit(VOTE_EVENTS.revoke, {
         roomId,
@@ -487,7 +528,7 @@ export function useVoteSocket({ roomId, userId, enabled = true }: UseVoteSocketO
       })
       addSocketBreadcrumb('vote:revoke', { roomId, candidateId })
     },
-    [enabled, roomId, userId, status, myVotes, counts, resolveSocket],
+    [enabled, roomId, userId, status, resolveSocket],
   )
 
   const resetError = useCallback(() => {
