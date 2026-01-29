@@ -76,27 +76,33 @@ export class RoomRepository {
     })
   }
 
-  // 특정 날짜 이전에 활동한 방들을 일괄 삭제
-  async deleteRoomsInactiveSince(thresholdDate: Date): Promise<number> {
-    const result = await this.prisma.room.deleteMany({
-      where: {
-        lastActiveAt: {
-          lt: thresholdDate, // Less Than
+  // 특정 날짜 이전에 활동한 방들을 조회 후, 실제로 삭제된 방 ID를 반환
+  async deleteRoomsInactiveSince(thresholdDate: Date): Promise<string[]> {
+    const deletedRoomIds = await this.prisma.$transaction(async tx => {
+      const rooms = await tx.room.findMany({
+        where: {
+          lastActiveAt: {
+            lt: thresholdDate,
+          },
         },
-      },
-    })
-    return result.count
-  }
+        select: { id: true },
+      })
 
-  async findRoomIdsInactiveSince(thresholdDate: Date) {
-    const rooms = await this.prisma.room.findMany({
-      where: {
-        lastActiveAt: {
-          lt: thresholdDate,
+      if (rooms.length === 0) {
+        return []
+      }
+
+      await tx.room.deleteMany({
+        where: {
+          id: {
+            in: rooms.map(r => r.id),
+          },
         },
-      },
-      select: { id: true },
+      })
+
+      return rooms.map(r => r.id)
     })
-    return rooms.map(r => r.id)
+
+    return deletedRoomIds
   }
 }

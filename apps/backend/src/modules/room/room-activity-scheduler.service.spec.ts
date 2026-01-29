@@ -8,7 +8,6 @@ import { VoteService } from '@/modules/vote/vote.service'
 const mockRoomRepository = {
   updateManyLastActiveAt: jest.fn(),
   deleteRoomsInactiveSince: jest.fn(),
-  findRoomIdsInactiveSince: jest.fn(),
 }
 
 const mockVoteService = {
@@ -40,8 +39,6 @@ describe('RoomActivitySchedulerService', () => {
 
     // 각 테스트 전에 Mock 초기화
     jest.clearAllMocks()
-
-    // Private Set 초기화 (테스트 간 상태 간섭 방지)
     ;(service as unknown as ServiceWithPrivate).activeRoomIds = new Set()
   })
 
@@ -133,12 +130,10 @@ describe('RoomActivitySchedulerService', () => {
       jest.useRealTimers()
     })
 
-    it('정확한 임계 날짜(90일 전)를 계산하여 Repository를 호출해야 한다', async () => {
+    it('정확한 임계 날짜(90일 전)를 계산하여 Repository를 호출하고, 삭제된 방에 대해서만 세션을 정리해야 한다', async () => {
       // Given
-      const deletedCount = 10
-      const inactiveRoomIds = ['room-1', 'room-2']
-      mockRoomRepository.findRoomIdsInactiveSince.mockResolvedValue(inactiveRoomIds)
-      mockRoomRepository.deleteRoomsInactiveSince.mockResolvedValue(deletedCount)
+      const deletedRoomIds = ['room-1', 'room-2']
+      mockRoomRepository.deleteRoomsInactiveSince.mockResolvedValue(deletedRoomIds)
       const loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
 
       // When
@@ -149,32 +144,29 @@ describe('RoomActivitySchedulerService', () => {
       const expectedThreshold = new Date('2024-05-01T00:00:00Z')
       expectedThreshold.setDate(expectedThreshold.getDate() - 90)
 
-      expect(mockRoomRepository.findRoomIdsInactiveSince).toHaveBeenCalledTimes(1)
-      expect(mockRoomRepository.findRoomIdsInactiveSince).toHaveBeenCalledWith(expectedThreshold)
       expect(mockRoomRepository.deleteRoomsInactiveSince).toHaveBeenCalledTimes(1)
       expect(mockRoomRepository.deleteRoomsInactiveSince).toHaveBeenCalledWith(expectedThreshold)
 
-      expect(mockVoteService.deleteSessionsByRoom).toHaveBeenCalledTimes(inactiveRoomIds.length)
+      expect(mockVoteService.deleteSessionsByRoom).toHaveBeenCalledTimes(deletedRoomIds.length)
       expect(mockVoteService.deleteSessionsByRoom).toHaveBeenCalledWith('room-1')
       expect(mockVoteService.deleteSessionsByRoom).toHaveBeenCalledWith('room-2')
 
       // 성공 로그 확인
-      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining(`[Success] Deleted ${deletedCount} ghost rooms`))
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining(`[Success] Deleted ${deletedRoomIds.length} ghost rooms`))
     })
 
     it('삭제된 방이 없으면 로그를 남겨야 한다', async () => {
-      mockRoomRepository.findRoomIdsInactiveSince.mockResolvedValue([])
-      mockRoomRepository.deleteRoomsInactiveSince.mockResolvedValue(0)
+      mockRoomRepository.deleteRoomsInactiveSince.mockResolvedValue([])
       const loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
 
       await service.cleanUpGhostRooms()
 
       expect(loggerSpy).toHaveBeenCalledWith('[Error] No ghost rooms found to delete.')
+      expect(mockVoteService.deleteSessionsByRoom).not.toHaveBeenCalled()
     })
 
     it('에러 발생 시 예외를 적절히 처리해야 한다', async () => {
       const error = new Error('Delete Failed')
-      mockRoomRepository.findRoomIdsInactiveSince.mockRejectedValue(error)
       mockRoomRepository.deleteRoomsInactiveSince.mockRejectedValue(error)
       const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
