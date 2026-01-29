@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { VoteIcon, CheckCircleIcon, StarIcon } from '@/shared/assets'
 import { AvatarList, Button } from '@/shared/components'
+import { cn } from '@/shared/utils'
 import type { VotingCandidate } from './LocationListSection'
 import type { VoteStatus } from '@/pages/room/types'
 
@@ -13,6 +15,13 @@ interface VoteListSectionProps {
 }
 
 export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
+  // 가장 득표수가 많은 후보 ID 계산 (TODO: 투표 동률 시 처리)
+  const winnerId = useMemo(() => {
+    if (voteStatus !== 'COMPLETED' || candidates.length === 0) return null
+    const maxPercentage = Math.max(...candidates.map(c => c.votePercentage))
+    if (maxPercentage === 0) return null
+    return candidates.find(c => c.votePercentage === maxPercentage)?.id ?? null
+  }, [candidates, voteStatus])
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -21,7 +30,7 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
         ) : (
           <ul className="divide-y divide-gray-100">
             {candidates.map(candidate => (
-              <li key={candidate.id} className="flex flex-col gap-3 p-4">
+              <li key={candidate.id} className={cn('flex flex-col gap-3 p-4', winnerId === candidate.id && 'bg-primary-bg border-2 border-primary')}>
                 {/* 상단: 썸네일 + 정보 */}
                 <div className="flex gap-3">
                   {/* 썸네일 이미지 */}
@@ -81,30 +90,31 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
                   <Button variant="ghost" className="px-0 rounded-full">
                     <AvatarList participants={candidate.voters} />
                   </Button>
-                  {/* 투표 버튼 */}
-                  {candidate.hasVoted ? (
-                    <Button
-                      className="text-xs"
-                      variant="primary_outline"
-                      size="sm"
-                      icon={<CheckCircleIcon className="size-3.5" />}
-                      iconPosition="right"
-                      onClick={() => onVote?.(candidate.id)}
-                    >
-                      투표완료
-                    </Button>
-                  ) : (
-                    <Button
-                      className="text-xs"
-                      variant="gray"
-                      size="sm"
-                      icon={<VoteIcon className="size-3.5" />}
-                      iconPosition="right"
-                      onClick={() => onVote?.(candidate.id)}
-                    >
-                      투표하기
-                    </Button>
-                  )}
+                  {/* 투표 버튼 - COMPLETED 상태에서는 숨김 */}
+                  {voteStatus !== 'COMPLETED' &&
+                    (candidate.hasVoted ? (
+                      <Button
+                        className="text-xs"
+                        variant="primary_outline"
+                        size="sm"
+                        icon={<CheckCircleIcon className="size-3.5" />}
+                        iconPosition="right"
+                        onClick={() => onVote?.(candidate.id)}
+                      >
+                        투표완료
+                      </Button>
+                    ) : (
+                      <Button
+                        className="text-xs"
+                        variant="gray"
+                        size="sm"
+                        icon={<VoteIcon className="size-3.5" />}
+                        iconPosition="right"
+                        onClick={() => onVote?.(candidate.id)}
+                      >
+                        투표하기
+                      </Button>
+                    ))}
                 </div>
               </li>
             ))}
