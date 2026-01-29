@@ -21,8 +21,13 @@ export type VoteEndedPayload = {
   candidates: Candidate[]
 }
 
-// [S->C] vote:candidate:updated
-export type VoteCandidateUpdatedPayload = {
+// [S->C] vote:candidate:added
+export type VoteCandidateAddedPayload = {
+  candidate: Candidate
+}
+
+// [S->C] vote:candidate:removed
+export type VoteCandidateRemovedPayload = {
   candidate: Candidate
 }
 

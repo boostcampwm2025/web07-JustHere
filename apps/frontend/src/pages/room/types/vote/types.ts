@@ -54,8 +54,13 @@ export interface VoteEndedPayload {
   candidates: VoteCandidate[]
 }
 
-// [S->C] vote:candidate:updated
-export interface VoteCandidateUpdatedPayload {
+// [S->C] vote:candidate:added
+export interface VoteCandidateAddedPayload {
+  candidate: VoteCandidate
+}
+
+// [S->C] vote:candidate:removed
+export interface VoteCandidateRemovedPayload {
   candidate: VoteCandidate
 }
 
