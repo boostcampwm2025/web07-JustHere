@@ -4,9 +4,9 @@
 
 <img alt="딱! 여기 - 메인 이미지" src="https://github.com/user-attachments/assets/a971430e-3fc3-40a4-a900-5861f56ffc5b" />
 
-**실시간으로 모임 장소를 함께 정하는 서비스**
+**실시간으로 모임 장소를 함께 정하는 보드형 의사결정 서비스**
 
-여러 사람이 함께 모여야 하는 상황에서 **"어디서 만날지"** 라는 복잡한 의사결정을<br/>
+여러 사람이 함께 모여야 하는 상황에서 **"어디서 만날까?"** 라는 복잡한 의사결정을<br/>
 **실시간 협업 보드** 위에서 해결합니다.
 
 [![Wiki](https://img.shields.io/badge/📋_Wiki-000?style=for-the-badge)](https://github.com/boostcampwm2025/web07-JustHere/wiki)
@@ -194,7 +194,7 @@ VITE_GOOGLE_MAP_ID={Google Map ID}
 **4. 실행**
 
 ```bash
-# 로컬 인프라 (PostgreSQL, Prometheus, Grafana)
+# (필요 시) 로컬 인프라 (PostgreSQL, Prometheus, Grafana)
 docker compose -f docker-compose.local.yml up -d
 
 # Prisma 마이그레이션
