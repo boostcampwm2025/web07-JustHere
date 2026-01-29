@@ -33,6 +33,10 @@ export const ResultPage = () => {
           languageCode: 'ko',
         },
         formattedAddress: candidate.address,
+        location: {
+          latitude: 0,
+          longitude: 0,
+        },
       })),
     )
   }, [voteResults])
