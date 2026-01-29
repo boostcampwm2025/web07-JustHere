@@ -92,8 +92,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('vote:join')
   async onVoteJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteJoinPayload) {
-    const { roomId, categoryId } = payload
-    const user = this.resolveUserSession(client, roomId, payload.userId)
+    const { roomId, categoryId, userId } = payload
+    const user = this.resolveUserSession(client, roomId, userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')

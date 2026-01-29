@@ -1,3 +1,5 @@
+import type { ErrorPayload } from '@/shared/types'
+
 export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
 
 export interface PlaceData {
@@ -71,16 +73,8 @@ export interface VoteMeUpdatedPayload {
 }
 
 // [S->C] vote:error
-export interface VoteErrorPayload {
-  status: string
-  statusCode: number
-  errorType: string
-  message: string
-  data?: unknown
-  timestamp: string
-}
-
-export type VoteError = VoteErrorPayload
+export type VoteErrorPayload = ErrorPayload
+export type VoteError = ErrorPayload
 
 // [C->S] vote:join
 export interface VoteJoinPayload {
