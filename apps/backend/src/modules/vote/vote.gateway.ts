@@ -46,11 +46,35 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     this.broadcaster.setServer(server)
   }
 
-  async handleDisconnect(client: Socket) {
-    // 사용자 세션 조회
-    const userSession = this.userService.removeSession(client.id)
-    if (!userSession) return
+  private getVoteRoomId(roomId: string, categoryId: string) {
+    return `${roomId}:${categoryId}`
+  }
 
+  private resolveUserSession(client: Socket, roomId: string, payloadUserId?: string) {
+    const dataUserId = (() => {
+      const data = client.data as { userId?: unknown } | undefined
+      if (!data) return undefined
+      return typeof data.userId === 'string' ? data.userId : undefined
+    })()
+
+    if (dataUserId) {
+      if (payloadUserId && payloadUserId !== dataUserId) {
+        return undefined
+      }
+
+      return this.userService.getSessionByUserIdInRoom(roomId, dataUserId)
+    }
+
+    if (payloadUserId) {
+      return this.userService.getSessionByUserIdInRoom(roomId, payloadUserId)
+    }
+
+    const session = this.userService.getSession(client.id)
+    if (!session || session.roomId !== roomId) return undefined
+    return session
+  }
+
+  async handleDisconnect(client: Socket) {
     const namespace = this.server ?? client.nsp
     if (!namespace) return
 
@@ -68,90 +92,126 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('vote:join')
   async onVoteJoin(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteJoinPayload) {
-    const { roomId } = payload
-    const user = this.userService.getSession(client.id)
+    const { roomId, categoryId, userId } = payload
+    const user = this.resolveUserSession(client, roomId, userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    await client.join(`vote:${roomId}`)
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    await client.join(`vote:${voteRoomId}`)
+    const socketData = client.data as { userId?: string }
+    socketData.userId = user.userId
 
-    const statePayload = this.voteService.getOrCreateSession(roomId, user.userId)
+    const statePayload = this.voteService.getOrCreateSession(voteRoomId, user.userId)
     client.emit('vote:state', statePayload)
   }
 
   @SubscribeMessage('vote:leave')
   async onVoteLeave(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteLeavePayload) {
-    const { roomId } = payload
+    const { roomId, categoryId, userId } = payload
+    const user = this.resolveUserSession(client, roomId, userId)
 
-    await client.leave(`vote:${roomId}`)
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+
+    await client.leave(`vote:${voteRoomId}`)
+
+    const namespace = this.server ?? client.nsp
+    if (!namespace) return
+
+    const roomClients = await namespace.in(`vote:${voteRoomId}`).fetchSockets()
+    if (roomClients.length === 0) {
+      this.voteService.deleteSession(voteRoomId)
+    }
   }
 
   @SubscribeMessage('vote:candidate:add')
   onCandidateAdd(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateAddPayload) {
-    const { roomId } = payload
-    const user = this.userService.getSession(client.id)
+    const { roomId, categoryId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    const updatePayload = this.voteService.addCandidatePlace(roomId, user.userId, payload)
-    this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    const updatePayload = this.voteService.addCandidatePlace(voteRoomId, user.userId, payload)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
   }
 
   @SubscribeMessage('vote:candidate:remove')
   onCandidateRemove(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCandidateRemovePayload) {
-    const { roomId, candidateId } = payload
+    const { roomId, categoryId, candidateId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
-    const updatePayload = this.voteService.removeCandidatePlace(roomId, candidateId)
-    this.broadcaster.emitToVote(roomId, 'vote:candidate:updated', updatePayload)
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    const updatePayload = this.voteService.removeCandidatePlace(voteRoomId, candidateId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
   }
 
   @SubscribeMessage('vote:cast')
   onCastVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteCastPayload) {
-    const { roomId, candidateId } = payload
-    const user = this.userService.getSession(client.id)
+    const { roomId, categoryId, candidateId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    const updatePayload = this.voteService.castVote(roomId, user.userId, candidateId)
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    const { changed, ...countsPayload } = this.voteService.castVote(voteRoomId, user.userId, candidateId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:counts:updated', countsPayload)
 
-    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
+    if (changed) {
+      const meUpdatedPayload = this.voteService.getMyVotes(voteRoomId, user.userId)
+      client.emit('vote:me:updated', meUpdatedPayload)
+    }
   }
 
   @SubscribeMessage('vote:revoke')
   onRevokeVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteRevokePayload) {
-    const { roomId, candidateId } = payload
-    const user = this.userService.getSession(client.id)
+    const { roomId, categoryId, candidateId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
 
     if (!user || user.roomId !== roomId) {
       throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
     }
 
-    const updatePayload = this.voteService.revokeVote(roomId, user.userId, candidateId)
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    const { changed, ...countsPayload } = this.voteService.revokeVote(voteRoomId, user.userId, candidateId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:counts:updated', countsPayload)
 
-    this.broadcaster.emitToVote(roomId, 'vote:counts:updated', updatePayload)
+    if (changed) {
+      const meUpdatedPayload = this.voteService.getMyVotes(voteRoomId, user.userId)
+      client.emit('vote:me:updated', meUpdatedPayload)
+    }
   }
 
   @UseGuards(VoteOwnerGuard)
   @SubscribeMessage('vote:start')
   onStartVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteStartPayload) {
-    const { roomId } = payload
+    const { roomId, categoryId } = payload
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
-    const startedPayload = this.voteService.startVote(roomId)
-    this.broadcaster.emitToVote(roomId, 'vote:started', startedPayload)
+    const startedPayload = this.voteService.startVote(voteRoomId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:started', startedPayload)
   }
 
   @UseGuards(VoteOwnerGuard)
   @SubscribeMessage('vote:end')
   onEndVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteEndPayload) {
-    const { roomId } = payload
+    const { roomId, categoryId } = payload
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
-    const endedPayload = this.voteService.endVote(roomId)
-    this.broadcaster.emitToVote(roomId, 'vote:ended', endedPayload)
+    const endedPayload = this.voteService.endVote(voteRoomId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:ended', endedPayload)
   }
 }

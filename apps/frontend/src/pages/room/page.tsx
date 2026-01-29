@@ -20,6 +20,7 @@ export default function RoomPage() {
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('')
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
@@ -77,6 +78,7 @@ export default function RoomPage() {
           roomId={roomId}
           onCreateCategory={createCategory}
           onDeleteCategory={deleteCategory}
+          onActiveCategoryChange={setActiveCategoryId}
           pendingPlaceCard={pendingPlaceCard}
           onPlaceCardPlaced={clearPendingPlaceCard}
           onPlaceCardCanceled={clearPendingPlaceCard}
@@ -86,6 +88,11 @@ export default function RoomPage() {
         />
         <LocationListSection
           roomId={roomId}
+          userId={user.userId}
+          userName={user.name}
+          participants={participants}
+          isOwner={isOwner}
+          activeCategoryId={activeCategoryId}
           slug={slug}
           currentRegion={currentRegion}
           pendingPlaceCard={pendingPlaceCard}

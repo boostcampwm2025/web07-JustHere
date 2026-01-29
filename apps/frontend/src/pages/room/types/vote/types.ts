@@ -1,35 +1,26 @@
+import type { ErrorPayload } from '@/shared/types'
+
 export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
 
-export interface VoteCandidate {
-  id: string
+export interface PlaceData {
   placeId: string
   name: string
   address: string
-  category: string
+  category?: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
+}
+
+export interface VoteCandidate extends PlaceData {
   createdBy: string
-  createdAt: string
+  createdAt: Date | string
 }
 
 export type VoteCounts = Record<string, number>
 
 export type MyVotes = string[]
-
-export interface VoteError {
-  code: string
-  message: string
-  actionId?: string
-  recoverable?: boolean
-}
-
-export interface VoteResultItem {
-  candidateId: string
-  count: number
-}
-
-export interface VoteResult {
-  roomId: string
-  items: VoteResultItem[]
-}
 
 export interface VoteState {
   roomId: string
@@ -37,97 +28,110 @@ export interface VoteState {
   candidates: VoteCandidate[]
   counts: VoteCounts
   myVotes: MyVotes
+  voters: Record<string, string[]>
   isOwner: boolean
   isConnected: boolean
   lastError: VoteError | null
 }
 
+// [S->C] vote:state
 export interface VoteStatePayload {
-  roomId: string
   status: VoteStatus
   candidates: VoteCandidate[]
   counts: VoteCounts
-  myVotes?: MyVotes
-  isOwner?: boolean
+  myVotes: MyVotes
+  voters: Record<string, string[]>
 }
 
-export interface VoteUpdatedPayload {
-  roomId: string
-  status?: VoteStatus
-  candidates?: VoteCandidate[]
-  counts?: VoteCounts
-  myVotes?: MyVotes
-  isOwner?: boolean
-}
-
+// [S->C] vote:started
 export interface VoteStartedPayload {
-  roomId: string
   status: 'IN_PROGRESS'
 }
 
+// [S->C] vote:ended
 export interface VoteEndedPayload {
-  roomId: string
   status: 'COMPLETED'
-  result: VoteResult
+  candidates: VoteCandidate[]
 }
 
-export interface VoteJoinPayload {
-  roomId: string
-  userId?: string
-  isOwner?: boolean
-}
-
-export interface VoteLeavePayload {
-  roomId: string
-  userId?: string
-}
-
-export interface VoteAddCandidatePayload {
-  roomId: string
-  placeId: string
-  name: string
-  address: string
-  category: string
-  actionId?: string
-}
-
-export interface VoteRemoveCandidatePayload {
-  roomId: string
-  candidateId: string
-  actionId?: string
-}
-
+// [S->C] vote:candidate:updated
 export interface VoteCandidateUpdatedPayload {
-  roomId: string
-  action: 'add' | 'remove'
-  candidate?: VoteCandidate
-  candidateId?: string
+  candidate: VoteCandidate
 }
 
-export interface VoteCastPayload {
-  roomId: string
-  candidateId: string
-  actionId?: string
-}
-
-export interface VoteRevokePayload {
-  roomId: string
-  candidateId: string
-  actionId?: string
-}
-
+// [S->C] vote:counts:updated
 export interface VoteCountsUpdatedPayload {
-  roomId: string
   candidateId: string
   count: number
+  userId: string
+  voters: string[]
 }
 
+// [S->C] vote:me:updated
 export interface VoteMeUpdatedPayload {
-  roomId: string
   myVotes: MyVotes
 }
 
-export interface VoteRoomActionPayload {
+// [S->C] vote:error
+export type VoteErrorPayload = ErrorPayload
+export type VoteError = ErrorPayload
+
+// [C->S] vote:join
+export interface VoteJoinPayload {
   roomId: string
-  actionId?: string
+  categoryId: string
+  userId?: string
+}
+
+// [C->S] vote:leave
+export interface VoteLeavePayload {
+  roomId: string
+  categoryId: string
+}
+
+// [C->S] vote:candidate:add
+export interface VoteCandidateAddPayload {
+  roomId: string
+  categoryId: string
+  placeId: string
+  name: string
+  address: string
+  category?: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
+}
+
+// [C->S] vote:candidate:remove
+export interface VoteCandidateRemovePayload {
+  roomId: string
+  categoryId: string
+  candidateId: string
+}
+
+// [C->S] vote:cast
+export interface VoteCastPayload {
+  roomId: string
+  categoryId: string
+  candidateId: string
+}
+
+// [C->S] vote:revoke
+export interface VoteRevokePayload {
+  roomId: string
+  categoryId: string
+  candidateId: string
+}
+
+// [C->S] vote:start
+export interface VoteStartPayload {
+  roomId: string
+  categoryId: string
+}
+
+// [C->S] vote:end
+export interface VoteEndPayload {
+  roomId: string
+  categoryId: string
 }

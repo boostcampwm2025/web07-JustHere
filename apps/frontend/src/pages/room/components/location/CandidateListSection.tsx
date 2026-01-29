@@ -4,11 +4,12 @@ import type { Candidate } from './LocationListSection'
 
 interface CandidateListSectionProps {
   candidates: Candidate[]
+  isOwner?: boolean
   onStartVote?: () => void
   onRemoveCandidate?: (id: string) => void
 }
 
-export const CandidateListSection = ({ candidates, onStartVote, onRemoveCandidate }: CandidateListSectionProps) => {
+export const CandidateListSection = ({ candidates, isOwner = false, onStartVote, onRemoveCandidate }: CandidateListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -55,11 +56,13 @@ export const CandidateListSection = ({ candidates, onStartVote, onRemoveCandidat
       </div>
 
       {/* Footer Button */}
-      <div className="p-4">
-        <Button size="lg" className="w-full" variant="primary" onClick={onStartVote}>
-          투표 시작
-        </Button>
-      </div>
+      {isOwner && (
+        <div className="p-4">
+          <Button size="lg" className="w-full" variant="primary" onClick={onStartVote}>
+            투표 시작
+          </Button>
+        </div>
+      )}
     </>
   )
 }

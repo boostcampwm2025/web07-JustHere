@@ -4,6 +4,8 @@ import { VoteGateway } from './vote.gateway'
 import { VoteService } from './vote.service'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
+import { CustomException } from '@/lib/exceptions/custom.exception'
+import { ErrorType } from '@/lib/types/response.type'
 import {
   VoteJoinPayload,
   VoteLeavePayload,
@@ -18,6 +20,19 @@ import {
 describe('VoteGateway', () => {
   let gateway: VoteGateway
 
+  const expectNotInRoomError = (fn: () => void) => {
+    try {
+      fn()
+    } catch (error) {
+      expect(error).toBeInstanceOf(CustomException)
+      expect((error as CustomException).type).toBe(ErrorType.NotInRoom)
+      expect((error as CustomException).message).toBe('Room에 접속되지 않았습니다.')
+      return
+    }
+
+    throw new Error('Expected CustomException to be thrown.')
+  }
+
   const voteService = {
     getOrCreateSession: jest.fn(),
     addCandidatePlace: jest.fn(),
@@ -27,6 +42,7 @@ describe('VoteGateway', () => {
     startVote: jest.fn(),
     endVote: jest.fn(),
     deleteSession: jest.fn(),
+    getMyVotes: jest.fn(),
   }
 
   const broadcaster = {
@@ -37,6 +53,7 @@ describe('VoteGateway', () => {
   const userService = {
     getSession: jest.fn(),
     removeSession: jest.fn(),
+    getSessionByUserIdInRoom: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -66,7 +83,7 @@ describe('VoteGateway', () => {
   })
 
   describe('handleDisconnect', () => {
-    it('사용자 세션이 없으면 아무것도 하지 않는다', async () => {
+    it('네임스페이스가 없으면 아무것도 하지 않는다', async () => {
       const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
       const client = {
         rooms: new Set(['vote:room-1', 'vote:room-2']),
@@ -74,12 +91,7 @@ describe('VoteGateway', () => {
         id: 'socket-1',
       } as unknown as Socket
 
-      userService.removeSession.mockReturnValue(undefined)
-
       await gateway.handleDisconnect(client)
-
-      expect(userService.removeSession).toHaveBeenCalledTimes(1)
-      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
       expect(leaveMock).not.toHaveBeenCalled()
     })
 
@@ -93,22 +105,9 @@ describe('VoteGateway', () => {
         id: 'socket-1',
         nsp: undefined,
       } as unknown as Socket
-      const mockUserSession = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
-
       gateway.server = { in: inMock } as unknown as Server
 
-      userService.removeSession.mockReturnValue(mockUserSession)
-
       await gateway.handleDisconnect(client)
-
-      expect(userService.removeSession).toHaveBeenCalledTimes(1)
-      expect(userService.removeSession).toHaveBeenCalledWith('socket-1')
       expect(leaveMock).toHaveBeenCalledTimes(2)
       expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
       expect(leaveMock).toHaveBeenCalledWith('vote:room-2')
@@ -129,11 +128,14 @@ describe('VoteGateway', () => {
       const client = {
         join: ((room: string) => joinMock(room)) as (room: string) => Promise<void>,
         emit: ((event: string, ...args: unknown[]) => emitMock(event, ...args)) as (event: string, ...args: unknown[]) => boolean,
+        data: {},
         id: 'socket-1',
       } as unknown as Socket
       const payload: VoteJoinPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockUser = {
         userId: 'user-1',
         name: 'user',
@@ -146,6 +148,7 @@ describe('VoteGateway', () => {
         candidates: [],
         counts: {},
         myVotes: [],
+        voters: {},
       }
 
       userService.getSession.mockReturnValue(mockUser)
@@ -156,10 +159,53 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(joinMock).toHaveBeenCalledTimes(1)
-      expect(joinMock).toHaveBeenCalledWith('vote:room-1')
+      expect(joinMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
       expect(voteService.getOrCreateSession).toHaveBeenCalledTimes(1)
-      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
+    })
+
+    it('payload.userId가 있으면 userId 기반 세션 조회 경로를 사용한다', async () => {
+      const joinMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
+      const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+      const client = {
+        join: ((room: string) => joinMock(room)) as (room: string) => Promise<void>,
+        emit: ((event: string, ...args: unknown[]) => emitMock(event, ...args)) as (event: string, ...args: unknown[]) => boolean,
+        data: {},
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteJoinPayload = {
+        roomId: 'room-1',
+        categoryId: 'category-1',
+        userId: 'user-1',
+      }
+      const voteRoomId = 'room-1:category-1'
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+      const mockStatePayload = {
+        status: 'WAITING',
+        candidates: [],
+        counts: {},
+        myVotes: [],
+        voters: {},
+      }
+
+      userService.getSessionByUserIdInRoom.mockReturnValue(mockUser)
+      voteService.getOrCreateSession.mockReturnValue(mockStatePayload)
+
+      await gateway.onVoteJoin(client, payload)
+
+      expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledTimes(1)
+      expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(userService.getSession).not.toHaveBeenCalled()
+      expect(joinMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
     })
   })
@@ -173,12 +219,23 @@ describe('VoteGateway', () => {
       } as unknown as Socket
       const payload: VoteLeavePayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+
+      userService.getSession.mockReturnValue(mockUser)
 
       await gateway.onVoteLeave(client, payload)
 
       expect(leaveMock).toHaveBeenCalledTimes(1)
-      expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
+      expect(leaveMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
     })
   })
 
@@ -189,10 +246,12 @@ describe('VoteGateway', () => {
       } as Socket
       const payload: VoteCandidateAddPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
         placeId: 'place-1',
         name: '카페',
         address: '서울시 강남구',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockUser = {
         userId: 'user-1',
         name: 'user',
@@ -216,9 +275,9 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.addCandidatePlace).toHaveBeenCalledTimes(1)
-      expect(voteService.addCandidatePlace).toHaveBeenCalledWith('room-1', 'user-1', payload)
+      expect(voteService.addCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'user-1', payload)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidate)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidate)
     })
   })
 
@@ -229,8 +288,10 @@ describe('VoteGateway', () => {
       } as Socket
       const payload: VoteCandidateRemovePayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
         candidateId: 'candidate-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockCandidateId = 'candidate-1'
 
       voteService.removeCandidatePlace.mockReturnValue(mockCandidateId)
@@ -238,35 +299,46 @@ describe('VoteGateway', () => {
       gateway.onCandidateRemove(client, payload)
 
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
-      expect(voteService.removeCandidatePlace).toHaveBeenCalledWith('room-1', 'candidate-1')
+      expect(voteService.removeCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidateId)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidateId)
     })
   })
 
   describe('onCastVote', () => {
+    const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+    const client = {
+      id: 'socket-1',
+      emit: emitMock,
+    } as unknown as Socket
+    const payload: VoteCastPayload = {
+      roomId: 'room-1',
+      categoryId: 'category-1',
+      candidateId: 'candidate-1',
+    }
+    const voteRoomId = 'room-1:category-1'
+    const mockUser = {
+      userId: 'user-1',
+      name: 'user',
+      socketId: 'socket-1',
+      roomId: 'room-1',
+      isOwner: false,
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      userService.getSession.mockReturnValue(mockUser)
+    })
+
     it('투표를 수행하고 브로드캐스터로 득표수 업데이트를 전송한다', () => {
-      const client = {
-        id: 'socket-1',
-      } as Socket
-      const payload: VoteCastPayload = {
-        roomId: 'room-1',
-        candidateId: 'candidate-1',
-      }
-      const mockUser = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
       const mockUpdatePayload = {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
+        voters: ['user-1'],
+        changed: true,
       }
 
-      userService.getSession.mockReturnValue(mockUser)
       voteService.castVote.mockReturnValue(mockUpdatePayload)
 
       gateway.onCastVote(client, payload)
@@ -274,35 +346,115 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.castVote).toHaveBeenCalledTimes(1)
-      expect(voteService.castVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
+      expect(voteService.castVote).toHaveBeenCalledWith(voteRoomId, 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:counts:updated', {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+        voters: ['user-1'],
+      })
+    })
+
+    it('changed가 true일 때 getMyVotes를 호출하고 vote:me:updated 이벤트를 emit한다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+        voters: ['user-1'],
+        changed: true,
+      }
+      const mockMyVotes = {
+        myVotes: ['candidate-1'],
+      }
+
+      voteService.castVote.mockReturnValue(mockUpdatePayload)
+      voteService.getMyVotes.mockReturnValue(mockMyVotes)
+
+      gateway.onCastVote(client, payload)
+
+      expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
+      expect(voteService.getMyVotes).toHaveBeenCalledWith(voteRoomId, 'user-1')
+      expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
+    })
+
+    it('changed가 false일 때 getMyVotes를 호출하지 않고 vote:me:updated 이벤트를 emit하지 않는다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 1,
+        userId: 'user-1',
+        voters: ['user-1'],
+        changed: false,
+      }
+
+      voteService.castVote.mockReturnValue(mockUpdatePayload)
+
+      gateway.onCastVote(client, payload)
+
+      expect(voteService.getMyVotes).not.toHaveBeenCalled()
+      expect(emitMock).not.toHaveBeenCalled()
+    })
+
+    it('user가 없으면 예외를 던진다', () => {
+      userService.getSession.mockReturnValue(null)
+
+      expectNotInRoomError(() => {
+        gateway.onCastVote(client, payload)
+      })
+
+      expect(voteService.castVote).not.toHaveBeenCalled()
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', () => {
+      const wrongRoomUser = {
+        ...mockUser,
+        roomId: 'room-2',
+      }
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      expectNotInRoomError(() => {
+        gateway.onCastVote(client, payload)
+      })
+
+      expect(voteService.castVote).not.toHaveBeenCalled()
     })
   })
 
   describe('onRevokeVote', () => {
+    const emitMock = jest.fn<boolean, [string, ...unknown[]]>()
+    const client = {
+      id: 'socket-1',
+      emit: emitMock,
+    } as unknown as Socket
+    const payload: VoteRevokePayload = {
+      roomId: 'room-1',
+      categoryId: 'category-1',
+      candidateId: 'candidate-1',
+    }
+    const voteRoomId = 'room-1:category-1'
+    const mockUser = {
+      userId: 'user-1',
+      name: 'user',
+      socketId: 'socket-1',
+      roomId: 'room-1',
+      isOwner: false,
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      userService.getSession.mockReturnValue(mockUser)
+    })
+
     it('투표를 취소하고 브로드캐스터로 득표수 업데이트를 전송한다', () => {
-      const client = {
-        id: 'socket-1',
-      } as Socket
-      const payload: VoteRevokePayload = {
-        roomId: 'room-1',
-        candidateId: 'candidate-1',
-      }
-      const mockUser = {
-        userId: 'user-1',
-        name: 'user',
-        socketId: 'socket-1',
-        roomId: 'room-1',
-        isOwner: false,
-      }
       const mockUpdatePayload = {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
+        voters: [],
+        changed: true,
       }
 
-      userService.getSession.mockReturnValue(mockUser)
       voteService.revokeVote.mockReturnValue(mockUpdatePayload)
 
       gateway.onRevokeVote(client, payload)
@@ -310,9 +462,78 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.revokeVote).toHaveBeenCalledTimes(1)
-      expect(voteService.revokeVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
+      expect(voteService.revokeVote).toHaveBeenCalledWith(voteRoomId, 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', mockUpdatePayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:counts:updated', {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+        voters: [],
+      })
+    })
+
+    it('changed가 true일 때 getMyVotes를 호출하고 vote:me:updated 이벤트를 emit한다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+        voters: [],
+        changed: true,
+      }
+      const mockMyVotes = {
+        myVotes: [],
+      }
+
+      voteService.revokeVote.mockReturnValue(mockUpdatePayload)
+      voteService.getMyVotes.mockReturnValue(mockMyVotes)
+
+      gateway.onRevokeVote(client, payload)
+
+      expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
+      expect(voteService.getMyVotes).toHaveBeenCalledWith(voteRoomId, 'user-1')
+      expect(emitMock).toHaveBeenCalledTimes(1)
+      expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
+    })
+
+    it('changed가 false일 때 getMyVotes를 호출하지 않고 vote:me:updated 이벤트를 emit하지 않는다', () => {
+      const mockUpdatePayload = {
+        candidateId: 'candidate-1',
+        count: 0,
+        userId: 'user-1',
+        voters: [],
+        changed: false,
+      }
+
+      voteService.revokeVote.mockReturnValue(mockUpdatePayload)
+
+      gateway.onRevokeVote(client, payload)
+
+      expect(voteService.getMyVotes).not.toHaveBeenCalled()
+      expect(emitMock).not.toHaveBeenCalled()
+    })
+
+    it('user가 없으면 예외를 던진다', () => {
+      userService.getSession.mockReturnValue(null)
+
+      expectNotInRoomError(() => {
+        gateway.onRevokeVote(client, payload)
+      })
+
+      expect(voteService.revokeVote).not.toHaveBeenCalled()
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', () => {
+      const wrongRoomUser = {
+        ...mockUser,
+        roomId: 'room-2',
+      }
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      expectNotInRoomError(() => {
+        gateway.onRevokeVote(client, payload)
+      })
+
+      expect(voteService.revokeVote).not.toHaveBeenCalled()
     })
   })
 
@@ -321,7 +542,9 @@ describe('VoteGateway', () => {
       const client = {} as Socket
       const payload: VoteStartPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockStartedPayload = {
         status: 'IN_PROGRESS',
       }
@@ -331,9 +554,9 @@ describe('VoteGateway', () => {
       gateway.onStartVote(client, payload)
 
       expect(voteService.startVote).toHaveBeenCalledTimes(1)
-      expect(voteService.startVote).toHaveBeenCalledWith('room-1')
+      expect(voteService.startVote).toHaveBeenCalledWith(voteRoomId)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:started', mockStartedPayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:started', mockStartedPayload)
     })
   })
 
@@ -342,7 +565,9 @@ describe('VoteGateway', () => {
       const client = {} as Socket
       const payload: VoteEndPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockEndedPayload = {
         status: 'COMPLETED',
         candidates: [],
@@ -353,9 +578,9 @@ describe('VoteGateway', () => {
       gateway.onEndVote(client, payload)
 
       expect(voteService.endVote).toHaveBeenCalledTimes(1)
-      expect(voteService.endVote).toHaveBeenCalledWith('room-1')
+      expect(voteService.endVote).toHaveBeenCalledWith(voteRoomId)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:ended', mockEndedPayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:ended', mockEndedPayload)
     })
   })
 })

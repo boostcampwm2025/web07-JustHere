@@ -1,4 +1,4 @@
-import type { VoteEventName } from '../../constants/events'
+import type { VoteEventName } from '@/pages/room/constants'
 
 type Handler<T = unknown> = (payload: T) => void
 

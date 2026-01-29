@@ -79,7 +79,14 @@ export type RoomRegionUpdatedPayload = {
 }
 
 // 소켓 에러 타입
-export type SocketErrorType = 'NOT_FOUND' | 'NOT_IN_ROOM' | 'NOT_OWNER' | 'TARGET_NOT_FOUND' | 'INTERNAL_SERVER_ERROR' | 'CATEGORY_OVERFLOW_EXCEPTION'
+export type SocketErrorType =
+  | 'NOT_FOUND'
+  | 'NOT_IN_ROOM'
+  | 'NOT_OWNER'
+  | 'TARGET_NOT_FOUND'
+  | 'INTERNAL_SERVER_ERROR'
+  | 'CATEGORY_OVERFLOW_EXCEPTION'
+  | 'SOCKET_ERROR'
 
 // [S->C] room:error / category:error
 export type ErrorPayload = {

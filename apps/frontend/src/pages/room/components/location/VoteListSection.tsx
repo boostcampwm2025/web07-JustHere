@@ -7,9 +7,10 @@ interface VoteListSectionProps {
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onDeleteCandidate?: () => void
+  onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandidate }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -34,7 +35,11 @@ export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandida
                   <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-bold text-gray-800 text-base truncate">{candidate.name}</h3>
-                      <button type="button" className="text-gray-500 text-[10px] hover:text-gray-700 shrink-0">
+                      <button
+                        type="button"
+                        className="text-gray-500 text-[10px] hover:text-gray-700 shrink-0"
+                        onClick={() => onViewDetail?.(candidate.id)}
+                      >
                         상세보기
                       </button>
                     </div>

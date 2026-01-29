@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { VoteStartedPayload, VoteCountsUpdatedPayload, VoteStatePayload, VoteEndedPayload } from './dto/vote.s2c.dto'
 import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
 import { VoteSessionStore } from './vote-session.store'
+import {
+  VoteCandidateUpdatedPayload,
+  VoteCountsUpdatedPayload,
+  VoteEndedPayload,
+  VoteMeUpdatedPayload,
+  VoteStartedPayload,
+  VoteStatePayload,
+} from './dto/vote.s2c.dto'
 
 @Injectable()
 export class VoteService {
@@ -51,6 +58,7 @@ export class VoteService {
       candidates: Array.from(session.candidates.values()),
       counts: Object.fromEntries(session.totalCounts.entries()),
       myVotes: myVotesSet ? Array.from(myVotesSet) : [],
+      voters: this.getVoterIdsByCandidate(session),
     }
   }
 
@@ -61,7 +69,7 @@ export class VoteService {
    * @param placeData 구글맵에서 받아온 장소 데이터
    */
   // TODO: 후보 리스트에 추가한 사용자가 누군지도 전달해야 하는건가?
-  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): Candidate {
+  addCandidatePlace(roomId: string, userId: string, placeData: PlaceData): VoteCandidateUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -74,15 +82,15 @@ export class VoteService {
     }
 
     // 후보 리스트에 등록
-    const newCandidate: Candidate = {
+    const candidate: Candidate = {
       ...placeData,
       createdBy: userId,
       createdAt: new Date(),
     }
 
-    session.candidates.set(newCandidate.placeId, newCandidate)
+    session.candidates.set(candidate.placeId, candidate)
 
-    return newCandidate
+    return { candidate }
   }
 
   /**
@@ -91,7 +99,7 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * @param candidateId 페이로드의 placeId
    */
-  removeCandidatePlace(roomId: string, candidateId: string) {
+  removeCandidatePlace(roomId: string, candidateId: string): VoteCandidateUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.WAITING) {
@@ -104,8 +112,13 @@ export class VoteService {
     }
 
     session.candidates.delete(candidateId)
+    session.totalCounts.delete(candidateId)
 
-    return candidateId
+    for (const userVotesSet of session.userVotes.values()) {
+      userVotesSet.delete(candidateId)
+    }
+
+    return { candidate }
   }
 
   /**
@@ -159,9 +172,10 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * @param userId 투표하는 사용자 ID (client.id의 userSessionStore에서 가져오기)
    * @param candidateId 페이로드의 placeId
+   * @returns 투표 결과와 변경 여부
    */
   // TODO : 동시성 문제 처리 해야함.
-  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
+  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -178,19 +192,26 @@ export class VoteService {
     }
 
     const userVotes = session.userVotes.get(userId)!
-    const alreadyVoted = userVotes.has(candidateId)
-    if (!alreadyVoted) {
-      // 투표 추가 (중복 투표 방지)
-      userVotes.add(candidateId)
-
-      // 투표 득표수 증가
-      session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) + 1)
+    // 이미 투표한 경우 바로 리턴
+    if (userVotes.has(candidateId)) {
+      return {
+        candidateId,
+        count: session.totalCounts.get(candidateId) || 0,
+        userId,
+        voters: this.getVoterIdsForCandidate(session, candidateId),
+        changed: false,
+      }
     }
+
+    userVotes.add(candidateId)
+    session.totalCounts.set(candidateId, (session.totalCounts.get(candidateId) || 0) + 1)
 
     return {
       candidateId,
       count: session.totalCounts.get(candidateId) || 0,
       userId,
+      voters: this.getVoterIdsForCandidate(session, candidateId),
+      changed: true,
     }
   }
 
@@ -200,8 +221,9 @@ export class VoteService {
    * @param roomId 페이로드 내 카테고리 ID
    * @param userId 투표하는 사용자 ID (client.id의 userSessionStore에서 가져오기)
    * @param candidateId 페이로드의 placeId
+   * @returns 투표 결과와 변경 여부
    */
-  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
+  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -214,17 +236,20 @@ export class VoteService {
 
     const userVotes = session.userVotes.get(userId)
 
+    // 투표하지 않은 경우 바로 리턴
     if (!userVotes || !userVotes.has(candidateId)) {
       return {
         candidateId,
         count: session.totalCounts.get(candidateId) || 0,
         userId,
+        voters: this.getVoterIdsForCandidate(session, candidateId),
+        changed: false,
       }
     }
 
     userVotes.delete(candidateId)
 
-    // 투표 득표수 감소 (0 미만 방지)
+    // 투표 득표수 감소
     const current = session.totalCounts.get(candidateId) || 0
     session.totalCounts.set(candidateId, Math.max(0, current - 1))
 
@@ -232,7 +257,21 @@ export class VoteService {
       candidateId,
       count: session.totalCounts.get(candidateId) || 0,
       userId,
+      voters: this.getVoterIdsForCandidate(session, candidateId),
+      changed: true,
     }
+  }
+
+  /**
+   * 사용자의 현재 투표 목록 조회
+   * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 사용자 ID
+   */
+  getMyVotes(roomId: string, userId: string): VoteMeUpdatedPayload {
+    const session = this.getSessionOrThrow(roomId)
+    const myVotesSet = session.userVotes.get(userId)
+
+    return { myVotes: myVotesSet ? Array.from(myVotesSet) : [] }
   }
 
   /**
@@ -245,5 +284,40 @@ export class VoteService {
       throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
     }
     return session
+  }
+
+  private getVoterIdsByCandidate(session: VoteSession): Record<string, string[]> {
+    const voters: Record<string, string[]> = {}
+
+    for (const candidateId of session.candidates.keys()) {
+      voters[candidateId] = []
+    }
+
+    for (const [userId, userVotes] of session.userVotes.entries()) {
+      for (const candidateId of userVotes) {
+        if (!session.candidates.has(candidateId)) continue
+        if (!voters[candidateId]) {
+          voters[candidateId] = []
+        }
+        voters[candidateId].push(userId)
+      }
+    }
+
+    return voters
+  }
+
+  private getVoterIdsForCandidate(session: VoteSession, candidateId: string): string[] {
+    if (!session.candidates.has(candidateId)) {
+      return []
+    }
+
+    const voters: string[] = []
+    for (const [userId, userVotes] of session.userVotes.entries()) {
+      if (userVotes.has(candidateId)) {
+        voters.push(userId)
+      }
+    }
+
+    return voters
   }
 }
