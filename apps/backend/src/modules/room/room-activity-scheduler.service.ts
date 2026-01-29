@@ -65,7 +65,7 @@ export class RoomActivitySchedulerService {
       const deletedRoomIds = await this.roomRepository.deleteRoomsInactiveSince(thresholdDate)
 
       if (deletedRoomIds.length === 0) {
-        this.logger.log('[Error] No ghost rooms found to delete.')
+        this.logger.log('[Info] No ghost rooms found to delete.')
         return
       }
 

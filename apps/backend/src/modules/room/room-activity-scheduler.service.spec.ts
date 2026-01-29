@@ -161,7 +161,7 @@ describe('RoomActivitySchedulerService', () => {
 
       await service.cleanUpGhostRooms()
 
-      expect(loggerSpy).toHaveBeenCalledWith('[Error] No ghost rooms found to delete.')
+      expect(loggerSpy).toHaveBeenCalledWith('[Info] No ghost rooms found to delete.')
       expect(mockVoteService.deleteSessionsByRoom).not.toHaveBeenCalled()
     })
 
