@@ -4,8 +4,9 @@ import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
-import { RoomHeader, WhiteboardSection, LocationListSection } from './components'
+import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
 import { useRoomSocketCache } from './hooks'
+import { Button } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -22,6 +23,7 @@ export default function RoomPage() {
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
+  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(true)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
@@ -38,6 +40,10 @@ export default function RoomPage() {
   useEffect(() => {
     setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
   }, [categories, activeCategoryId])
+
+  useEffect(() => {
+    if (!categories.length) setIsCreateCategoryModalOpen(true)
+  }, [categories.length])
 
   if (!slug) {
     return <Navigate to="/onboarding" replace />
@@ -61,7 +67,6 @@ export default function RoomPage() {
           ownerId={ownerId}
           onTransferOwner={transferOwner}
         />
-        <div className="p-6 text-gray">loading...</div>
       </div>
     )
   }
@@ -78,7 +83,26 @@ export default function RoomPage() {
           ownerId={ownerId}
           onTransferOwner={transferOwner}
         />
-        <div className="p-6 text-gray">카테고리가 없습니다</div>
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+          {isCreateCategoryModalOpen ? (
+            <AddCategoryModal
+              onClose={() => setIsCreateCategoryModalOpen(false)}
+              onComplete={name => {
+                createCategory(name)
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-gray-disable">
+              <div className="text-center">
+                <p className="text-lg font-semibold mb-2">캔버스가 없습니다</p>
+                <p className="text-sm">새 카테고리를 추가해주세요</p>
+              </div>
+              <Button className="mt-4" onClick={() => setIsCreateCategoryModalOpen(true)}>
+                추가하기
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
