@@ -176,8 +176,8 @@ export class VoteService {
   resetVote(roomId: string): VoteResettedPayload {
     const session = this.getSessionOrThrow(roomId)
 
-    if (session.status === VoteStatus.WAITING) {
-      throw new CustomException(ErrorType.BadRequest, '이미 대기 상태입니다.')
+    if (session.status !== VoteStatus.COMPLETED) {
+      throw new CustomException(ErrorType.BadRequest, '완료된 투표만 리셋할 수 있습니다.')
     }
 
     // 리셋: candidates 유지, 나머지 초기화
