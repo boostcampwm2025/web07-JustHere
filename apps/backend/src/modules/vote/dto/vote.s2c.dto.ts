@@ -46,3 +46,11 @@ export type VoteMeUpdatedPayload = {
 
 // [S->C] vote:error
 export type VoteErrorPayload = ErrorResponse
+
+// [S->C] vote:resetted
+export type VoteResettedPayload = {
+  status: 'WAITING'
+  candidates: Candidate[]
+  counts: Record<string, number>
+  voters: Record<string, string[]>
+}

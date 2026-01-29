@@ -12,6 +12,7 @@ import type {
   VoteEndedPayload,
   VoteErrorPayload,
   VoteMeUpdatedPayload,
+  VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
   VoteStatus,
@@ -263,6 +264,20 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       addSocketBreadcrumb('vote:ended', { roomId, candidatesCount: payload.candidates.length })
     }
 
+    // [S->C] vote:resetted - 투표 리셋 시 브로드캐스트
+    const handleResetted = (payload: VoteResettedPayload) => {
+      setStatus(payload.status)
+      setCandidates(payload.candidates)
+      setCounts(payload.counts)
+      setMyVotes([])
+      setVotersByCandidate(payload.voters)
+      countsRef.current = payload.counts
+      myVotesRef.current = []
+      votersByCandidateRef.current = payload.voters
+      setError(null)
+      addSocketBreadcrumb('vote:resetted', { roomId, candidatesCount: payload.candidates.length })
+    }
+
     // [S->C] vote:error - 에러 발생 시
     const handleError = (payload: VoteErrorPayload) => {
       setError(payload)
@@ -278,6 +293,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     socket.on(VOTE_EVENTS.meUpdated, handleMeUpdated)
     socket.on(VOTE_EVENTS.started, handleStarted)
     socket.on(VOTE_EVENTS.ended, handleEnded)
+    socket.on(VOTE_EVENTS.resetted, handleResetted)
     socket.on(VOTE_EVENTS.error, handleError)
 
     return () => {
@@ -290,6 +306,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.meUpdated, handleMeUpdated)
       socket.off(VOTE_EVENTS.started, handleStarted)
       socket.off(VOTE_EVENTS.ended, handleEnded)
+      socket.off(VOTE_EVENTS.resetted, handleResetted)
       socket.off(VOTE_EVENTS.error, handleError)
     }
   }, [enabled, roomId, categoryId, userId, resolveSocket])
@@ -504,6 +521,17 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     addSocketBreadcrumb('vote:end', { roomId })
   }, [enabled, roomId, categoryId, resolveSocket])
 
+  // [C->S] vote:reset
+  const resetVote = useCallback(() => {
+    if (!enabled || !roomId || !categoryId) return
+
+    const socket = resolveSocket()
+    if (!socket) return
+
+    socket.emit(VOTE_EVENTS.reset, { roomId, categoryId })
+    addSocketBreadcrumb('vote:reset', { roomId })
+  }, [enabled, roomId, categoryId, resolveSocket])
+
   // [C->S] vote:cast
   const castVote = useCallback(
     (candidateId: string) => {
@@ -616,6 +644,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     removeCandidate,
     startVote,
     endVote,
+    resetVote,
     castVote,
     revokeVote,
     resetError,

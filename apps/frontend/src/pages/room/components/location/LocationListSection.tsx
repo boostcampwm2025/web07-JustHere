@@ -4,7 +4,6 @@ import { Button, Divider, SearchInput, PlaceDetailContent } from '@/shared/compo
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
-import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
 import { RegionSelectorDropdown } from './region-selector'
 import { VoteListSection } from './VoteListSection'
@@ -73,7 +72,6 @@ export const LocationListSection = ({
   selectedPlace,
   onPlaceSelect,
 }: LocationListSectionProps) => {
-  const navigate = useNavigate()
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('locations')
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
@@ -96,6 +94,7 @@ export const LocationListSection = ({
     removeCandidate,
     startVote,
     endVote,
+    resetVote,
     castVote,
     revokeVote,
     resetError,
@@ -109,7 +108,6 @@ export const LocationListSection = ({
   const lastErrorKeyRef = useRef<string | null>(null)
   const joinRef = useRef(join)
   const leaveRef = useRef(leave)
-  const pendingEndRef = useRef(false)
   const currentParticipant = useMemo<Participant>(() => {
     const existing = participants.find(p => p.userId === userId)
     if (existing) return existing
@@ -140,18 +138,7 @@ export const LocationListSection = ({
     lastErrorKeyRef.current = nextKey
     showToast(voteError.message, 'error')
     resetError()
-    if (pendingEndRef.current) {
-      pendingEndRef.current = false
-    }
   }, [voteError, showToast, resetError])
-
-  useEffect(() => {
-    if (voteStatus !== 'COMPLETED') return
-    if (!pendingEndRef.current) return
-
-    pendingEndRef.current = false
-    navigate(`/result/${slug}`)
-  }, [voteStatus, navigate, slug])
 
   const candidateList = useMemo<Candidate[]>(() => {
     return voteCandidates.map(candidate => ({
@@ -274,7 +261,6 @@ export const LocationListSection = ({
     })
   }
 
-  const isVoting = voteStatus === 'IN_PROGRESS' || voteStatus === 'COMPLETED'
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -421,17 +407,7 @@ export const LocationListSection = ({
 
       {/* 후보 리스트 탭 */}
       {activeTab === 'candidates' &&
-        (isVoting ? (
-          <VoteListSection
-            candidates={votingCandidates}
-            onVote={handleVote}
-            onViewDetail={handleViewDetail}
-            onEndVote={() => {
-              pendingEndRef.current = true
-              endVote()
-            }}
-          />
-        ) : (
+        (voteStatus === 'WAITING' ? (
           <CandidateListSection
             candidates={candidateList}
             isOwner={isOwner}
@@ -440,6 +416,16 @@ export const LocationListSection = ({
               startVote()
             }}
             onRemoveCandidate={removeCandidate}
+          />
+        ) : (
+          <VoteListSection
+            candidates={votingCandidates}
+            isOwner={isOwner}
+            voteStatus={voteStatus}
+            onVote={handleVote}
+            onViewDetail={handleViewDetail}
+            onEndVote={endVote}
+            onResetVote={resetVote}
           />
         ))}
     </div>
