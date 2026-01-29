@@ -11,6 +11,8 @@ import type {
   VoteEndedPayload,
   VoteErrorPayload,
   VoteMeUpdatedPayload,
+  VoteRunoffPayload,
+  VoteOwnerPickPayload,
   VoteStartedPayload,
   VoteStatePayload,
   VoteStatus,
@@ -28,6 +30,8 @@ const DEFAULT_STATUS: VoteStatus = 'WAITING'
 
 export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: UseVoteSocketOptions) {
   const [status, setStatus] = useState<VoteStatus>(DEFAULT_STATUS)
+  const [singleVote, setSingleVote] = useState(false)
+  const [round, setRound] = useState(1)
   const [candidates, setCandidates] = useState<VoteCandidate[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [myVotes, setMyVotes] = useState<string[]>([])
@@ -82,6 +86,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
 
   const resetState = useCallback(() => {
     setStatus(DEFAULT_STATUS)
+    setSingleVote(false)
+    setRound(1)
     setCandidates([])
     setCounts({})
     setMyVotes([])
@@ -246,8 +252,40 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     const handleEnded = (payload: VoteEndedPayload) => {
       setStatus(payload.status)
       setCandidates(payload.candidates)
+      setSingleVote(false)
+      setRound(1)
       setError(null)
       addSocketBreadcrumb('vote:ended', { roomId, candidatesCount: payload.candidates.length })
+    }
+
+    // [S->C] vote:runoff - 결선 투표 시작
+    const handleRunoff = (payload: VoteRunoffPayload) => {
+      setCandidates(payload.tiedCandidates)
+      setSingleVote(payload.singleVote)
+      setRound(payload.round)
+      // 투표 기록 초기화
+      setMyVotes([])
+      myVotesRef.current = []
+      const resetCounts: Record<string, number> = {}
+      const resetVoters: Record<string, string[]> = {}
+      for (const c of payload.tiedCandidates) {
+        resetCounts[c.placeId] = 0
+        resetVoters[c.placeId] = []
+      }
+      setCounts(resetCounts)
+      countsRef.current = resetCounts
+      setVotersByCandidate(resetVoters)
+      votersByCandidateRef.current = resetVoters
+      setError(null)
+      addSocketBreadcrumb('vote:runoff', { roomId, round: payload.round })
+    }
+
+    // [S->C] vote:owner-pick - 방장 최종 선택 요청
+    const handleOwnerPick = (payload: VoteOwnerPickPayload) => {
+      setStatus(payload.status)
+      setCandidates(payload.tiedCandidates)
+      setError(null)
+      addSocketBreadcrumb('vote:owner-pick', { roomId })
     }
 
     // [S->C] vote:error - 에러 발생 시
@@ -264,6 +302,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     socket.on(VOTE_EVENTS.meUpdated, handleMeUpdated)
     socket.on(VOTE_EVENTS.started, handleStarted)
     socket.on(VOTE_EVENTS.ended, handleEnded)
+    socket.on(VOTE_EVENTS.runoff, handleRunoff)
+    socket.on(VOTE_EVENTS.ownerPick, handleOwnerPick)
     socket.on(VOTE_EVENTS.error, handleError)
 
     return () => {
@@ -275,6 +315,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.meUpdated, handleMeUpdated)
       socket.off(VOTE_EVENTS.started, handleStarted)
       socket.off(VOTE_EVENTS.ended, handleEnded)
+      socket.off(VOTE_EVENTS.runoff, handleRunoff)
+      socket.off(VOTE_EVENTS.ownerPick, handleOwnerPick)
       socket.off(VOTE_EVENTS.error, handleError)
     }
   }, [enabled, roomId, categoryId, userId, resolveSocket])
@@ -472,6 +514,20 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     addSocketBreadcrumb('vote:end', { roomId })
   }, [enabled, roomId, categoryId, resolveSocket])
 
+  // [C->S] vote:owner-select
+  const ownerSelect = useCallback(
+    (candidateId: string) => {
+      if (!enabled || !roomId || !categoryId) return
+
+      const socket = resolveSocket()
+      if (!socket) return
+
+      socket.emit(VOTE_EVENTS.ownerSelect, { roomId, categoryId, candidateId })
+      addSocketBreadcrumb('vote:owner-select', { roomId, candidateId })
+    },
+    [enabled, roomId, categoryId, resolveSocket],
+  )
+
   // [C->S] vote:cast
   const castVote = useCallback(
     (candidateId: string) => {
@@ -572,6 +628,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
 
   return {
     status,
+    singleVote,
+    round,
     candidates,
     counts,
     myVotes,
@@ -586,6 +644,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     endVote,
     castVote,
     revokeVote,
+    ownerSelect,
     resetError,
   }
 }
