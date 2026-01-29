@@ -24,6 +24,7 @@ import {
   VoteRevokePayload,
   VoteStartPayload,
   VoteEndPayload,
+  VoteResetPayload,
 } from './dto/vote.c2s.dto'
 import { VoteService } from './vote.service'
 
@@ -213,5 +214,15 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
     const endedPayload = this.voteService.endVote(voteRoomId)
     this.broadcaster.emitToVote(voteRoomId, 'vote:ended', endedPayload)
+  }
+
+  @UseGuards(VoteOwnerGuard)
+  @SubscribeMessage('vote:reset')
+  onResetVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteResetPayload) {
+    const { roomId, categoryId } = payload
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+
+    const resettedPayload = this.voteService.resetVote(voteRoomId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:resetted', resettedPayload)
   }
 }

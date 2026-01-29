@@ -8,11 +8,11 @@ interface VoteListSectionProps {
   voteStatus: VoteStatus
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
-  onDeleteCandidate?: () => void
+  onResetVote?: () => void
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -123,7 +123,7 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onD
 
       {voteStatus === 'COMPLETED' && (
         <div className="flex items-center gap-3 p-4">
-          <Button size="lg" className="flex-1" variant="gray" onClick={onDeleteCandidate}>
+          <Button size="lg" className="flex-1" variant="gray" onClick={onResetVote}>
             투표 삭제
           </Button>
           <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>

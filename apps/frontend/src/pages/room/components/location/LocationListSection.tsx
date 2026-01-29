@@ -95,6 +95,7 @@ export const LocationListSection = ({
     removeCandidate,
     startVote,
     endVote,
+    resetVote,
     castVote,
     revokeVote,
     resetError,
@@ -439,6 +440,7 @@ export const LocationListSection = ({
               pendingEndRef.current = true
               endVote()
             }}
+            onResetVote={resetVote}
           />
         ))}
     </div>

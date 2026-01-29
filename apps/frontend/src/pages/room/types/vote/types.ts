@@ -135,3 +135,17 @@ export interface VoteEndPayload {
   roomId: string
   categoryId: string
 }
+
+// [C->S] vote:reset
+export interface VoteResetPayload {
+  roomId: string
+  categoryId: string
+}
+
+// [S->C] vote:resetted
+export interface VoteResettedPayload {
+  status: 'WAITING'
+  candidates: VoteCandidate[]
+  counts: VoteCounts
+  voters: Record<string, string[]>
+}

@@ -8,6 +8,7 @@ import {
   VoteCountsUpdatedPayload,
   VoteEndedPayload,
   VoteMeUpdatedPayload,
+  VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
 } from './dto/vote.s2c.dto'
@@ -162,6 +163,33 @@ export class VoteService {
     return {
       status: VoteStatus.COMPLETED,
       candidates,
+    }
+  }
+
+  /**
+   * 투표 리셋 (vote:reset)
+   * - candidates는 유지
+   * - status를 WAITING으로 변경
+   * - userVotes와 totalCounts 초기화
+   * @param roomId 페이로드 내 카테고리 ID
+   */
+  resetVote(roomId: string): VoteResettedPayload {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status === VoteStatus.WAITING) {
+      throw new CustomException(ErrorType.BadRequest, '이미 대기 상태입니다.')
+    }
+
+    // 리셋: candidates 유지, 나머지 초기화
+    session.status = VoteStatus.WAITING
+    session.userVotes.clear()
+    session.totalCounts.clear()
+
+    return {
+      status: 'WAITING',
+      candidates: Array.from(session.candidates.values()),
+      counts: {},
+      voters: {},
     }
   }
 
