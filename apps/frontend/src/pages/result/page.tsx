@@ -7,7 +7,7 @@ import { PlaceResultCard } from './components/PlaceResultCard'
 import { useRoomSocket } from '@/pages/room/hooks/socket'
 import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
-import { RoomHeader } from '../room/components'
+import { RoomHeader } from '@/pages/room/components'
 import { mockResultPlaces } from './mock/resultMockData'
 
 export const ResultPage = () => {

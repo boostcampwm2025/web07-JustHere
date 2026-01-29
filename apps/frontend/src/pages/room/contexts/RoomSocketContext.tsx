@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { useRoomSocketCache } from '../hooks/socket/useRoomSocketCache'
+import type { useRoomSocketCache } from '@/pages/room/hooks/socket'
 
 export type RoomSocketContextValue = ReturnType<typeof useRoomSocketCache>
 

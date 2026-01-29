@@ -1,7 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
-import { useRoomSocketCache } from '../hooks/socket/useRoomSocketCache'
+import { useRoomSocketCache } from '@/pages/room/hooks/socket/useRoomSocketCache'
 import { RoomSocketContext } from './RoomSocketContext'
 
 interface RoomSocketProviderProps {
