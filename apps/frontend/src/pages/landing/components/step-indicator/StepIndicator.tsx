@@ -12,9 +12,10 @@ const STEPS = [
 
 interface StepIndicatorProps {
   currentStep: number
+  isOnFinalStep?: boolean
 }
 
-export const StepIndicator = ({ currentStep }: StepIndicatorProps) => {
+export const StepIndicator = ({ currentStep, isOnFinalStep = false }: StepIndicatorProps) => {
   return (
     <div className="w-full max-w-5xl mx-auto py-4 px-4">
       <div className="flex items-center gap-6">
@@ -26,6 +27,7 @@ export const StepIndicator = ({ currentStep }: StepIndicatorProps) => {
             {STEPS.map(step => {
               const isActive = step.step === currentStep
               const isCompleted = step.step < currentStep
+              const isVoteStepHighlight = isActive && step.step === 5 && isOnFinalStep
 
               return (
                 <div key={step.step} className="flex items-center w-full">
@@ -34,7 +36,8 @@ export const StepIndicator = ({ currentStep }: StepIndicatorProps) => {
                       className={cn(
                         'size-8 rounded-full flex items-center justify-center border-2',
                         isCompleted && 'bg-primary border-primary',
-                        isActive && !isCompleted && 'bg-white border-primary',
+                        isVoteStepHighlight && 'bg-red-500 border-red-500',
+                        isActive && !isCompleted && !isVoteStepHighlight && 'bg-white border-primary',
                         !isActive && !isCompleted && 'bg-white border-gray-disable',
                       )}
                       initial={false}
@@ -45,7 +48,8 @@ export const StepIndicator = ({ currentStep }: StepIndicatorProps) => {
                         className={cn(
                           'font-bold',
                           isCompleted && 'text-white',
-                          isActive && !isCompleted && 'text-primary',
+                          isVoteStepHighlight && 'text-white',
+                          isActive && !isCompleted && !isVoteStepHighlight && 'text-primary',
                           !isActive && !isCompleted && 'text-gray-disable',
                         )}
                       >

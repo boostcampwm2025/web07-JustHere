@@ -70,6 +70,7 @@ export default function LandingPage() {
                 ? locationRoomSubStep + 1 // 0→1(지역), 1→2(방)
                 : Math.min(5, currentStep) // 3→3(의견), 4→4(장소), 5/6→5(투표)
             }
+            isOnFinalStep={currentStep === 6}
           />
         </div>
       )}
