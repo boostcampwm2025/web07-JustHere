@@ -379,27 +379,28 @@ export const LocationListSection = ({
                             )}
                           </div>
 
-                        <div className="flex items-center justify-end gap-2 mt-1">
-                          <Button
-                            size="sm"
-                            icon={<PlusIcon className="size-3" />}
-                            onClick={() => handleAddPlaceCard(place)}
-                            className={cn(
-                              'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
-                              isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
-                            )}
-                          >
-                            캔버스
-                          </Button>
-                          <Button
-                            variant="gray"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => handleCandidateRegister(place)}
-                            disabled={!canRegisterCandidate}
-                          >
-                            후보등록
-                          </Button>
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                            <Button
+                              size="sm"
+                              icon={<PlusIcon className="size-3" />}
+                              onClick={() => handleAddPlaceCard(place)}
+                              className={cn(
+                                'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
+                                isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
+                              )}
+                            >
+                              캔버스
+                            </Button>
+                            <Button
+                              variant="gray"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => handleCandidateRegister(place)}
+                              disabled={!canRegisterCandidate}
+                            >
+                              후보등록
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
