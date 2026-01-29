@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { PlaceResultCard } from './components/PlaceResultCard'
-import { useRoomSocketCache } from '../room/hooks'
+import { useRoomSocket } from '@/pages/room/hooks/socket'
 import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { RoomHeader } from '../room/components'
@@ -14,7 +14,7 @@ export const ResultPage = () => {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
+  const { roomId, updateParticipantName, transferOwner } = useRoomSocket()
 
   const [copied, setCopied] = useState(false)
 
@@ -26,12 +26,6 @@ export const ResultPage = () => {
   const isOwner = !!user && ownerId === user.userId
 
   const roomLink = `${socketBaseUrl}/result/${slug}`
-
-  useEffect(() => {
-    if (!slug || !user) return
-    joinRoom(slug, user)
-    return () => leaveRoom()
-  }, [joinRoom, leaveRoom, slug, user])
 
   const handleGoBack = () => {
     navigate(`/room/${slug}`)
