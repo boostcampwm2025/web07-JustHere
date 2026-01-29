@@ -56,9 +56,14 @@ export function useTutorialStep() {
   }, [tutorialStep, showTutorial])
 
   const handleTutorialNext = () => {
-    if (tutorialStep < CANVAS_TUTORIAL_STEPS.length - 1) {
-      setTutorialStep(prev => prev + 1)
-    } else {
+    setTutorialStep(prev => {
+      if (prev < CANVAS_TUTORIAL_STEPS.length - 1) {
+        return prev + 1
+      }
+      return prev
+    })
+
+    if (tutorialStep >= CANVAS_TUTORIAL_STEPS.length - 1) {
       setShowTutorial(false)
     }
   }

@@ -104,6 +104,7 @@ export const CanvasStep = () => {
             >
               <div className="relative">
                 <motion.button
+                  type="button"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5 }}
@@ -130,6 +131,7 @@ export const CanvasStep = () => {
                       <div className="grid grid-cols-4 gap-2">
                         {PRESET_CATEGORIES.map((preset, index) => (
                           <motion.button
+                            type="button"
                             key={preset.name}
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -149,6 +151,7 @@ export const CanvasStep = () => {
               <div className="flex gap-2 flex-1 overflow-x-auto">
                 {categories.map((cat: TutorialCategory) => (
                   <motion.button
+                    type="button"
                     key={cat.id}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}

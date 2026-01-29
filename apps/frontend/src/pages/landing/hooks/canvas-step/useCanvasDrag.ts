@@ -23,25 +23,31 @@ export function useCanvasDrag() {
   const [isPanning, setIsPanning] = useState(false)
 
   const addStickyNote = () => {
-    const newNote: TutorialStickyNote = {
-      id: stickyNotes.length > 0 ? stickyNotes[stickyNotes.length - 1].id + 1 : 1,
-      text: '새 메모',
-      x: Math.random() * 300 + 100,
-      y: Math.random() * 200 + 100,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    }
-    setStickyNotes(prev => [...prev, newNote])
+    setStickyNotes(prev => {
+      const id = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1
+      const newNote: TutorialStickyNote = {
+        id,
+        text: '새 메모',
+        x: Math.random() * 300 + 100,
+        y: Math.random() * 200 + 100,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      }
+      return [...prev, newNote]
+    })
   }
 
   const addPlaceCard = () => {
-    const place = PLACES[Math.floor(Math.random() * PLACES.length)]
-    const newCard: TutorialPlaceCard = {
-      id: placeCards.length > 0 ? placeCards[placeCards.length - 1].id + 1 : 1,
-      ...place,
-      x: Math.random() * 300 + 400,
-      y: Math.random() * 200 + 100,
-    }
-    setPlaceCards(prev => [...prev, newCard])
+    setPlaceCards(prev => {
+      const place = PLACES[Math.floor(Math.random() * PLACES.length)]
+      const id = prev.length > 0 ? prev[prev.length - 1].id + 1 : 1
+      const newCard: TutorialPlaceCard = {
+        id,
+        ...place,
+        x: Math.random() * 300 + 400,
+        y: Math.random() * 200 + 100,
+      }
+      return [...prev, newCard]
+    })
   }
 
   const deleteNote = (id: number) => {

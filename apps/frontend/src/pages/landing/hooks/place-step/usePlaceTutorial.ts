@@ -6,9 +6,14 @@ export function usePlaceTutorial() {
   const [showTutorial, setShowTutorial] = useState(true)
 
   const handleTutorialNext = () => {
-    if (tutorialStep < PLACE_TUTORIAL_STEPS.length - 1) {
-      setTutorialStep(prev => prev + 1)
-    } else {
+    setTutorialStep(prev => {
+      if (prev < PLACE_TUTORIAL_STEPS.length - 1) {
+        return prev + 1
+      }
+      return prev
+    })
+
+    if (tutorialStep >= PLACE_TUTORIAL_STEPS.length - 1) {
       setShowTutorial(false)
     }
   }
