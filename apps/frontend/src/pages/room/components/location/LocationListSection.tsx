@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
@@ -337,6 +337,7 @@ export const LocationListSection = ({
                 {searchResults.map((place, index) => {
                   const isSelected = pendingPlaceCard?.placeId === place.id
                   const photoUrl = getPhotoUrl(place)
+                  const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
                   return (
                     <div key={place.id}>
@@ -387,13 +388,14 @@ export const LocationListSection = ({
                               캔버스
                             </Button>
                             <Button
-                              variant="gray"
+                              variant={isAlreadyCandidate ? 'gray' : 'outline'}
+                              icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
                               size="sm"
                               className="text-xs"
-                              onClick={() => handleCandidateRegister(place)}
+                              onClick={() => (isAlreadyCandidate ? removeCandidate(place.id) : handleCandidateRegister(place))}
                               disabled={!canRegisterCandidate}
                             >
-                              후보등록
+                              {isAlreadyCandidate ? '담김' : '후보등록'}
                             </Button>
                           </div>
                         </div>
