@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon } from '@/shared/assets'
+import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { PlaceResultCard } from './components/PlaceResultCard'
@@ -8,31 +8,7 @@ import { useRoomSocketCache } from '../room/hooks'
 import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { RoomHeader } from '../room/components'
-
-// Mock 데이터 - 최종 선택된 장소들
-interface ResultPlace {
-  id: string
-  name: string
-  placeId: string // 카카오 place id
-}
-
-const mockResultPlaces: ResultPlace[] = [
-  {
-    id: '1',
-    name: '서현실비',
-    placeId: '20400283',
-  },
-  {
-    id: '2',
-    name: '서머셋 센트럴 분당 더카라',
-    placeId: '635421084',
-  },
-  {
-    id: '3',
-    name: '굿웨더',
-    placeId: '620893242',
-  },
-]
+import { mockResultPlaces } from './mock/resultMockData'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
@@ -40,9 +16,12 @@ export const ResultPage = () => {
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { joinRoom, leaveRoom, roomId, updateParticipantName, transferOwner } = useRoomSocketCache()
 
+  const [copied, setCopied] = useState(false)
+
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
-
+  // TODO: 실제 서버에서 받아오는 데이터로 교체
+  const resultData = mockResultPlaces
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
@@ -58,9 +37,14 @@ export const ResultPage = () => {
     navigate(`/room/${slug}`)
   }
 
-  const handleShare = () => {
-    // TODO: 결과 공유 로직
-    console.log('Share result')
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(roomLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('링크 복사에 실패했습니다.', error)
+    }
   }
 
   if (!user) {
@@ -68,7 +52,7 @@ export const ResultPage = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
       <RoomHeader
         participants={participants}
         currentUserId={user.userId}
@@ -79,7 +63,7 @@ export const ResultPage = () => {
         onTransferOwner={transferOwner}
       />
       {/* Main Content */}
-      <main className="flex-1 flex flex-col p-8">
+      <main className="flex-1 flex flex-col p-8 min-h-0 overflow-hidden">
         {/* Back Button */}
         <button type="button" onClick={handleGoBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 w-fit">
           <ArrowLeftIcon className="w-5 h-5" />
@@ -104,15 +88,21 @@ export const ResultPage = () => {
         </div>
 
         {/* Place Cards */}
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-4">
-          {mockResultPlaces.map(place => (
+        <div className="flex-1 flex gap-6 overflow-x-auto pb-4 min-h-0">
+          {resultData.map(place => (
             <PlaceResultCard key={place.id} place={place} />
           ))}
         </div>
 
         {/* Footer Button */}
         <div className="flex justify-end mt-6">
-          <Button size="lg" variant="primary" icon={<ShareVariantIcon className="size-4.5" />} iconPosition="right" onClick={handleShare}>
+          <Button
+            size="lg"
+            variant="primary"
+            icon={copied ? <CheckIcon className="w-5 h-5 text-white" /> : <ShareVariantIcon className="w-5 h-5 text-white" />}
+            iconPosition="right"
+            onClick={handleShare}
+          >
             결과 공유하기
           </Button>
         </div>
