@@ -1,4 +1,3 @@
-import type { ErrorResponse } from '@/lib/types/response.type'
 import { Candidate, VoteStatus } from '../vote.types'
 
 // [S->C] vote:state
