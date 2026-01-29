@@ -75,18 +75,11 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    const namespace = this.server ?? client.nsp
-    if (!namespace) return
-
     // 사용자가 참여한 모든 투표 방에서 나가기
+    // 카테고리 재진입 시 후보 목록 유지를 위해 세션은 삭제하지 않음
     const voteRooms = Array.from(client.rooms).filter(room => room.startsWith('vote:'))
     for (const room of voteRooms) {
       await client.leave(room)
-
-      const roomClients = await namespace.in(room).fetchSockets()
-      if (roomClients.length === 0) {
-        this.voteService.deleteSession(room.replace('vote:', ''))
-      }
     }
   }
 
@@ -120,13 +113,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
     await client.leave(`vote:${voteRoomId}`)
 
-    const namespace = this.server ?? client.nsp
-    if (!namespace) return
-
-    const roomClients = await namespace.in(`vote:${voteRoomId}`).fetchSockets()
-    if (roomClients.length === 0) {
-      this.voteService.deleteSession(voteRoomId)
-    }
+    // 카테고리 이동 후 재진입 시 후보 목록 유지를 위해, vote room이 비어도 세션은 삭제하지 않음
+    // (세션 삭제는 handleDisconnect 등 다른 경로에서 처리 가능)
   }
 
   @SubscribeMessage('vote:candidate:add')

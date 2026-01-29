@@ -83,10 +83,10 @@ describe('VoteGateway', () => {
   })
 
   describe('handleDisconnect', () => {
-    it('네임스페이스가 없으면 아무것도 하지 않는다', async () => {
+    it('vote room이 없으면 leave를 호출하지 않는다', async () => {
       const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
       const client = {
-        rooms: new Set(['vote:room-1', 'vote:room-2']),
+        rooms: new Set(['other:room']),
         leave: ((room: string) => leaveMock(room)) as (room: string) => Promise<void>,
         id: 'socket-1',
       } as unknown as Socket
@@ -95,29 +95,19 @@ describe('VoteGateway', () => {
       expect(leaveMock).not.toHaveBeenCalled()
     })
 
-    it('사용자 세션이 있으면 모든 투표 방에서 나간다', async () => {
+    it('사용자 세션이 있으면 모든 투표 방에서 나간다 (세션은 삭제하지 않음)', async () => {
       const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
-      const fetchSocketsMock = jest.fn<Promise<Socket[]>, []>().mockResolvedValue([])
-      const inMock = jest.fn().mockReturnValue({ fetchSockets: fetchSocketsMock })
       const client = {
         rooms: new Set(['vote:room-1', 'vote:room-2', 'other:room']),
         leave: ((room: string) => leaveMock(room)) as (room: string) => Promise<void>,
         id: 'socket-1',
-        nsp: undefined,
       } as unknown as Socket
-      gateway.server = { in: inMock } as unknown as Server
 
       await gateway.handleDisconnect(client)
       expect(leaveMock).toHaveBeenCalledTimes(2)
       expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
       expect(leaveMock).toHaveBeenCalledWith('vote:room-2')
-      expect(inMock).toHaveBeenCalledTimes(2)
-      expect(inMock).toHaveBeenCalledWith('vote:room-1')
-      expect(inMock).toHaveBeenCalledWith('vote:room-2')
-      expect(fetchSocketsMock).toHaveBeenCalledTimes(2)
-      expect(voteService.deleteSession).toHaveBeenCalledTimes(2)
-      expect(voteService.deleteSession).toHaveBeenCalledWith('room-1')
-      expect(voteService.deleteSession).toHaveBeenCalledWith('room-2')
+      expect(voteService.deleteSession).not.toHaveBeenCalled()
     })
   })
 
@@ -292,16 +282,19 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
       }
       const voteRoomId = 'room-1:category-1'
-      const mockCandidateId = 'candidate-1'
+      const mockRemovedPayload = {
+        candidate: { placeId: 'candidate-1', name: '카페', address: '서울', createdBy: 'user-1', createdAt: new Date() },
+        removed: true,
+      }
 
-      voteService.removeCandidatePlace.mockReturnValue(mockCandidateId)
+      voteService.removeCandidatePlace.mockReturnValue(mockRemovedPayload)
 
       gateway.onCandidateRemove(client, payload)
 
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
       expect(voteService.removeCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidateId)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockRemovedPayload)
     })
   })
 
