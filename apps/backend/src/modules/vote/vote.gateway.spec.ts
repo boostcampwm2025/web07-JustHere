@@ -565,7 +565,7 @@ describe('VoteGateway', () => {
         candidates: [],
       }
 
-      voteService.endVote.mockReturnValue(mockEndedPayload)
+      voteService.endVote.mockReturnValue({ type: 'completed', payload: mockEndedPayload })
 
       gateway.onEndVote(client, payload)
 
