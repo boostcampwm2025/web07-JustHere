@@ -23,7 +23,7 @@ export default function RoomPage() {
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [activeCategoryId, setActiveCategoryId] = useState<string>('')
-  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(true)
+  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
@@ -42,8 +42,10 @@ export default function RoomPage() {
   }, [categories, activeCategoryId])
 
   useEffect(() => {
-    if (!categories.length) setIsCreateCategoryModalOpen(true)
-  }, [categories.length])
+    if (!categories.length && !isCreateCategoryModalOpen) {
+      setIsCreateCategoryModalOpen(true)
+    }
+  }, [categories.length, isCreateCategoryModalOpen])
 
   if (!slug) {
     return <Navigate to="/onboarding" replace />
