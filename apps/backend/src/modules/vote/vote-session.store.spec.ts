@@ -17,6 +17,8 @@ describe('VoteSessionStore', () => {
     candidates: new Map(),
     userVotes: new Map(),
     totalCounts: new Map(),
+    singleVote: false,
+    round: 1,
   })
 
   beforeEach(() => {
@@ -87,6 +89,8 @@ describe('VoteSessionStore', () => {
           ['place-1', 1],
           ['place-2', 1],
         ]),
+        singleVote: false,
+        round: 1,
       }
 
       store.set(canvasId, session)
