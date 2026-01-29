@@ -4,16 +4,23 @@ import type { VotingCandidate } from './LocationListSection'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
+  singleVote?: boolean
+  round?: number
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onDeleteCandidate?: () => void
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, singleVote, round, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
+        {round !== undefined && round >= 2 && (
+          <div className="mx-4 mt-3 mb-1 px-3 py-2 bg-red-50 rounded-lg text-center">
+            <span className="text-red-500 text-sm font-semibold">결선 투표 (1인 1표)</span>
+          </div>
+        )}
         {candidates.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">등록된 후보가 없습니다</div>
         ) : (
