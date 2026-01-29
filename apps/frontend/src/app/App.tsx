@@ -1,12 +1,12 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
-import { OnboardingPage, ResultPage, RoomPage } from '@/pages'
+import { Outlet, Route, Routes } from 'react-router-dom'
+import { LandingPage, OnboardingPage, ResultPage, RoomPage } from '@/pages'
 import { RoomErrorBoundary } from './error-boundary'
 import { RoomSocketProvider } from '@/pages/room/contexts'
 
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/onboarding" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
 
       {/* 중첩 라우트: RoomLayout이 소켓 연결 관리 */}

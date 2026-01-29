@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
+  round?: number
   isOwner?: boolean
   voteStatus: VoteStatus
   onVote?: (candidateId: string) => void
@@ -16,8 +17,9 @@ interface VoteListSectionProps {
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
-  // 가장 득표수가 많은 후보 ID 계산 (TODO: 투표 동률 시 처리)
+export const VoteListSection = ({ candidates, round, isOwner, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
+  const disabled = voteStatus === 'OWNER_PICK'
+
   const winnerId = useMemo(() => {
     if (voteStatus !== 'COMPLETED' || candidates.length === 0) return null
     const maxPercentage = Math.max(...candidates.map(c => c.votePercentage))
@@ -27,9 +29,15 @@ export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEnd
 
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+
   return (
     <>
       <div className="flex-1 overflow-y-auto">
+        {round !== undefined && round >= 2 && (
+          <div className="mx-4 mt-3 mb-1 px-3 py-2 bg-red-50 rounded-lg text-center">
+            <span className="text-red-500 text-sm font-semibold">결선 투표 (1인 1표)</span>
+          </div>
+        )}
         {candidates.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">등록된 후보가 없습니다</div>
         ) : (
@@ -104,6 +112,7 @@ export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEnd
                         size="sm"
                         icon={<CheckCircleIcon className="size-3.5" />}
                         iconPosition="right"
+                        disabled={disabled}
                         onClick={() => onVote?.(candidate.id)}
                       >
                         투표완료
@@ -115,6 +124,7 @@ export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEnd
                         size="sm"
                         icon={<VoteIcon className="size-3.5" />}
                         iconPosition="right"
+                        disabled={disabled}
                         onClick={() => onVote?.(candidate.id)}
                       >
                         투표하기
@@ -130,7 +140,7 @@ export const VoteListSection = ({ candidates, isOwner, voteStatus, onVote, onEnd
       {/* Footer Buttons */}
       {voteStatus === 'IN_PROGRESS' && isOwner && (
         <div className="flex items-center gap-3 p-4">
-          <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
+          <Button size="lg" className="flex-1" variant="primary" disabled={disabled} onClick={onEndVote}>
             투표 종료
           </Button>
         </div>

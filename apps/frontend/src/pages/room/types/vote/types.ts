@@ -1,6 +1,6 @@
 import type { ErrorPayload } from '@/shared/types'
 
-export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'COMPLETED'
+export type VoteStatus = 'WAITING' | 'IN_PROGRESS' | 'OWNER_PICK' | 'COMPLETED'
 
 export interface PlaceData {
   placeId: string
@@ -41,6 +41,8 @@ export interface VoteStatePayload {
   counts: VoteCounts
   myVotes: MyVotes
   voters: Record<string, string[]>
+  round: number
+  singleVote: boolean
 }
 
 // [S->C] vote:started
@@ -52,6 +54,7 @@ export interface VoteStartedPayload {
 export interface VoteEndedPayload {
   status: 'COMPLETED'
   candidates: VoteCandidate[]
+  selectedCandidateId?: string
 }
 
 // [S->C] vote:candidate:added
@@ -80,6 +83,19 @@ export interface VoteMeUpdatedPayload {
 // [S->C] vote:error
 export type VoteErrorPayload = ErrorPayload
 export type VoteError = ErrorPayload
+
+// [S->C] vote:runoff
+export interface VoteRunoffPayload {
+  tiedCandidates: VoteCandidate[]
+  round: number
+  singleVote: boolean
+}
+
+// [S->C] vote:owner-pick
+export interface VoteOwnerPickPayload {
+  tiedCandidates: VoteCandidate[]
+  status: 'OWNER_PICK'
+}
 
 // [C->S] vote:join
 export interface VoteJoinPayload {
@@ -139,6 +155,13 @@ export interface VoteStartPayload {
 export interface VoteEndPayload {
   roomId: string
   categoryId: string
+}
+
+// [C->S] vote:owner-select
+export interface VoteOwnerSelectPayload {
+  roomId: string
+  categoryId: string
+  candidateId: string
 }
 
 // [C->S] vote:reset

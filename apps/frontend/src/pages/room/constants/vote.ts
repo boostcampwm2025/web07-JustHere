@@ -15,6 +15,9 @@ export const VOTE_EVENTS = {
   started: 'vote:started',
   end: 'vote:end',
   ended: 'vote:ended',
+  runoff: 'vote:runoff',
+  ownerPick: 'vote:owner-pick',
+  ownerSelect: 'vote:owner-select',
   reset: 'vote:reset',
   resetted: 'vote:resetted',
 } as const

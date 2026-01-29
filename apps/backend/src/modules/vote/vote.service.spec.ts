@@ -324,9 +324,9 @@ describe('VoteService', () => {
       service.startVote(roomId)
       const result = service.endVote(roomId)
 
-      expect(result.status).toBe(VoteStatus.COMPLETED)
-      expect(result.candidates).toBeDefined()
-      expect(Array.isArray(result.candidates)).toBe(true)
+      expect(result.type).toBe('completed')
+      expect(result.payload).toBeDefined()
+      expect('candidates' in result.payload).toBe(true)
       const session = service.getSessionOrThrow(roomId)
       expect(session.status).toBe(VoteStatus.COMPLETED)
     })

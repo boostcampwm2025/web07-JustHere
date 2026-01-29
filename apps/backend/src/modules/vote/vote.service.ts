@@ -12,6 +12,8 @@ import {
   VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
+  type VoteRunOffPayload,
+  type VoteOwnerPickPayload,
 } from './dto/vote.s2c.dto'
 
 @Injectable()
@@ -23,6 +25,7 @@ export class VoteService {
    * 세션 생성 또는 조회 (vote:join)
    * 방이 없으면 초기화하고, 있으면 반환
    * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 유저 정보
    */
   getOrCreateSession(roomId: string, userId: string): VoteStatePayload {
     if (!this.sessions.has(roomId)) {
@@ -31,6 +34,8 @@ export class VoteService {
         candidates: new Map(),
         userVotes: new Map(),
         totalCounts: new Map(),
+        singleVote: false,
+        round: 1,
       })
     }
 
@@ -74,6 +79,8 @@ export class VoteService {
       counts: Object.fromEntries(session.totalCounts.entries()),
       myVotes: myVotesSet ? Array.from(myVotesSet) : [],
       voters: this.getVoterIdsByCandidate(session),
+      round: session.round,
+      singleVote: session.singleVote,
     }
   }
 
@@ -154,30 +161,130 @@ export class VoteService {
     }
 
     session.status = VoteStatus.IN_PROGRESS
+    session.singleVote = false
+    session.round = 1
 
     return { status: session.status }
   }
 
   /**
    * 투표 마감 (vote:end)
+   * 동률 감지 후 결선 투표 또는 방장 선택으로 분기
    * @param roomId 페이로드 내 카테고리 ID
    * - TODO: Gateway에 voteGuard 적용하기
    */
-  endVote(roomId: string): VoteEndedPayload {
+  endVote(roomId: string): { type: 'completed' | 'runoff' | 'owner-pick'; payload: VoteEndedPayload | VoteRunOffPayload | VoteOwnerPickPayload } {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
       throw new CustomException(ErrorType.BadRequest, 'INVALID_STATUS: 진행 중인 투표만 종료할 수 있습니다.')
     }
 
-    session.status = VoteStatus.COMPLETED
+    // 최다 득표 후보 찾기
+    const tiedCandidates = this.getTiedCandidates(session)
 
-    const candidates: Candidate[] = Array.from(session.candidates.values())
-
-    return {
-      status: VoteStatus.COMPLETED,
-      candidates,
+    // 동률이 아닌 경우, 투표 정상 종료
+    if (tiedCandidates.length <= 1) {
+      session.status = VoteStatus.COMPLETED
+      return {
+        type: 'completed',
+        payload: {
+          status: 'COMPLETED',
+          candidates: Array.from(session.candidates.values()),
+        } as VoteEndedPayload,
+      }
     }
+
+    // 동률인 경우, 결선 투표 진행
+    if (session.round === 1) {
+      return {
+        type: 'runoff',
+        payload: this.startRunoff(roomId, session, tiedCandidates),
+      }
+    }
+
+    // 결선에서 동률인 경우, 방장 최종 선택
+    return {
+      type: 'owner-pick',
+      payload: this.startOwnerPick(session, tiedCandidates),
+    }
+  }
+
+  /**
+   * 결선 투표 전환: 동률 후보만 남기고 투표 리셋
+   */
+  private startRunoff(roomId: string, session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
+    const tiedIds = new Set(tiedCandidates.map(c => c.placeId))
+
+    // 동률 후보만 남기기
+    for (const candidateId of session.candidates.keys()) {
+      if (!tiedIds.has(candidateId)) {
+        session.candidates.delete(candidateId)
+        session.totalCounts.delete(candidateId)
+      }
+    }
+
+    // 투표 기록 초기화
+    session.userVotes.clear()
+    for (const candidateId of session.candidates.keys()) {
+      session.totalCounts.set(candidateId, 0)
+    }
+
+    session.round = 2
+    session.singleVote = true
+
+    return { tiedCandidates, round: 2, singleVote: true }
+  }
+
+  /**
+   * 방장 최종 선택 전환
+   */
+  private startOwnerPick(session: VoteSession, tiedCandidates: Candidate[]): VoteOwnerPickPayload {
+    session.status = VoteStatus.OWNER_PICK
+    return { tiedCandidates, status: 'OWNER_PICK' }
+  }
+
+  /**
+   * 방장 최종 선택 확정 (vote:owner-select)
+   */
+  ownerSelect(roomId: string, candidateId: string): VoteEndedPayload {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status !== VoteStatus.OWNER_PICK) {
+      throw new CustomException(ErrorType.BadRequest, '방장 선택 단계가 아닙니다.')
+    }
+
+    if (!session.candidates.has(candidateId)) {
+      throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
+    }
+
+    session.status = VoteStatus.COMPLETED
+    return {
+      status: 'COMPLETED',
+      candidates: Array.from(session.candidates.values()),
+      selectedCandidateId: candidateId,
+    }
+  }
+
+  /**
+   * 최다 득표 동률 후보 목록 반환
+   */
+  private getTiedCandidates(session: VoteSession): Candidate[] {
+    let maxCount = 0
+    for (const count of session.totalCounts.values()) {
+      if (count > maxCount) maxCount = count
+    }
+
+    if (maxCount === 0) return Array.from(session.candidates.values())
+
+    const tied: Candidate[] = []
+    for (const [candidateId, count] of session.totalCounts.entries()) {
+      if (count === maxCount) {
+        const candidate = session.candidates.get(candidateId)
+        if (candidate) tied.push(candidate)
+      }
+    }
+    return tied
   }
 
   /**
@@ -226,6 +333,14 @@ export class VoteService {
 
     if (!session.candidates.has(candidateId)) {
       throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
+    }
+
+    // 결선 투표: 1인 1표 제한
+    if (session.singleVote) {
+      const userVotes = session.userVotes.get(userId)
+      if (userVotes && userVotes.size > 0 && !userVotes.has(candidateId)) {
+        throw new CustomException(ErrorType.VoteSingleVoteLimit, '결선 투표에서는 1개의 후보에만 투표할 수 있습니다.')
+      }
     }
 
     // 유저의 투표 저장소 가져오기 (없으면 생성)

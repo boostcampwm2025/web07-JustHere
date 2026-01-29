@@ -25,6 +25,7 @@ export enum ErrorType {
   VoteNotInProgress = 'VOTE_NOT_IN_PROGRESS',
   DuplicatedCandidate = 'DUPLICATED_CANDIDATE',
   NoCandidates = 'NO_CANDIDATES',
+  VoteSingleVoteLimit = 'VOTE_SINGLE_VOTE_LIMIT',
 }
 
 export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
@@ -47,6 +48,7 @@ export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
   [ErrorType.DuplicatedCandidate]: HttpStatus.BAD_REQUEST,
   [ErrorType.VoteNotInProgress]: HttpStatus.BAD_REQUEST,
   [ErrorType.NoCandidates]: HttpStatus.BAD_REQUEST,
+  [ErrorType.VoteSingleVoteLimit]: HttpStatus.BAD_REQUEST,
 }
 
 export interface BaseResponse {
