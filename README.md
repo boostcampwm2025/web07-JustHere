@@ -205,7 +205,7 @@ pnpm run dev
 
 ### 서비스 아키텍처
 
-<img width="4164" height="2724" alt="서비스 아키텍처" src="https://github.com/user-attachments/assets/ae862b8b-bfa8-44e0-a9da-b6e08d211235" />
+<img width="4528" height="2944" alt="image" src="https://github.com/user-attachments/assets/01c42e93-bae8-4461-a09e-93eee1f0c6d3" />
 
 ### CI / CD 파이프라인
 
