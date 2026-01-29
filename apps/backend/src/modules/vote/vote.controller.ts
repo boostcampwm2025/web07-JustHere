@@ -1,7 +1,7 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { VoteSession, VoteStatus, Candidate } from '@/modules/vote/vote.types'
 import { Controller, Get, Param } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger'
 import { VoteService } from './vote.service'
 import { CategoryService } from '@/modules/category/category.service'
 import { VoteCandidate } from './dto/vote.s2c.dto'
@@ -14,14 +14,11 @@ export class VoteController {
     private readonly categoryService: CategoryService,
   ) {}
 
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-// ... other imports ...
-
-  `@Get`('/results/:roomId')
-  `@ApiOperation`({ summary: '투표 최종 결과 조회', description: 'Room 내 모든 카테고리의 투표 최종 결과를 조회합니다.' })
-  `@ApiParam`({ name: 'roomId', description: '룸 ID' })
-  `@ApiResponse`({ status: 200, description: '카테고리별 투표 결과 목록' })
-  async getVoteResults(`@Param`('roomId') roomId: string): Promise<VoteCandidate[]> {
+  @Get('/results/:roomId')
+  @ApiOperation({ summary: '투표 최종 결과 조회', description: 'Room 내 모든 카테고리의 투표 최종 결과를 조회합니다.' })
+  @ApiParam({ name: 'roomId', description: '룸 ID' })
+  @ApiResponse({ status: 200, description: '카테고리별 투표 결과 목록' })
+  async getVoteResults(@Param('roomId') roomId: string): Promise<VoteCandidate[]> {
     const categories = await this.categoryService.findByRoomId(roomId)
     const results: VoteCandidate[] = []
 
