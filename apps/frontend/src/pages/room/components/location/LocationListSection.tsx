@@ -4,7 +4,6 @@ import { Button, Divider, SearchInput, PlaceDetailContent } from '@/shared/compo
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
-import { useRoomCategories } from '@/shared/hooks'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
 import { RegionSelectorDropdown } from './region-selector'
@@ -82,7 +81,6 @@ export const LocationListSection = ({
       roomId,
       onSearchComplete,
     })
-  const { data: categories = [] } = useRoomCategories(roomId)
 
   const {
     status: voteStatus,
@@ -276,7 +274,7 @@ export const LocationListSection = ({
   }
 
   const isVoting = voteStatus === 'IN_PROGRESS' || voteStatus === 'COMPLETED'
-  const canRegisterCandidate = voteStatus === 'WAITING' && categories.length > 0 && Boolean(activeCategoryId)
+  const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     {
