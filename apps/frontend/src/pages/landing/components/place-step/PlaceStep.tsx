@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { MagnifyIcon, MapCheckOutlineIcon, CloseIcon, ArrowRightIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
@@ -64,6 +64,8 @@ export const PlaceStep = () => {
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'candidates'>('list')
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
 
+  const placeDetailRef = useRef<HTMLDivElement | null>(null)
+
   // Tutorial state
   const [tutorialStep, setTutorialStep] = useState(0)
   const [showTutorial, setShowTutorial] = useState(true)
@@ -86,6 +88,22 @@ export const PlaceStep = () => {
       return () => clearTimeout(timeout)
     }
   }, [searchQuery])
+
+  useEffect(() => {
+    if (!selectedPlace) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (placeDetailRef.current && !placeDetailRef.current.contains(event.target as Node)) {
+        setSelectedPlace(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [selectedPlace])
 
   const handleTutorialNext = () => {
     if (tutorialStep < TUTORIAL_STEPS.length - 1) {
@@ -508,6 +526,7 @@ export const PlaceStep = () => {
       <AnimatePresence>
         {selectedPlace && (
           <motion.div
+            ref={placeDetailRef}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -540,10 +559,6 @@ export const PlaceStep = () => {
 
                 <div className="border-t border-gray-100 pt-3">
                   <p className="text-xs text-gray mb-3">{selectedPlace.address}</p>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-semibold">전화: 054-775-5020</p>
-                  </div>
                 </div>
 
                 <div className="mt-4 flex gap-2">
