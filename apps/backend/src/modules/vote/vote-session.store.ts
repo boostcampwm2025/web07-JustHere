@@ -21,7 +21,7 @@ export class VoteSessionStore {
     return this.voteSessions.has(canvasId)
   }
 
-  keys() {
-    return this.voteSessions.keys()
+  keys(): string[] {
+    return Array.from(this.voteSessions.keys())
   }
 }
