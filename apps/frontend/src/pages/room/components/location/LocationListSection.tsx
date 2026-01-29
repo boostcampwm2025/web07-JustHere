@@ -149,7 +149,7 @@ export const LocationListSection = ({
     if (!pendingEndRef.current) return
 
     pendingEndRef.current = false
-    navigate(`/result/${slug}`)
+    // navigate(`/result/${slug}`)
   }, [voteStatus, navigate, slug])
 
   const candidateList = useMemo<Candidate[]>(() => {
@@ -273,7 +273,6 @@ export const LocationListSection = ({
     })
   }
 
-  const isVoting = voteStatus === 'IN_PROGRESS' || voteStatus === 'COMPLETED'
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -420,17 +419,7 @@ export const LocationListSection = ({
 
       {/* 후보 리스트 탭 */}
       {activeTab === 'candidates' &&
-        (isVoting ? (
-          <VoteListSection
-            candidates={votingCandidates}
-            onVote={handleVote}
-            onViewDetail={handleViewDetail}
-            onEndVote={() => {
-              pendingEndRef.current = true
-              endVote()
-            }}
-          />
-        ) : (
+        (voteStatus === 'WAITING' ? (
           <CandidateListSection
             candidates={candidateList}
             isOwner={isOwner}
@@ -439,6 +428,17 @@ export const LocationListSection = ({
               startVote()
             }}
             onRemoveCandidate={removeCandidate}
+          />
+        ) : (
+          <VoteListSection
+            candidates={votingCandidates}
+            voteStatus={voteStatus}
+            onVote={handleVote}
+            onViewDetail={handleViewDetail}
+            onEndVote={() => {
+              pendingEndRef.current = true
+              endVote()
+            }}
           />
         ))}
     </div>

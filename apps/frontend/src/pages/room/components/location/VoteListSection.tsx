@@ -1,16 +1,18 @@
 import { VoteIcon, CheckCircleIcon, StarIcon } from '@/shared/assets'
 import { AvatarList, Button } from '@/shared/components'
 import type { VotingCandidate } from './LocationListSection'
+import type { VoteStatus } from '@/pages/room/types'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
+  voteStatus: VoteStatus
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onDeleteCandidate?: () => void
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onDeleteCandidate, onViewDetail }: VoteListSectionProps) => {
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -89,7 +91,7 @@ export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandida
                       iconPosition="right"
                       onClick={() => onVote?.(candidate.id)}
                     >
-                      투표하기
+                      투표완료
                     </Button>
                   ) : (
                     <Button
@@ -111,14 +113,24 @@ export const VoteListSection = ({ candidates, onVote, onEndVote, onDeleteCandida
       </div>
 
       {/* Footer Buttons */}
-      <div className="flex items-center gap-3 p-4">
-        <Button size="lg" className="flex-1" variant="gray" onClick={onDeleteCandidate}>
-          삭제하기
-        </Button>
-        <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
-          투표 종료
-        </Button>
-      </div>
+      {voteStatus === 'IN_PROGRESS' && (
+        <div className="flex items-center gap-3 p-4">
+          <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
+            투표 종료
+          </Button>
+        </div>
+      )}
+
+      {voteStatus === 'COMPLETED' && (
+        <div className="flex items-center gap-3 p-4">
+          <Button size="lg" className="flex-1" variant="gray" onClick={onDeleteCandidate}>
+            투표 삭제
+          </Button>
+          <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
+            결과 확인
+          </Button>
+        </div>
+      )}
     </>
   )
 }
