@@ -110,7 +110,12 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
 
   @SubscribeMessage('vote:leave')
   async onVoteLeave(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteLeavePayload) {
-    const { roomId, categoryId } = payload
+    const { roomId, categoryId, userId } = payload
+    const user = this.resolveUserSession(client, roomId, userId)
+
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
     await client.leave(`vote:${voteRoomId}`)

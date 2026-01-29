@@ -222,6 +222,15 @@ describe('VoteGateway', () => {
         categoryId: 'category-1',
       }
       const voteRoomId = 'room-1:category-1'
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
+
+      userService.getSession.mockReturnValue(mockUser)
 
       await gateway.onVoteLeave(client, payload)
 

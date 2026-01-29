@@ -169,9 +169,11 @@ export const LocationListSection = ({
 
   const totalVoters = useMemo(() => {
     const voterIds = new Set<string>()
-    Object.values(votersByCandidate).forEach(list => {
-      list.forEach(id => voterIds.add(id))
-    })
+    for (const list of Object.values(votersByCandidate)) {
+      for (const id of list) {
+        voterIds.add(id)
+      }
+    }
     return voterIds.size
   }, [votersByCandidate])
 
