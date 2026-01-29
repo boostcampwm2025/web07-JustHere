@@ -117,9 +117,10 @@ export const IntroStep = () => {
               {FEATURES.map((_, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => setCurrentFeatureIndex(index)}
                   className={cn('w-2 h-2 rounded-full transition-all', index === currentFeatureIndex ? 'bg-primary w-8' : 'bg-gray-disable')}
-                  aria-label={`Feature ${index + 1}`}
+                  aria-label={`기능 ${index + 1}로 이동`}
                 />
               ))}
             </div>

@@ -5,6 +5,13 @@ import { StepIndicator, IntroStep, LocationRoomStep, CanvasStep, VoteStep, Final
 export default function LandingPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [locationRoomSubStep, setLocationRoomSubStep] = useState(0)
+  /**
+   * 섹션 ref 배열. 인덱스는 StepIndicator 스텝 번호(1~5)와 맞춤.
+   * - 0: 인트로 (인디케이터 비표시)
+   * - 1: 지역+방 (인디케이터 1=지역, 2=방, locationRoomSubStep으로 구분)
+   * - 2: 미사용 (인디케이터 "2"는 1번 섹션의 서브스텝 "방"이므로 별도 섹션 없음)
+   * - 3~6: 캔버스(3), 장소(4), 투표(5), 최종(6) → 인디케이터 3, 4, 5 및 최종
+   */
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const stepIndicatorRef = useRef<HTMLDivElement | null>(null)

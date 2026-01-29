@@ -29,7 +29,7 @@ export function usePlaceState() {
   const addToCandidate = (place: TutorialPlace) => {
     setCandidates(prev => {
       if (prev.some(c => c.place.id === place.id)) return prev
-      return [...prev, { id: prev.length + 1, place }]
+      return [...prev, { id: place.id, place }]
     })
   }
 

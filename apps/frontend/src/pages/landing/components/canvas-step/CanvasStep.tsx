@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { NoteTextIcon, CursorIcon, MapCheckOutlineIcon, CloseIcon, PlusIcon, ArrowRightIcon, HandBackRightIcon } from '@/shared/assets'
 import { cn } from '@/shared/utils/cn'
@@ -9,14 +10,25 @@ import type { TutorialCursor, TutorialCategory, TutorialStickyNote, TutorialPlac
 export const CanvasStep = () => {
   const { tutorialStep, setTutorialStep, showTutorial, setShowTutorial, otherCursors, cursorChat, handleTutorialNext, handleTutorialPrev } =
     useTutorialStep()
+  const categoryAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { addCategory, categories, activeCategory, setActiveCategory, showCategoryModal, setShowCategoryModal } = useCategories({
     onCategoryAdded: () => {
       if (tutorialStep === 0 && showTutorial) {
-        setTimeout(() => handleTutorialNext(), 500)
+        if (categoryAddedTimerRef.current) clearTimeout(categoryAddedTimerRef.current)
+        categoryAddedTimerRef.current = setTimeout(() => {
+          handleTutorialNext()
+          categoryAddedTimerRef.current = null
+        }, 500)
       }
     },
   })
+
+  useEffect(() => {
+    return () => {
+      if (categoryAddedTimerRef.current) clearTimeout(categoryAddedTimerRef.current)
+    }
+  }, [])
 
   const {
     stickyNotes,
@@ -176,27 +188,32 @@ export const CanvasStep = () => {
                     className="absolute top-4 left-1/2 -translate-x-1/2 w-fit mb-4 bg-white rounded-full shadow-lg p-2 flex gap-2 justify-center z-10"
                   >
                     <button
+                      type="button"
                       onClick={() => setSelectedTool('move')}
                       className={cn(
                         'p-3 rounded-full transition-all',
                         selectedTool === 'move' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
                         tutorialStep === 2 && showTutorial && 'ring-4 ring-primary ring-offset-2',
                       )}
+                      aria-label="선택 커서"
                       title="선택 커서"
                     >
                       <CursorIcon className="size-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setSelectedTool('hand')}
                       className={cn(
                         'p-3 rounded-full transition-all',
                         selectedTool === 'hand' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
                       )}
+                      aria-label="이동 커서"
                       title="이동 커서"
                     >
                       <HandBackRightIcon className="size-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setSelectedTool('sticky')
                         addStickyNote()
@@ -206,11 +223,13 @@ export const CanvasStep = () => {
                         selectedTool === 'sticky' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
                         tutorialStep === 1 && showTutorial && 'ring-4 ring-primary ring-offset-2 animate-pulse',
                       )}
+                      aria-label="포스트잇 추가"
                       title="포스트잇"
                     >
                       <NoteTextIcon className="size-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setSelectedTool('place')
                         addPlaceCard()
@@ -219,6 +238,7 @@ export const CanvasStep = () => {
                         'p-3 rounded-full transition-colors',
                         selectedTool === 'place' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
                       )}
+                      aria-label="장소 카드 추가"
                       title="장소 카드"
                     >
                       <MapCheckOutlineIcon className="size-4" />
@@ -229,6 +249,9 @@ export const CanvasStep = () => {
 
               {activeCategory !== null ? (
                 <div
+                  role="application"
+                  tabIndex={0}
+                  aria-label="캔버스 영역"
                   className={cn(
                     'relative w-full h-full bg-linear-to-br from-white via-gray-100 to-gray-100',
                     selectedTool === 'hand' || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair',
@@ -302,8 +325,10 @@ export const CanvasStep = () => {
                         onMouseDown={e => handleNoteMouseDown(note.id, e)}
                       >
                         <button
+                          type="button"
                           onClick={() => deleteNote(note.id)}
                           className="absolute -top-2 -right-2 size-6 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="포스트잇 삭제"
                         >
                           <CloseIcon className="size-3 text-white" />
                         </button>
@@ -335,8 +360,10 @@ export const CanvasStep = () => {
                         onMouseDown={e => handleCardMouseDown(card.id, e)}
                       >
                         <button
+                          type="button"
                           onClick={() => deleteCard(card.id)}
                           className="absolute -top-2 -right-2 size-6 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                          aria-label={`${card.name} 장소 카드 삭제`}
                         >
                           <CloseIcon className="size-3 text-white" />
                         </button>
@@ -394,7 +421,12 @@ export const CanvasStep = () => {
                         />
                       ))}
                     </div>
-                    <button onClick={() => setShowTutorial(false)} className="text-gray hover:text-black transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setShowTutorial(false)}
+                      className="text-gray hover:text-black transition-colors"
+                      aria-label="튜토리얼 닫기"
+                    >
                       <CloseIcon className="size-4" />
                     </button>
                   </div>
@@ -428,7 +460,7 @@ export const CanvasStep = () => {
                     )}
 
                     {tutorialStep === CANVAS_TUTORIAL_STEPS.length - 1 && (
-                      <Button onClick={() => setShowTutorial(false)} className="w-full  py-3 mb-3">
+                      <Button onClick={() => setShowTutorial(false)} className="w-full py-3 mb-3">
                         튜토리얼 완료
                       </Button>
                     )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeftIcon, CheckIcon, ContentCopyIcon, MagnifyIcon, MapMarkerIcon } from '@/shared/assets'
 import { cn } from '@/shared/utils/cn'
@@ -21,6 +21,7 @@ export const LocationRoomStep = ({ onSubStepChange, onNextStep }: LocationRoomSt
   const [selectedLocation, setSelectedLocation] = useState<string>('강남')
   const [typingText, setTypingText] = useState('')
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const roomLink = 'http://justhere.p-e.kr/room/justroom'
 
   const handleLocationSelect = (location: string) => {
@@ -29,25 +30,31 @@ export const LocationRoomStep = ({ onSubStepChange, onNextStep }: LocationRoomSt
 
   const handleNext = useCallback(() => {
     if (step < 1) {
-      const newStep = step + 1
-      setStep(newStep)
-      onSubStepChange?.(newStep)
+      setStep(step + 1)
     }
-  }, [step, onSubStepChange])
+  }, [step])
 
   const handlePrev = useCallback(() => {
     if (step > 0) {
-      const newStep = step - 1
-      setStep(newStep)
-      onSubStepChange?.(newStep)
+      setStep(step - 1)
     }
-  }, [step, onSubStepChange])
+  }, [step])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(roomLink)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1200)
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    copiedTimerRef.current = setTimeout(() => {
+      setCopied(false)
+      copiedTimerRef.current = null
+    }, 1200)
   }
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     onSubStepChange?.(step)

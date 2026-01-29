@@ -131,7 +131,12 @@ export const PlaceStep = () => {
                     className="w-full pl-12 pr-12 py-4 bg-white border-2 border-gray-100 rounded-xl outline-none focus:border-primary transition-colors"
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray hover:text-black">
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray hover:text-black"
+                      aria-label="검색어 지우기"
+                    >
                       <CloseIcon className="size-5" />
                     </button>
                   )}
@@ -264,8 +269,10 @@ export const PlaceStep = () => {
                           className="bg-gray-bg rounded-xl p-3 group relative"
                         >
                           <button
+                            type="button"
                             onClick={() => removeFromCandidate(candidate.id)}
                             className="absolute -top-2 -right-2 size-6 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`${candidate.place.name} 후보에서 제거`}
                           >
                             <CloseIcon className="size-3 text-white" />
                           </button>
@@ -315,7 +322,12 @@ export const PlaceStep = () => {
                           />
                         ))}
                       </div>
-                      <button onClick={() => setShowTutorial(false)} className="text-gray hover:text-black transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => setShowTutorial(false)}
+                        className="text-gray hover:text-black transition-colors"
+                        aria-label="튜토리얼 닫기"
+                      >
                         <CloseIcon className="size-4" />
                       </button>
                     </div>
@@ -404,7 +416,12 @@ export const PlaceStep = () => {
                       <span className="text-xs text-gray">({selectedPlace.reviews}개 리뷰)</span>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedPlace(null)} className="text-gray hover:text-black transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlace(null)}
+                    className="text-gray hover:text-black transition-colors"
+                    aria-label="장소 상세 닫기"
+                  >
                     <CloseIcon className="size-5" />
                   </button>
                 </div>
