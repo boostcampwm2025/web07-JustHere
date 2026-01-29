@@ -321,102 +321,101 @@ export const LocationListSection = ({
       </div>
 
       <Divider />
-      {activeTab === 'locations' &&
-        (selectedPlace ? (
-          <PlaceDetailContent place={selectedPlace} className="flex-1" showHeader={true} onBack={() => handlePlaceSelect(null)} />
-        ) : (
-          <div className="flex-1 overflow-y-auto p-5">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
-            ) : searchResults.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-gray text-sm">
-                {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {searchResults.map((place, index) => {
-                  const isSelected = pendingPlaceCard?.placeId === place.id
-                  const photoUrl = getPhotoUrl(place)
-                  const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
+      {selectedPlace && <PlaceDetailContent place={selectedPlace} className="flex-1" showHeader={true} onBack={() => handlePlaceSelect(null)} />}
+      {!selectedPlace && activeTab === 'locations' && (
+        <div className="flex-1 overflow-y-auto p-5">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
+          ) : searchResults.length === 0 ? (
+            <div className="flex items-center justify-center h-32 text-gray text-sm">
+              {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {searchResults.map((place, index) => {
+                const isSelected = pendingPlaceCard?.placeId === place.id
+                const photoUrl = getPhotoUrl(place)
+                const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
-                  return (
-                    <div key={place.id}>
-                      <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                        <div
-                          className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
-                          onClick={() => handlePlaceSelect(place)}
-                        >
-                          {photoUrl ? (
-                            <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
-                              <span className="text-gray-400 text-xs">No Image</span>
-                            </div>
+                return (
+                  <div key={place.id}>
+                    <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                      <div
+                        className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
+                        onClick={() => handlePlaceSelect(place)}
+                      >
+                        {photoUrl ? (
+                          <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No Image</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between py-0.5">
+                        <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
+                          <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
+                          <div className="flex items-center gap-2">
+                            {place.rating && (
+                              <span className="text-xs text-yellow-500 flex items-center gap-0.5">
+                                ★ {place.rating.toFixed(1)}
+                                {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
+                              </span>
+                            )}
+                            {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
+                          </div>
+                          <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
+                          {place.regularOpeningHours && (
+                            <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
+                              {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
+                            </span>
                           )}
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-between py-0.5">
-                          <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
-                            <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
-                            <div className="flex items-center gap-2">
-                              {place.rating && (
-                                <span className="text-xs text-yellow-500 flex items-center gap-0.5">
-                                  ★ {place.rating.toFixed(1)}
-                                  {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
-                                </span>
-                              )}
-                              {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
-                            </div>
-                            <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
-                            {place.regularOpeningHours && (
-                              <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
-                                {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
-                              </span>
+                        <div className="flex items-center justify-end gap-2 mt-1">
+                          <Button
+                            size="sm"
+                            icon={<PlusIcon className="size-3" />}
+                            onClick={() => handleAddPlaceCard(place)}
+                            className={cn(
+                              'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
+                              isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
                             )}
-                          </div>
-
-                          <div className="flex items-center justify-end gap-2 mt-1">
-                            <Button
-                              size="sm"
-                              icon={<PlusIcon className="size-3" />}
-                              onClick={() => handleAddPlaceCard(place)}
-                              className={cn(
-                                'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
-                                isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
-                              )}
-                            >
-                              캔버스
-                            </Button>
-                            <Button
-                              variant={isAlreadyCandidate ? 'gray' : 'outline'}
-                              icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => (isAlreadyCandidate ? removeCandidate(place.id) : handleCandidateRegister(place))}
-                              disabled={!canRegisterCandidate}
-                            >
-                              {isAlreadyCandidate ? '담김' : '후보등록'}
-                            </Button>
-                          </div>
+                          >
+                            캔버스
+                          </Button>
+                          <Button
+                            variant={isAlreadyCandidate ? 'gray' : 'outline'}
+                            icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => (isAlreadyCandidate ? removeCandidate(place.id) : handleCandidateRegister(place))}
+                            disabled={!canRegisterCandidate}
+                          >
+                            {isAlreadyCandidate ? '담김' : '후보등록'}
+                          </Button>
                         </div>
                       </div>
-
-                      {index < searchResults.length - 1 && <Divider className="mt-4" />}
                     </div>
-                  )
-                })}
-                <div ref={loadMoreRef} />
-                {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
-                {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
-                  <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+
+                    {index < searchResults.length - 1 && <Divider className="mt-4" />}
+                  </div>
+                )
+              })}
+              <div ref={loadMoreRef} />
+              {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
+              {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
+                <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 후보 리스트 탭 */}
-      {activeTab === 'candidates' &&
+      {!selectedPlace &&
+        activeTab === 'candidates' &&
         (voteStatus === 'WAITING' ? (
           <CandidateListSection
             candidates={candidateList}
@@ -441,7 +440,7 @@ export const LocationListSection = ({
         ))}
 
       {/* 방장 최종 선택 Modal */}
-      {voteStatus === 'OWNER_PICK' && (
+      {!selectedPlace && voteStatus === 'OWNER_PICK' && (
         <Modal title={isOwner ? '최종 장소를 선택해주세요' : '방장이 최종 선택 중입니다'} onClose={() => {}}>
           <Modal.Body>
             {!isOwner ? (
@@ -466,7 +465,7 @@ export const LocationListSection = ({
                       {candidate.imageUrl ? (
                         <img src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
+                        <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
