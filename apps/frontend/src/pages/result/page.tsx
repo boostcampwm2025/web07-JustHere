@@ -8,7 +8,8 @@ import { useRoomSocket } from '@/pages/room/hooks/socket'
 import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { RoomHeader } from '@/pages/room/components'
-import { mockResultPlaces } from './mock/resultMockData'
+import { useVoteResults } from '@/shared/hooks/queries/useRoomQueries'
+import { type GooglePlace } from '@/shared/types'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
@@ -20,8 +21,22 @@ export const ResultPage = () => {
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
-  // TODO: 실제 서버에서 받아오는 데이터로 교체
-  const resultData = mockResultPlaces
+  const { data: voteResults, isLoading, error } = useVoteResults(roomId || '')
+
+  const resultData: GooglePlace[] = useMemo(() => {
+    if (!voteResults || voteResults.length === 0) return []
+    return voteResults.flatMap(item =>
+      item.result.map(candidate => ({
+        id: candidate.placeId,
+        displayName: {
+          text: candidate.name,
+          languageCode: 'ko',
+        },
+        formattedAddress: candidate.address,
+      })),
+    )
+  }, [voteResults])
+
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
@@ -43,6 +58,30 @@ export const ResultPage = () => {
 
   if (!user) {
     return null
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div>로딩 중...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div>결과를 불러오는데 실패했습니다.</div>
+      </div>
+    )
+  }
+
+  if (resultData.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div>투표 결과가 없습니다.</div>
+      </div>
+    )
   }
 
   return (
