@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
-import { useRoomSocketCache } from './hooks'
+import { useRoomSocket } from './hooks'
 import { Button } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { joinRoom, leaveRoom, ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory } =
-    useRoomSocketCache()
+  const { ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory } = useRoomSocket()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
@@ -31,12 +30,6 @@ export default function RoomPage() {
   const clearPendingPlaceCard = () => {
     setPendingPlaceCard(null)
   }
-
-  useEffect(() => {
-    if (!slug || !user) return
-    joinRoom(slug, user)
-    return () => leaveRoom()
-  }, [leaveRoom, joinRoom, slug, user])
 
   if (!slug) {
     return <Navigate to="/onboarding" replace />
