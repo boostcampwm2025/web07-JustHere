@@ -41,3 +41,8 @@ export type VoteMeUpdatedPayload = {
 
 // [S->C] vote:error
 export type VoteErrorPayload = ErrorResponse
+
+export interface VoteCandidate {
+  category: string
+  result: Candidate[]
+}

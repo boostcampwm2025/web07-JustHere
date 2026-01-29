@@ -21,6 +21,7 @@ export class VoteService {
    * 세션 생성 또는 조회 (vote:join)
    * 방이 없으면 초기화하고, 있으면 반환
    * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 유저 정보
    */
   getOrCreateSession(roomId: string, userId: string): VoteStatePayload {
     if (!this.sessions.has(roomId)) {
