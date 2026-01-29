@@ -12,6 +12,8 @@ import CategoryIcon from '@/shared/assets/icons/category.svg?react'
 import CheckCircleIcon from '@/shared/assets/icons/check-circle.svg?react'
 import CheckIcon from '@/shared/assets/icons/check.svg?react'
 import ChevronDownIcon from '@/shared/assets/icons/chevron-down.svg?react'
+import ChevronLeftIcon from '@/shared/assets/icons/chevron-left.svg?react'
+import ChevronRightIcon from '@/shared/assets/icons/chevron-right.svg?react'
 import ClockOutlineIcon from '@/shared/assets/icons/clock-outline.svg?react'
 import CloseIcon from '@/shared/assets/icons/close.svg?react'
 import CoffeeIcon from '@/shared/assets/icons/coffee.svg?react'
@@ -23,6 +25,7 @@ import CrosshairsGpsIcon from '@/shared/assets/icons/crosshairs-gps.svg?react'
 import CursorIcon from '@/shared/assets/icons/cursor.svg?react'
 import ForumIcon from '@/shared/assets/icons/forum.svg?react'
 import HandBackRightIcon from '@/shared/assets/icons/hand-back-right.svg?react'
+import HelpCircleIcon from '@/shared/assets/icons/help-circle.svg?react'
 import LiquorIcon from '@/shared/assets/icons/liquor.svg?react'
 import ListBoxOutlineIcon from '@/shared/assets/icons/list-box-outline.svg?react'
 import MagnifyIcon from '@/shared/assets/icons/magnify.svg?react'
@@ -52,6 +55,8 @@ export {
   CheckCircleIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ClockOutlineIcon,
   CloseIcon,
   CoffeeIcon,
@@ -63,6 +68,7 @@ export {
   CursorIcon,
   ForumIcon,
   HandBackRightIcon,
+  HelpCircleIcon,
   LiquorIcon,
   ListBoxOutlineIcon,
   MagnifyIcon,

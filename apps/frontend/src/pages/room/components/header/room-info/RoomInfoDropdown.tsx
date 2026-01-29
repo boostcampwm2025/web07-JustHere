@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react'
-import { PencilIcon, ContentCopyIcon } from '@/shared/assets'
-import { Button, Divider, Avatar, Modal } from '@/shared/components'
+import { useEffect, useRef, useState } from 'react'
+import { PencilIcon, ContentCopyIcon, ShareVariantIcon, CheckIcon } from '@/shared/assets'
+import { Button, Divider, Avatar, Dropdown } from '@/shared/components'
 import type { Participant } from '@/shared/types'
-import { cn } from '@/shared/utils'
 
-interface RoomInfoModalProps {
-  onClose: () => void
+interface RoomInfoDropdownProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   userName: string
   roomLink: string
   participants: Participant[]
@@ -16,8 +16,9 @@ interface RoomInfoModalProps {
   onTransferOwner?: (targetUserId: string) => void
 }
 
-export const RoomInfoModal = ({
-  onClose,
+export const RoomInfoDropdown = ({
+  open,
+  onOpenChange,
   userName,
   roomLink,
   participants,
@@ -26,8 +27,9 @@ export const RoomInfoModal = ({
   isOwner = false,
   ownerId,
   onTransferOwner,
-}: RoomInfoModalProps) => {
+}: RoomInfoDropdownProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ socketId: '', userId: currentUserId, name: userName }, ...participants]
@@ -46,25 +48,22 @@ export const RoomInfoModal = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(roomLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('링크 복사에 실패했습니다.', error)
     }
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-transparent" onClick={onClose} />
-      <div className="absolute top-full right-0 z-50 w-xs">
-        <div
-          role="dialog"
-          aria-modal="true"
-          className={cn(
-            'bg-white shadow-xl border border-gray-100 rounded-3xl overflow-hidden flex flex-col',
-            'max-h-[600px] overflow-y-auto scrollbar-hide',
-          )}
-        >
-          <Modal.Body>
-            <h3 className="text-xl font-bold text-center my-6">참여자</h3>
+    <div className="relative">
+      <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
+        Share
+      </Button>
+      {open && (
+        <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
+          <div className="p-6">
+            <h3 className="text-lg font-bold text-center mb-6">참여자</h3>
             <div className="flex flex-col gap-2">
               {visibleParticipants.map(p => (
                 <div key={p.userId} className="flex items-center gap-3 px-2 py-1">
@@ -123,15 +122,21 @@ export const RoomInfoModal = ({
                   <div className="bg-gray-bg border border-gray-200 rounded-lg px-4 py-3 h-12 flex items-center overflow-hidden">
                     <span className="text-black truncate w-full">{roomLink}</span>
                   </div>
-                  <Button variant="primary" size="lg" className="h-11" icon={<ContentCopyIcon className="size-4" />} onClick={handleCopyLink}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="h-11"
+                    icon={copied ? <CheckIcon className="size-4 text-white" /> : <ContentCopyIcon className="size-4 text-white" />}
+                    onClick={handleCopyLink}
+                  >
                     링크 복사
                   </Button>
                 </div>
               </div>
             </div>
-          </Modal.Body>
-        </div>
-      </div>
-    </>
+          </div>
+        </Dropdown>
+      )}
+    </div>
   )
 }

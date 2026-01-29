@@ -1,1 +1,1 @@
-export { RoomInfoModal } from './RoomInfoModal'
+export { RoomInfoDropdown } from './RoomInfoDropdown'

@@ -1,17 +1,17 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useGoogleSearch, useUpdateRoom } from '@/shared/hooks'
-import { MapMarkerIcon, ChevronDownIcon, MagnifyIcon, CloseIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { MapMarkerIcon, ChevronDownIcon } from '@/shared/assets'
+import { Button, Divider, Dropdown, SearchInput } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { GooglePlace } from '@/shared/types'
 
-interface RegionSelectorProps {
+interface RegionSelectorDropdown {
   currentRegion?: string | null
   slug: string
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
 }
 
-export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) => {
+export const RegionSelectorDropdown = ({ slug, onRegionChange }: RegionSelectorDropdown) => {
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -19,28 +19,8 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
 
   const { mutate: updateRoom } = useUpdateRoom(slug)
 
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [isOpen])
-
-  const handleSearch = (e: React.KeyboardEvent) => {
-    if (e.key !== 'Enter' || !keyword.trim()) return
-    e.preventDefault()
+  const handleSearch = () => {
+    if (!keyword.trim()) return
     setSearchTerm(keyword.trim())
   }
 
@@ -72,46 +52,33 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
   const handleClear = () => {
     setKeyword('')
     setSearchTerm('')
-    inputRef.current?.focus()
   }
 
   const places = results?.places ?? []
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <Button onClick={() => setIsOpen(!isOpen)} variant="gray" className="px-3 w-full">
+    <div className="relative">
+      <Button variant="gray" className="px-3 w-full" onClick={() => setIsOpen(!isOpen)}>
         <div className="flex items-center gap-1 w-full justify-center">
           <MapMarkerIcon className="size-4 text-primary shrink-0" />
           <span className="text-sm font-medium text-gray-700 whitespace-nowrap">지역 변경</span>
           <ChevronDownIcon className={cn('size-4 text-gray-400 transition-transform shrink-0', isOpen && 'rotate-180')} />
         </div>
       </Button>
-
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border animate-slide-up z-50">
-          <div className="p-3 border-b">
-            <div className="relative">
-              <MagnifyIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={keyword}
-                onChange={e => setKeyword(e.target.value)}
-                onKeyDown={handleSearch}
-                placeholder="지역 검색..."
-                className="w-full pl-9 pr-9 py-2 text-sm border rounded-lg focus:outline-none focus:border-primary"
-              />
-              {keyword && (
-                <Button
-                  icon={<CloseIcon className="size-4" />}
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleClear}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                />
-              )}
-            </div>
+        <Dropdown onOpenChange={setIsOpen} align="right" className="w-72">
+          <div className="p-3">
+            <SearchInput
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              onClear={handleClear}
+              onSearch={handleSearch}
+              placeholder="지역 검색..."
+              className="h-10 text-sm border-gray-200 rounded-lg"
+            />
           </div>
+
+          <Divider />
 
           <div className="max-h-64 overflow-y-auto">
             {isLoading ? (
@@ -137,7 +104,7 @@ export const RegionSelector = ({ slug, onRegionChange }: RegionSelectorProps) =>
               <div className="p-4 text-center text-sm text-gray-500">지역명을 입력하고 Enter를 눌러주세요</div>
             )}
           </div>
-        </div>
+        </Dropdown>
       )}
     </div>
   )

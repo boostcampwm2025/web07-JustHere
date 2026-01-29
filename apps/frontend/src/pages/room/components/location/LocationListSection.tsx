@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
-import { Button, Divider, SearchInput } from '@/shared/components'
+import { Button, Divider, SearchInput, PlaceDetailContent } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { useRoomCategories } from '@/shared/hooks'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
-import { RegionSelector } from './region-selector'
+import { RegionSelectorDropdown } from './region-selector'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
-import { PlaceDetailModal } from './place-detail'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
 
@@ -297,24 +296,21 @@ export const LocationListSection = ({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <button
-              type="button"
+            <Button
               key={tab.id}
+              variant={activeTab === tab.id ? 'primary' : 'gray'}
               onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center justify-center gap-2 px-4 h-9 rounded-lg font-bold text-sm transition-colors shrink-0',
-                activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200',
-              )}
+              className="px-4 text-sm transition-colors shrink-0"
             >
               {tab.icon}
               <span>{tab.label}</span>
-            </button>
+            </Button>
           ))}
 
           {/* Region Selector - 장소 리스트 탭에서만 표시 */}
           {activeTab === 'locations' && (
             <div className="ml-auto">
-              <RegionSelector currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
+              <RegionSelectorDropdown currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
             </div>
           )}
         </div>
@@ -330,55 +326,58 @@ export const LocationListSection = ({
       </div>
 
       <Divider />
-      {activeTab === 'locations' && (
-        <div className="flex-1 overflow-y-auto p-5">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
-          ) : searchResults.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray text-sm">
-              {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {searchResults.map((place, index) => {
-                const isSelected = pendingPlaceCard?.placeId === place.id
-                const photoUrl = getPhotoUrl(place)
+      {activeTab === 'locations' &&
+        (selectedPlace ? (
+          <PlaceDetailContent place={selectedPlace} className="flex-1" showHeader={true} onBack={() => handlePlaceSelect(null)} />
+        ) : (
+          <div className="flex-1 overflow-y-auto p-5">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray text-sm">
+                {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {searchResults.map((place, index) => {
+                  const isSelected = pendingPlaceCard?.placeId === place.id
+                  const photoUrl = getPhotoUrl(place)
 
-                return (
-                  <div key={place.id}>
-                    <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                      <div
-                        className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
-                        onClick={() => handlePlaceSelect(place)}
-                      >
-                        {photoUrl ? (
-                          <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">No Image</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-between py-0.5">
-                        <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
-                          <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
-                          <div className="flex items-center gap-2">
-                            {place.rating && (
-                              <span className="text-xs text-yellow-500 flex items-center gap-0.5">
-                                ★ {place.rating.toFixed(1)}
-                                {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
-                              </span>
-                            )}
-                            {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
-                          </div>
-                          <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
-                          {place.regularOpeningHours && (
-                            <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
-                              {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
-                            </span>
+                  return (
+                    <div key={place.id}>
+                      <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
+                        <div
+                          className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
+                          onClick={() => handlePlaceSelect(place)}
+                        >
+                          {photoUrl ? (
+                            <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">No Image</span>
+                            </div>
                           )}
                         </div>
+
+                        <div className="flex-1 flex flex-col justify-between py-0.5">
+                          <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
+                            <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
+                            <div className="flex items-center gap-2">
+                              {place.rating && (
+                                <span className="text-xs text-yellow-500 flex items-center gap-0.5">
+                                  ★ {place.rating.toFixed(1)}
+                                  {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
+                                </span>
+                              )}
+                              {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
+                            </div>
+                            <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
+                            {place.regularOpeningHours && (
+                              <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
+                                {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
+                              </span>
+                            )}
+                          </div>
 
                         <div className="flex items-center justify-end gap-2 mt-1">
                           <Button
@@ -403,21 +402,20 @@ export const LocationListSection = ({
                           </Button>
                         </div>
                       </div>
-                    </div>
 
-                    {index < searchResults.length - 1 && <Divider className="mt-4" />}
-                  </div>
-                )
-              })}
-              <div ref={loadMoreRef} />
-              {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
-              {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
-                <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                      {index < searchResults.length - 1 && <Divider className="mt-4" />}
+                    </div>
+                  )
+                })}
+                <div ref={loadMoreRef} />
+                {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
+                {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
+                  <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
 
       {/* 후보 리스트 탭 */}
       {activeTab === 'candidates' &&
@@ -442,9 +440,6 @@ export const LocationListSection = ({
             onRemoveCandidate={removeCandidate}
           />
         ))}
-
-      {/* Place Detail Modal */}
-      {selectedPlace && <PlaceDetailModal place={selectedPlace} onClose={() => handlePlaceSelect(null)} />}
     </div>
   )
 }
