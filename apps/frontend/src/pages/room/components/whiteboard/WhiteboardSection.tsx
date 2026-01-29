@@ -4,7 +4,7 @@ import { Button } from '@/shared/components'
 import { GoogleMap } from '@/shared/components/google-map'
 import { cn } from '@/shared/utils'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
-import { AddCategoryModal } from './add-category'
+import { AddCategoryModal } from '@/pages/room/components/add-category'
 import { DeleteCategoryModal } from './delete-category'
 import { WhiteboardCanvas } from './canvas'
 
@@ -127,22 +127,13 @@ export const WhiteboardSection = ({
 
       <main className="flex-1 bg-slate-50 overflow-hidden relative" role="tabpanel">
         {viewMode === 'canvas' ? (
-          activeCategoryId ? (
-            <WhiteboardCanvas
-              roomId={roomId}
-              canvasId={activeCategoryId}
-              pendingPlaceCard={pendingPlaceCard}
-              onPlaceCardPlaced={onPlaceCardPlaced}
-              onPlaceCardCanceled={onPlaceCardCanceled}
-            />
-          ) : (
-            <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-              <div className="text-center">
-                <p className="text-lg font-semibold mb-2">카테고리가 없습니다</p>
-                <p className="text-sm">새 카테고리를 추가해주세요</p>
-              </div>
-            </div>
-          )
+          <WhiteboardCanvas
+            roomId={roomId}
+            canvasId={activeCategoryId}
+            pendingPlaceCard={pendingPlaceCard}
+            onPlaceCardPlaced={onPlaceCardPlaced}
+            onPlaceCardCanceled={onPlaceCardCanceled}
+          />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
             <GoogleMap
