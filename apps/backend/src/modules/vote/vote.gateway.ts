@@ -24,6 +24,7 @@ import {
   VoteRevokePayload,
   VoteStartPayload,
   VoteEndPayload,
+  VoteOwnerSelectPayload,
 } from './dto/vote.c2s.dto'
 import { VoteService } from './vote.service'
 
@@ -211,7 +212,28 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId, categoryId } = payload
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
 
-    const endedPayload = this.voteService.endVote(voteRoomId)
+    const result = this.voteService.endVote(voteRoomId)
+
+    switch (result.type) {
+      case 'completed':
+        this.broadcaster.emitToVote(voteRoomId, 'vote:ended', result.payload)
+        break
+      case 'runoff':
+        this.broadcaster.emitToVote(voteRoomId, 'vote:runoff', result.payload)
+        break
+      case 'owner-pick':
+        this.broadcaster.emitToVote(voteRoomId, 'vote:owner-pick', result.payload)
+        break
+    }
+  }
+
+  @UseGuards(VoteOwnerGuard)
+  @SubscribeMessage('vote:owner-select')
+  onOwnerSelect(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteOwnerSelectPayload) {
+    const { roomId, categoryId, candidateId } = payload
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+
+    const endedPayload = this.voteService.ownerSelect(voteRoomId, candidateId)
     this.broadcaster.emitToVote(voteRoomId, 'vote:ended', endedPayload)
   }
 }
