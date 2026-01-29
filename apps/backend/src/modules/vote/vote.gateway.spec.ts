@@ -267,7 +267,7 @@ describe('VoteGateway', () => {
       expect(voteService.addCandidatePlace).toHaveBeenCalledTimes(1)
       expect(voteService.addCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'user-1', payload)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidate)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:added', mockCandidate)
     })
   })
 
@@ -284,7 +284,6 @@ describe('VoteGateway', () => {
       const voteRoomId = 'room-1:category-1'
       const mockRemovedPayload = {
         candidate: { placeId: 'candidate-1', name: '카페', address: '서울', createdBy: 'user-1', createdAt: new Date() },
-        removed: true,
       }
 
       voteService.removeCandidatePlace.mockReturnValue(mockRemovedPayload)
@@ -294,7 +293,7 @@ describe('VoteGateway', () => {
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
       expect(voteService.removeCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockRemovedPayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:removed', mockRemovedPayload)
     })
   })
 

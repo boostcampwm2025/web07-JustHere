@@ -127,8 +127,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     }
 
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
-    const updatePayload = this.voteService.addCandidatePlace(voteRoomId, user.userId, payload)
-    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
+    const addedPayload = this.voteService.addCandidatePlace(voteRoomId, user.userId, payload)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:added', addedPayload)
   }
 
   @SubscribeMessage('vote:candidate:remove')
@@ -141,8 +141,8 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     }
 
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
-    const updatePayload = this.voteService.removeCandidatePlace(voteRoomId, candidateId)
-    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:updated', updatePayload)
+    const removedPayload = this.voteService.removeCandidatePlace(voteRoomId, candidateId)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:candidate:removed', removedPayload)
   }
 
   @SubscribeMessage('vote:cast')
