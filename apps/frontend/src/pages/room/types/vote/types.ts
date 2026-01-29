@@ -41,6 +41,8 @@ export interface VoteStatePayload {
   counts: VoteCounts
   myVotes: MyVotes
   voters: Record<string, string[]>
+  round: number
+  singleVote: boolean
 }
 
 // [S->C] vote:started

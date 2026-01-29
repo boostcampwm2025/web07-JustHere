@@ -186,6 +186,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       setCounts(payload.counts)
       setMyVotes(payload.myVotes)
       setVotersByCandidate(payload.voters ?? {})
+      setRound(payload.round)
+      setSingleVote(payload.singleVote)
       countsRef.current = payload.counts
       myVotesRef.current = payload.myVotes
       votersByCandidateRef.current = payload.voters ?? {}

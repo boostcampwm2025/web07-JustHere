@@ -63,6 +63,8 @@ export class VoteService {
       counts: Object.fromEntries(session.totalCounts.entries()),
       myVotes: myVotesSet ? Array.from(myVotesSet) : [],
       voters: this.getVoterIdsByCandidate(session),
+      round: session.round,
+      singleVote: session.singleVote,
     }
   }
 

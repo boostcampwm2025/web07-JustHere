@@ -8,6 +8,8 @@ export type VoteStatePayload = {
   counts: Record<string, number>
   myVotes: string[]
   voters: Record<string, string[]>
+  round: number
+  singleVote: boolean
 }
 
 // [S->C] vote:started / vote:runoff
