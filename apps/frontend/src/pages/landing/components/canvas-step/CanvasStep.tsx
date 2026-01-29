@@ -69,6 +69,12 @@ export const CanvasStep = () => {
         }
         handleTutorialNext()
         break
+      case 'addPlaceCard':
+        if (placeCards.length === 0) {
+          addPlaceCard()
+        }
+        handleTutorialNext()
+        break
       case 'moveElement':
         handleTutorialNext()
         break
@@ -193,7 +199,7 @@ export const CanvasStep = () => {
                       className={cn(
                         'p-3 rounded-full transition-all',
                         selectedTool === 'move' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
-                        tutorialStep === 2 && showTutorial && 'ring-4 ring-primary ring-offset-2',
+                        tutorialStep === 3 && showTutorial && 'ring-4 ring-primary ring-offset-2',
                       )}
                       aria-label="선택 커서"
                       title="선택 커서"
@@ -233,10 +239,14 @@ export const CanvasStep = () => {
                       onClick={() => {
                         setSelectedTool('place')
                         addPlaceCard()
+                        if (tutorialStep === 2 && showTutorial) {
+                          handleTutorialNext()
+                        }
                       }}
                       className={cn(
                         'p-3 rounded-full transition-colors',
                         selectedTool === 'place' ? 'bg-primary text-white' : 'bg-gray-100 text-gray hover:bg-primary-bg',
+                        tutorialStep === 2 && showTutorial && 'ring-4 ring-primary ring-offset-2 animate-pulse',
                       )}
                       aria-label="장소 카드 추가"
                       title="장소 카드"
@@ -296,7 +306,7 @@ export const CanvasStep = () => {
                         </div>
 
                         {/* Cursor chat bubble */}
-                        {tutorialStep === 3 && showTutorial && cursorChat?.cursorId === cursor.id && (
+                        {tutorialStep === 4 && showTutorial && cursorChat?.cursorId === cursor.id && (
                           <motion.div
                             initial={{ opacity: 0, y: 6, scale: 0.98 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -454,7 +464,9 @@ export const CanvasStep = () => {
                           ? '카테고리 추가'
                           : tutorialStep === 1 && stickyNotes.length === 0
                             ? '포스트잇 추가'
-                            : '다음 단계'}
+                            : tutorialStep === 2 && placeCards.length === 0
+                              ? '장소 카드 추가'
+                              : '다음 단계'}
                         <ArrowRightIcon className="size-4 ml-2" />
                       </Button>
                     )}

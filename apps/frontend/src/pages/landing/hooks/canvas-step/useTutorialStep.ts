@@ -9,7 +9,7 @@ export function useTutorialStep() {
   const [cursorChat, setCursorChat] = useState<{ cursorId: string; text: string } | null>(null)
 
   useEffect(() => {
-    if (tutorialStep === 3 && showTutorial) {
+    if (tutorialStep === 4 && showTutorial) {
       const cursors: TutorialCursor[] = [
         { id: '1', name: '지민', x: 200, y: 150, color: '#FF6B6B' },
         { id: '2', name: '수현', x: 450, y: 200, color: '#4ECDC4' },
@@ -37,7 +37,7 @@ export function useTutorialStep() {
   }, [tutorialStep, showTutorial])
 
   useEffect(() => {
-    if (!(tutorialStep === 3 && showTutorial)) return
+    if (!(tutorialStep === 4 && showTutorial)) return
 
     let hideTimer: number | undefined
 

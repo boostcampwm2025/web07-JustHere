@@ -14,6 +14,12 @@ export const CANVAS_TUTORIAL_STEPS = [
     highlight: 'sticky',
   },
   {
+    title: '장소 카드 등록하기',
+    description: '장소 카드 버튼을 클릭해 캔버스에 장소를 추가해보세요. 모임 후보 장소를 한눈에 모아볼 수 있습니다.',
+    action: 'addPlaceCard',
+    highlight: 'place',
+  },
+  {
     title: '캔버스 조작하기',
     description: '선택 커서로 포스트잇을 드래그해보세요. 이동 커서를 사용하면 캔버스 전체를 이동할 수 있습니다.',
     action: 'moveElement',
