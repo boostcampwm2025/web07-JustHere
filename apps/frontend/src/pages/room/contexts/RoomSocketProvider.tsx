@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { useRoomSocketCache } from '../hooks/socket/useRoomSocketCache'
 import { RoomSocketContext } from './RoomSocketContext'
@@ -10,7 +10,6 @@ interface RoomSocketProviderProps {
 
 export function RoomSocketProvider({ children }: RoomSocketProviderProps) {
   const { slug } = useParams<{ slug: string }>()
-  const { pathname } = useLocation()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const socketCache = useRoomSocketCache()
   const { joinRoom, leaveRoom } = socketCache
@@ -19,7 +18,7 @@ export function RoomSocketProvider({ children }: RoomSocketProviderProps) {
     if (!slug || !user) return
     joinRoom(slug, user)
     return () => leaveRoom()
-  }, [joinRoom, leaveRoom, slug, user, pathname])
+  }, [joinRoom, leaveRoom, slug, user])
 
   return <RoomSocketContext.Provider value={socketCache}>{children}</RoomSocketContext.Provider>
 }
