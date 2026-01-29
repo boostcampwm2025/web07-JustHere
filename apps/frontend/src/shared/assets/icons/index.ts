@@ -6,6 +6,7 @@
 import AccountCheckOutlineIcon from '@/shared/assets/icons/account-check-outline.svg?react'
 import AlertCircleIcon from '@/shared/assets/icons/alert-circle.svg?react'
 import ArrowLeftIcon from '@/shared/assets/icons/arrow-left.svg?react'
+import ArrowRightIcon from '@/shared/assets/icons/arrow-right.svg?react'
 import BackspaceIcon from '@/shared/assets/icons/backspace.svg?react'
 import BellIcon from '@/shared/assets/icons/bell.svg?react'
 import CategoryIcon from '@/shared/assets/icons/category.svg?react'
@@ -46,6 +47,7 @@ export {
   AccountCheckOutlineIcon,
   AlertCircleIcon,
   ArrowLeftIcon,
+  ArrowRightIcon,
   BackspaceIcon,
   BellIcon,
   CategoryIcon,
