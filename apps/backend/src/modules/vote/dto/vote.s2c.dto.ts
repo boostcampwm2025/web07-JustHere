@@ -7,17 +7,21 @@ export type VoteStatePayload = {
   counts: Record<string, number>
   myVotes: string[]
   voters: Record<string, string[]>
+  round: number
+  singleVote: boolean
 }
 
-// [S->C] vote:started
+// [S->C] vote:started / vote:runoff
 export type VoteStartedPayload = {
   status: 'IN_PROGRESS'
+  singleVote?: boolean
 }
 
 // [S->C] vote:ended
 export type VoteEndedPayload = {
   status: 'COMPLETED'
   candidates: Candidate[]
+  selectedCandidateId?: string
 }
 
 // [S->C] vote:candidate:added
@@ -41,6 +45,19 @@ export type VoteCountsUpdatedPayload = {
 // [S->C] vote:me:updated
 export type VoteMeUpdatedPayload = {
   myVotes: string[]
+}
+
+// [S->C] vote:runoff
+export type VoteRunOffPayload = {
+  tiedCandidates: Candidate[]
+  round: number
+  singleVote: boolean
+}
+
+// [S->C] vote:owner-pick
+export type VoteOwnerPickPayload = {
+  tiedCandidates: Candidate[]
+  status: 'OWNER_PICK'
 }
 
 // [S->C] vote:resetted

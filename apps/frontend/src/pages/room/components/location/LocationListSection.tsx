@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon } from '@/shared/assets'
-import { Button, Divider, SearchInput, PlaceDetailContent } from '@/shared/components'
+import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
@@ -83,6 +83,8 @@ export const LocationListSection = ({
 
   const {
     status: voteStatus,
+    singleVote,
+    round,
     candidates: voteCandidates,
     counts: voteCounts,
     myVotes,
@@ -97,6 +99,7 @@ export const LocationListSection = ({
     resetVote,
     castVote,
     revokeVote,
+    ownerSelect,
     resetError,
   } = useVoteSocket({
     roomId,
@@ -195,9 +198,14 @@ export const LocationListSection = ({
         return
       }
 
+      if (singleVote && myVotes.length > 0) {
+        showToast('결선 투표에서는 1개의 후보에만 투표할 수 있습니다.', 'error')
+        return
+      }
+
       castVote(candidateId)
     },
-    [myVotes, castVote, revokeVote],
+    [myVotes, singleVote, castVote, revokeVote, showToast],
   )
 
   const handleCandidateRegister = useCallback(
@@ -420,6 +428,7 @@ export const LocationListSection = ({
         ) : (
           <VoteListSection
             candidates={votingCandidates}
+            round={round}
             isOwner={isOwner}
             voteStatus={voteStatus}
             onVote={handleVote}
@@ -428,6 +437,48 @@ export const LocationListSection = ({
             onResetVote={resetVote}
           />
         ))}
+
+      {/* 방장 최종 선택 Modal */}
+      {voteStatus === 'OWNER_PICK' && (
+        <Modal title={isOwner ? '최종 장소를 선택해주세요' : '방장이 최종 선택 중입니다'} onClose={() => {}}>
+          <Modal.Body>
+            {!isOwner ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <p className="text-gray-500 text-sm text-center">
+                  결선 투표에서도 동률이 발생했습니다.
+                  <br />
+                  방장이 최종 장소를 선택하고 있습니다...
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-gray-500 text-sm mb-2">결선 투표에서도 동률이 발생했습니다. 최종 장소를 선택해주세요.</p>
+                {votingCandidates.map(candidate => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-primary hover:bg-primary-bg transition-colors text-left"
+                    onClick={() => ownerSelect(candidate.id)}
+                  >
+                    <div className="w-14 h-14 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
+                      {candidate.imageUrl ? (
+                        <img src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-800 truncate">{candidate.name}</h4>
+                      <p className="text-xs text-gray-500">{candidate.category}</p>
+                      {candidate.rating !== undefined && <span className="text-xs text-yellow-500">★ {candidate.rating.toFixed(1)}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Modal.Body>
+        </Modal>
+      )}
     </div>
   )
 }
