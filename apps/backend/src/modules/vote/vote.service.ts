@@ -188,7 +188,7 @@ export class VoteService {
     // 결선에서 동률인 경우, 방장 최종 선택
     return {
       type: 'owner-pick',
-      payload: this.startOwnerPick(roomId, session, tiedCandidates),
+      payload: this.startOwnerPick(session, tiedCandidates),
     }
   }
 
