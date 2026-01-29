@@ -4,6 +4,7 @@ import { AvatarList, Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { VotingCandidate } from './LocationListSection'
 import type { VoteStatus } from '@/pages/room/types'
+import { useNavigate, useParams } from 'react-router-dom'
 
 interface VoteListSectionProps {
   candidates: VotingCandidate[]
@@ -22,6 +23,9 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
     if (maxPercentage === 0) return null
     return candidates.find(c => c.votePercentage === maxPercentage)?.id ?? null
   }, [candidates, voteStatus])
+
+  const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   return (
     <>
       <div className="flex-1 overflow-y-auto">
@@ -136,7 +140,7 @@ export const VoteListSection = ({ candidates, voteStatus, onVote, onEndVote, onR
           <Button size="lg" className="flex-1" variant="gray" onClick={onResetVote}>
             투표 삭제
           </Button>
-          <Button size="lg" className="flex-1" variant="primary" onClick={onEndVote}>
+          <Button size="lg" className="flex-1" variant="primary" onClick={() => navigate(`/result/${slug}`)}>
             결과 확인
           </Button>
         </div>
