@@ -79,6 +79,7 @@ export const LocationListSection = ({
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
+      categoryId: activeCategoryId,
       onSearchComplete,
     })
 

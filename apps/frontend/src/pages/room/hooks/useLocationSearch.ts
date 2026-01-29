@@ -5,8 +5,14 @@ import type { GooglePlace } from '@/shared/types'
 const DEFAULT_MAX_RESULT_COUNT = 20
 const DEFAULT_RADIUS = 2000
 
+interface CategorySearchState {
+  searchQuery: string
+  searchTerm: string
+}
+
 interface UseLocationSearchOptions {
   roomId: string
+  categoryId: string
   radius?: number
   maxResultCount?: number
   onSearchComplete?: (results: GooglePlace[]) => void
@@ -14,10 +20,14 @@ interface UseLocationSearchOptions {
 
 export function useLocationSearch({
   roomId,
+  categoryId,
   radius = DEFAULT_RADIUS,
   maxResultCount = DEFAULT_MAX_RESULT_COUNT,
   onSearchComplete,
 }: UseLocationSearchOptions) {
+  const cacheRef = useRef<Record<string, CategorySearchState>>({})
+  const prevCategoryKeyRef = useRef(categoryId)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
@@ -26,6 +36,25 @@ export function useLocationSearch({
   useEffect(() => {
     onSearchCompleteRef.current = onSearchComplete
   }, [onSearchComplete])
+
+  useEffect(() => {
+    if (prevCategoryKeyRef.current === categoryId) return
+
+    cacheRef.current[prevCategoryKeyRef.current] = {
+      searchQuery,
+      searchTerm,
+    }
+    prevCategoryKeyRef.current = categoryId
+
+    const restored = cacheRef.current[categoryId]
+    if (restored) {
+      setSearchQuery(restored.searchQuery)
+      setSearchTerm(restored.searchTerm)
+    } else {
+      setSearchQuery('')
+      setSearchTerm('')
+    }
+  }, [categoryId, searchQuery, searchTerm])
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteGoogleSearch({
     textQuery: searchTerm,
