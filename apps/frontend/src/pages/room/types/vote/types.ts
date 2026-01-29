@@ -54,6 +54,7 @@ export interface VoteStartedPayload {
 export interface VoteEndedPayload {
   status: 'COMPLETED'
   candidates: VoteCandidate[]
+  selectedCandidateId?: string
 }
 
 // [S->C] vote:candidate:updated

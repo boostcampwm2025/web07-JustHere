@@ -36,6 +36,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [myVotes, setMyVotes] = useState<string[]>([])
   const [votersByCandidate, setVotersByCandidate] = useState<Record<string, string[]>>({})
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null)
   const [error, setError] = useState<VoteErrorPayload | null>(null)
 
   const candidatesRef = useRef<VoteCandidate[]>([])
@@ -96,6 +97,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     countsRef.current = {}
     myVotesRef.current = []
     votersByCandidateRef.current = {}
+    setSelectedCandidateId(null)
     setError(null)
     tempCandidateIdsRef.current.clear()
   }, [])
@@ -254,6 +256,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     const handleEnded = (payload: VoteEndedPayload) => {
       setStatus(payload.status)
       setCandidates(payload.candidates)
+      setSelectedCandidateId(payload.selectedCandidateId ?? null)
       setSingleVote(false)
       setRound(1)
       setError(null)
@@ -632,6 +635,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     status,
     singleVote,
     round,
+    selectedCandidateId,
     candidates,
     counts,
     myVotes,

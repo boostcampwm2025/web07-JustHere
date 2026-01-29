@@ -246,6 +246,7 @@ export class VoteService {
     return {
       status: 'COMPLETED',
       candidates: Array.from(session.candidates.values()),
+      selectedCandidateId: candidateId,
     }
   }
 
