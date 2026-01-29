@@ -133,7 +133,9 @@ describe('VoteGateway', () => {
       } as unknown as Socket
       const payload: VoteJoinPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockUser = {
         userId: 'user-1',
         name: 'user',
@@ -157,9 +159,9 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(joinMock).toHaveBeenCalledTimes(1)
-      expect(joinMock).toHaveBeenCalledWith('vote:room-1')
+      expect(joinMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
       expect(voteService.getOrCreateSession).toHaveBeenCalledTimes(1)
-      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
       expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
     })
@@ -175,8 +177,10 @@ describe('VoteGateway', () => {
       } as unknown as Socket
       const payload: VoteJoinPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
         userId: 'user-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockUser = {
         userId: 'user-1',
         name: 'user',
@@ -200,8 +204,8 @@ describe('VoteGateway', () => {
       expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledTimes(1)
       expect(userService.getSessionByUserIdInRoom).toHaveBeenCalledWith('room-1', 'user-1')
       expect(userService.getSession).not.toHaveBeenCalled()
-      expect(joinMock).toHaveBeenCalledWith('vote:room-1')
-      expect(voteService.getOrCreateSession).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(joinMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
+      expect(voteService.getOrCreateSession).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledWith('vote:state', mockStatePayload)
     })
   })
@@ -215,12 +219,14 @@ describe('VoteGateway', () => {
       } as unknown as Socket
       const payload: VoteLeavePayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
 
       await gateway.onVoteLeave(client, payload)
 
       expect(leaveMock).toHaveBeenCalledTimes(1)
-      expect(leaveMock).toHaveBeenCalledWith('vote:room-1')
+      expect(leaveMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
     })
   })
 
@@ -231,10 +237,12 @@ describe('VoteGateway', () => {
       } as Socket
       const payload: VoteCandidateAddPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
         placeId: 'place-1',
         name: '카페',
         address: '서울시 강남구',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockUser = {
         userId: 'user-1',
         name: 'user',
@@ -258,9 +266,9 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.addCandidatePlace).toHaveBeenCalledTimes(1)
-      expect(voteService.addCandidatePlace).toHaveBeenCalledWith('room-1', 'user-1', payload)
+      expect(voteService.addCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'user-1', payload)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidate)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidate)
     })
   })
 
@@ -271,8 +279,10 @@ describe('VoteGateway', () => {
       } as Socket
       const payload: VoteCandidateRemovePayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
         candidateId: 'candidate-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockCandidateId = 'candidate-1'
 
       voteService.removeCandidatePlace.mockReturnValue(mockCandidateId)
@@ -280,9 +290,9 @@ describe('VoteGateway', () => {
       gateway.onCandidateRemove(client, payload)
 
       expect(voteService.removeCandidatePlace).toHaveBeenCalledTimes(1)
-      expect(voteService.removeCandidatePlace).toHaveBeenCalledWith('room-1', 'candidate-1')
+      expect(voteService.removeCandidatePlace).toHaveBeenCalledWith(voteRoomId, 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:candidate:updated', mockCandidateId)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:candidate:updated', mockCandidateId)
     })
   })
 
@@ -294,8 +304,10 @@ describe('VoteGateway', () => {
     } as unknown as Socket
     const payload: VoteCastPayload = {
       roomId: 'room-1',
+      categoryId: 'category-1',
       candidateId: 'candidate-1',
     }
+    const voteRoomId = 'room-1:category-1'
     const mockUser = {
       userId: 'user-1',
       name: 'user',
@@ -325,9 +337,9 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.castVote).toHaveBeenCalledTimes(1)
-      expect(voteService.castVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
+      expect(voteService.castVote).toHaveBeenCalledWith(voteRoomId, 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', {
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:counts:updated', {
         candidateId: 'candidate-1',
         count: 1,
         userId: 'user-1',
@@ -353,7 +365,7 @@ describe('VoteGateway', () => {
       gateway.onCastVote(client, payload)
 
       expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
-      expect(voteService.getMyVotes).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(voteService.getMyVotes).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
       expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
     })
@@ -408,8 +420,10 @@ describe('VoteGateway', () => {
     } as unknown as Socket
     const payload: VoteRevokePayload = {
       roomId: 'room-1',
+      categoryId: 'category-1',
       candidateId: 'candidate-1',
     }
+    const voteRoomId = 'room-1:category-1'
     const mockUser = {
       userId: 'user-1',
       name: 'user',
@@ -439,9 +453,9 @@ describe('VoteGateway', () => {
       expect(userService.getSession).toHaveBeenCalledTimes(1)
       expect(userService.getSession).toHaveBeenCalledWith('socket-1')
       expect(voteService.revokeVote).toHaveBeenCalledTimes(1)
-      expect(voteService.revokeVote).toHaveBeenCalledWith('room-1', 'user-1', 'candidate-1')
+      expect(voteService.revokeVote).toHaveBeenCalledWith(voteRoomId, 'user-1', 'candidate-1')
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:counts:updated', {
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:counts:updated', {
         candidateId: 'candidate-1',
         count: 0,
         userId: 'user-1',
@@ -467,7 +481,7 @@ describe('VoteGateway', () => {
       gateway.onRevokeVote(client, payload)
 
       expect(voteService.getMyVotes).toHaveBeenCalledTimes(1)
-      expect(voteService.getMyVotes).toHaveBeenCalledWith('room-1', 'user-1')
+      expect(voteService.getMyVotes).toHaveBeenCalledWith(voteRoomId, 'user-1')
       expect(emitMock).toHaveBeenCalledTimes(1)
       expect(emitMock).toHaveBeenCalledWith('vote:me:updated', mockMyVotes)
     })
@@ -519,7 +533,9 @@ describe('VoteGateway', () => {
       const client = {} as Socket
       const payload: VoteStartPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockStartedPayload = {
         status: 'IN_PROGRESS',
       }
@@ -529,9 +545,9 @@ describe('VoteGateway', () => {
       gateway.onStartVote(client, payload)
 
       expect(voteService.startVote).toHaveBeenCalledTimes(1)
-      expect(voteService.startVote).toHaveBeenCalledWith('room-1')
+      expect(voteService.startVote).toHaveBeenCalledWith(voteRoomId)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:started', mockStartedPayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:started', mockStartedPayload)
     })
   })
 
@@ -540,7 +556,9 @@ describe('VoteGateway', () => {
       const client = {} as Socket
       const payload: VoteEndPayload = {
         roomId: 'room-1',
+        categoryId: 'category-1',
       }
+      const voteRoomId = 'room-1:category-1'
       const mockEndedPayload = {
         status: 'COMPLETED',
         candidates: [],
@@ -551,9 +569,9 @@ describe('VoteGateway', () => {
       gateway.onEndVote(client, payload)
 
       expect(voteService.endVote).toHaveBeenCalledTimes(1)
-      expect(voteService.endVote).toHaveBeenCalledWith('room-1')
+      expect(voteService.endVote).toHaveBeenCalledWith(voteRoomId)
       expect(broadcaster.emitToVote).toHaveBeenCalledTimes(1)
-      expect(broadcaster.emitToVote).toHaveBeenCalledWith('room-1', 'vote:ended', mockEndedPayload)
+      expect(broadcaster.emitToVote).toHaveBeenCalledWith(voteRoomId, 'vote:ended', mockEndedPayload)
     })
   })
 })

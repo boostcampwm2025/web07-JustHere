@@ -4,7 +4,11 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator'
 export class BasePayload {
   @IsString({ message: 'roomId는 문자열이어야 합니다' })
   @IsNotEmpty({ message: 'roomId는 비어있을 수 없습니다' })
-  roomId: string // canvasId
+  roomId: string
+
+  @IsString({ message: 'categoryId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'categoryId는 비어있을 수 없습니다' })
+  categoryId: string
 
   @IsOptional()
   @IsString({ message: 'userId는 문자열이어야 합니다' })

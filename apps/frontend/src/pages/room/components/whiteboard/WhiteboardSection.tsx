@@ -15,6 +15,7 @@ interface WhiteboardSectionProps {
   roomId: string
   onCreateCategory: (name: string) => void
   onDeleteCategory: (categoryId: string) => void
+  onActiveCategoryChange?: (categoryId: string) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
@@ -27,6 +28,7 @@ export const WhiteboardSection = ({
   roomId,
   onCreateCategory,
   onDeleteCategory,
+  onActiveCategoryChange,
   pendingPlaceCard,
   onPlaceCardPlaced,
   onPlaceCardCanceled,
@@ -44,6 +46,10 @@ export const WhiteboardSection = ({
   useEffect(() => {
     setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
   }, [categories, activeCategoryId])
+
+  useEffect(() => {
+    onActiveCategoryChange?.(activeCategoryId)
+  }, [activeCategoryId, onActiveCategoryChange])
 
   const getIconByType = (type: string) => {
     switch (type) {

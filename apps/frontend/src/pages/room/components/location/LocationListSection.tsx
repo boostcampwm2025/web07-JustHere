@@ -4,6 +4,7 @@ import { Button, Divider, SearchInput } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
+import { useRoomCategories } from '@/shared/hooks'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/utils'
 import { RegionSelector } from './region-selector'
@@ -37,6 +38,8 @@ interface LocationListSectionProps {
   userId: string
   userName: string
   participants: Participant[]
+  isOwner: boolean
+  activeCategoryId: string
   slug: string
   currentRegion?: string | null
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
@@ -60,6 +63,8 @@ export const LocationListSection = ({
   userId,
   userName,
   participants,
+  isOwner,
+  activeCategoryId,
   slug,
   currentRegion,
   onRegionChange,
@@ -78,6 +83,7 @@ export const LocationListSection = ({
       roomId,
       onSearchComplete,
     })
+  const { data: categories = [] } = useRoomCategories(roomId)
 
   const {
     status: voteStatus,
@@ -97,6 +103,7 @@ export const LocationListSection = ({
     resetError,
   } = useVoteSocket({
     roomId,
+    categoryId: activeCategoryId,
     userId,
     enabled: Boolean(roomId && userId),
   })
@@ -118,10 +125,10 @@ export const LocationListSection = ({
   }, [join, leave])
 
   useEffect(() => {
-    if (!roomId || !userId) return
+    if (!roomId || !userId || !activeCategoryId) return
     joinRef.current()
     return () => leaveRef.current()
-  }, [roomId, userId])
+  }, [roomId, userId, activeCategoryId])
 
   useEffect(() => {
     if (!voteError) {
@@ -268,6 +275,7 @@ export const LocationListSection = ({
   }
 
   const isVoting = voteStatus === 'IN_PROGRESS' || voteStatus === 'COMPLETED'
+  const canRegisterCandidate = voteStatus === 'WAITING' && categories.length > 0 && Boolean(activeCategoryId)
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     {
@@ -389,7 +397,7 @@ export const LocationListSection = ({
                             size="sm"
                             className="text-xs"
                             onClick={() => handleCandidateRegister(place)}
-                            disabled={voteStatus !== 'WAITING'}
+                            disabled={!canRegisterCandidate}
                           >
                             후보등록
                           </Button>
@@ -424,7 +432,15 @@ export const LocationListSection = ({
             }}
           />
         ) : (
-          <CandidateListSection candidates={candidateList} onStartVote={startVote} onRemoveCandidate={removeCandidate} />
+          <CandidateListSection
+            candidates={candidateList}
+            isOwner={isOwner}
+            onStartVote={() => {
+              if (!isOwner) return
+              startVote()
+            }}
+            onRemoveCandidate={removeCandidate}
+          />
         ))}
 
       {/* Place Detail Modal */}

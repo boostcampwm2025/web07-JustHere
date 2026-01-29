@@ -85,17 +85,20 @@ export type VoteError = VoteErrorPayload
 // [C->S] vote:join
 export interface VoteJoinPayload {
   roomId: string
+  categoryId: string
   userId?: string
 }
 
 // [C->S] vote:leave
 export interface VoteLeavePayload {
   roomId: string
+  categoryId: string
 }
 
 // [C->S] vote:candidate:add
 export interface VoteCandidateAddPayload {
   roomId: string
+  categoryId: string
   placeId: string
   name: string
   address: string
@@ -109,27 +112,32 @@ export interface VoteCandidateAddPayload {
 // [C->S] vote:candidate:remove
 export interface VoteCandidateRemovePayload {
   roomId: string
+  categoryId: string
   candidateId: string
 }
 
 // [C->S] vote:cast
 export interface VoteCastPayload {
   roomId: string
+  categoryId: string
   candidateId: string
 }
 
 // [C->S] vote:revoke
 export interface VoteRevokePayload {
   roomId: string
+  categoryId: string
   candidateId: string
 }
 
 // [C->S] vote:start
 export interface VoteStartPayload {
   roomId: string
+  categoryId: string
 }
 
 // [C->S] vote:end
 export interface VoteEndPayload {
   roomId: string
+  categoryId: string
 }

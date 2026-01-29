@@ -19,8 +19,12 @@ export class VoteOwnerGuard implements CanActivate {
     const payload: BasePayload = wsContext.getData() // C->S 페이로드
 
     const roomId = payload.roomId
+    const categoryId = payload.categoryId
     if (!roomId) {
-      throw new CustomException(ErrorType.BadRequest, '투표 세션 ID(roomId)가 필요합니다.')
+      throw new CustomException(ErrorType.BadRequest, 'roomId가 필요합니다.')
+    }
+    if (!categoryId) {
+      throw new CustomException(ErrorType.BadRequest, 'categoryId가 필요합니다.')
     }
 
     const payloadUserId = payload.userId
@@ -42,7 +46,7 @@ export class VoteOwnerGuard implements CanActivate {
     // 2. 투표 세션 존재 여부 확인 (VoteService)
     // 투표 세션이 실제로 존재하는지 확인 (Optional)
     // 방장이 투표를 시작하려면 세션(WAITING 상태)이 이미 메모리에 있어야 함
-    this.voteService.getSessionOrThrow(roomId)
+    this.voteService.getSessionOrThrow(`${roomId}:${categoryId}`)
 
     // 3. 방장 권한 검증 (핵심)
     if (!clientSession.isOwner) {
