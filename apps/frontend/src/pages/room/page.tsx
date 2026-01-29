@@ -22,7 +22,8 @@ export default function RoomPage() {
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
-  const [activeCategoryId, setActiveCategoryId] = useState<string>('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
+  const activeCategoryId = useMemo(() => resolveActiveCategoryId(categories, selectedCategoryId), [categories, selectedCategoryId])
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
@@ -36,10 +37,6 @@ export default function RoomPage() {
     joinRoom(slug, user)
     return () => leaveRoom()
   }, [leaveRoom, joinRoom, slug, user])
-
-  useEffect(() => {
-    setActiveCategoryId(resolveActiveCategoryId(categories, activeCategoryId))
-  }, [categories, activeCategoryId])
 
   useEffect(() => {
     if (!categories.length && !isCreateCategoryModalOpen) {
@@ -124,7 +121,7 @@ export default function RoomPage() {
       <div className="flex flex-1 overflow-hidden">
         <WhiteboardSection
           roomId={roomId}
-          onActiveCategoryChange={setActiveCategoryId}
+          onActiveCategoryChange={setSelectedCategoryId}
           onCreateCategory={createCategory}
           onDeleteCategory={deleteCategory}
           categories={categories}
