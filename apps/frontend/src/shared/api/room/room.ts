@@ -32,3 +32,33 @@ export const updateRoom = async (slug: string, payload: RoomRegionPayload): Prom
   const response = await axios.patch<RoomResponse>(`/api/room/${slug}`, payload)
   return response.data.data
 }
+
+export interface VoteResultCandidate {
+  placeId: string
+  name: string
+  address: string
+  category?: string
+  phone?: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
+  createdBy: string
+  createdAt: string
+}
+
+export interface VoteResultItem {
+  category: string
+  result: VoteResultCandidate[]
+}
+
+interface VoteResultsResponse {
+  status: string
+  statusCode: number
+  data: VoteResultItem[]
+  timestamp: string
+}
+
+export const getVoteResults = async (roomId: string): Promise<VoteResultItem[]> => {
+  const response = await axios.get<VoteResultsResponse>(`/api/vote/results/${roomId}`)
+  return response.data.data
+}
