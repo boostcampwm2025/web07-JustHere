@@ -4,11 +4,10 @@ import { optimize } from "svgo";
 
 const projectRoot = process.cwd();
 
-const ICON_DIR = path.join(projectRoot, "src/assets/icons");
-const IMPORT_PREFIX = "@/assets/icons";
+const ICON_DIR = path.join(projectRoot, "src/shared/assets/icons");
+const IMPORT_PREFIX = "@/shared/assets/icons";
 
-const ICONS_DIR = path.join(projectRoot, "src/components/icons");
-const ICONS_INDEX = path.join(ICONS_DIR, "index.ts");
+const ICONS_INDEX = path.join(ICON_DIR, "index.ts");
 
 function banner() {
   return `/**
@@ -62,7 +61,7 @@ function optimizeSvg(filePath) {
 }
 
 function main() {
-  ensureDir(ICONS_DIR);
+  ensureDir(ICON_DIR);
 
   const files = readSvgFiles(ICON_DIR);
 

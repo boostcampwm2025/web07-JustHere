@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { VoteService } from '@/modules/vote/vote.service'
 import { RoomRepository } from './room.repository'
 
 @Injectable()
@@ -12,7 +13,10 @@ export class RoomActivitySchedulerService {
   // 만료 기준
   private readonly EXPIRATION_DAYS = 90
 
-  constructor(private readonly roomRepository: RoomRepository) {}
+  constructor(
+    private readonly roomRepository: RoomRepository,
+    private readonly voteService: VoteService,
+  ) {}
 
   /**
    * 활동이 감지된 방 ID를 메모리에 적재
@@ -51,20 +55,25 @@ export class RoomActivitySchedulerService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM, { timeZone: 'Asia/Seoul' })
   async cleanUpGhostRooms() {
-    this.logger.log('Starting Ghost Room Cleanup...')
-
     const now = new Date()
     // 기준일: 현재 시간 - 90일
     const thresholdDate = new Date(now.setDate(now.getDate() - this.EXPIRATION_DAYS))
 
     try {
-      const deletedCount = await this.roomRepository.deleteRoomsInactiveSince(thresholdDate)
+      this.logger.log('Starting Ghost Room Cleanup...')
 
-      if (deletedCount > 0) {
-        this.logger.log(`[Success] Deleted ${deletedCount} ghost rooms (inactive since ${thresholdDate.toISOString()}).`)
-      } else {
-        this.logger.log('[Error] No ghost rooms found to delete.')
+      const deletedRoomIds = await this.roomRepository.deleteRoomsInactiveSince(thresholdDate)
+
+      if (deletedRoomIds.length === 0) {
+        this.logger.log('[Info] No ghost rooms found to delete.')
+        return
       }
+
+      for (const roomId of deletedRoomIds) {
+        this.voteService.deleteSessionsByRoom(roomId)
+      }
+
+      this.logger.log(`[Success] Deleted ${deletedRoomIds.length} ghost rooms (inactive since ${thresholdDate.toISOString()}).`)
     } catch (error) {
       this.logger.error('[Error] Failed to cleanup ghost rooms', error)
     }

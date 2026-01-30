@@ -1,3 +1,47 @@
+# CodeRabbit 설정 파일
+# 문서: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+# 리뷰 언어 설정
 language: "ko-KR"
+
+# 최신 기능 사용
+early_access: true
+
+# 리뷰 설정
 reviews:
-  language: "ko-KR"
+  # 리뷰 스타일: chill (간단), assertive (상세)
+  profile: assertive
+
+  # PR에 대한 고수준 요약 생성
+  high_level_summary: false
+
+  # 시 작성 비활성화
+  poem: false
+
+  # 리뷰 상태 체크
+  review_status: true
+
+  # 워크스루 자동 접기
+  collapse_walkthrough: false
+
+  # 자동 리뷰 설정
+  auto_review:
+    enabled: true
+    drafts: true  # Draft PR도 리뷰함
+
+  # 변경 요청 워크플로우
+  request_changes_workflow: false
+
+  # 리뷰 파일 필터
+  path_filters:
+    - "!*.md"           # 문서 파일 제외
+    - "!.github/**"     # GitHub 설정 제외
+    - "!build/**"       # 빌드 결과물 제외
+
+# 채팅 기능
+chat:
+  auto_reply: false
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false

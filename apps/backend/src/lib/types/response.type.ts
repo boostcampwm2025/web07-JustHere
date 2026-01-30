@@ -21,6 +21,11 @@ export enum ErrorType {
   NotOwner = 'NOT_OWNER',
   TargetNotFound = 'TARGET_NOT_FOUND',
   NotInRoom = 'NOT_IN_ROOM',
+  VoteAlreadyStarted = 'VOTE_ALREADY_STARTED',
+  VoteNotInProgress = 'VOTE_NOT_IN_PROGRESS',
+  DuplicatedCandidate = 'DUPLICATED_CANDIDATE',
+  NoCandidates = 'NO_CANDIDATES',
+  VoteSingleVoteLimit = 'VOTE_SINGLE_VOTE_LIMIT',
 }
 
 export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
@@ -39,6 +44,11 @@ export const ErrorStatusMap: Record<ErrorType, HttpStatus> = {
   [ErrorType.NotOwner]: HttpStatus.FORBIDDEN,
   [ErrorType.TargetNotFound]: HttpStatus.NOT_FOUND,
   [ErrorType.NotInRoom]: HttpStatus.UNAUTHORIZED,
+  [ErrorType.VoteAlreadyStarted]: HttpStatus.BAD_REQUEST,
+  [ErrorType.DuplicatedCandidate]: HttpStatus.BAD_REQUEST,
+  [ErrorType.VoteNotInProgress]: HttpStatus.BAD_REQUEST,
+  [ErrorType.NoCandidates]: HttpStatus.BAD_REQUEST,
+  [ErrorType.VoteSingleVoteLimit]: HttpStatus.BAD_REQUEST,
 }
 
 export interface BaseResponse {

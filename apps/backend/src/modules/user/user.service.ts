@@ -27,7 +27,7 @@ export class UserService {
   }
 
   /**
-   * 세션 조회
+   * 세션 조회 (세션이 없으면 undefined 반환)
    */
   getSession(socketId: string): UserSession | undefined {
     return this.sessions.get(socketId)

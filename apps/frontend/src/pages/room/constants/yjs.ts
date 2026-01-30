@@ -1,0 +1,3 @@
+export const SUMMARY_FREQUENCY = 5000
+export const CAPTURE_FREQUENCY = 1000
+export const CURSOR_FREQUENCY = 100
