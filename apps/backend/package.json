@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "실시간 만장일치 장소 결정 서비스, 딱! 여기",
   "author": "Web07",
   "private": true,
