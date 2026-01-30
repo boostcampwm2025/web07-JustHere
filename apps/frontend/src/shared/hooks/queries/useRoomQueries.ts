@@ -54,5 +54,6 @@ export const useVoteResults = (roomId: string) => {
     queryKey: ['voteResults', roomId],
     queryFn: () => getVoteResults(roomId),
     enabled: !!roomId,
+    staleTime: 0,
   })
 }
