@@ -188,6 +188,7 @@ export class VoteService {
       session.status = VoteStatus.COMPLETED
       session.round = 1
       session.singleVote = false
+      session.selectedCandidateId = undefined
       return {
         type: 'completed',
         payload: {
