@@ -30,6 +30,7 @@ export type VoteSession = {
   totalCounts: Map<string, number> // 후보 득표수 (candidate place Id -> 득표수)
   singleVote: boolean
   round: number
+  selectedCandidateId?: string // 방장 최종 선택 후보 ID (owner pick 시)
 }
 
 export interface VoteCandidate {
