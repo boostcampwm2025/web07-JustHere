@@ -1,15 +1,8 @@
-import { ResponseStatus } from '@/lib/types/response.type'
+import { ResponseStatus, ResponseType } from '@/lib/types/response.type'
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, StreamableFile } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { Request, Response } from 'express'
 import { map } from 'rxjs/operators'
-
-export interface ResponseType<T> {
-  status: ResponseStatus
-  statusCode: number
-  data: T
-  timestamp: string
-}
 
 @Injectable()
 export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, ResponseType<T>> {
