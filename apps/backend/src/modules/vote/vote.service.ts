@@ -186,6 +186,9 @@ export class VoteService {
     // 동률이 아닌 경우, 투표 정상 종료
     if (tiedCandidates.length <= 1) {
       session.status = VoteStatus.COMPLETED
+      session.round = 1
+      session.singleVote = false
+      session.selectedCandidateId = undefined
       return {
         type: 'completed',
         payload: {
@@ -259,6 +262,9 @@ export class VoteService {
     }
 
     session.status = VoteStatus.COMPLETED
+    session.round = 1
+    session.singleVote = false
+    session.selectedCandidateId = candidateId
     return {
       status: 'COMPLETED',
       candidates: Array.from(session.candidates.values()),
