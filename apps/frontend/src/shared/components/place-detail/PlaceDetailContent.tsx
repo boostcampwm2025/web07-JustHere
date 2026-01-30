@@ -6,8 +6,10 @@ import { renderStars, getPriceRangeText, getParkingText } from './place-detail.u
 import { Button, ImageSlider } from '../ui'
 import { ArrowLeftIcon } from '@/shared/assets'
 
+export type PlaceDetailPlace = Pick<GooglePlace, 'id' | 'displayName' | 'formattedAddress'>
+
 type PlaceDetailContentProps = {
-  place: GooglePlace
+  place: PlaceDetailPlace
   className?: string
   showHeader?: boolean
   onBack?: () => void
@@ -16,7 +18,7 @@ type PlaceDetailContentProps = {
 export const PlaceDetailContent = ({ place, className, showHeader = false, onBack }: PlaceDetailContentProps) => {
   const { data: placeDetails, isLoading } = useGooglePlaceDetails(place.id)
 
-  const details = placeDetails || place
+  const details: GooglePlace = placeDetails || (place as GooglePlace)
   const priceRangeText = getPriceRangeText(details.priceRange)
   const parkingText = getParkingText(details.parkingOptions)
 

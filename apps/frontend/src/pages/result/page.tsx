@@ -9,7 +9,7 @@ import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { RoomHeader } from '@/pages/room/components'
 import { useVoteResults } from '@/shared/hooks/queries/useRoomQueries'
-import { type GooglePlace } from '@/shared/types'
+import type { PlaceDetailPlace } from '@/shared/components/place-detail/PlaceDetailContent'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
@@ -23,7 +23,7 @@ export const ResultPage = () => {
   const { data: roomMeta } = useRoomMeta(roomId)
   const { data: voteResults, isLoading, error } = useVoteResults(roomId || '')
 
-  const resultData: GooglePlace[] = useMemo(() => {
+  const resultData: PlaceDetailPlace[] = useMemo(() => {
     if (!voteResults || voteResults.length === 0) return []
     return voteResults.flatMap(item =>
       item.result.map(candidate => ({
@@ -33,10 +33,6 @@ export const ResultPage = () => {
           languageCode: 'ko',
         },
         formattedAddress: candidate.address,
-        location: {
-          latitude: 0,
-          longitude: 0,
-        },
       })),
     )
   }, [voteResults])

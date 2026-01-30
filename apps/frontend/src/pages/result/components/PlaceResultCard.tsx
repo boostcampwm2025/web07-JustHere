@@ -1,8 +1,8 @@
 import { PlaceDetailContent } from '@/shared/components'
-import type { GooglePlace } from '@/shared/types'
+import type { PlaceDetailPlace } from '@/shared/components/place-detail/PlaceDetailContent'
 
 interface PlaceResultCardProps {
-  place: GooglePlace
+  place: PlaceDetailPlace
 }
 
 export const PlaceResultCard = ({ place }: PlaceResultCardProps) => {
