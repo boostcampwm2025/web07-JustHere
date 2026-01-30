@@ -49,8 +49,9 @@ export class VoteController {
             category: category.title,
             result: [selected],
           })
+          continue
         }
-        continue
+        // selectedCandidateId가 유효하지 않으면 기존 집계 로직으로 폴백
       }
 
       let maxVotes = 0
