@@ -38,8 +38,20 @@ export class VoteController {
         continue
       }
 
-      const { candidates, totalCounts } = session
+      const { candidates, totalCounts, selectedCandidateId } = session
       if (candidates.size === 0) continue
+
+      // 방장 최종 선택이 있는 경우 해당 후보만 반환
+      if (selectedCandidateId) {
+        const selected = candidates.get(selectedCandidateId)
+        if (selected) {
+          results.push({
+            category: category.title,
+            result: [selected],
+          })
+        }
+        continue
+      }
 
       let maxVotes = 0
       for (const count of totalCounts.values()) {
