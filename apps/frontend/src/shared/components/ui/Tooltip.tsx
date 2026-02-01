@@ -56,25 +56,73 @@ const arrowClasses = {
 
 const GAP = 8
 
-function getPortalStyle(position: Position, _align: Align, rect: DOMRect) {
+function getPortalStyle(position: Position, align: Align, rect: DOMRect) {
   const base = 'fixed z-[100] px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap'
   switch (position) {
     case 'bottom':
+      if (align === 'start') {
+        return {
+          style: { left: rect.left, top: rect.bottom + GAP },
+          className: base,
+        }
+      }
+      if (align === 'end') {
+        return {
+          style: { right: window.innerWidth - rect.right, top: rect.bottom + GAP },
+          className: base,
+        }
+      }
       return {
         style: { left: rect.left + rect.width / 2, top: rect.bottom + GAP, transform: 'translate(-50%, 0)' },
         className: base,
       }
     case 'top':
+      if (align === 'start') {
+        return {
+          style: { left: rect.left, bottom: window.innerHeight - rect.top + GAP },
+          className: base,
+        }
+      }
+      if (align === 'end') {
+        return {
+          style: { right: window.innerWidth - rect.right, bottom: window.innerHeight - rect.top + GAP },
+          className: base,
+        }
+      }
       return {
         style: { left: rect.left + rect.width / 2, top: rect.top - GAP, transform: 'translate(-50%, -100%)' },
         className: base,
       }
     case 'left':
+      if (align === 'start') {
+        return {
+          style: { left: rect.left - GAP, top: rect.top, transform: 'translate(-100%, 0)' },
+          className: base,
+        }
+      }
+      if (align === 'end') {
+        return {
+          style: { left: rect.left - GAP, bottom: window.innerHeight - rect.bottom, transform: 'translate(-100%, 0)' },
+          className: base,
+        }
+      }
       return {
         style: { left: rect.left - GAP, top: rect.top + rect.height / 2, transform: 'translate(-100%, -50%)' },
         className: base,
       }
     case 'right':
+      if (align === 'start') {
+        return {
+          style: { left: rect.right + GAP, top: rect.top },
+          className: base,
+        }
+      }
+      if (align === 'end') {
+        return {
+          style: { left: rect.right + GAP, bottom: window.innerHeight - rect.bottom },
+          className: base,
+        }
+      }
       return {
         style: { left: rect.right + GAP, top: rect.top + rect.height / 2, transform: 'translate(0, -50%)' },
         className: base,
@@ -110,14 +158,12 @@ export const Tooltip = ({ children, content, position = 'top', align = 'center',
     </div>
   )
 
+  const portalStyle = portal && portalRect ? getPortalStyle(position, align, portalRect) : null
+
   const portalContent =
-    portal && isHovered && portalRect && typeof document !== 'undefined'
+    portal && isHovered && portalRect && typeof document !== 'undefined' && portalStyle
       ? createPortal(
-          <div
-            role="tooltip"
-            className={cn('fixed z-100 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap', contentClassName)}
-            style={getPortalStyle(position, align, portalRect).style}
-          >
+          <div role="tooltip" className={cn(portalStyle.className, contentClassName)} style={portalStyle.style}>
             {content}
             <div className={cn('absolute w-0 h-0', arrowClasses[position])} />
           </div>,
