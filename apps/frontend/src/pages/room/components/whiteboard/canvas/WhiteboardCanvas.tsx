@@ -154,7 +154,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
   const handlePostItColorChange = useCallback(
     (color: string) => {
-      selectedPostItIds.forEach(id => updatePostIt(id, { fill: color }))
+      selectedPostItIds.forEach(id => {
+        updatePostIt(id, { fill: color })
+      })
     },
     [selectedPostItIds, updatePostIt],
   )

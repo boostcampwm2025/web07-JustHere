@@ -18,6 +18,7 @@ export const PostItColorPicker = ({ selectedPostItIds, currentFill, onColorChang
           <button
             type="button"
             aria-label={name}
+            aria-pressed={color === currentFill}
             className={cn(
               'size-6 rounded-full border-2 transition-transform hover:scale-110',
               color === currentFill ? 'border-gray-400' : 'border-gray-200 hover:border-gray-400',
