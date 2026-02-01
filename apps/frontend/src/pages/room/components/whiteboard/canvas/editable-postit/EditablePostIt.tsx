@@ -107,8 +107,10 @@ export const EditablePostIt = ({
         width={postIt.width}
         height={postIt.height}
         fill={postIt.fill}
-        shadowBlur={5}
         cornerRadius={8 * (postIt.scale || 1)}
+        shadowBlur={15}
+        shadowOffsetY={4}
+        shadowOpacity={0.1}
         onDblClick={handleDblClick}
       />
 
