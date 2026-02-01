@@ -461,14 +461,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                 strokeWidth={2}
                 dash={[5, 5]}
               />
-              <Text x={0} y={65} width={150} text="Click to add" align="center" fill="#6B7280" fontSize={14} />
+              <Text x={0} y={65} width={150} text="클릭해서 추가하기" align="center" fill="#6B7280" fontSize={14} />
             </Group>
           )}
 
           {effectiveTool === 'textBox' && !pendingPlaceCard && cursorPos && (
             <Group x={cursorPos.x - 100} y={cursorPos.y - 25} listening={false}>
               <Rect width={200} height={50} fill="transparent" opacity={0.6} stroke="#9CA3AF" strokeWidth={1} dash={[5, 5]} />
-              <Text x={0} y={17} width={200} text="Click to add text" align="center" fill="#6B7280" fontSize={14} />
+              <Text x={0} y={17} width={200} text="클릭해서 추가하기" align="center" fill="#6B7280" fontSize={14} />
             </Group>
           )}
 
