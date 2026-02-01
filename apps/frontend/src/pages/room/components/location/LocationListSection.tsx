@@ -74,7 +74,7 @@ export const LocationListSection = ({
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('locations')
-  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
+  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
       categoryId: activeCategoryId,
@@ -246,7 +246,7 @@ export const LocationListSection = ({
   }
 
   const handleClear = () => {
-    setSearchQuery('')
+    clearSearch()
   }
 
   const handleAddPlaceCard = (place: GooglePlace) => {
