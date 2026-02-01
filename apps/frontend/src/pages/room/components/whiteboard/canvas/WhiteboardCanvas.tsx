@@ -6,13 +6,14 @@ import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
 import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
 import { getLineBoundingBox } from '@/pages/room/utils'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
 import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
+import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
 
@@ -139,6 +140,25 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     setContextMenu(null)
   }, [canvasId, deleteCanvasItem, roomId, selectedItems])
 
+  const selectedPostItIds = useMemo(() => selectedItems.filter(item => item.type === 'postit').map(item => item.id), [selectedItems])
+
+  const selectedPostItCurrentFill = useMemo(() => {
+    if (selectedPostItIds.length === 0) return undefined
+
+    const fills = selectedPostItIds.map(id => postIts.find(p => p.id === id)?.fill).filter((f): f is string => f != null)
+    if (fills.length === 0) return undefined
+
+    const first = fills[0]
+    return fills.every(f => f === first) ? first : undefined
+  }, [selectedPostItIds, postIts])
+
+  const handlePostItColorChange = useCallback(
+    (color: string) => {
+      selectedPostItIds.forEach(id => updatePostIt(id, { fill: color }))
+    },
+    [selectedPostItIds, updatePostIt],
+  )
+
   const hasSelectedItems = selectedItems.length > 0
   const { isSpacePressed } = useCanvasKeyboard({
     onPlaceCardCanceled,
@@ -198,8 +218,15 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const transformer = transformerRef.current
     if (!transformer) return
 
-    const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
-    transformer.nodes(nodes)
+    const applyNodes = () => {
+      const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
+      transformer.nodes(nodes)
+    }
+
+    const id = requestAnimationFrame(() => {
+      applyNodes()
+    })
+    return () => cancelAnimationFrame(id)
   }, [selectedItems])
 
   const getCursorStyle = () => {
@@ -231,6 +258,10 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         canUndo={canUndo}
         canRedo={canRedo}
       />
+
+      {selectedPostItIds.length > 0 && (
+        <PostItColorPicker selectedPostItIds={selectedPostItIds} currentFill={selectedPostItCurrentFill} onColorChange={handlePostItColorChange} />
+      )}
 
       {contextMenu && <CanvasContextMenu position={contextMenu} onDelete={handleDeleteSelectedItems} onClose={() => setContextMenu(null)} />}
 
@@ -420,7 +451,16 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
           {effectiveTool === 'postIt' && !pendingPlaceCard && cursorPos && (
             <Group x={cursorPos.x - 75} y={cursorPos.y - 75} listening={false}>
-              <Rect width={150} height={150} fill="#FFF9C4" opacity={0.6} cornerRadius={8} stroke="#9CA3AF" strokeWidth={2} dash={[5, 5]} />
+              <Rect
+                width={150}
+                height={150}
+                fill={DEFAULT_POST_IT_COLOR}
+                opacity={0.6}
+                cornerRadius={8}
+                stroke="#9CA3AF"
+                strokeWidth={2}
+                dash={[5, 5]}
+              />
               <Text x={0} y={65} width={150} text="Click to add" align="center" fill="#6B7280" fontSize={14} />
             </Group>
           )}
