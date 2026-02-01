@@ -106,20 +106,6 @@ export default function RoomPage() {
         currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
-        <WhiteboardSection
-          roomId={roomId}
-          onActiveCategoryChange={setSelectedCategoryId}
-          onCreateCategory={createCategory}
-          onDeleteCategory={deleteCategory}
-          categories={categories}
-          activeCategoryId={activeCategoryId}
-          pendingPlaceCard={pendingPlaceCard}
-          onPlaceCardPlaced={clearPendingPlaceCard}
-          onPlaceCardCanceled={clearPendingPlaceCard}
-          searchResults={searchResults}
-          selectedPlace={selectedPlace}
-          onMarkerClick={setSelectedPlace}
-        />
         <LocationListSection
           roomId={roomId}
           userId={user.userId}
@@ -135,6 +121,20 @@ export default function RoomPage() {
           onSearchComplete={setSearchResults}
           selectedPlace={selectedPlace}
           onPlaceSelect={setSelectedPlace}
+        />
+        <WhiteboardSection
+          roomId={roomId}
+          onActiveCategoryChange={setSelectedCategoryId}
+          onCreateCategory={createCategory}
+          onDeleteCategory={deleteCategory}
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          pendingPlaceCard={pendingPlaceCard}
+          onPlaceCardPlaced={clearPendingPlaceCard}
+          onPlaceCardCanceled={clearPendingPlaceCard}
+          searchResults={searchResults}
+          selectedPlace={selectedPlace}
+          onMarkerClick={setSelectedPlace}
         />
       </div>
     </div>
