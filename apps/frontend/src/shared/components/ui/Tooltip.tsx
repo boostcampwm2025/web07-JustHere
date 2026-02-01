@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/shared/utils'
 
 type Position = 'top' | 'bottom' | 'left' | 'right'
@@ -11,6 +12,7 @@ interface TooltipProps {
   align?: Align
   className?: string
   contentClassName?: string
+  portal?: boolean
 }
 
 const positionClasses = {
@@ -52,11 +54,80 @@ const arrowClasses = {
     'right-full top-1/2 -translate-y-1/2 -mr-1.5 border-r-gray-900 border-t-transparent border-b-transparent border-l-transparent border-r-[6px] border-t-[6px] border-b-[6px] border-l-0',
 }
 
-export const Tooltip = ({ children, content, position = 'top', align = 'center', className, contentClassName }: TooltipProps) => {
+const GAP = 8
+
+function getPortalStyle(position: Position, _align: Align, rect: DOMRect) {
+  const base = 'fixed z-[100] px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap'
+  switch (position) {
+    case 'bottom':
+      return {
+        style: { left: rect.left + rect.width / 2, top: rect.bottom + GAP, transform: 'translate(-50%, 0)' },
+        className: base,
+      }
+    case 'top':
+      return {
+        style: { left: rect.left + rect.width / 2, top: rect.top - GAP, transform: 'translate(-50%, -100%)' },
+        className: base,
+      }
+    case 'left':
+      return {
+        style: { left: rect.left - GAP, top: rect.top + rect.height / 2, transform: 'translate(-100%, -50%)' },
+        className: base,
+      }
+    case 'right':
+      return {
+        style: { left: rect.right + GAP, top: rect.top + rect.height / 2, transform: 'translate(0, -50%)' },
+        className: base,
+      }
+  }
+}
+
+export const Tooltip = ({ children, content, position = 'top', align = 'center', className, contentClassName, portal = false }: TooltipProps) => {
   const [isHovered, setIsHovered] = useState(false)
+  const [portalRect, setPortalRect] = useState<DOMRect | null>(null)
+  const triggerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (portal && isHovered && triggerRef.current) {
+      setPortalRect(triggerRef.current.getBoundingClientRect())
+    } else if (!isHovered) {
+      setPortalRect(null)
+    }
+  }, [portal, isHovered])
+
+  const inlineContent = isHovered && !portal && (
+    <div
+      role="tooltip"
+      className={cn(
+        'absolute z-50 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap',
+        positionClasses[position],
+        alignClasses[position][align],
+        contentClassName,
+      )}
+    >
+      {content}
+      <div className={cn('absolute w-0 h-0', arrowClasses[position])} />
+    </div>
+  )
+
+  const portalContent =
+    portal && isHovered && portalRect && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            role="tooltip"
+            className={cn('fixed z-100 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap', contentClassName)}
+            style={getPortalStyle(position, align, portalRect).style}
+          >
+            {content}
+            <div className={cn('absolute w-0 h-0', arrowClasses[position])} />
+          </div>,
+          document.body,
+        )
+      : null
 
   return (
     <div
+      ref={portal ? triggerRef : undefined}
       className={cn('relative inline-block', className)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -65,20 +136,8 @@ export const Tooltip = ({ children, content, position = 'top', align = 'center',
       tabIndex={0}
     >
       {children}
-      {isHovered && (
-        <div
-          role="tooltip"
-          className={cn(
-            'absolute z-50 px-3 py-1.5 bg-gray-800 text-white text-sm rounded-lg shadow-lg whitespace-nowrap',
-            positionClasses[position],
-            alignClasses[position][align],
-            contentClassName,
-          )}
-        >
-          {content}
-          <div className={cn('absolute w-0 h-0', arrowClasses[position])} />
-        </div>
-      )}
+      {inlineContent}
+      {portalContent}
     </div>
   )
 }

@@ -68,10 +68,10 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
   ]
 
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50">
+    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
       <div className="flex items-center p-1.5 bg-white rounded-full shadow-xl border border-gray-200 gap-1">
         {TOOLBAR_TOOLS.map(({ tool, icon, label, resetCursor }) => (
-          <Tooltip key={tool} content={label} position="bottom">
+          <Tooltip key={tool} content={label} position="bottom" portal>
             <Button
               size="icon"
               variant="gray"
@@ -86,7 +86,7 @@ export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo
         <Divider orientation="vertical" />
 
         {ACTION_ITEMS.map(({ key, icon, label, onClick, disabled }) => (
-          <Tooltip key={key} content={label} position="bottom">
+          <Tooltip key={key} content={label} position="bottom" portal>
             <Button
               size="icon"
               variant="gray"
