@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { Logo, BellIcon, CogIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { Logo } from '@/shared/assets'
 import { useNavigate } from 'react-router-dom'
 
 interface HeaderProps {
@@ -14,17 +13,7 @@ export const Header = ({ children }: HeaderProps) => {
       <div className="flex items-center gap-4">
         <Logo onClick={() => navigate('/')} />
       </div>
-      <div className="flex items-center gap-5">
-        {children}
-        <div className="flex items-center gap-3">
-          <Button variant="gray" size="icon" className="w-9 h-9">
-            <BellIcon className="w-5 h-5" />
-          </Button>
-          <Button variant="gray" size="icon" className="w-9 h-9">
-            <CogIcon className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+      <div className="flex items-center gap-5">{children}</div>
     </header>
   )
 }
