@@ -1,6 +1,6 @@
 /** 플레이스 카드(장소 카드) 크기 */
 export const PLACE_CARD_WIDTH = 240
-export const PLACE_CARD_HEIGHT = 180
+export const PLACE_CARD_HEIGHT = 200
 
 /** 포스트잇 기본 크기 */
 export const POST_IT_WIDTH = 150
