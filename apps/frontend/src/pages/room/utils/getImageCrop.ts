@@ -21,6 +21,11 @@ interface ImageCropResult {
  */
 export function getImageCrop(image: HTMLImageElement, size: CropSize): ImageCropResult {
   const { width, height } = size
+
+  if (width <= 0 || height <= 0 || width <= 0 || height <= 0) {
+    return { cropX: 0, cropY: 0, cropWidth: Math.max(0, width), cropHeight: Math.max(0, height) }
+  }
+
   const aspectRatio = width / height
   const imageRatio = image.width / image.height
 
