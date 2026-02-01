@@ -274,12 +274,12 @@ export const LocationListSection = ({
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     {
       id: 'locations',
-      label: '장소 리스트',
+      label: '장소 검색',
       icon: <ListBoxOutlineIcon className="w-4 h-4" />,
     },
     {
       id: 'candidates',
-      label: '후보 리스트',
+      label: '투표 목록',
       icon: <VoteIcon className="w-4 h-4" />,
     },
   ]
