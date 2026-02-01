@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
@@ -44,8 +44,12 @@ interface LocationListSectionProps {
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
   onSearchComplete?: (results: GooglePlace[]) => void
+  activeTab: TabType
+  onActiveTabChange: (tab: TabType) => void
+  onCandidatePlaceIdsChange?: (candidateIds: string[]) => void
   selectedPlace: GooglePlace | null
   onPlaceSelect: (place: GooglePlace | null) => void
+  candidatePlaces?: GooglePlace[]
 }
 
 type TabType = 'locations' | 'candidates'
@@ -69,11 +73,14 @@ export const LocationListSection = ({
   onStartPlaceCard,
   onCancelPlaceCard,
   onSearchComplete,
+  activeTab,
   selectedPlace,
   onPlaceSelect,
+  onActiveTabChange,
+  onCandidatePlaceIdsChange,
+  candidatePlaces,
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
-  const [activeTab, setActiveTab] = useState<TabType>('locations')
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
@@ -142,6 +149,10 @@ export const LocationListSection = ({
     showToast(voteError.message, 'error')
     resetError()
   }, [voteError, showToast, resetError])
+
+  useEffect(() => {
+    onCandidatePlaceIdsChange?.(voteCandidates.map(candidate => candidate.placeId))
+  }, [voteCandidates, onCandidatePlaceIdsChange])
 
   const candidateList = useMemo<Candidate[]>(() => {
     return voteCandidates.map(candidate => ({
@@ -225,6 +236,12 @@ export const LocationListSection = ({
 
   const handleViewDetail = useCallback(
     (candidateId: string) => {
+      const resolved = candidatePlaces?.find(p => p.id === candidateId)
+      if (resolved) {
+        onPlaceSelect(resolved)
+        return
+      }
+
       const candidate = voteCandidates.find(item => item.placeId === candidateId)
       if (!candidate) return
 
@@ -238,7 +255,7 @@ export const LocationListSection = ({
         primaryTypeDisplayName: candidate.category ? { text: candidate.category, languageCode: 'ko' } : undefined,
       })
     },
-    [voteCandidates, onPlaceSelect],
+    [voteCandidates, onPlaceSelect, candidatePlaces],
   )
 
   const handlePlaceSelect = (place: GooglePlace | null) => {
@@ -294,7 +311,9 @@ export const LocationListSection = ({
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? 'primary' : 'gray'}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                onActiveTabChange(tab.id)
+              }}
               className="px-4 text-sm transition-colors shrink-0"
             >
               {tab.icon}
