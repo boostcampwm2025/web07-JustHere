@@ -4,6 +4,7 @@ import { Group, Rect, Text, Image as KonvaImage } from 'react-konva'
 import { useImage } from 'react-konva-utils'
 import type { PlaceCard } from '@/shared/types'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { getImageCrop } from '@/pages/room/utils'
 
 interface PlaceCardItemProps {
   card: PlaceCard
@@ -44,6 +45,8 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
   const imageWidth = textWidth + scaledPadding * 2
   const imageHeight = scaledImageHeight
 
+  const imageCrop = image && card.image ? getImageCrop(image, { width: imageWidth, height: imageHeight }) : null
+
   return (
     <Group
       ref={groupRef}
@@ -73,7 +76,13 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
 
       {/* 이미지 */}
       {image && card.image ? (
-        <KonvaImage image={image} width={imageWidth} height={imageHeight} cornerRadius={[ROUNDED_RADIUS * scale, ROUNDED_RADIUS * scale]} />
+        <KonvaImage
+          image={image}
+          width={imageWidth}
+          height={imageHeight}
+          cornerRadius={[ROUNDED_RADIUS * scale, ROUNDED_RADIUS * scale]}
+          {...imageCrop}
+        />
       ) : (
         <Rect width={imageWidth} height={imageHeight} fill="#F3F4F6" cornerRadius={[ROUNDED_RADIUS * scale, ROUNDED_RADIUS * scale]} />
       )}
