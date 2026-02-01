@@ -1,94 +1,41 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import type { GooglePlace } from '@/shared/types'
 import { getPlaceDetails } from '@/shared/api'
+import { googleKeys } from '@/shared/hooks/queries/useGoogleQueries'
 
 export function useResolvedPlaces(placeIds: string[], additionalPlaces: GooglePlace[] = []) {
-  const [resolvedPlaces, setResolvedPlaces] = useState<GooglePlace[]>([])
-  const placeCacheRef = useRef<Record<string, GooglePlace>>({})
+  const queryClient = useQueryClient()
 
-  // 검색 결과 등으로 들어온 장소들을 캐시에 추가
+  // 1. additionalPlaces(검색 결과 등)가 들어오면 즉시 캐시에 주입 (Pre-population)
+  // 검색 결과는 최신 정보라고 가정하고 staleTime 시간을 갱신하지 않고 데이터만 업데이트
   useEffect(() => {
     if (additionalPlaces.length === 0) return
 
-    const nextCache = { ...placeCacheRef.current }
-    let isUpdated = false
+    additionalPlaces.forEach(place => {
+      // 이미 쿼리 데이터가 있더라도 덮어씌움 (최신 검색 결과 반영)
+      queryClient.setQueryData(googleKeys.placeDetails(place.id), place)
+    })
+  }, [additionalPlaces, queryClient])
 
-    for (const place of additionalPlaces) {
-      if (!nextCache[place.id]) {
-        isUpdated = true
-      }
-      nextCache[place.id] = place
-    }
+  // 2. placeIds에 대해 useQueries로 병렬 쿼리 수행
+  // - 캐시에 데이터가 있으면(위에서 주입된 경우 포함) API 호출 없이 즉시 반환 (staleTime 설정에 따름)
+  // - 없으면 getPlaceDetails로 자동 fetch
+  const queries = useQueries({
+    queries: placeIds.map(placeId => ({
+      queryKey: googleKeys.placeDetails(placeId),
+      queryFn: () => getPlaceDetails(placeId),
+      staleTime: 1000 * 60 * 5, // 5분간 캐시 유지
+      gcTime: 1000 * 60 * 30, // 30분 후 가비지 컬렉션
+      enabled: !!placeId,
+    })),
+  })
 
-    if (isUpdated) {
-      placeCacheRef.current = nextCache
-    }
-  }, [additionalPlaces])
-
-  // placeIds에 해당하는 장소 정보 조회 (캐시 우선, 없으면 API 호출)
-  useEffect(() => {
-    let cancelled = false
-
-    const resolvePlaces = async () => {
-      if (placeIds.length === 0) {
-        if (!cancelled) {
-          setResolvedPlaces([])
-        }
-        return
-      }
-
-      const cache = placeCacheRef.current
-      const cachedPlaces: GooglePlace[] = []
-      const missingIds: string[] = []
-
-      for (const placeId of placeIds) {
-        const cached = cache[placeId]
-        if (cached) {
-          cachedPlaces.push(cached)
-        } else {
-          missingIds.push(placeId)
-        }
-      }
-
-      let fetchedPlaces: GooglePlace[] = []
-      if (missingIds.length > 0) {
-        const results = await Promise.all(
-          missingIds.map(async placeId => {
-            try {
-              return await getPlaceDetails(placeId)
-            } catch {
-              return null
-            }
-          }),
-        )
-        fetchedPlaces = results.filter(Boolean) as GooglePlace[]
-
-        if (fetchedPlaces.length > 0) {
-          const nextCache = { ...placeCacheRef.current }
-          for (const place of fetchedPlaces) {
-            nextCache[place.id] = place
-          }
-          placeCacheRef.current = nextCache
-        }
-      }
-
-      if (cancelled) return
-
-      const placeMap = new Map<string, GooglePlace>()
-      for (const place of [...cachedPlaces, ...fetchedPlaces]) {
-        placeMap.set(place.id, place)
-      }
-
-      const orderedPlaces = placeIds.map(placeId => placeMap.get(placeId)).filter(Boolean) as GooglePlace[]
-      setResolvedPlaces(orderedPlaces)
-    }
-
-    resolvePlaces()
-
-    return () => {
-      cancelled = true
-    }
-  }, [placeIds]) // additionalPlaces 변경 시에는 resolve 다시 안 함 (캐시만 업데이트)
+  // 3. 로딩이 완료된 성공적인 데이터만 필터링해서 반환
+  // 순서는 placeIds 순서를 유지하기 위해 queries 순서대로 매핑
+  const resolvedPlaces = useMemo(() => {
+    return queries.map(query => query.data).filter((place): place is GooglePlace => !!place)
+  }, [queries])
 
   return resolvedPlaces
 }
