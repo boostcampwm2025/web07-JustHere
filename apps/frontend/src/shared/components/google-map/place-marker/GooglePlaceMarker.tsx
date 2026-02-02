@@ -53,6 +53,10 @@ export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMar
             isSelected ? 'border-t-primary-pressed' : 'border-t-primary',
           )}
         />
+
+        <div className="absolute top-full mt-1 px-1.5 py-0.5 bg-white/90 rounded-md shadow-sm border border-gray-100 backdrop-blur-[2px]">
+          <p className="text-[11px] font-semibold text-gray-700 whitespace-nowrap max-w-[120px] truncate">{place.displayName.text}</p>
+        </div>
       </div>
     </AdvancedMarker>
   )

@@ -3,11 +3,12 @@ import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } from '@/pages/room/constants'
+import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } from '@/pages/room/constants'
 
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
   effectiveTool: ToolType
+  setActiveTool: (tool: ToolType) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
 
   // Selection
@@ -56,6 +57,7 @@ interface UseCanvasMouseProps {
 export const useCanvasMouse = ({
   stageRef,
   effectiveTool,
+  setActiveTool,
   pendingPlaceCard,
   selectedItems,
   setSelectedItems,
@@ -245,12 +247,14 @@ export const useCanvasMouse = ({
           width: POST_IT_WIDTH,
           height: POST_IT_HEIGHT,
           scale: 1,
-          fill: '#FFF9C4',
+          fill: DEFAULT_POST_IT_COLOR,
           text: '',
           authorName: userName,
         }
         addPostIt(newPostIt)
         addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
 
       if (effectiveTool === 'pencil') {
@@ -270,6 +274,8 @@ export const useCanvasMouse = ({
           authorName: userName,
         }
         addTextBox(newTextBox)
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
     },
     [
@@ -286,6 +292,7 @@ export const useCanvasMouse = ({
       addPostIt,
       startDrawing,
       addTextBox,
+      setActiveTool,
     ],
   )
 
