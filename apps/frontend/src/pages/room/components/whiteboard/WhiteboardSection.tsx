@@ -52,12 +52,14 @@ export const WhiteboardSection = ({
   })
 
   // Props 변화에 따른 상태 동기화
+  // useEffect보다 더 효율적이며, 렌더링 도중 상태를 업데이트하여 불필요한 재렌더링을 방지합니다.
   const [prevSelectedPlace, setPrevSelectedPlace] = useState(selectedPlace)
   const [prevFirstResultId, setPrevFirstResultId] = useState(searchResults[0]?.id)
 
   // 1. 선택된 장소가 변경되었을 때
   if (selectedPlace !== prevSelectedPlace) {
     setPrevSelectedPlace(selectedPlace)
+    // 장소를 선택했을 때만 이동 (선택 해제 시에는 이동하지 않음 -> 기존 위치 유지)
     if (selectedPlace) {
       setMapCenter({ lat: selectedPlace.location.latitude, lng: selectedPlace.location.longitude })
     }
@@ -65,8 +67,11 @@ export const WhiteboardSection = ({
 
   // 2. 검색 결과가 변경되었을 때 (새로운 검색)
   const firstResultId = searchResults[0]?.id
+  // prevFirstResultId가 존재하는 상태에서(이전 검색 있음) 현재 검색 결과가 없으면(초기화됨),
+  // 또는 ID가 변경되었으면 로직 수행.
   if (firstResultId !== prevFirstResultId) {
     setPrevFirstResultId(firstResultId)
+    // 새로운 검색 결과가 나오면 첫 번째 장소로 이동
     if (searchResults[0]) {
       setMapCenter({ lat: searchResults[0].location.latitude, lng: searchResults[0].location.longitude })
     }
