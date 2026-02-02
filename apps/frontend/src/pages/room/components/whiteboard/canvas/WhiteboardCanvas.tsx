@@ -170,6 +170,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     activateCursorChat,
     isDrawing,
     cancelDrawing,
+    handleToolChange,
   })
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
@@ -190,6 +191,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   } = useCanvasMouse({
     stageRef,
     effectiveTool,
+    setActiveTool,
     pendingPlaceCard,
     selectedItems,
     setSelectedItems,

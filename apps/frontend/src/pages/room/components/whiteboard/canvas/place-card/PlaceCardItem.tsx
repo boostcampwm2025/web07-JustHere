@@ -3,7 +3,15 @@ import type Konva from 'konva'
 import { Group, Rect, Text, Image as KonvaImage } from 'react-konva'
 import { useImage } from 'react-konva-utils'
 import type { PlaceCard } from '@/shared/types'
-import { PLACE_CARD_COLORS, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import {
+  PLACE_CARD_HEIGHT,
+  PLACE_CARD_WIDTH,
+  PLACE_CARD_IMAGE_HEIGHT,
+  PLACE_CARD_PLACEHOLDER_IMAGE,
+  PLACE_CARD_PADDING,
+  PLACE_CARD_ROUNDED_RADIUS,
+  PLACE_CARD_COLORS,
+} from '@/pages/room/constants'
 import { getImageCrop } from '@/pages/room/utils'
 
 interface PlaceCardItemProps {
@@ -16,11 +24,6 @@ interface PlaceCardItemProps {
   shapeRef?: (node: Konva.Group | null) => void
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
-
-const PLACE_CARD_PADDING = 12
-const PLACE_CARD_IMAGE_HEIGHT = 100
-const PLACE_CARD_PLACEHOLDER_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
-const ROUNDED_RADIUS = 10
 
 export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick, onContextMenu, shapeRef, onTransformEnd }: PlaceCardItemProps) => {
   const groupRef = useRef<Konva.Group>(null)
@@ -68,7 +71,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         fill={PLACE_CARD_COLORS.BACKGROUND}
         stroke={PLACE_CARD_COLORS.BORDER}
         strokeWidth={1 * scale}
-        cornerRadius={ROUNDED_RADIUS * scale}
+        cornerRadius={PLACE_CARD_ROUNDED_RADIUS * scale}
         shadowBlur={15}
         shadowOffsetY={4}
         shadowOpacity={0.1}
@@ -80,11 +83,16 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
           image={image}
           width={imageWidth}
           height={imageHeight}
-          cornerRadius={[ROUNDED_RADIUS * scale, ROUNDED_RADIUS * scale]}
+          cornerRadius={[PLACE_CARD_ROUNDED_RADIUS * scale, PLACE_CARD_ROUNDED_RADIUS * scale]}
           {...imageCrop}
         />
       ) : (
-        <Rect width={imageWidth} height={imageHeight} fill="#F3F4F6" cornerRadius={[ROUNDED_RADIUS * scale, ROUNDED_RADIUS * scale]} />
+        <Rect
+          width={imageWidth}
+          height={imageHeight}
+          fill="#F3F4F6"
+          cornerRadius={[PLACE_CARD_ROUNDED_RADIUS * scale, PLACE_CARD_ROUNDED_RADIUS * scale]}
+        />
       )}
 
       {/* 장소명 */}
@@ -101,14 +109,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       />
 
       {/* 카테고리 */}
-      <Text
-        text={card.category || ''}
-        x={scaledPadding}
-        y={scaledImageHeight + 30 * scale}
-        width={textWidth}
-        fontSize={11 * scale}
-        fill={PLACE_CARD_COLORS.CATEGORY}
-      />
+      <Text text={card.category || ''} x={scaledPadding} y={scaledImageHeight + 30 * scale} width={textWidth} fontSize={11 * scale} fill="#6B7280" />
 
       {/* 주소 */}
       <Text
