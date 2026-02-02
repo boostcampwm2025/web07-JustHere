@@ -3,7 +3,7 @@ import type Konva from 'konva'
 import { Group, Rect, Text, Image as KonvaImage } from 'react-konva'
 import { useImage } from 'react-konva-utils'
 import type { PlaceCard } from '@/shared/types'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { PLACE_CARD_COLORS, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { getImageCrop } from '@/pages/room/utils'
 
 interface PlaceCardItemProps {
@@ -65,8 +65,8 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       <Rect
         width={cardWidth}
         height={cardHeight}
-        fill="#FFFFFF"
-        stroke="#E5E7EB"
+        fill={PLACE_CARD_COLORS.BACKGROUND}
+        stroke={PLACE_CARD_COLORS.BORDER}
         strokeWidth={1 * scale}
         cornerRadius={ROUNDED_RADIUS * scale}
         shadowBlur={15}
@@ -95,13 +95,20 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         width={textWidth}
         fontSize={14 * scale}
         fontStyle="bold"
-        fill="#111827"
+        fill={PLACE_CARD_COLORS.TITLE}
         ellipsis={true}
         wrap="none"
       />
 
       {/* 카테고리 */}
-      <Text text={card.category || ''} x={scaledPadding} y={scaledImageHeight + 30 * scale} width={textWidth} fontSize={11 * scale} fill="#6B7280" />
+      <Text
+        text={card.category || ''}
+        x={scaledPadding}
+        y={scaledImageHeight + 30 * scale}
+        width={textWidth}
+        fontSize={11 * scale}
+        fill={PLACE_CARD_COLORS.CATEGORY}
+      />
 
       {/* 주소 */}
       <Text
@@ -110,7 +117,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         y={scaledImageHeight + 49 * scale}
         width={textWidth}
         fontSize={12 * scale}
-        fill="#4B5563"
+        fill={PLACE_CARD_COLORS.ADDRESS}
         wrap="char"
       />
     </Group>

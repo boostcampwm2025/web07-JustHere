@@ -17,3 +17,12 @@ export const POST_IT_COLORS = [
   { color: '#D9F99D', name: '연두색' }, // lime-200
   { color: '#BFDBFE', name: '하늘색' }, // blue-200
 ]
+
+/** 장소 카드 색상 */
+export const PLACE_CARD_COLORS = {
+  BACKGROUND: '#FFFFFF',
+  BORDER: '#E5E7EB',
+  TITLE: '#111827', // gray-900
+  ADDRESS: '#4B5563', // gray-600
+  CATEGORY: '#6B7280', // gray-500
+}
