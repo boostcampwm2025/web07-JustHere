@@ -21,6 +21,8 @@ type UnifiedCanvasItem =
   | { type: 'placeCard'; data: PlaceCard }
   | { type: 'textBox'; data: TextBox }
 
+const getRefKey = (type: UnifiedCanvasItem['type'], id: string) => `${type}:${id}`
+
 interface WhiteboardCanvasProps {
   roomId: string
   canvasId: string
@@ -206,7 +208,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const transformer = transformerRef.current
     if (!transformer) return
 
-    const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
+    const nodes = selectedItems.map(item => shapeRefs.current.get(getRefKey(item.type, item.id))).filter((node): node is Konva.Group => !!node)
     transformer.nodes(nodes)
   }, [selectedItems])
 
@@ -343,7 +345,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
               return (
                 <Group
-                  key={line.id}
+                  key={getRefKey('line', line.id)}
                   x={box.x}
                   y={box.y}
                   width={box.width}
@@ -351,9 +353,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   draggable={canDrag}
                   ref={node => {
                     if (node) {
-                      shapeRefs.current.set(line.id, node)
+                      shapeRefs.current.set(getRefKey('line', line.id), node)
                     } else {
-                      shapeRefs.current.delete(line.id)
+                      shapeRefs.current.delete(getRefKey('line', line.id))
                     }
                   }}
                   onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
@@ -405,7 +407,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               const postIt = item.data
               return (
                 <EditablePostIt
-                  key={postIt.id}
+                  key={getRefKey('postit', postIt.id)}
                   postIt={postIt}
                   draggable={canDrag}
                   onEditStart={stopCapturing}
@@ -420,9 +422,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(postIt.id, node)
+                      shapeRefs.current.set(getRefKey('postit', postIt.id), node)
                     } else {
-                      shapeRefs.current.delete(postIt.id)
+                      shapeRefs.current.delete(getRefKey('postit', postIt.id))
                     }
                   }}
                   onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
@@ -434,7 +436,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               const card = item.data
               return (
                 <PlaceCardItem
-                  key={card.id}
+                  key={getRefKey('placeCard', card.id)}
                   card={card}
                   draggable={canDrag}
                   onDragEnd={(x, y) => {
@@ -445,9 +447,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onContextMenu={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(card.id, node)
+                      shapeRefs.current.set(getRefKey('placeCard', card.id), node)
                     } else {
-                      shapeRefs.current.delete(card.id)
+                      shapeRefs.current.delete(getRefKey('placeCard', card.id))
                     }
                   }}
                   onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
@@ -460,7 +462,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               const isSelected = selectedItems.some(i => i.id === textBox.id && i.type === 'textBox')
               return (
                 <EditableTextBox
-                  key={textBox.id}
+                  key={getRefKey('textBox', textBox.id)}
                   textBox={textBox}
                   draggable={canDrag}
                   isSelected={isSelected}
@@ -476,9 +478,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(textBox.id, node)
+                      shapeRefs.current.set(getRefKey('textBox', textBox.id), node)
                     } else {
-                      shapeRefs.current.delete(textBox.id)
+                      shapeRefs.current.delete(getRefKey('textBox', textBox.id))
                     }
                   }}
                   onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
