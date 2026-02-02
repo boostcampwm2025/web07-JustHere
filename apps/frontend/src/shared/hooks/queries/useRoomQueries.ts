@@ -1,4 +1,4 @@
-import { createRoom, updateRoom, type RoomRegionPayload, getVoteResults } from '@/shared/api'
+import { createRoom, updateRoom, type RoomRegionPayload } from '@/shared/api'
 import type { Category, Participant, RoomMeta } from '@/shared/types'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
@@ -46,14 +46,5 @@ export const useRoomCategories = (roomId: string | null) => {
     queryFn: async () => [],
     enabled: !!roomId,
     initialData: [],
-  })
-}
-
-export const useVoteResults = (roomId: string) => {
-  return useQuery({
-    queryKey: ['voteResults', roomId],
-    queryFn: () => getVoteResults(roomId),
-    enabled: !!roomId,
-    staleTime: 0,
   })
 }
