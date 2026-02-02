@@ -18,6 +18,8 @@ import {
   ParticipantNameUpdatedPayload,
   RoomOwnerTransferredPayload,
 } from './dto/room.s2c.dto'
+import { VoteService } from '@/modules/vote/vote.service'
+import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 
 function createMockSocket(id = 'socket-1') {
   return {
@@ -103,6 +105,20 @@ describe('RoomService', () => {
         { provide: CategoryService, useValue: categoryService },
         { provide: RoomBroadcaster, useValue: broadcaster },
         { provide: RoomActivitySchedulerService, useValue: mockRoomScheduler },
+        {
+          provide: VoteService,
+          useValue: {
+            createVote: jest.fn(),
+            getVote: jest.fn(),
+            revokeAllVotesForUser: jest.fn().mockReturnValue([]),
+          },
+        },
+        {
+          provide: VoteBroadcaster,
+          useValue: {
+            broadcastVote: jest.fn(),
+          },
+        },
       ],
     }).compile()
 
