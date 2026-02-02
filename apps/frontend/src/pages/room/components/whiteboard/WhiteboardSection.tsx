@@ -86,7 +86,7 @@ export const WhiteboardSection = ({
                   'min-w-fit flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x transition-colors cursor-pointer',
                   isActive
                     ? 'bg-slate-50 border-slate-300 relative z-10 -mb-px border-b border-b-slate-50'
-                    : 'bg-slate-200 border-slate-300 hover:bg-slate-150',
+                    : 'bg-slate-200 border-slate-300 hover:bg-slate-100',
                 )}
               >
                 {getIconByType(category.title)}
