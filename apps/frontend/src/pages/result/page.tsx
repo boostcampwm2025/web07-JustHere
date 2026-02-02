@@ -20,7 +20,7 @@ export const ResultPage = () => {
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
-  const { data: voteResults, isLoading, error } = useVoteResults(roomId || '')
+  const { data: voteResults, isLoading, isFetching, error } = useVoteResults(roomId || '', ready)
 
   const resultData: PlaceDetailPlace[] = useMemo(() => {
     if (!voteResults || voteResults.length === 0) return []
@@ -55,9 +55,9 @@ export const ResultPage = () => {
     }
   }
 
-  if (!user) return null
+  if (!user || !roomId) return null
 
-  if (isLoading || !ready) {
+  if (isLoading || isFetching) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
         <Header />
@@ -69,7 +69,7 @@ export const ResultPage = () => {
     throw new ResultLoadFailedError()
   }
 
-  if (roomId && resultData.length === 0) {
+  if (!isLoading && !isFetching && !resultData.length) {
     throw new ResultNotFoundError()
   }
 
