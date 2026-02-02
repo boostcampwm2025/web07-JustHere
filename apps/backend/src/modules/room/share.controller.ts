@@ -27,7 +27,7 @@ export class ShareController {
     const title = '딱! 여기 - 실시간 모임 장소 선정'
     const description = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
     const baseUrl = this.getBaseUrl()
-    const imageUrl = `${baseUrl}/logo-kr.svg`
+    const imageUrl = `${baseUrl}/logo-kr.png`
     const redirectUrl = `${baseUrl}/room/${slug}`
 
     // 2. HTML 응답
@@ -42,7 +42,7 @@ export class ShareController {
     const redirectUrl = `${baseUrl}/result/${slug}`
     const defaultTitle = '모임 장소가 결정되었습니다! - 딱! 여기'
     const defaultDesc = '친구들과 함께 정한 모임 장소를 확인해보세요.'
-    const defaultImage = `${baseUrl}/logo-kr.svg`
+    const defaultImage = `${baseUrl}/logo-kr.png`
 
     try {
       const room = await this.roomService.findOneBySlug(slug)
