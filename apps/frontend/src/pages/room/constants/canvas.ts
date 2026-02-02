@@ -10,6 +10,10 @@ export const PLACE_CARD_ROUNDED_RADIUS = 10
 export const POST_IT_WIDTH = 150
 export const POST_IT_HEIGHT = 150
 
+/** 텍스트박스 기본 크기 */
+export const TEXT_BOX_WIDTH = 200
+export const TEXT_BOX_HEIGHT = 50
+
 /** 포스트잇 색상 목록 */
 export const POST_IT_COLORS = [
   { color: '#FBCFE8', name: '분홍색' }, // pink-200
