@@ -70,11 +70,14 @@ export function useLocationSearch({
   })
 
   const searchResults = useMemo(() => {
+    if (!searchTerm) {
+      return []
+    }
     if (isLoading && !isFetchingNextPage) {
       return []
     }
     return data?.pages ?? []
-  }, [data?.pages, isLoading, isFetchingNextPage])
+  }, [data?.pages, isLoading, isFetchingNextPage, searchTerm])
 
   useEffect(() => {
     if (isSuccess && searchTerm && !isLoading) {
@@ -117,6 +120,13 @@ export function useLocationSearch({
     searchQueryRef.current = value
   }
 
+  const clearSearch = () => {
+    setSearchQuery('')
+    searchQueryRef.current = ''
+    setSearchTerm('')
+    searchTermRef.current = ''
+  }
+
   return {
     searchQuery,
     setSearchQuery: updateSearchQuery,
@@ -126,6 +136,7 @@ export function useLocationSearch({
     hasMore: hasNextPage ?? false,
     hasSearched: !!searchTerm,
     handleSearch,
+    clearSearch,
     loadMoreRef,
   }
 }
