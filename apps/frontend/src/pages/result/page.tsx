@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ResultNotFoundError } from '@/app/error-boundary'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { Button, type PlaceDetailPlace } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { PlaceResultCard } from './components/PlaceResultCard'
-import { useRoomSocket } from '@/pages/room/hooks/socket'
-import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
+import { useRoomParticipants, useRoomMeta, useVoteResults } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
+import { useRoomSocket } from '@/pages/room/hooks'
 import { RoomHeader } from '@/pages/room/components'
-import { useVoteResults } from '@/shared/hooks/queries/useRoomQueries'
-import type { PlaceDetailPlace } from '@/shared/components/place-detail/PlaceDetailContent'
+import { PlaceResultCard } from './components'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
@@ -77,11 +76,7 @@ export const ResultPage = () => {
   }
 
   if (resultData.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>투표 결과가 없습니다.</div>
-      </div>
-    )
+    throw new ResultNotFoundError()
   }
 
   return (
