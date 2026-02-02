@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
-import type Konva from 'konva'
+import Konva from 'konva'
 import type { TextBox } from '@/shared/types'
+import { TEXT_BOX_HEIGHT } from '@/pages/room/constants'
 
 interface EditableTextBoxProps {
   textBox: TextBox
@@ -53,6 +54,38 @@ export const EditableTextBox = ({
     }
   }, [isEditing])
 
+  const basePadding = 10
+  const scaledPadding = basePadding * (textBox.scale || 1)
+
+  const measureAndResize = useCallback(
+    (text: string) => {
+      if (!text) return
+
+      const scale = textBox.scale || 1
+      const fontSize = 14 * scale
+      const padding = basePadding * scale
+
+      const measureNode = new Konva.Text({
+        text,
+        fontSize,
+        fontFamily: 'Arial, sans-serif',
+        lineHeight: 1.4,
+        width: textBox.width - padding * 2,
+        wrap: 'word',
+      })
+      const measuredHeight = measureNode.height() + padding * 2
+      measureNode.destroy()
+
+      const defaultHeight = TEXT_BOX_HEIGHT * scale
+      const newHeight = Math.max(defaultHeight, measuredHeight)
+
+      if (Math.abs(newHeight - textBox.height) > 1) {
+        onChange({ height: newHeight })
+      }
+    },
+    [textBox.width, textBox.height, textBox.scale, onChange],
+  )
+
   const handleDblClick = () => {
     draftRef.current = textBox.text
     onEditStart()
@@ -63,12 +96,14 @@ export const EditableTextBox = ({
     draftRef.current = e.target.value
     if (!isComposingRef.current) {
       onChange({ text: e.target.value })
+      measureAndResize(e.target.value)
     }
   }
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
     if (value !== textBox.text) onChange({ text: value })
+    measureAndResize(value)
   }
 
   const handleBlur = () => {
@@ -85,8 +120,6 @@ export const EditableTextBox = ({
     }
   }
 
-  const basePadding = 10
-  const scaledPadding = basePadding * (textBox.scale || 1)
   const showBorder = isSelected || isHovered || isEditing
 
   return (
@@ -134,7 +167,9 @@ export const EditableTextBox = ({
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
               isComposingRef.current = false
-              onChange({ text: (e.target as HTMLTextAreaElement).value })
+              const value = (e.target as HTMLTextAreaElement).value
+              onChange({ text: value })
+              measureAndResize(value)
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
@@ -151,7 +186,6 @@ export const EditableTextBox = ({
           x={scaledPadding}
           y={scaledPadding}
           width={Math.max(1, textBox.width - scaledPadding * 2)}
-          height={Math.max(1, textBox.height - scaledPadding * 2)}
           fontSize={14 * textBox.scale}
           fontFamily="Arial, sans-serif"
           fill={textBox.text ? '#333' : '#9CA3AF'}
