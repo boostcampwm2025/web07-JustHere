@@ -306,18 +306,6 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     const handleOwnerPick = (payload: VoteOwnerPickPayload) => {
       setStatus(payload.status)
       setCandidates(payload.tiedCandidates)
-      setMyVotes([])
-      myVotesRef.current = []
-      const resetCounts: Record<string, number> = {}
-      const resetVoters: Record<string, string[]> = {}
-      for (const c of payload.tiedCandidates) {
-        resetCounts[c.placeId] = 0
-        resetVoters[c.placeId] = []
-      }
-      setCounts(resetCounts)
-      countsRef.current = resetCounts
-      setVotersByCandidate(resetVoters)
-      votersByCandidateRef.current = resetVoters
       setError(null)
       addSocketBreadcrumb('vote:owner-pick', { roomId })
     }
