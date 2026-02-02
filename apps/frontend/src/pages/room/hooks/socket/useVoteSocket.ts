@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useSocketClient, useToast } from '@/shared/hooks'
+import { useSocketClient, useToast, voteQueryKeys } from '@/shared/hooks'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
-import { voteQueryKeys } from '@/shared/hooks/queries/useVoteQueries'
 import type {
   VoteCandidate,
   VoteCandidateAddPayload,
