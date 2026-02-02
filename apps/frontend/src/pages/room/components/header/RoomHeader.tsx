@@ -52,7 +52,6 @@ export const RoomHeader = ({
           <>
             <RegionSelectorDropdown
               slug={slug}
-              currentRegion={currentRegion}
               onRegionChange={onRegionChange}
               align="left"
               trigger={({ isOpen, toggle }) => (

@@ -7,7 +7,6 @@ import { cn } from '@/shared/utils'
 import type { GooglePlace } from '@/shared/types'
 
 interface RegionSelectorDropdownProps {
-  currentRegion?: string | null
   slug: string
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
   trigger?: (props: { isOpen: boolean; toggle: () => void }) => ReactNode
