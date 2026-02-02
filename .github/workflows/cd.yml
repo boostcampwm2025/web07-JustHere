@@ -3,7 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - main
+      - feat/320-opengraph
 
 jobs:
   build-and-push:
