@@ -59,11 +59,35 @@ export class ShareController {
         try {
           const session = this.voteService.getSessionOrThrow(voteRoomId)
 
-          if (session.status === VoteStatus.COMPLETED && session.selectedCandidateId) {
-            const winner = session.candidates.get(session.selectedCandidateId)
-            if (winner) {
-              winnerName = winner.name
-              winnerImage = winner.imageUrl || ''
+          if (session.status === VoteStatus.COMPLETED) {
+            let winnerId = session.selectedCandidateId ?? null
+
+            if (!winnerId) {
+              let maxVotes = -1
+              let topId: string | null = null
+              let hasTie = false
+
+              for (const [candidateId, count] of session.totalCounts.entries()) {
+                if (count > maxVotes) {
+                  maxVotes = count
+                  topId = candidateId
+                  hasTie = false
+                } else if (count === maxVotes) {
+                  hasTie = true
+                }
+              }
+
+              if (!hasTie) {
+                winnerId = topId
+              }
+            }
+
+            if (winnerId) {
+              const winner = session.candidates.get(winnerId)
+              if (winner) {
+                winnerName = winner.name
+                winnerImage = winner.imageUrl || ''
+              }
             }
           }
         } catch {
