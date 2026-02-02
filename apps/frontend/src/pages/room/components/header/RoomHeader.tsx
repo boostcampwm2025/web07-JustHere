@@ -55,15 +55,19 @@ export const RoomHeader = ({
               onRegionChange={onRegionChange}
               align="left"
               trigger={({ isOpen, toggle }) => (
-                <button
-                  type="button"
+                <Button
                   onClick={toggle}
-                  className="flex items-center gap-1.5 hover:bg-gray-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
+                  size="sm"
+                  variant="ghost"
+                  className="hover:bg-gray-100 font-normal"
+                  aria-expanded={isOpen}
+                  aria-haspopup="listbox"
+                  aria-label="지역 선택"
                 >
                   <MapMarkerIcon className="w-4 h-4 text-primary" />
                   <span className="text-sm text-gray-700">{currentRegion}</span>
                   <ChevronDownIcon className={cn('w-4 h-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
-                </button>
+                </Button>
               )}
             />
             <Divider orientation="vertical" />
