@@ -30,37 +30,19 @@ export function migrateZIndexOrder(
   // 추가할 zIndexOrder 아이템들을 수집
   const itemsToAdd: Array<{ type: CanvasItemType; id: string }> = []
 
-  // PostIts 마이그레이션
-  yPostits.toArray().forEach(yMap => {
-    const id = yMap.get('id') as string
-    if (id && !existingZIndexKeys.has(`postit:${id}`)) {
-      itemsToAdd.push({ type: 'postit', id })
-    }
-  })
+  const collectMissingItems = (yArray: Y.Array<Y.Map<unknown>>, type: CanvasItemType) => {
+    yArray.toArray().forEach(yMap => {
+      const id = yMap.get('id') as string
+      if (id && !existingZIndexKeys.has(`${type}:${id}`)) {
+        itemsToAdd.push({ type, id })
+      }
+    })
+  }
 
-  // PlaceCards 마이그레이션
-  yPlaceCards.toArray().forEach(yMap => {
-    const id = yMap.get('id') as string
-    if (id && !existingZIndexKeys.has(`placeCard:${id}`)) {
-      itemsToAdd.push({ type: 'placeCard', id })
-    }
-  })
-
-  // Lines 마이그레이션
-  yLines.toArray().forEach(yMap => {
-    const id = yMap.get('id') as string
-    if (id && !existingZIndexKeys.has(`line:${id}`)) {
-      itemsToAdd.push({ type: 'line', id })
-    }
-  })
-
-  // TextBoxes 마이그레이션
-  yTextBoxes.toArray().forEach(yMap => {
-    const id = yMap.get('id') as string
-    if (id && !existingZIndexKeys.has(`textBox:${id}`)) {
-      itemsToAdd.push({ type: 'textBox', id })
-    }
-  })
+  collectMissingItems(yPostits, 'postit')
+  collectMissingItems(yPlaceCards, 'placeCard')
+  collectMissingItems(yLines, 'line')
+  collectMissingItems(yTextBoxes, 'textBox')
 
   // 수집된 아이템들을 zIndexOrder에 추가
   if (itemsToAdd.length > 0) {
