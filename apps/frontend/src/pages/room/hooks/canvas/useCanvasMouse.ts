@@ -8,6 +8,7 @@ import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } fr
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
   effectiveTool: ToolType
+  setActiveTool: (tool: ToolType) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
 
   // Selection
@@ -53,6 +54,7 @@ interface UseCanvasMouseProps {
 export const useCanvasMouse = ({
   stageRef,
   effectiveTool,
+  setActiveTool,
   pendingPlaceCard,
   selectedItems,
   setSelectedItems,
@@ -245,6 +247,8 @@ export const useCanvasMouse = ({
         }
         addPostIt(newPostIt)
         addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
 
       if (effectiveTool === 'pencil') {
@@ -264,6 +268,8 @@ export const useCanvasMouse = ({
           authorName: userName,
         }
         addTextBox(newTextBox)
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
     },
     [
@@ -280,6 +286,7 @@ export const useCanvasMouse = ({
       addPostIt,
       startDrawing,
       addTextBox,
+      setActiveTool,
     ],
   )
 
