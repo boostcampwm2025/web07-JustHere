@@ -227,6 +227,10 @@ export class RoomService {
     return uuidRegex.test(str)
   }
 
+  async findOneBySlug(slug: string): Promise<Room | null> {
+    return this.roomRepository.findBySlug(slug)
+  }
+
   async updateRoom(slug: string, data: { x: number; y: number; place_name?: string }) {
     const room = await this.roomRepository.findBySlug(slug)
     if (!room) {
