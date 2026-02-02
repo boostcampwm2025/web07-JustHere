@@ -218,8 +218,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const placeCardsMap = new Map(placeCards.map(card => [card.id, card]))
     const textBoxesMap = new Map(textBoxes.map(textBox => [textBox.id, textBox]))
 
-    const renderedIds = new Set<string>()
-
     // z-index 순서에 따라 요소를 배열로 변환
     const items: UnifiedCanvasItem[] = []
     zIndexOrder.forEach(({ type, id }) => {
@@ -227,46 +225,24 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         const line = linesMap.get(id)
         if (line) {
           items.push({ type: 'line', data: line })
-          renderedIds.add(id)
         }
       } else if (type === 'postit') {
         const postIt = postItsMap.get(id)
         if (postIt) {
           items.push({ type: 'postit', data: postIt })
-          renderedIds.add(id)
         }
       } else if (type === 'placeCard') {
         const card = placeCardsMap.get(id)
         if (card) {
           items.push({ type: 'placeCard', data: card })
-          renderedIds.add(id)
         }
       } else if (type === 'textBox') {
         const textBox = textBoxesMap.get(id)
         if (textBox) {
           items.push({ type: 'textBox', data: textBox })
-          renderedIds.add(id)
         }
       }
     })
-
-    // zIndexOrder에 없는 아이템을 맨 아래에 폴백으로 추가
-    const fallbackItems: UnifiedCanvasItem[] = []
-    lines.forEach(line => {
-      if (!renderedIds.has(line.id)) fallbackItems.push({ type: 'line', data: line })
-    })
-    postIts.forEach(postIt => {
-      if (!renderedIds.has(postIt.id)) fallbackItems.push({ type: 'postit', data: postIt })
-    })
-    placeCards.forEach(card => {
-      if (!renderedIds.has(card.id)) fallbackItems.push({ type: 'placeCard', data: card })
-    })
-    textBoxes.forEach(textBox => {
-      if (!renderedIds.has(textBox.id)) fallbackItems.push({ type: 'textBox', data: textBox })
-    })
-
-    // 폴백 아이템을 앞에 추가해 맨 아래 렌더링
-    items.unshift(...fallbackItems)
 
     return items
   }, [lines, postIts, placeCards, textBoxes, zIndexOrder])
