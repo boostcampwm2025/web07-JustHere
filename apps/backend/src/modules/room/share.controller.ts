@@ -143,3 +143,20 @@ export class ShareController {
     return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 }
+
+@Controller()
+export class SharePublicController extends ShareController {
+  constructor(roomService: RoomService, voteService: VoteService, categoryService: CategoryService, configService: ConfigService) {
+    super(roomService, voteService, categoryService, configService)
+  }
+
+  @Get('room/:slug')
+  shareRoomPublic(@Param('slug') slug: string, @Res() res: Response) {
+    return super.shareRoom(slug, res)
+  }
+
+  @Get('result/:slug')
+  shareResultPublic(@Param('slug') slug: string, @Res() res: Response) {
+    return super.shareResult(slug, res)
+  }
+}
