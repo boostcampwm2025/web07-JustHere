@@ -111,6 +111,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const isConnected = status === 'connected'
 
   useEffect(() => {
+    migrationExecutedRef.current = false
     // Yjs 문서 초기화
     const doc = new Y.Doc()
     docRef.current = doc
@@ -589,13 +590,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const arrayName = typeToArrayName[type]
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
     const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
-    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
-
-    const zIndexIndex = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
 
     doc.transact(() => {
+      const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
+      if (index === -1) return
+
+      const zIndexIndex = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
+
       yArray.delete(index, 1)
       if (zIndexIndex !== -1) {
         yZIndexOrder.delete(zIndexIndex, 1)
