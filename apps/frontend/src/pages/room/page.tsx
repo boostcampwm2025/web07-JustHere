@@ -7,6 +7,7 @@ import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/ho
 import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
 import { useRoomSocket } from './hooks'
 import { Button } from '@/shared/components'
+import { Helmet } from 'react-helmet-async'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -40,10 +41,19 @@ export default function RoomPage() {
   }
 
   const roomLink = `${socketBaseUrl}/room/${slug}`
+  const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
+  const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
+  const pageUrl = typeof window === 'undefined' ? '' : window.location.href
 
   if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
+        <Helmet>
+          <title>{roomTitle}</title>
+          <meta property="og:title" content={roomTitle} />
+          <meta property="og:description" content={roomDescription} />
+          {pageUrl && <meta property="og:url" content={pageUrl} />}
+        </Helmet>
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -60,6 +70,12 @@ export default function RoomPage() {
   if (!categories.length) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
+        <Helmet>
+          <title>{roomTitle}</title>
+          <meta property="og:title" content={roomTitle} />
+          <meta property="og:description" content={roomDescription} />
+          {pageUrl && <meta property="og:url" content={pageUrl} />}
+        </Helmet>
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -95,6 +111,12 @@ export default function RoomPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
+      <Helmet>
+        <title>{roomTitle}</title>
+        <meta property="og:title" content={roomTitle} />
+        <meta property="og:description" content={roomDescription} />
+        {pageUrl && <meta property="og:url" content={pageUrl} />}
+      </Helmet>
       <RoomHeader
         participants={participants}
         currentUserId={user.userId}
