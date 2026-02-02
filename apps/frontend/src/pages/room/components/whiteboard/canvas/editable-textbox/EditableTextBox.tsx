@@ -52,15 +52,11 @@ export const EditableTextBox = ({
   const [isEditing, setIsEditing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const [localHeight, setLocalHeight] = useState(textBox.height)
+  const [editingHeight, setEditingHeight] = useState<number | null>(null)
   const isComposingRef = useRef(false)
   const draftRef = useRef(textBox.text)
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    setLocalHeight(textBox.height)
-  }, [textBox.height])
 
   useEffect(() => {
     if (shapeRef) shapeRef(groupRef.current)
@@ -88,7 +84,7 @@ export const EditableTextBox = ({
     ta.style.height = '0px'
     const newHeight = Math.max(defaultHeight, ta.scrollHeight)
     ta.style.height = `${newHeight}px`
-    setLocalHeight(newHeight)
+    setEditingHeight(newHeight)
     return newHeight
   }, [textBox.scale])
 
@@ -119,8 +115,6 @@ export const EditableTextBox = ({
     const scale = textBox.scale || 1
     const newHeight = value ? measureTextHeight(value, textBox.width, scale) : TEXT_BOX_HEIGHT * scale
 
-    setLocalHeight(newHeight)
-
     const updates: Partial<Omit<TextBox, 'id'>> = { text: value }
     if (Math.abs(newHeight - textBox.height) > 1) {
       updates.height = newHeight
@@ -132,6 +126,7 @@ export const EditableTextBox = ({
 
   const handleBlur = () => {
     commit()
+    setEditingHeight(null)
     setIsEditing(false)
     onEditEnd()
   }
@@ -145,7 +140,7 @@ export const EditableTextBox = ({
   }
 
   const showBorder = isSelected || isHovered || isEditing
-  const renderHeight = Math.max(textBox.height, localHeight)
+  const renderHeight = editingHeight !== null ? Math.max(textBox.height, editingHeight) : textBox.height
 
   return (
     <Group

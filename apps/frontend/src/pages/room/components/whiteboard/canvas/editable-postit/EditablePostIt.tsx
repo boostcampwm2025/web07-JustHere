@@ -48,16 +48,12 @@ export const EditablePostIt = ({
   onTransformEnd,
 }: EditablePostItProps) => {
   const [isEditing, setIsEditing] = useState(false)
-  const [localHeight, setLocalHeight] = useState(postIt.height)
+  const [editingHeight, setEditingHeight] = useState<number | null>(null)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
 
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    setLocalHeight(postIt.height)
-  }, [postIt.height])
 
   useEffect(() => {
     if (shapeRef) {
@@ -84,7 +80,7 @@ export const EditablePostIt = ({
     ta.style.height = '0px'
     const newHeight = Math.max(defaultHeight, ta.scrollHeight)
     ta.style.height = `${newHeight}px`
-    setLocalHeight(newHeight)
+    setEditingHeight(newHeight)
     return newHeight
   }, [postIt.scale])
 
@@ -113,8 +109,6 @@ export const EditablePostIt = ({
     const scale = postIt.scale || 1
     const newHeight = value ? measureTextHeight(value, postIt.width, scale) : POST_IT_HEIGHT * scale
 
-    setLocalHeight(newHeight)
-
     const updates: Partial<Omit<PostIt, 'id'>> = { text: value }
     if (Math.abs(newHeight - postIt.height) > 1) {
       updates.height = newHeight
@@ -126,6 +120,7 @@ export const EditablePostIt = ({
 
   const handleBlur = () => {
     commit()
+    setEditingHeight(null)
     setIsEditing(false)
     onEditEnd()
   }
@@ -140,7 +135,7 @@ export const EditablePostIt = ({
     }
   }
 
-  const renderHeight = Math.max(postIt.height, localHeight)
+  const renderHeight = editingHeight !== null ? Math.max(postIt.height, editingHeight) : postIt.height
 
   return (
     <Group
