@@ -618,51 +618,54 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('textBoxes', id, updates)
   }
 
-  /**
-   * 요소를 배열의 맨 위로 이동하는 함수 (z-index 업데이트)
-   *
-   * Konva 공식 문서 방식을 따름: https://konvajs.org/docs/react/zIndex.html
-   * - 배열에서 요소를 찾아서 제거
-   * - 배열 끝에 추가하여 맨 위로 이동
-   * - State 업데이트로 렌더링 순서 변경
-   *
-   * Yjs를 사용하므로 일반 배열 대신 Yjs 배열을 조작하며,
-   * Y.Map 인스턴스를 재사용할 수 없어 새로 생성하여 복사함
-   */
-  const moveToTop = useCallback((type: CanvasItemType, id: string) => {
-    const doc = docRef.current
-    if (!doc) return
+  // 요소를 배열의 맨 위로 이동하는 함수
+  const moveToTop = useCallback(
+    (type: CanvasItemType, id: string) => {
+      const doc = docRef.current
+      if (!doc) return
 
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
-    const index = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
+      const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
 
-    if (index === -1) return
+      doc.transact(() => {
+        // 트랜잭션 내부에서 인덱스를 조회하여 경쟁 조건 방지
+        // 다른 클라이언트가 배열을 수정해도 트랜잭션 내부에서는 일관된 상태 보장
+        const index = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
 
-    // 이미 맨 위에 있으면 변경하지 않음
-    if (index === yZIndexOrder.length - 1) return
+        if (index === -1) return
 
-    doc.transact(() => {
-      const oldZIndexMap = yZIndexOrder.get(index)
+        // 이미 맨 위에 있으면 변경하지 않음
+        if (index === yZIndexOrder.length - 1) return
 
-      // 기존 Y.Map의 모든 속성을 읽어서 일반 객체로 변환
-      const data: Record<string, unknown> = {}
-      oldZIndexMap.forEach((value, key) => {
-        data[key] = value
-      })
+        const oldZIndexMap = yZIndexOrder.get(index)
 
-      // 배열에서 요소 제거 (공식 문서: itemsCopy.splice(index, 1))
-      yZIndexOrder.delete(index, 1)
+        // 기존 Y.Map의 모든 속성을 읽어서 일반 객체로 변환
+        const data: Record<string, unknown> = {}
+        oldZIndexMap.forEach((value, key) => {
+          data[key] = value
+        })
 
-      // 새로운 Y.Map 생성하고 속성 복사 (Yjs 제약사항: 같은 인스턴스 재사용 불가)
-      const newZIndexMap = new Y.Map()
-      Object.entries(data).forEach(([key, value]) => {
-        newZIndexMap.set(key, value)
-      })
+        // 배열에서 요소 제거 (공식 문서: itemsCopy.splice(index, 1))
+        yZIndexOrder.delete(index, 1)
 
-      // 배열 끝에 추가하여 맨 위로 이동 (공식 문서: itemsCopy.push(item))
-      yZIndexOrder.push([newZIndexMap])
-    }, localOriginRef.current)
-  }, [])
+        // 새로운 Y.Map 생성하고 속성 복사 (Yjs 제약사항: 같은 인스턴스 재사용 불가)
+        const newZIndexMap = new Y.Map()
+        Object.entries(data).forEach(([key, value]) => {
+          newZIndexMap.set(key, value)
+        })
+
+        // 배열 끝에 추가하여 맨 위로 이동 (공식 문서: itemsCopy.push(item))
+        yZIndexOrder.push([newZIndexMap])
+      }, localOriginRef.current)
+
+      // UndoManager가 변경사항을 즉시 캡처하도록 함
+      const undoManager = undoManagerRef.current
+      if (undoManager) {
+        undoManager.stopCapturing()
+        updateHistoryState()
+      }
+    },
+    [updateHistoryState],
+  )
 
   return {
     isConnected,
