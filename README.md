@@ -4,10 +4,6 @@
 
 <img width="850" height="500" alt="image (1)" src="https://github.com/user-attachments/assets/25035f74-d113-434d-8932-e051e573c23d" />
 
-
-여러 사람이 함께 모여야 하는 상황에서 **"어디서 만날까?"** 라는 복잡한 의사결정을 <br/>
-**실시간 협업 보드** 위에서 해결합니다.
-
 [![Wiki](https://img.shields.io/badge/📋_Wiki-000?style=for-the-badge)](https://github.com/boostcampwm2025/web07-JustHere/wiki)
 [![Figma](https://img.shields.io/badge/🎨_Design-F24E1E?style=for-the-badge)](https://www.figma.com/design/WfhqUuOyyqQ8i8nnZ2eVvo/%ED%8E%98%EC%9D%B4%EC%A7%80-%EB%94%94%EC%9E%90%EC%9D%B8?node-id=0-1&t=UPl0gl2R2kTWENeR-1)
 [![Backlog](https://img.shields.io/badge/🚀_Backlog-blue?style=for-the-badge)](https://github.com/orgs/boostcampwm2025/projects/209)
@@ -20,7 +16,12 @@
 
 > 자세한 내용은 [기획서](https://www.notion.so/2df37262a179806cbe76ed7115570e25?source=copy_link)를 참고해 주세요.
 
-**딱! 여기**는 실시간으로 여러 명의 참여자들이 함께 모여 만날 장소를 결정하는데 도움을 주는 화이트보드 서비스입니다.
+<div align="center">
+
+**딱! 여기**는 여러 사람이 함께 모여야 하는 상황에서 **"어디서 만날까?"** 라는 복잡한 고민을 <br/>
+**실시간 협업 보드** 위에서 함께 정리해 나갈 수 있도록 도와주는 서비스입니다.
+
+</div>
 
 <br/>
 
