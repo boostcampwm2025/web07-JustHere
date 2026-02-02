@@ -16,7 +16,7 @@ export default function RoomErrorPage({ errorType, onReset, errorMessage }: Erro
   const errorDescription: Record<ErrorType, string> = {
     [ERROR_TYPE.ROOM_NOT_FOUND]: '존재하지 않거나 삭제된 방입니다.',
     [ERROR_TYPE.RESULT_NOT_FOUND]: '투표를 먼저 진행해주세요.',
-    [ERROR_TYPE.RESULT_LOAD_FAILED]: '결과를 불러오는데 실패했습니다.',
+    [ERROR_TYPE.RESULT_LOAD_FAILED]: '잠시 후 다시 시도해주세요.',
     [ERROR_TYPE.UNKNOWN]: '잠시 후 다시 시도해주세요.',
   }
 
@@ -24,7 +24,11 @@ export default function RoomErrorPage({ errorType, onReset, errorMessage }: Erro
   const handleReset = () => onReset()
   const handleGoBack = () => {
     onReset()
-    if (slug) navigate(`/room/${slug}`, { replace: true })
+    if (slug) {
+      navigate(`/room/${slug}`, { replace: true })
+    } else {
+      navigate('/', { replace: true })
+    }
   }
 
   return (
