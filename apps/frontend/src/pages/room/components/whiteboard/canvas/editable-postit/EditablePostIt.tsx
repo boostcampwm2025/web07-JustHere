@@ -18,6 +18,23 @@ interface EditablePostItProps {
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
+const BASE_PADDING = 10
+
+function measureTextHeight(text: string, width: number, scale: number): number {
+  const padding = BASE_PADDING * scale
+  const measureNode = new Konva.Text({
+    text,
+    fontSize: 14 * scale,
+    fontFamily: 'Arial, sans-serif',
+    lineHeight: 1.4,
+    width: width - padding * 2,
+    wrap: 'word',
+  })
+  const height = measureNode.height() + padding * 2
+  measureNode.destroy()
+  return Math.max(POST_IT_HEIGHT * scale, height)
+}
+
 export const EditablePostIt = ({
   postIt,
   draggable,
@@ -31,11 +48,16 @@ export const EditablePostIt = ({
   onTransformEnd,
 }: EditablePostItProps) => {
   const [isEditing, setIsEditing] = useState(false)
+  const [localHeight, setLocalHeight] = useState(postIt.height)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
 
   const groupRef = useRef<Konva.Group>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    setLocalHeight(postIt.height)
+  }, [postIt.height])
 
   useEffect(() => {
     if (shapeRef) {
@@ -50,37 +72,21 @@ export const EditablePostIt = ({
     }
   }, [isEditing])
 
-  const basePadding = 10
-  const scaledPadding = basePadding * (postIt.scale || 1)
+  const scaledPadding = BASE_PADDING * (postIt.scale || 1)
 
-  const measureAndResize = useCallback(
-    (text: string) => {
-      if (!text) return
+  const syncHeight = useCallback(() => {
+    const scale = postIt.scale || 1
+    const defaultHeight = POST_IT_HEIGHT * scale
 
-      const scale = postIt.scale || 1
-      const fontSize = 14 * scale
-      const padding = basePadding * scale
+    if (!textareaRef.current) return defaultHeight
 
-      const measureNode = new Konva.Text({
-        text,
-        fontSize,
-        fontFamily: 'Arial, sans-serif',
-        lineHeight: 1.4,
-        width: postIt.width - padding * 2,
-        wrap: 'word',
-      })
-      const measuredHeight = measureNode.height() + padding * 2
-      measureNode.destroy()
-
-      const defaultHeight = POST_IT_HEIGHT * scale
-      const newHeight = Math.max(defaultHeight, measuredHeight)
-
-      if (Math.abs(newHeight - postIt.height) > 1) {
-        onChange({ height: newHeight })
-      }
-    },
-    [postIt.width, postIt.height, postIt.scale, onChange],
-  )
+    const ta = textareaRef.current
+    ta.style.height = '0px'
+    const newHeight = Math.max(defaultHeight, ta.scrollHeight)
+    ta.style.height = `${newHeight}px`
+    setLocalHeight(newHeight)
+    return newHeight
+  }, [postIt.scale])
 
   const handleDblClick = () => {
     draftRef.current = postIt.text
@@ -90,16 +96,32 @@ export const EditablePostIt = ({
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     draftRef.current = e.target.value
+
+    const newHeight = syncHeight()
+
     if (!isComposingRef.current) {
-      onChange({ text: e.target.value })
-      measureAndResize(e.target.value)
+      const updates: Partial<Omit<PostIt, 'id'>> = { text: e.target.value }
+      if (Math.abs(newHeight - postIt.height) > 1) {
+        updates.height = newHeight
+      }
+      onChange(updates)
     }
   }
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
-    if (value !== postIt.text) onChange({ text: value })
-    measureAndResize(value)
+    const scale = postIt.scale || 1
+    const newHeight = value ? measureTextHeight(value, postIt.width, scale) : POST_IT_HEIGHT * scale
+
+    setLocalHeight(newHeight)
+
+    const updates: Partial<Omit<PostIt, 'id'>> = { text: value }
+    if (Math.abs(newHeight - postIt.height) > 1) {
+      updates.height = newHeight
+    }
+    if (value !== postIt.text || updates.height) {
+      onChange(updates)
+    }
   }
 
   const handleBlur = () => {
@@ -118,13 +140,15 @@ export const EditablePostIt = ({
     }
   }
 
+  const renderHeight = Math.max(postIt.height, localHeight)
+
   return (
     <Group
       ref={groupRef}
       x={postIt.x}
       y={postIt.y}
       width={postIt.width}
-      height={postIt.height}
+      height={renderHeight}
       draggable={draggable && !isEditing}
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
@@ -137,7 +161,7 @@ export const EditablePostIt = ({
       {/* 포스트잇 배경 */}
       <Rect
         width={postIt.width}
-        height={postIt.height}
+        height={renderHeight}
         fill={postIt.fill}
         shadowBlur={5}
         cornerRadius={8 * (postIt.scale || 1)}
@@ -151,7 +175,8 @@ export const EditablePostIt = ({
             className: 'absolute top-0 left-0',
             style: {
               width: `${postIt.width}px`,
-              height: `${postIt.height}px`,
+              height: `${renderHeight}px`,
+              overflow: 'hidden',
             },
           }}
         >
@@ -164,15 +189,25 @@ export const EditablePostIt = ({
             onCompositionEnd={e => {
               isComposingRef.current = false
               const value = (e.target as HTMLTextAreaElement).value
-              onChange({ text: value })
-              measureAndResize(value)
+              const newHeight = syncHeight()
+              const updates: Partial<Omit<PostIt, 'id'>> = { text: value }
+              if (Math.abs(newHeight - postIt.height) > 1) {
+                updates.height = newHeight
+              }
+              onChange(updates)
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
+            className="border-none bg-transparent resize-none outline-none font-sans text-[#333] placeholder:text-gray-400"
             style={{
+              width: `${postIt.width}px`,
+              height: `${renderHeight}px`,
               fontSize: `${14 * (postIt.scale || 1)}px`,
               padding: `${scaledPadding}px`,
+              lineHeight: 1.4,
+              fontFamily: 'Arial, sans-serif',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           />
         </Html>
