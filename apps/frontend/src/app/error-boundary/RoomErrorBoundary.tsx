@@ -1,7 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
+import { RoomNotFoundError, ResultNotFoundError } from '@/app/error-boundary'
 import { RoomErrorPage } from '@/pages'
-import { RoomNotFoundError } from '@/app/error-boundary/SocketError'
 
 type Props = {
   children: ReactNode
@@ -41,11 +41,15 @@ export class RoomErrorBoundary extends Component<Props, State> {
     const { error, resetKey } = this.state
 
     if (error instanceof RoomNotFoundError) {
-      return <RoomErrorPage errorType="room-not-found" />
+      return <RoomErrorPage errorMessage={error.message} errorType="room-not-found" onReset={this.handleReset} />
+    }
+
+    if (error instanceof ResultNotFoundError) {
+      return <RoomErrorPage errorMessage={error.message} errorType="result-not-found" onReset={this.handleReset} />
     }
 
     if (error) {
-      return <RoomErrorPage onReset={this.handleReset} />
+      return <RoomErrorPage errorType="unknown" onReset={this.handleReset} />
     }
 
     // key가 바뀌면 children 트리가 완전히 unmount → mount 됨
