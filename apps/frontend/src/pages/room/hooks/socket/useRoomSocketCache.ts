@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
+import { RoomNotFoundError } from '@/app/error-boundary'
 import type {
   RoomJoinPayload,
   RoomJoinedPayload,
@@ -23,7 +24,6 @@ import type {
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useToast, roomQueryKeys } from '@/shared/hooks'
-import { RoomNotFoundError } from '@/app/error-boundary/SocketError'
 import { addSocketBreadcrumb } from '@/shared/utils'
 
 export const useRoomSocketCache = () => {

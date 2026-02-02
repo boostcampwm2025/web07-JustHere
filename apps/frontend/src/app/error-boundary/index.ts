@@ -1,2 +1,2 @@
 export { RoomErrorBoundary } from './RoomErrorBoundary'
-export { RoomNotFoundError } from './SocketError'
+export { RoomNotFoundError, ResultNotFoundError } from './error'
