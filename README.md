@@ -19,21 +19,6 @@
 
 <br/>
 
-## 팀 소개
-
-> 팀 문화가 궁금하다면 [그라운드 룰](https://github.com/boostcampwm2025/web07-JustHere/wiki/%EA%B7%B8%EB%9D%BC%EC%9A%B4%EB%93%9C-%EB%A3%B0)을 참고해 주세요.
-
-<div align="center">
-
-|                                                                                    J051                                                                                    |                                                                                   J262                                                                                   |                                                                     J005                                                                     |                                                                                     J097                                                                                     |                                                                                     J222                                                                                      |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [<img src="https://i.namu.wiki/i/qWyoh8nA_DcTuY4gqcmkFC2k5Sbn8D6yVCVRQHMhJD-eRYtugUDNg6jP-v0VqbnFdCjL4jYrepNXw9ey8ouFAA.webp" width="100px">](https://github.com/ppochaco) | [<img src="https://i.namu.wiki/i/5Veq9acZq3uqIUMsQbKyf4wjHiuk500_e7LUTtdWvG_2m7Wax-Anb5bFATOMsQReegqabE05_P6Swl9h9vUl3g.webp" width="100px">](https://github.com/ho0010) | [<img src="https://upload.wikimedia.org/wikipedia/ko/4/4a/%EC%8B%A0%EC%A7%B1%EA%B5%AC.png" width="100px">](https://github.com/kang-min-seok) | [<img src="https://i.namu.wiki/i/zfd-NOPP39XJ49BUBLXu8d3SAPsYnpvqYviuQHzSe8FqI6DhYAaHp5Nx30dWi_Q5XGUcbczMfuSp1lOMAN3NvA.webp" width="100px">](https://github.com/U-Geon.png) | [<img src="https://i.namu.wiki/i/hWLEwQhnjvdoRZQhrgHMKAZjiSVPO5D86_nBD6OCVLHamm0dM7Ssv2KTfYgjJj-V_X3hMsgV-LeIgI7lmbqzhA.webp" width="100px">](https://github.com/withonewith) |
-|                                                                                   김아진                                                                                   |                                                                                  지호준                                                                                  |                                                                    강민석                                                                    |                                                                                     류건                                                                                     |                                                                                    이혜린                                                                                     |
-
-</div>
-
-<br/>
-
 ## 프로젝트 소개
 
 > 자세한 내용은 [기획서](https://www.notion.so/2df37262a179806cbe76ed7115570e25?source=copy_link)를 참고해 주세요.
@@ -64,16 +49,26 @@
 ## 주요 기능
 
 ### 😌 쉽고 간편하게!
+
+![Adobe Express - 화면 기록 2026-01-31 17 26 09](https://github.com/user-attachments/assets/57b40ce3-9721-465c-9909-9cfbe9cb8366)
+
 - 만나고자 하는 지역만 설정한다면, 간편하게 방을 만들어요!
 - 링크 공유를 통해 쉽게 접근해요!
 
 ### 🤝 모두 다같이 함께!
+
+![Adobe Express - 화면 기록 2026-01-31 17 19 12](https://github.com/user-attachments/assets/0d37e0ff-5e46-4bd4-b52b-9af0ba89ba58)
+
+
 - Socket.io 기반 실시간 통신 화이트보드 환경을 제공해요!
 - 관심있는 지역을 검색하고 화이트보드에 **장소 카드**를 붙여봐요!
 - **드로잉, 포스트잇, 글자 입력** 모두 가능!
 - **커서 챗**으로 함께 대화하며 의견을 나눠요!
 
 ### 🗳️ 이제는 결정할 때!
+
+<img width="1083" height="732" alt="image" src="https://github.com/user-attachments/assets/9d4183de-cc3e-44bc-8048-123703aedff5" />
+
 - 나눈 의견을 바탕으로 가고 싶은 장소를 투표해요!
 - 모두 함께 투표가 끝나면 최종 결과를 확인할 수 있어요!
 
@@ -217,3 +212,18 @@ pnpm run dev
 ### CI / CD 파이프라인
 
 <img width="3364" height="2284" alt="CI/CD 파이프라인" src="https://github.com/user-attachments/assets/dac3ac8c-e8a4-4ac7-9de1-5659c7b81c5a" />
+
+## 팀 소개
+
+> 팀 문화가 궁금하다면 [그라운드 룰](https://github.com/boostcampwm2025/web07-JustHere/wiki/%EA%B7%B8%EB%9D%BC%EC%9A%B4%EB%93%9C-%EB%A3%B0)을 참고해 주세요.
+
+<div align="center">
+
+|                                                                                    J051                                                                                    |                                                                                   J262                                                                                   |                                                                     J005                                                                     |                                                                                     J097                                                                                     |                                                                                     J222                                                                                      |
+| :------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [<img src="https://i.namu.wiki/i/qWyoh8nA_DcTuY4gqcmkFC2k5Sbn8D6yVCVRQHMhJD-eRYtugUDNg6jP-v0VqbnFdCjL4jYrepNXw9ey8ouFAA.webp" width="100px">](https://github.com/ppochaco) | [<img src="https://i.namu.wiki/i/5Veq9acZq3uqIUMsQbKyf4wjHiuk500_e7LUTtdWvG_2m7Wax-Anb5bFATOMsQReegqabE05_P6Swl9h9vUl3g.webp" width="100px">](https://github.com/ho0010) | [<img src="https://upload.wikimedia.org/wikipedia/ko/4/4a/%EC%8B%A0%EC%A7%B1%EA%B5%AC.png" width="100px">](https://github.com/kang-min-seok) | [<img src="https://i.namu.wiki/i/zfd-NOPP39XJ49BUBLXu8d3SAPsYnpvqYviuQHzSe8FqI6DhYAaHp5Nx30dWi_Q5XGUcbczMfuSp1lOMAN3NvA.webp" width="100px">](https://github.com/U-Geon.png) | [<img src="https://i.namu.wiki/i/hWLEwQhnjvdoRZQhrgHMKAZjiSVPO5D86_nBD6OCVLHamm0dM7Ssv2KTfYgjJj-V_X3hMsgV-LeIgI7lmbqzhA.webp" width="100px">](https://github.com/withonewith) |
+|                                                                                   김아진                                                                                   |                                                                                  지호준                                                                                  |                                                                    강민석                                                                    |                                                                                     류건                                                                                     |                                                                                    이혜린                                                                                     |
+
+</div>
+
+<br/>
