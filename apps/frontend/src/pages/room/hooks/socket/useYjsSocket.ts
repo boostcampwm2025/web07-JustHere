@@ -21,6 +21,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
+import { migrateZIndexOrder } from '@/pages/room/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -53,6 +54,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
   const summaryTimerRef = useRef<number | null>(null)
   const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
+  const migrationExecutedRef = useRef(false)
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
@@ -273,6 +275,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
       addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
+
+      // 서버 데이터 수신 후 마이그레이션 실행
+      if (!migrationExecutedRef.current) {
+        migrationExecutedRef.current = true
+        const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+        const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+        const yLines = doc.getArray<Y.Map<unknown>>('lines')
+        const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+        const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+        migrateZIndexOrder(yPostits, yPlaceCards, yLines, yTextBoxes, yZIndexOrder, localOriginRef.current)
+      }
     }
 
     const handleCanvasDetached = () => {
