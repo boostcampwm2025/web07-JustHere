@@ -6,8 +6,7 @@ import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
 import { useRoomSocket } from './hooks'
-import { Button } from '@/shared/components'
-import { Helmet } from 'react-helmet-async'
+import { Button, SEO } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -48,12 +47,7 @@ export default function RoomPage() {
   if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Helmet>
-          <title>{roomTitle}</title>
-          <meta property="og:title" content={roomTitle} />
-          <meta property="og:description" content={roomDescription} />
-          {pageUrl && <meta property="og:url" content={pageUrl} />}
-        </Helmet>
+        <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -70,12 +64,7 @@ export default function RoomPage() {
   if (!categories.length) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
-        <Helmet>
-          <title>{roomTitle}</title>
-          <meta property="og:title" content={roomTitle} />
-          <meta property="og:description" content={roomDescription} />
-          {pageUrl && <meta property="og:url" content={pageUrl} />}
-        </Helmet>
+        <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -111,12 +100,7 @@ export default function RoomPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
-      <Helmet>
-        <title>{roomTitle}</title>
-        <meta property="og:title" content={roomTitle} />
-        <meta property="og:description" content={roomDescription} />
-        {pageUrl && <meta property="og:url" content={pageUrl} />}
-      </Helmet>
+      <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
       <RoomHeader
         participants={participants}
         currentUserId={user.userId}
