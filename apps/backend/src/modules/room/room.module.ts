@@ -11,11 +11,11 @@ import { RoomController } from './room.controller'
 import { RoomGateway } from './room.gateway'
 import { RoomActivitySchedulerService } from './room-activity-scheduler.service'
 
-import { ShareController, SharePublicController } from './share.controller'
+import { ShareController } from './share.controller'
 
 @Module({
   imports: [PrismaModule, CategoryModule, SocketModule, UserModule, VoteModule, MetricModule],
-  controllers: [RoomController, ShareController, SharePublicController],
+  controllers: [RoomController, ShareController],
   providers: [RoomRepository, RoomService, RoomGateway, RoomActivitySchedulerService],
   exports: [RoomService, RoomRepository],
 })

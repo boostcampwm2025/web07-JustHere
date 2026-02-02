@@ -483,4 +483,43 @@ export class VoteService {
 
     return voters
   }
+
+  /**
+   * 해당 투표 세션의 승리 후보 반환 (완료된 경우)
+   * @param voteRoomId 투표 룸 ID (${roomId}:${categoryId})
+   */
+  getWinnerCandidate(voteRoomId: string): Candidate | null {
+    const session = this.sessions.get(voteRoomId)
+    if (!session || session.status !== VoteStatus.COMPLETED) {
+      return null
+    }
+
+    let winnerId = session.selectedCandidateId ?? null
+
+    if (!winnerId) {
+      let maxVotes = -1
+      let topId: string | null = null
+      let hasTie = false
+
+      for (const [candidateId, count] of session.totalCounts.entries()) {
+        if (count > maxVotes) {
+          maxVotes = count
+          topId = candidateId
+          hasTie = false
+        } else if (count === maxVotes) {
+          hasTie = true
+        }
+      }
+
+      if (!hasTie) {
+        winnerId = topId
+      }
+    }
+
+    if (!winnerId) {
+      return null
+    }
+
+    return session.candidates.get(winnerId) || null
+  }
 }

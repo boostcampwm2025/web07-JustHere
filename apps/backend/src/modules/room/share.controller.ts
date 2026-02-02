@@ -3,7 +3,6 @@ import type { Response } from 'express'
 import { RoomService } from './room.service'
 import { VoteService } from '../vote/vote.service'
 import { CategoryService } from '../category/category.service'
-import { VoteStatus } from '../vote/vote.types'
 import { ConfigService } from '@nestjs/config'
 
 @Controller('share')
@@ -58,52 +57,13 @@ export class ShareController {
 
       for (const category of categories) {
         const voteRoomId = `${room.id}:${category.id}`
-        try {
-          const session = this.voteService.getSessionOrThrow(voteRoomId)
-          this.logger.log(`Checking Session ${voteRoomId}: Status=${session.status}`)
+        const winner = this.voteService.getWinnerCandidate(voteRoomId)
 
-          if (session.status === VoteStatus.COMPLETED) {
-            let winnerId = session.selectedCandidateId ?? null
-            this.logger.log(`Session Completed. SelectedCandidateId=${winnerId}`)
-
-            if (!winnerId) {
-              let maxVotes = -1
-              let topId: string | null = null
-              let hasTie = false
-
-              for (const [candidateId, count] of session.totalCounts.entries()) {
-                if (count > maxVotes) {
-                  maxVotes = count
-                  topId = candidateId
-                  hasTie = false
-                } else if (count === maxVotes) {
-                  hasTie = true
-                }
-              }
-
-              if (!hasTie) {
-                winnerId = topId
-                this.logger.log(`Calculated Winner from MaxVotes: ${winnerId}`)
-              } else {
-                this.logger.log(`Tie detected, no winner determined by max votes.`)
-              }
-            }
-
-            if (winnerId) {
-              const winner = session.candidates.get(winnerId)
-              if (winner) {
-                this.logger.log(`Winner Found: ${winner.name}, Image: ${winner.imageUrl}`)
-                winnerName = winner.name
-                winnerImage = winner.imageUrl || ''
-                break
-              } else {
-                this.logger.warn(`Winner ID ${winnerId} found but candidate data is missing!`)
-              }
-            }
-          }
-        } catch (e) {
-          this.logger.debug(`Session not found for ${voteRoomId}`, e)
-          continue
+        if (winner) {
+          this.logger.log(`Winner Found: ${winner.name}, Image: ${winner.imageUrl}`)
+          winnerName = winner.name
+          winnerImage = winner.imageUrl || ''
+          break
         }
       }
 
@@ -153,22 +113,5 @@ export class ShareController {
 
   private escapeHtml(value: string) {
     return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-  }
-}
-
-@Controller()
-export class SharePublicController extends ShareController {
-  constructor(roomService: RoomService, voteService: VoteService, categoryService: CategoryService, configService: ConfigService) {
-    super(roomService, voteService, categoryService, configService)
-  }
-
-  @Get('room/:slug')
-  shareRoomPublic(@Param('slug') slug: string, @Res() res: Response) {
-    return super.shareRoom(slug, res)
-  }
-
-  @Get('result/:slug')
-  shareResultPublic(@Param('slug') slug: string, @Res() res: Response) {
-    return super.shareResult(slug, res)
   }
 }
