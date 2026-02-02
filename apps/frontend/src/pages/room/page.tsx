@@ -5,11 +5,8 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
-import { useRoomSocket } from './hooks'
+import { useRoomSocket, useResolvedPlaces } from './hooks'
 import { Button, SEO } from '@/shared/components'
-import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
-import { useResolvedPlaces, useRoomSocket } from './hooks'
-import { Button } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -49,7 +46,6 @@ export default function RoomPage() {
   const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
   const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
-  const roomLink = `${socketBaseUrl}/room/${slug}`
   const mapMarkers = activeLocationTab === 'candidates' ? candidatePlaces : searchResults
 
   if (!ready || !roomId) {

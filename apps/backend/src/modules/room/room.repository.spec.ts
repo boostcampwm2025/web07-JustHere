@@ -75,7 +75,6 @@ describe('RoomRepository', () => {
         lastActiveAt: new Date(),
       }
 
-      const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
       prisma.room.create.mockResolvedValue(mockRoom)
 
       const result = await repository.createRoom({
@@ -110,7 +109,6 @@ describe('RoomRepository', () => {
         lastActiveAt: new Date(),
       }
 
-      const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
       const mockRoomNoPlace = { ...mockRoom, place_name: '' }
       prisma.room.create.mockResolvedValue(mockRoomNoPlace)
 
@@ -139,10 +137,6 @@ describe('RoomRepository', () => {
         lastActiveAt: new Date(),
       }
 
-      const createSpy = jest
-        .spyOn(prisma.room, 'create')
-        .mockRejectedValueOnce(duplicateError)
-        .mockResolvedValueOnce(mockRoom as never)
       prisma.room.create.mockRejectedValueOnce(duplicateError).mockResolvedValueOnce(mockRoom)
 
       const result = await repository.createRoom({
