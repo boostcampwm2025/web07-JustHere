@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
-import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
+import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
 import { useYjsSocket } from '@/pages/room/hooks'
 import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
 import { getLineBoundingBox } from '@/pages/room/utils'
@@ -221,7 +221,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   }
 
   return (
-    <div className={`relative w-full h-full bg-slate-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
+    <div className={cn('relative w-full h-full bg-slate-50', getCursorStyle())} onContextMenu={e => e.preventDefault()}>
       <Toolbar
         effectiveTool={effectiveTool}
         setActiveTool={handleToolChange}
