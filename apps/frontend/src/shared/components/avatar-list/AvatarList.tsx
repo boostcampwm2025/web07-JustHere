@@ -1,5 +1,5 @@
 import type { Participant } from '@/shared/types'
-import { Avatar } from '@/shared/components'
+import { Avatar } from '@/shared/components/ui'
 
 export interface AvatarListProps {
   participants: Participant[]
