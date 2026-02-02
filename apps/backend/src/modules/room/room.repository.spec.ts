@@ -44,7 +44,9 @@ describe('RoomRepository', () => {
         deleteMany: jest.fn(),
       },
       // $transaction은 콜백을 받아서 실행하는 형태로 모킹
-      $transaction: jest.fn(async callback => await callback(prisma)),
+      $transaction: jest.fn(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
+        return await callback(prisma)
+      }),
     }
 
     const module: TestingModule = await Test.createTestingModule({
