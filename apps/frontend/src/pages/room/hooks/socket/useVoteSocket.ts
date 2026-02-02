@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient, useToast } from '@/shared/hooks'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
+import { voteQueryKeys } from '@/shared/hooks/queries/useVoteQueries'
 import type {
   VoteCandidate,
   VoteCandidateAddPayload,
@@ -32,6 +34,8 @@ const DEFAULT_STATUS: VoteStatus = 'WAITING'
 
 export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: UseVoteSocketOptions) {
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
+
   const [status, setStatus] = useState<VoteStatus>(DEFAULT_STATUS)
   const [singleVote, setSingleVote] = useState(false)
   const [round, setRound] = useState(1)
@@ -196,6 +200,10 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       setError(null)
       // 임시 후보자 제거
       tempCandidateIdsRef.current.clear()
+      // 투표가 완료된 상태면 결과 쿼리 무효화
+      if (payload.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
+      }
       addSocketBreadcrumb('vote:state', { roomId, status: payload.status, candidatesCount: payload.candidates.length })
     }
 
@@ -264,6 +272,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     const handleStarted = (payload: VoteStartedPayload) => {
       setStatus(payload.status)
       setError(null)
+      queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
       addSocketBreadcrumb('vote:started', { roomId })
       showToast('투표가 시작되었습니다!', 'success')
     }
@@ -276,6 +285,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       setSingleVote(false)
       setRound(1)
       setError(null)
+      queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
       addSocketBreadcrumb('vote:ended', { roomId, candidatesCount: payload.candidates.length })
     }
 
@@ -299,6 +309,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       setVotersByCandidate(resetVoters)
       votersByCandidateRef.current = resetVoters
       setError(null)
+      queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
       addSocketBreadcrumb('vote:runoff', { roomId, round: payload.round })
     }
 
@@ -321,6 +332,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       myVotesRef.current = []
       votersByCandidateRef.current = payload.voters
       setError(null)
+      queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
       addSocketBreadcrumb('vote:resetted', { roomId, candidatesCount: payload.candidates.length })
     }
 
@@ -359,7 +371,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.resetted, handleResetted)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, roomId, categoryId, userId, resolveSocket, showToast])
+  }, [enabled, roomId, categoryId, userId, resolveSocket, showToast, queryClient])
 
   const join = useCallback(() => {
     if (!enabled || !roomId || !categoryId) return
