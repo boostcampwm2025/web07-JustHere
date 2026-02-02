@@ -44,6 +44,38 @@ export const WhiteboardSection = ({
 
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
 
+  // 지도 중심 좌표 관리
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(() => {
+    if (selectedPlace) return { lat: selectedPlace.location.latitude, lng: selectedPlace.location.longitude }
+    if (searchResults[0]) return { lat: searchResults[0].location.latitude, lng: searchResults[0].location.longitude }
+    return undefined
+  })
+
+  // Props 변화에 따른 상태 동기화
+  const [prevSelectedPlace, setPrevSelectedPlace] = useState(selectedPlace)
+  const [prevFirstResultId, setPrevFirstResultId] = useState(searchResults[0]?.id)
+
+  // 1. 선택된 장소가 변경되었을 때
+  if (selectedPlace !== prevSelectedPlace) {
+    setPrevSelectedPlace(selectedPlace)
+    if (selectedPlace) {
+      setMapCenter({ lat: selectedPlace.location.latitude, lng: selectedPlace.location.longitude })
+    }
+  }
+
+  // 2. 검색 결과가 변경되었을 때 (새로운 검색)
+  const firstResultId = searchResults[0]?.id
+  if (firstResultId !== prevFirstResultId) {
+    setPrevFirstResultId(firstResultId)
+    if (searchResults[0]) {
+      setMapCenter({ lat: searchResults[0].location.latitude, lng: searchResults[0].location.longitude })
+    }
+  }
+
+  const toggleButtonBaseClass = 'rounded-full transition-all duration-200'
+  const activeClass = 'bg-primary hover:bg-primary-pressed ring-primary text-white shadow-md'
+  const inactiveClass = 'text-gray hover:bg-gray-bg hover:text-black bg-transparent'
+
   const getIconByType = (type: string) => {
     switch (type) {
       case '음식점':
@@ -58,10 +90,6 @@ export const WhiteboardSection = ({
         return <PencilIcon className="w-4 h-4" />
     }
   }
-
-  const toggleButtonBaseClass = 'rounded-full transition-all duration-200'
-  const activeClass = 'bg-primary hover:bg-primary-pressed ring-primary text-white shadow-md'
-  const inactiveClass = 'text-gray hover:bg-gray-bg hover:text-black bg-transparent'
 
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
@@ -136,12 +164,7 @@ export const WhiteboardSection = ({
           />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
-            <GoogleMap
-              markers={searchResults}
-              selectedMarkerId={selectedPlace?.id}
-              onMarkerClick={onMarkerClick}
-              center={getFirstResultCenter(searchResults)}
-            />
+            <GoogleMap markers={searchResults} selectedMarkerId={selectedPlace?.id} onMarkerClick={onMarkerClick} center={mapCenter} />
           </div>
         )}
 
@@ -169,9 +192,4 @@ export const WhiteboardSection = ({
       </main>
     </section>
   )
-}
-
-function getFirstResultCenter(results: GooglePlace[]) {
-  if (!results[0]) return undefined
-  return { lat: results[0].location.latitude, lng: results[0].location.longitude }
 }
