@@ -33,6 +33,7 @@ describe('RoomRepository', () => {
         place_name: '강남역',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
@@ -65,6 +66,7 @@ describe('RoomRepository', () => {
         place_name: '',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const createSpy = jest.spyOn(prisma.room, 'create').mockResolvedValue(mockRoom as never)
@@ -91,6 +93,7 @@ describe('RoomRepository', () => {
         place_name: '강남역',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const createSpy = jest

@@ -41,6 +41,7 @@ describe('RoomController', () => {
         place_name: '강남역',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const createRoomSpy = jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
@@ -69,6 +70,7 @@ describe('RoomController', () => {
         place_name: '',
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastActiveAt: new Date(),
       }
 
       const createRoomSpy = jest.spyOn(service, 'createRoom').mockResolvedValue(mockRoom)
