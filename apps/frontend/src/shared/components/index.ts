@@ -1,5 +1,6 @@
-export * from './header'
+export * from './avatar-list'
 export * from './google-map'
+export * from './header'
 export * from './modal'
 export * from './place-detail'
 export * from './search-input'

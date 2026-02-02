@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { cn } from '@/shared/utils'
-import { Button } from './Button'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
+import { Button } from '@/shared/components'
 
 interface ImageSliderProps {
   images: { src: string; alt: string }[]
