@@ -4,8 +4,8 @@ import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
-import { RoomHeader, WhiteboardSection, LocationListSection, AddCategoryModal } from './components'
-import { useRoomSocket, useResolvedPlaces } from './hooks'
+import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
+import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { Button, SEO } from '@/shared/components'
 
 export default function RoomPage() {

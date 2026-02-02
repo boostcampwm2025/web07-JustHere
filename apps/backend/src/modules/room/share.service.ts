@@ -39,13 +39,13 @@ export class ShareService {
       title: '딱! 여기 - 실시간 모임 장소 선정',
       description: '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!',
       imageUrl: `${baseUrl}/logo-kr.png`,
-      redirectUrl: `${baseUrl}/room/${slug}`,
+      redirectUrl: `${baseUrl}/room/${encodeURIComponent(slug)}`,
     }
   }
 
   async getResultMetadata(slug: string): Promise<ShareMetadata> {
     const baseUrl = this.getBaseUrl()
-    const redirectUrl = `${baseUrl}/result/${slug}`
+    const redirectUrl = `${baseUrl}/result/${encodeURIComponent(slug)}`
     const defaultMeta = {
       title: '모임 장소가 결정되었습니다! - 딱! 여기',
       description: '친구들과 함께 정한 모임 장소를 확인해보세요.',
