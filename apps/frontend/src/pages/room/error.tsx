@@ -1,22 +1,23 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { ERROR_TYPE, type ErrorType } from '@/app/error-boundary'
 import { AlertCircleIcon } from '@/shared/assets'
 import { Button, Header } from '@/shared/components'
 
-type ErrorType = 'room-not-found' | 'result-not-found' | 'unknown'
 interface ErrorPageProps {
   errorType: ErrorType
   onReset: () => void
-  errorMessage?: string
+  errorMessage: string
 }
 
-export default function RoomErrorPage({ errorType = 'unknown', onReset, errorMessage = '오류가 발생했습니다.' }: ErrorPageProps) {
+export default function RoomErrorPage({ errorType, onReset, errorMessage }: ErrorPageProps) {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
 
   const errorDescription: Record<ErrorType, string> = {
-    'room-not-found': '존재하지 않거나 삭제된 방입니다.',
-    'result-not-found': '투표를 먼저 진행해주세요.',
-    unknown: '잠시 후 다시 시도해주세요.',
+    [ERROR_TYPE.ROOM_NOT_FOUND]: '존재하지 않거나 삭제된 방입니다.',
+    [ERROR_TYPE.RESULT_NOT_FOUND]: '투표를 먼저 진행해주세요.',
+    [ERROR_TYPE.RESULT_LOAD_FAILED]: '결과를 불러오는데 실패했습니다.',
+    [ERROR_TYPE.UNKNOWN]: '잠시 후 다시 시도해주세요.',
   }
 
   const handleCreateRoom = () => navigate('/onboarding')
@@ -37,17 +38,17 @@ export default function RoomErrorPage({ errorType = 'unknown', onReset, errorMes
           <h1 className="text-3xl font-bold text-black mb-2">{errorMessage}</h1>
           <h3 className="text-gray text-lg mb-8">{errorDescription[errorType]}</h3>
 
-          {errorType === 'room-not-found' && (
+          {errorType === ERROR_TYPE.ROOM_NOT_FOUND && (
             <Button onClick={handleCreateRoom} size="lg">
               새 방 만들기
             </Button>
           )}
-          {errorType === 'result-not-found' && (
+          {errorType === ERROR_TYPE.RESULT_NOT_FOUND && (
             <Button onClick={handleGoBack} size="lg">
               방으로 이동하기
             </Button>
           )}
-          {errorType === 'unknown' && (
+          {(errorType === ERROR_TYPE.UNKNOWN || errorType === ERROR_TYPE.RESULT_LOAD_FAILED) && (
             <Button onClick={handleReset} size="lg">
               새로고침
             </Button>

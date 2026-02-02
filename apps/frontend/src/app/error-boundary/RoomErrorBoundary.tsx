@@ -2,6 +2,8 @@ import { Component, type ReactNode, type ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
 import { RoomNotFoundError, ResultNotFoundError } from '@/app/error-boundary'
 import { RoomErrorPage } from '@/pages'
+import { ResultLoadFailedError } from './error'
+import { ERROR_TYPE, type ErrorType } from './error-type'
 
 type Props = {
   children: ReactNode
@@ -40,19 +42,28 @@ export class RoomErrorBoundary extends Component<Props, State> {
   render() {
     const { error, resetKey } = this.state
 
-    if (error instanceof RoomNotFoundError) {
-      return <RoomErrorPage errorMessage={error.message} errorType="room-not-found" onReset={this.handleReset} />
-    }
-
-    if (error instanceof ResultNotFoundError) {
-      return <RoomErrorPage errorMessage={error.message} errorType="result-not-found" onReset={this.handleReset} />
-    }
-
     if (error) {
-      return <RoomErrorPage errorType="unknown" onReset={this.handleReset} />
+      const { errorType } = getErrorPageConfig(error)
+      return <RoomErrorPage errorType={errorType} errorMessage={error.message} onReset={this.handleReset} />
     }
 
     // key가 바뀌면 children 트리가 완전히 unmount → mount 됨
     return <div key={resetKey}>{this.props.children}</div>
   }
+}
+
+function getErrorPageConfig(error: Error): { errorType: ErrorType } {
+  if (error instanceof RoomNotFoundError) {
+    return { errorType: ERROR_TYPE.ROOM_NOT_FOUND }
+  }
+
+  if (error instanceof ResultNotFoundError) {
+    return { errorType: ERROR_TYPE.RESULT_NOT_FOUND }
+  }
+
+  if (error instanceof ResultLoadFailedError) {
+    return { errorType: ERROR_TYPE.RESULT_LOAD_FAILED }
+  }
+
+  return { errorType: ERROR_TYPE.UNKNOWN }
 }
