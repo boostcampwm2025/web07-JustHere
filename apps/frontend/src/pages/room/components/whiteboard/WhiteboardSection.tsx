@@ -66,7 +66,7 @@ export const WhiteboardSection = ({
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
       <header className="flex items-end pt-3 bg-slate-100 overflow-x-auto">
-        <nav className="flex flex-1 items-end gap-1 border-b border-slate-300 px-4" role="tablist">
+        <div className="flex flex-1 items-end gap-1 border-b border-slate-300 px-4" role="tablist">
           {categories.map(category => {
             const isActive = activeCategoryId === category.id
             return (
@@ -118,7 +118,7 @@ export const WhiteboardSection = ({
           >
             <PlusIcon className="size-5 text-gray-800" />
           </Button>
-        </nav>
+        </div>
 
         {isAddCategoryModalOpen && <AddCategoryModal onClose={() => setIsAddCategoryModalOpen(false)} onComplete={onCreateCategory} />}
         {categoryToDelete && (
