@@ -72,7 +72,8 @@ export const WhiteboardSection = ({
   if (firstResultId !== prevFirstResultId) {
     setPrevFirstResultId(firstResultId)
     // 새로운 검색 결과가 나오면 첫 번째 장소로 이동
-    if (searchResults[0]) {
+    // 단, 선택된 장소가 있다면(상세보기 중) 이동하지 않음 (초기값 로직과 일관성 유지)
+    if (searchResults[0] && !selectedPlace) {
       setMapCenter({ lat: searchResults[0].location.latitude, lng: searchResults[0].location.longitude })
     }
   }
