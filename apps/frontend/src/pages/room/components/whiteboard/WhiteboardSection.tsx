@@ -65,44 +65,49 @@ export const WhiteboardSection = ({
 
   return (
     <section className="flex flex-col flex-1 h-full overflow-hidden">
-      <header className="flex items-end px-4 pt-3 bg-slate-100 border-b border-gray-200 overflow-x-auto">
-        <nav className="flex items-end gap-1" role="tablist">
-          {categories.map(category => (
-            <div
-              key={category.id}
-              role="tab"
-              aria-selected={activeCategoryId === category.id}
-              onClick={() => onActiveCategoryChange(category.id)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  onActiveCategoryChange(category.id)
-                }
-              }}
-              tabIndex={0}
-              className={cn(
-                'min-w-fit flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x border-slate-300 transition-colors',
-                activeCategoryId === category.id ? 'bg-slate-50 border-l' : 'bg-slate-200 hover:bg-slate-150',
-              )}
-            >
-              {getIconByType(category.title)}
-              <span className="font-bold text-gray-800 text-sm">{category.title}</span>
-              {activeCategoryId === category.id && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="카테고리 삭제"
-                  className="text-gray-disable hover:text-gray rounded-full p-0"
-                  onClick={e => {
-                    e.stopPropagation()
-                    setCategoryToDelete(category)
-                  }}
-                >
-                  <CloseIcon className="size-4" />
-                </Button>
-              )}
-            </div>
-          ))}
+      <header className="flex items-end pt-3 bg-slate-100 overflow-x-auto">
+        <nav className="flex flex-1 items-end gap-1 border-b border-slate-300 px-4" role="tablist">
+          {categories.map(category => {
+            const isActive = activeCategoryId === category.id
+            return (
+              <div
+                key={category.id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => onActiveCategoryChange(category.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onActiveCategoryChange(category.id)
+                  }
+                }}
+                tabIndex={0}
+                className={cn(
+                  'min-w-fit flex items-center gap-2 px-6 py-2.5 rounded-t-xl border-t border-x transition-colors cursor-pointer',
+                  isActive
+                    ? 'bg-slate-50 border-slate-300 relative z-10 -mb-px border-b border-b-slate-50'
+                    : 'bg-slate-200 border-slate-300 hover:bg-slate-150',
+                )}
+              >
+                {getIconByType(category.title)}
+                <span className="font-bold text-gray-800 text-sm">{category.title}</span>
+                {isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="카테고리 삭제"
+                    className="text-gray-disable hover:text-gray rounded-full p-0"
+                    onClick={e => {
+                      e.stopPropagation()
+                      setCategoryToDelete(category)
+                    }}
+                  >
+                    <CloseIcon className="size-4" />
+                  </Button>
+                )}
+              </div>
+            )
+          })}
 
           <Button
             variant="ghost"

@@ -221,7 +221,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   }
 
   return (
-    <div className={`relative w-full h-full bg-gray-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
+    <div className={`relative w-full h-full bg-slate-50 ${getCursorStyle()}`} onContextMenu={e => e.preventDefault()}>
       <Toolbar
         effectiveTool={effectiveTool}
         setActiveTool={handleToolChange}
