@@ -631,7 +631,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         // 다른 클라이언트가 배열을 수정해도 트랜잭션 내부에서는 일관된 상태 보장
         const index = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
 
-        if (index === -1) return
+        if (index === -1) {
+          const newZIndexMap = new Y.Map()
+          newZIndexMap.set('type', type)
+          newZIndexMap.set('id', id)
+          yZIndexOrder.push([newZIndexMap])
+          return
+        }
 
         // 이미 맨 위에 있으면 변경하지 않음
         if (index === yZIndexOrder.length - 1) return
@@ -644,16 +650,16 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
           data[key] = value
         })
 
-        // 배열에서 요소 제거 (공식 문서: itemsCopy.splice(index, 1))
+        // 배열에서 요소 제거
         yZIndexOrder.delete(index, 1)
 
-        // 새로운 Y.Map 생성하고 속성 복사 (Yjs 제약사항: 같은 인스턴스 재사용 불가)
+        // 새로운 Y.Map 생성하고 속성 복사
         const newZIndexMap = new Y.Map()
         Object.entries(data).forEach(([key, value]) => {
           newZIndexMap.set(key, value)
         })
 
-        // 배열 끝에 추가하여 맨 위로 이동 (공식 문서: itemsCopy.push(item))
+        // 배열 끝에 추가하여 맨 위로 이동
         yZIndexOrder.push([newZIndexMap])
       }, localOriginRef.current)
 
