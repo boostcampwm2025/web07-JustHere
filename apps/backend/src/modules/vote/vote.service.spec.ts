@@ -479,4 +479,175 @@ describe('VoteService', () => {
       }
     })
   })
+
+  describe('revokeAllVotesForUser', () => {
+    const baseRoomId = 'room-123'
+    const categoryId1 = 'category-1'
+    const categoryId2 = 'category-2'
+    const voteRoomId1 = `${baseRoomId}:${categoryId1}`
+    const voteRoomId2 = `${baseRoomId}:${categoryId2}`
+    const otherRoomId = 'other-room'
+    const otherVoteRoomId = `${otherRoomId}:${categoryId1}`
+
+    const place1: PlaceData = { ...mockPlaceData, placeId: 'place-1' }
+    const place2: PlaceData = { ...mockPlaceData, placeId: 'place-2' }
+
+    it('투표가 없는 경우 빈 배열을 반환해야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toEqual([])
+    })
+
+    it('WAITING 상태의 세션은 무시해야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      // startVote를 호출하지 않아 WAITING 상태 유지
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toEqual([])
+    })
+
+    it('COMPLETED 상태의 세션은 무시해야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+      service.castVote(voteRoomId1, userId, place1.placeId)
+      service.endVote(voteRoomId1) // COMPLETED 상태로 변경
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toEqual([])
+    })
+
+    it('IN_PROGRESS 상태에서 사용자의 투표가 모두 취소되어야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.addCandidatePlace(voteRoomId1, userId, place2)
+      service.startVote(voteRoomId1)
+      service.castVote(voteRoomId1, userId, place1.placeId)
+      service.castVote(voteRoomId1, userId, place2.placeId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].voteRoomId).toBe(voteRoomId1)
+      expect(result[0].payload.userId).toBe(userId)
+      expect(result[0].payload.counts[place1.placeId]).toBe(0)
+      expect(result[0].payload.counts[place2.placeId]).toBe(0)
+      expect(result[0].payload.voters[place1.placeId]).toEqual([])
+      expect(result[0].payload.voters[place2.placeId]).toEqual([])
+
+      // 세션에서도 투표가 삭제되었는지 확인
+      const state = service.getVoteState(voteRoomId1, userId)
+      expect(state.myVotes).toEqual([])
+      expect(state.counts[place1.placeId]).toBe(0)
+      expect(state.counts[place2.placeId]).toBe(0)
+    })
+
+    it('여러 카테고리에 투표한 경우 모두 취소되어야 한다', () => {
+      // 카테고리 1 설정
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+      service.castVote(voteRoomId1, userId, place1.placeId)
+
+      // 카테고리 2 설정
+      service.getOrCreateSession(voteRoomId2, userId)
+      service.addCandidatePlace(voteRoomId2, userId, place2)
+      service.startVote(voteRoomId2)
+      service.castVote(voteRoomId2, userId, place2.placeId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toHaveLength(2)
+
+      const room1Result = result.find(r => r.voteRoomId === voteRoomId1)
+      const room2Result = result.find(r => r.voteRoomId === voteRoomId2)
+
+      expect(room1Result).toBeDefined()
+      expect(room1Result!.payload.counts[place1.placeId]).toBe(0)
+
+      expect(room2Result).toBeDefined()
+      expect(room2Result!.payload.counts[place2.placeId]).toBe(0)
+    })
+
+    it('다른 방의 세션은 영향받지 않아야 한다', () => {
+      // baseRoomId의 카테고리
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+      service.castVote(voteRoomId1, userId, place1.placeId)
+
+      // 다른 방의 카테고리
+      service.getOrCreateSession(otherVoteRoomId, userId)
+      service.addCandidatePlace(otherVoteRoomId, userId, place2)
+      service.startVote(otherVoteRoomId)
+      service.castVote(otherVoteRoomId, userId, place2.placeId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      // baseRoomId의 투표만 취소
+      expect(result).toHaveLength(1)
+      expect(result[0].voteRoomId).toBe(voteRoomId1)
+
+      // 다른 방의 투표는 유지
+      const otherState = service.getVoteState(otherVoteRoomId, userId)
+      expect(otherState.myVotes).toContain(place2.placeId)
+      expect(otherState.counts[place2.placeId]).toBe(1)
+    })
+
+    it('다른 사용자의 투표는 영향받지 않아야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+
+      // user1과 user2 모두 투표
+      service.castVote(voteRoomId1, userId, place1.placeId)
+      service.castVote(voteRoomId1, userId2, place1.placeId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].payload.counts[place1.placeId]).toBe(1) // user2의 투표만 남음
+      expect(result[0].payload.voters[place1.placeId]).toEqual([userId2])
+
+      // user2의 투표는 유지
+      const state = service.getVoteState(voteRoomId1, userId2)
+      expect(state.myVotes).toContain(place1.placeId)
+    })
+
+    it('투표하지 않은 사용자에 대해 빈 배열을 반환해야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+      service.castVote(voteRoomId1, userId, place1.placeId)
+
+      // userId2는 투표하지 않음
+      const result = service.revokeAllVotesForUser(baseRoomId, userId2)
+
+      expect(result).toEqual([])
+
+      // userId의 투표는 유지
+      const state = service.getVoteState(voteRoomId1, userId)
+      expect(state.counts[place1.placeId]).toBe(1)
+    })
+
+    it('반환값의 voters에서 해당 사용자가 제거되어야 한다', () => {
+      service.getOrCreateSession(voteRoomId1, userId)
+      service.addCandidatePlace(voteRoomId1, userId, place1)
+      service.startVote(voteRoomId1)
+
+      // 여러 사용자가 투표
+      service.castVote(voteRoomId1, userId, place1.placeId)
+      service.castVote(voteRoomId1, userId2, place1.placeId)
+
+      const result = service.revokeAllVotesForUser(baseRoomId, userId)
+
+      expect(result[0].payload.voters[place1.placeId]).not.toContain(userId)
+      expect(result[0].payload.voters[place1.placeId]).toContain(userId2)
+    })
+  })
 })
