@@ -21,9 +21,8 @@ import type {
   Participant,
   User,
 } from '@/shared/types'
-import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useToast, roomQueryKeys } from '@/shared/hooks'
+import { useToast, roomQueryKeys, voteQueryKeys, useSocketClient } from '@/shared/hooks'
 import { addSocketBreadcrumb } from '@/shared/utils'
 
 export const useRoomSocketCache = () => {
@@ -148,6 +147,7 @@ export const useRoomSocketCache = () => {
       addSocketBreadcrumb('category:deleted', { roomId, categoryId })
 
       queryClient.setQueryData<Category[]>(roomQueryKeys.categories(roomId), (prev = []) => prev.filter(x => x.id !== categoryId))
+      queryClient.invalidateQueries({ queryKey: voteQueryKeys.results(roomId) })
     }
 
     const onCategoryError = (errorPayload: ErrorPayload) => {
