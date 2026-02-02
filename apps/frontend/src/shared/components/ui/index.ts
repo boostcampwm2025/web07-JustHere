@@ -1,6 +1,7 @@
 export * from './Avatar'
 export * from './AvatarList'
 export * from './Button'
+export * from './ChipButton'
 export * from './Divider'
 export * from './ImageSlider'
 export * from './Dropdown'

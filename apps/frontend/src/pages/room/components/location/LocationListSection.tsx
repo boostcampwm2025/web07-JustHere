@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
-import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
+import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
@@ -291,15 +291,9 @@ export const LocationListSection = ({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? 'primary' : 'gray'}
-              onClick={() => setActiveTab(tab.id)}
-              className="px-4 text-sm transition-colors shrink-0"
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </Button>
+            <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
+              {tab.label}
+            </ChipButton>
           ))}
 
           {/* Region Selector - 장소 리스트 탭에서만 표시 */}
