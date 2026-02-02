@@ -10,6 +10,7 @@ import {
   PLACE_CARD_PLACEHOLDER_IMAGE,
   PLACE_CARD_PADDING,
   PLACE_CARD_ROUNDED_RADIUS,
+  PLACE_CARD_COLORS,
 } from '@/pages/room/constants'
 import { getImageCrop } from '@/pages/room/utils'
 
@@ -67,8 +68,8 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       <Rect
         width={cardWidth}
         height={cardHeight}
-        fill="#FFFFFF"
-        stroke="#E5E7EB"
+        fill={PLACE_CARD_COLORS.BACKGROUND}
+        stroke={PLACE_CARD_COLORS.BORDER}
         strokeWidth={1 * scale}
         cornerRadius={PLACE_CARD_ROUNDED_RADIUS * scale}
         shadowBlur={15}
@@ -102,7 +103,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         width={textWidth}
         fontSize={14 * scale}
         fontStyle="bold"
-        fill="#111827"
+        fill={PLACE_CARD_COLORS.TITLE}
         ellipsis={true}
         wrap="none"
       />
@@ -117,7 +118,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         y={scaledImageHeight + 49 * scale}
         width={textWidth}
         fontSize={12 * scale}
-        fill="#4B5563"
+        fill={PLACE_CARD_COLORS.ADDRESS}
         wrap="char"
       />
     </Group>
