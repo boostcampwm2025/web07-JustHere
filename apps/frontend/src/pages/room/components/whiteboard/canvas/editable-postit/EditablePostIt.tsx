@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
-import type Konva from 'konva'
+import Konva from 'konva'
 import type { PostIt } from '@/shared/types'
+import { POST_IT_HEIGHT } from '@/pages/room/constants'
 
 interface EditablePostItProps {
   postIt: PostIt
@@ -49,6 +50,38 @@ export const EditablePostIt = ({
     }
   }, [isEditing])
 
+  const basePadding = 10
+  const scaledPadding = basePadding * (postIt.scale || 1)
+
+  const measureAndResize = useCallback(
+    (text: string) => {
+      if (!text) return
+
+      const scale = postIt.scale || 1
+      const fontSize = 14 * scale
+      const padding = basePadding * scale
+
+      const measureNode = new Konva.Text({
+        text,
+        fontSize,
+        fontFamily: 'Arial, sans-serif',
+        lineHeight: 1.4,
+        width: postIt.width - padding * 2,
+        wrap: 'word',
+      })
+      const measuredHeight = measureNode.height() + padding * 2
+      measureNode.destroy()
+
+      const defaultHeight = POST_IT_HEIGHT * scale
+      const newHeight = Math.max(defaultHeight, measuredHeight)
+
+      if (Math.abs(newHeight - postIt.height) > 1) {
+        onChange({ height: newHeight })
+      }
+    },
+    [postIt.width, postIt.height, postIt.scale, onChange],
+  )
+
   const handleDblClick = () => {
     draftRef.current = postIt.text
     onEditStart()
@@ -59,12 +92,14 @@ export const EditablePostIt = ({
     draftRef.current = e.target.value
     if (!isComposingRef.current) {
       onChange({ text: e.target.value })
+      measureAndResize(e.target.value)
     }
   }
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
     if (value !== postIt.text) onChange({ text: value })
+    measureAndResize(value)
   }
 
   const handleBlur = () => {
@@ -72,9 +107,6 @@ export const EditablePostIt = ({
     setIsEditing(false)
     onEditEnd()
   }
-
-  const basePadding = 10
-  const scaledPadding = basePadding * (postIt.scale || 1)
 
   // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -131,7 +163,9 @@ export const EditablePostIt = ({
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
               isComposingRef.current = false
-              onChange({ text: (e.target as HTMLTextAreaElement).value })
+              const value = (e.target as HTMLTextAreaElement).value
+              onChange({ text: value })
+              measureAndResize(value)
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
@@ -148,7 +182,6 @@ export const EditablePostIt = ({
           x={scaledPadding}
           y={scaledPadding}
           width={postIt.width - scaledPadding * 2}
-          height={postIt.height - scaledPadding * 2}
           fontSize={14 * postIt.scale}
           fontFamily="Arial, sans-serif"
           fill={postIt.text ? '#333' : '#9CA3AF'}
