@@ -57,18 +57,22 @@ export class ShareController {
 
       for (const category of categories) {
         const voteRoomId = `${room.id}:${category.id}`
-        const winner = this.voteService.getWinnerCandidate(voteRoomId)
+        const winners = this.voteService.getWinnerCandidates(voteRoomId)
 
-        if (winner) {
+        if (winners.length > 0) {
+          const winner = winners[0]
           this.logger.log(`Winner Found: ${winner.name}, Image: ${winner.imageUrl}`)
           winnerName = winner.name
+          if (winners.length > 1) {
+            winnerName += ` 외 ${winners.length - 1}곳`
+          }
           winnerImage = winner.imageUrl || ''
           break
         }
       }
 
       const title = winnerName ? `${winnerName} - 모임 장소 결정완료!` : defaultTitle
-      const description = winnerName ? `모임 장소로 ${winnerName} 선정되었습니다.` : defaultDesc
+      const description = winnerName ? `딱! 여기 모임 장소로 ${winnerName} 선정되었습니다.` : defaultDesc
       const imageUrl = winnerImage || defaultImage
 
       const html = this.generateHtml(title, description, imageUrl, redirectUrl)

@@ -486,40 +486,45 @@ export class VoteService {
 
   /**
    * 해당 투표 세션의 승리 후보 반환 (완료된 경우)
+   * 동점자 발생 시, 동점인 모든 후보를 반환
    * @param voteRoomId 투표 룸 ID (${roomId}:${categoryId})
    */
-  getWinnerCandidate(voteRoomId: string): Candidate | null {
+  getWinnerCandidates(voteRoomId: string): Candidate[] {
     const session = this.sessions.get(voteRoomId)
+    // 세션이 없거나 투표가 완료되지 않았으면 빈 배열 반환
     if (!session || session.status !== VoteStatus.COMPLETED) {
-      return null
+      return []
     }
 
-    let winnerId = session.selectedCandidateId ?? null
+    // 1. 방장 선택(Pick)이 있는 경우 최우선 반환
+    const selectedCandidateId = session.selectedCandidateId
+    if (selectedCandidateId) {
+      const selected = session.candidates.get(selectedCandidateId)
+      return selected ? [selected] : []
+    }
 
-    if (!winnerId) {
-      let maxVotes = -1
-      let topId: string | null = null
-      let hasTie = false
-
-      for (const [candidateId, count] of session.totalCounts.entries()) {
-        if (count > maxVotes) {
-          maxVotes = count
-          topId = candidateId
-          hasTie = false
-        } else if (count === maxVotes) {
-          hasTie = true
-        }
-      }
-
-      if (!hasTie) {
-        winnerId = topId
+    // 2. 투표 수 집계
+    let maxVotes = 0
+    for (const count of session.totalCounts.values()) {
+      if (count > maxVotes) {
+        maxVotes = count
       }
     }
 
-    if (!winnerId) {
-      return null
+    // 득표가 아예 없으면 승자 없음
+    if (maxVotes === 0) {
+      return []
     }
 
-    return session.candidates.get(winnerId) || null
+    // 3. 최다 득표자 모두 찾기 (동점자 처리)
+    const winners: Candidate[] = []
+    for (const candidate of session.candidates.values()) {
+      const count = session.totalCounts.get(candidate.placeId) ?? 0
+      if (count === maxVotes) {
+        winners.push(candidate)
+      }
+    }
+
+    return winners
   }
 }
