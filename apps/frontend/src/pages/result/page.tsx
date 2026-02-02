@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ResultNotFoundError } from '@/app/error-boundary'
+import { ResultNotFoundError, ResultLoadFailedError } from '@/app/error-boundary'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
 import { Button, Header, type PlaceDetailPlace } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
@@ -9,7 +9,6 @@ import { getOrCreateStoredUser } from '@/shared/utils'
 import { useRoomSocket } from '@/pages/room/hooks'
 import { RoomHeader } from '@/pages/room/components'
 import { PlaceResultCard } from './components'
-import { ResultLoadFailedError } from '@/app/error-boundary/error'
 
 export const ResultPage = () => {
   const navigate = useNavigate()

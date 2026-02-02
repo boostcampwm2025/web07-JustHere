@@ -1,8 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
-import { RoomNotFoundError, ResultNotFoundError } from '@/app/error-boundary'
 import { RoomErrorPage } from '@/pages'
-import { ResultLoadFailedError } from './error'
+import { RoomNotFoundError, ResultNotFoundError, ResultLoadFailedError } from './error'
 import { ERROR_TYPE, type ErrorType } from './error-type'
 
 type Props = {
