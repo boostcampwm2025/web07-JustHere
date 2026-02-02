@@ -202,7 +202,7 @@ export class VoteService {
     if (session.round === 1) {
       return {
         type: 'runoff',
-        payload: this.startRunoff(roomId, session, tiedCandidates),
+        payload: this.startRunoff(session, tiedCandidates),
       }
     }
 
@@ -216,7 +216,7 @@ export class VoteService {
   /**
    * 결선 투표 전환: 동률 후보만 남기고 투표 리셋
    */
-  private startRunoff(roomId: string, session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
+  private startRunoff(session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
     const tiedIds = new Set(tiedCandidates.map(c => c.placeId))
 
     // 동률 후보만 남기기

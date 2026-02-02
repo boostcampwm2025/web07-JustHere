@@ -199,13 +199,16 @@ export const LocationListSection = ({
       }
 
       if (singleVote && myVotes.length > 0) {
-        showToast('결선 투표에서는 1개의 후보에만 투표할 수 있습니다.', 'error')
+        // 기존 투표를 취소하고 새로운 후보에 투표 (자동 스위칭)
+        const prevCandidateId = myVotes[0]
+        revokeVote(prevCandidateId)
+        castVote(candidateId)
         return
       }
 
       castVote(candidateId)
     },
-    [myVotes, singleVote, castVote, revokeVote, showToast],
+    [myVotes, singleVote, castVote, revokeVote],
   )
 
   const handleCandidateRegister = useCallback(
