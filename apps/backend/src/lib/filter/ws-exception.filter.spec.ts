@@ -65,6 +65,37 @@ describe('WebsocketExceptionsFilter', () => {
       )
     })
 
+    it('Error 객체가 아닌 예외(예: 문자열)를 처리하고 기본 500 에러를 전송해야 한다', () => {
+      const exception = 'String Error'
+      filter.catch(exception, mockArgumentsHost)
+
+      expect(mockEmit).toHaveBeenCalledWith(
+        'error',
+        expect.objectContaining({
+          status: ResponseStatus.Error,
+          statusCode: 500,
+          errorType: ErrorType.InternalServerError,
+          message: 'Internal server error', // 기본 메시지
+          data: { some: 'data' },
+        }),
+      )
+    })
+
+    it('ErrorStatusMap에 없는 CustomException 타입은 500으로 처리해야 한다', () => {
+      // ErrorStatusMap에 없는 가상의 타입을 가진 CustomException
+      const exception = new CustomException('UNKNOWN_TYPE' as ErrorType, '알 수 없는 타입')
+      filter.catch(exception, mockArgumentsHost)
+
+      expect(mockEmit).toHaveBeenCalledWith(
+        'error',
+        expect.objectContaining({
+          statusCode: 500,
+          errorType: 'UNKNOWN_TYPE',
+          message: '알 수 없는 타입',
+        }),
+      )
+    })
+
     it('생성자에서 지정한 네임스페이스로 이벤트를 전송해야 한다', () => {
       const customFilter = new WebsocketExceptionsFilter('custom')
       const exception = new CustomException(ErrorType.NotFound, '찾을 수 없음')

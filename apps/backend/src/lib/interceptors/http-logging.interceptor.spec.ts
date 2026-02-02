@@ -9,6 +9,7 @@ describe('HttpLoggingInterceptor', () => {
   let mockCallHandler: CallHandler
   let mockRequest: Partial<Request>
   let mockResponse: Partial<Response>
+  let loggerLogSpy: jest.SpyInstance
 
   beforeEach(() => {
     interceptor = new HttpLoggingInterceptor()
@@ -34,7 +35,7 @@ describe('HttpLoggingInterceptor', () => {
     }
 
     // Logger Mocking
-    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
+    loggerLogSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -48,12 +49,9 @@ describe('HttpLoggingInterceptor', () => {
   it('요청 시작과 종료 시 로그를 출력해야 한다', done => {
     interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
       next: () => {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(Logger.prototype.log).toHaveBeenCalledTimes(2)
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('Request Start: GET /test - IP: 127.0.0.1'))
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('[GET] /test 200'))
+        expect(loggerLogSpy).toHaveBeenCalledTimes(2)
+        expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining('Request Start: GET /test - IP: 127.0.0.1'))
+        expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining('[GET] /test 200'))
         done()
       },
     })
@@ -63,8 +61,7 @@ describe('HttpLoggingInterceptor', () => {
     mockRequest.originalUrl = '/metrics'
     interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
       next: () => {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(Logger.prototype.log).not.toHaveBeenCalled()
+        expect(loggerLogSpy).not.toHaveBeenCalled()
         done()
       },
     })
@@ -74,8 +71,7 @@ describe('HttpLoggingInterceptor', () => {
     ;(mockRequest.get as jest.Mock).mockReturnValue(undefined)
     interceptor.intercept(mockExecutionContext, mockCallHandler).subscribe({
       next: () => {
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(Logger.prototype.log).toHaveBeenCalledWith(expect.stringContaining('UA: '))
+        expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining('UA: '))
         done()
       },
     })

@@ -83,12 +83,10 @@ describe('CategoryService (socket handlers only)', () => {
   })
 
   describe('createCategory', () => {
-    it('세션이 없으면 Unauthorized 예외를 던진다', async () => {
+    it('세션이 없으면 NotInRoom 예외를 던진다', async () => {
       getSessionMock.mockReturnValue(undefined)
 
-      await expect(service.createCategory(mockClient, '음식')).rejects.toThrow(
-        new CustomException(ErrorType.Unauthorized, '방에 참여하지 않았습니다.'),
-      )
+      await expect(service.createCategory(mockClient, '음식')).rejects.toThrow(new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.'))
 
       expect(categoryRepositoryMock.create).not.toHaveBeenCalled()
       expect(emitToRoomMock).not.toHaveBeenCalled()
@@ -165,11 +163,11 @@ describe('CategoryService (socket handlers only)', () => {
   })
 
   describe('deleteCategory', () => {
-    it('세션이 없으면 Unauthorized 예외를 던진다', async () => {
+    it('세션이 없으면 NotInRoom 예외를 던진다', async () => {
       getSessionMock.mockReturnValue(undefined)
 
       await expect(service.deleteCategory(mockClient, categoryId)).rejects.toThrow(
-        new CustomException(ErrorType.Unauthorized, '방에 참여하지 않았습니다.'),
+        new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.'),
       )
 
       expect(categoryRepositoryMock.delete).not.toHaveBeenCalled()

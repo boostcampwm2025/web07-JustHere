@@ -7,16 +7,17 @@ import { CustomException } from '@/lib/exceptions/custom.exception'
 describe('RoomRepository', () => {
   let repository: RoomRepository
 
-  // 1. PrismaService에서 사용할 메서드만 타입을 정의합니다.
-  // 이렇게 하면 'as jest.Mock'을 매번 사용하지 않아도 됩니다.
+  // 1. PrismaService Mock 타입 정의
   let prisma: {
     room: {
       create: jest.Mock
       findUnique: jest.Mock
+      findMany: jest.Mock
       update: jest.Mock
       updateMany: jest.Mock
       deleteMany: jest.Mock
     }
+    $transaction: jest.Mock
   }
 
   // 공통 Mock Room 객체
@@ -32,15 +33,18 @@ describe('RoomRepository', () => {
   }
 
   beforeEach(async () => {
-    // 2. Mock 구현체 정의 (jest.fn()으로 초기화)
+    // 2. Mock 구현체 정의
     prisma = {
       room: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findMany: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
         deleteMany: jest.fn(),
       },
+      // $transaction은 콜백을 받아서 실행하는 형태로 모킹
+      $transaction: jest.fn(async callback => await callback(prisma)),
     }
 
     const module: TestingModule = await Test.createTestingModule({
@@ -48,7 +52,6 @@ describe('RoomRepository', () => {
         RoomRepository,
         {
           provide: PrismaService,
-          // 3. 타입 불일치 해결: 우리가 만든 객체는 PrismaService의 일부이므로 강제 단언
           useValue: prisma as unknown as PrismaService,
         },
       ],
@@ -59,7 +62,6 @@ describe('RoomRepository', () => {
 
   describe('createRoom', () => {
     it('방을 생성하고 slug를 포함한 Room 객체를 반환해야 한다', async () => {
-      // jest.spyOn 대신 직접 mockResolvedValue 사용 가능
       prisma.room.create.mockResolvedValue(mockRoom)
 
       const result = await repository.createRoom({
@@ -72,9 +74,7 @@ describe('RoomRepository', () => {
       expect(result.slug).toHaveLength(8)
       expect(result.slug).toMatch(/^[a-z0-9]+$/)
 
-      // prisma.room.create가 이미 jest.Mock 타입이므로 'as jest.Mock' 불필요
       expect(prisma.room.create).toHaveBeenCalledWith({
-        // unsafe-assignment 해결: 구체적인 타입 단언 유지
         data: expect.objectContaining({
           x: 127.027621,
           y: 37.497952,
@@ -102,8 +102,6 @@ describe('RoomRepository', () => {
 
     it('slug 중복 시 재시도해야 한다', async () => {
       const duplicateError = { code: 'P2002' }
-
-      // mockRejectedValueOnce와 mockResolvedValueOnce 체이닝
       prisma.room.create.mockRejectedValueOnce(duplicateError).mockResolvedValueOnce(mockRoom)
 
       const result = await repository.createRoom({
@@ -209,7 +207,6 @@ describe('RoomRepository', () => {
     it('여러 방의 활동 시간을 일괄 업데이트해야 한다', async () => {
       const ids = ['id-1', 'id-2']
       const date = new Date()
-      // updateMany는 { count: number }를 반환함
       prisma.room.updateMany.mockResolvedValue({ count: 2 })
 
       await repository.updateManyLastActiveAt(ids, date)
@@ -226,21 +223,45 @@ describe('RoomRepository', () => {
   })
 
   describe('deleteRoomsInactiveSince', () => {
-    it('특정 날짜 이전의 방들을 삭제하고 삭제된 개수를 반환해야 한다', async () => {
+    it('특정 날짜 이전의 방들을 조회하고 삭제한 뒤 ID 목록을 반환해야 한다', async () => {
       const thresholdDate = new Date()
-      const deletedCount = 5
-      prisma.room.deleteMany.mockResolvedValue({ count: deletedCount })
+      const inactiveRooms = [{ id: 'room-1' }, { id: 'room-2' }]
 
-      const count = await repository.deleteRoomsInactiveSince(thresholdDate)
+      // 트랜잭션 내부 동작 모킹
+      prisma.room.findMany.mockResolvedValue(inactiveRooms)
+      prisma.room.deleteMany.mockResolvedValue({ count: 2 })
 
-      expect(count).toBe(deletedCount)
-      expect(prisma.room.deleteMany).toHaveBeenCalledWith({
+      const result = await repository.deleteRoomsInactiveSince(thresholdDate)
+
+      expect(prisma.$transaction).toHaveBeenCalled()
+      expect(prisma.room.findMany).toHaveBeenCalledWith({
         where: {
           lastActiveAt: {
             lt: thresholdDate,
           },
         },
+        select: { id: true },
       })
+      expect(prisma.room.deleteMany).toHaveBeenCalledWith({
+        where: {
+          id: {
+            in: ['room-1', 'room-2'],
+          },
+        },
+      })
+      expect(result).toEqual(['room-1', 'room-2'])
+    })
+
+    it('삭제할 방이 없으면 빈 배열을 반환해야 한다', async () => {
+      const thresholdDate = new Date()
+
+      prisma.room.findMany.mockResolvedValue([])
+
+      const result = await repository.deleteRoomsInactiveSince(thresholdDate)
+
+      expect(prisma.room.findMany).toHaveBeenCalled()
+      expect(prisma.room.deleteMany).not.toHaveBeenCalled()
+      expect(result).toEqual([])
     })
   })
 })

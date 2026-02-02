@@ -16,6 +16,7 @@ describe('VoteOwnerGuard', () => {
 
   const mockUserService = {
     getSession: jest.fn(),
+    getSessionByUserIdInRoom: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -35,11 +36,11 @@ describe('VoteOwnerGuard', () => {
   describe('canActivate', () => {
     let mockContext: ExecutionContext
     let mockSocket: Socket
-    let mockPayload: { roomId?: string }
+    let mockPayload: { roomId?: string; categoryId?: string; userId?: string }
 
     beforeEach(() => {
-      mockSocket = { id: 'client-id' } as Socket
-      mockPayload = { roomId: 'room-id' }
+      mockSocket = { id: 'client-id', data: {} } as Socket
+      mockPayload = { roomId: 'room-id', categoryId: 'category-id' }
 
       mockContext = {
         switchToWs: jest.fn().mockReturnValue({
@@ -49,32 +50,63 @@ describe('VoteOwnerGuard', () => {
       } as unknown as ExecutionContext
     })
 
-    it('모든 조건이 충족되면 true를 반환해야 한다', () => {
-      mockUserService.getSession.mockReturnValue({ isOwner: true })
+    it('모든 조건이 충족되면 true를 반환해야 한다 (소켓 ID 기준)', () => {
+      mockUserService.getSession.mockReturnValue({ isOwner: true, roomId: 'room-id' })
       mockVoteService.getSessionOrThrow.mockReturnValue({})
 
       const result = guard.canActivate(mockContext)
 
       expect(result).toBe(true)
       expect(mockUserService.getSession).toHaveBeenCalledWith('client-id')
-      expect(mockVoteService.getSessionOrThrow).toHaveBeenCalledWith('room-id')
+      expect(mockVoteService.getSessionOrThrow).toHaveBeenCalledWith('room-id:category-id')
     })
 
-    it('Room에 접속되지 않았으면 NotInRoom 예외를 던져야 한다', () => {
+    it('모든 조건이 충족되면 true를 반환해야 한다 (userId 기준)', () => {
+      mockPayload.userId = 'user-1'
+      mockSocket.data = { userId: 'user-1' }
+      mockUserService.getSessionByUserIdInRoom.mockReturnValue({ isOwner: true, roomId: 'room-id' })
+      mockVoteService.getSessionOrThrow.mockReturnValue({})
+
+      const result = guard.canActivate(mockContext)
+
+      expect(result).toBe(true)
+      expect(mockUserService.getSessionByUserIdInRoom).toHaveBeenCalledWith('room-id', 'user-1')
+      expect(mockVoteService.getSessionOrThrow).toHaveBeenCalledWith('room-id:category-id')
+    })
+
+    it('Room에 접속되지 않았으면 NotInRoom 예외를 던져야 한다 (세션 없음)', () => {
       mockUserService.getSession.mockReturnValue(null)
 
       expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.'))
     })
 
+    it('Room에 접속되지 않았으면 NotInRoom 예외를 던져야 한다 (다른 방)', () => {
+      mockUserService.getSession.mockReturnValue({ isOwner: true, roomId: 'other-room' })
+
+      expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.'))
+    })
+
+    it('payload userId와 socket data userId가 다르면 NotInRoom 예외를 던져야 한다', () => {
+      mockPayload.userId = 'user-1'
+      mockSocket.data = { userId: 'user-2' }
+
+      expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.'))
+    })
+
     it('투표 세션 ID(roomId)가 없으면 BadRequest 예외를 던져야 한다', () => {
-      mockUserService.getSession.mockReturnValue({ isOwner: true })
       mockPayload.roomId = undefined
 
-      expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.BadRequest, '투표 세션 ID(roomId)가 필요합니다.'))
+      expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.BadRequest, 'roomId가 필요합니다.'))
+    })
+
+    it('카테고리 ID(categoryId)가 없으면 BadRequest 예외를 던져야 한다', () => {
+      mockPayload.categoryId = undefined
+
+      expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.BadRequest, 'categoryId가 필요합니다.'))
     })
 
     it('투표 세션이 존재하지 않으면 NotFound 예외를 던져야 한다', () => {
-      mockUserService.getSession.mockReturnValue({ isOwner: true })
+      mockUserService.getSession.mockReturnValue({ isOwner: true, roomId: 'room-id' })
       mockVoteService.getSessionOrThrow.mockImplementation(() => {
         throw new CustomException(ErrorType.NotFound, '투표 세션이 존재하지 않습니다.')
       })
@@ -83,7 +115,7 @@ describe('VoteOwnerGuard', () => {
     })
 
     it('방장 권한이 없으면 NotOwner 예외를 던져야 한다', () => {
-      mockUserService.getSession.mockReturnValue({ isOwner: false })
+      mockUserService.getSession.mockReturnValue({ isOwner: false, roomId: 'room-id' })
       mockVoteService.getSessionOrThrow.mockReturnValue({})
 
       expect(() => guard.canActivate(mockContext)).toThrow(new CustomException(ErrorType.NotOwner, '방장 권한이 필요합니다.'))

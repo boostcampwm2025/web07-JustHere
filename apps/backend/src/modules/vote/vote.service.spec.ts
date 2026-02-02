@@ -275,6 +275,38 @@ describe('VoteService', () => {
         expect((e as CustomException).type).toBe(ErrorType.VoteNotInProgress)
       }
     })
+
+    it('결선 투표(singleVote=true)에서는 1인 1표만 가능하다', () => {
+      // 1. 세션 초기화 (WAITING 상태로)
+      service.deleteSession(roomId)
+      service.getOrCreateSession(roomId, userId)
+
+      // 2. 후보 2명 등록 (WAITING 상태에서만 가능)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+
+      // 3. 투표 시작
+      service.startVote(roomId)
+
+      // 4. 결선 투표 상황 강제 설정
+      const session = service.getSessionOrThrow(roomId)
+      session.singleVote = true
+
+      // 첫 번째 투표 성공
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+
+      // 두 번째 투표 시도 (다른 후보) -> 예외 발생
+      expect(() => {
+        service.castVote(roomId, userId, place2.placeId)
+      }).toThrow(CustomException)
+
+      try {
+        service.castVote(roomId, userId, place2.placeId)
+      } catch (e) {
+        expect((e as CustomException).type).toBe(ErrorType.VoteSingleVoteLimit)
+      }
+    })
   })
 
   describe('Owner Actions & State Transitions', () => {
@@ -342,6 +374,99 @@ describe('VoteService', () => {
       } catch (e) {
         expect((e as CustomException).type).toBe(ErrorType.BadRequest)
       }
+    })
+
+    it('동률 발생 시 결선 투표(runoff)로 전환되어야 한다', () => {
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+      service.startVote(roomId)
+
+      // 동률 상황: place1(1표), place2(1표)
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      service.castVote(roomId, userId2, place2.placeId)
+
+      const result = service.endVote(roomId)
+
+      expect(result.type).toBe('runoff')
+      const session = service.getSessionOrThrow(roomId)
+      expect(session.status).toBe(VoteStatus.IN_PROGRESS) // 결선도 IN_PROGRESS
+      expect(session.round).toBe(2)
+      expect(session.singleVote).toBe(true)
+      expect(session.candidates.size).toBe(2) // 동률 후보만 남음
+      expect(session.userVotes.size).toBe(0) // 투표 초기화
+    })
+
+    it('결선 투표에서도 동률 발생 시 방장 선택(owner-pick)으로 전환되어야 한다', () => {
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+      service.startVote(roomId)
+
+      // 1차 투표 동률 -> 결선 투표
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      service.castVote(roomId, userId2, place2.placeId)
+      service.endVote(roomId)
+
+      // 2차 투표(결선) 동률
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+      service.castVote(roomId, userId2, place2.placeId)
+
+      const result = service.endVote(roomId)
+
+      expect(result.type).toBe('owner-pick')
+      const session = service.getSessionOrThrow(roomId)
+      expect(session.status).toBe(VoteStatus.OWNER_PICK)
+    })
+  })
+
+  describe('Owner Select & Reset', () => {
+    beforeEach(() => {
+      service.getOrCreateSession(roomId, userId)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+      const session = service.getSessionOrThrow(roomId)
+      session.status = VoteStatus.OWNER_PICK // 강제 상태 설정
+    })
+
+    it('방장이 후보를 선택하면 투표가 종료되어야 한다', () => {
+      const result = service.ownerSelect(roomId, mockPlaceData.placeId)
+
+      expect(result.status).toBe('COMPLETED')
+      expect(result.selectedCandidateId).toBe(mockPlaceData.placeId)
+
+      const session = service.getSessionOrThrow(roomId)
+      expect(session.status).toBe(VoteStatus.COMPLETED)
+    })
+
+    it('OWNER_PICK 상태가 아니면 방장 선택을 할 수 없다', () => {
+      const session = service.getSessionOrThrow(roomId)
+      session.status = VoteStatus.IN_PROGRESS
+
+      expect(() => {
+        service.ownerSelect(roomId, mockPlaceData.placeId)
+      }).toThrow(CustomException)
+    })
+
+    it('완료된 투표를 리셋하면 WAITING 상태로 돌아가야 한다', () => {
+      const session = service.getSessionOrThrow(roomId)
+      session.status = VoteStatus.COMPLETED
+      session.userVotes.set(userId, new Set([mockPlaceData.placeId]))
+      session.totalCounts.set(mockPlaceData.placeId, 1)
+
+      const result = service.resetVote(roomId)
+
+      expect(result.status).toBe('WAITING')
+      expect(session.status).toBe(VoteStatus.WAITING)
+      expect(session.userVotes.size).toBe(0)
+      expect(session.totalCounts.size).toBe(0)
+      expect(session.candidates.size).toBe(1) // 후보는 유지
+    })
+
+    it('완료되지 않은 투표는 리셋할 수 없다', () => {
+      const session = service.getSessionOrThrow(roomId)
+      session.status = VoteStatus.IN_PROGRESS
+
+      expect(() => {
+        service.resetVote(roomId)
+      }).toThrow(CustomException)
     })
   })
 
