@@ -1,3 +1,4 @@
 export * from './vote'
-export * from './canvasItemValue'
+export * from './canvas'
 export * from './yjs'
+export * from './canvas'
