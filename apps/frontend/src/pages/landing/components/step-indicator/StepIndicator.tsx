@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { Logo } from '@/shared/assets'
+import { LogoKo } from '@/shared/assets'
+import { Link } from 'react-router-dom'
 import { cn } from '@/shared/utils/cn'
 
 const STEPS = [
@@ -20,7 +21,9 @@ export const StepIndicator = ({ currentStep, isOnFinalStep = false }: StepIndica
     <div className="w-full max-w-5xl mx-auto py-4 px-4">
       <div className="flex items-center gap-6">
         <div className="shrink-0 flex items-center">
-          <Logo className="h-8 w-auto" />
+          <Link to="/" aria-label="홈으로 이동" className="inline-flex">
+            <LogoKo className="h-10 w-auto cursor-pointer" />
+          </Link>
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
