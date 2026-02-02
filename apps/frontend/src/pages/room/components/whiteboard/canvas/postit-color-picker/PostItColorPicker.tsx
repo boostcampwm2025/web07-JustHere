@@ -14,7 +14,7 @@ export const PostItColorPicker = ({ selectedPostItIds, currentFill, onColorChang
   return (
     <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-2 bg-white rounded-full shadow-xl border border-gray-200">
       {POST_IT_COLORS.map(({ color, name }) => (
-        <Tooltip key={name} content={name} position="bottom">
+        <Tooltip key={name} content={name}>
           <button
             type="button"
             aria-label={name}

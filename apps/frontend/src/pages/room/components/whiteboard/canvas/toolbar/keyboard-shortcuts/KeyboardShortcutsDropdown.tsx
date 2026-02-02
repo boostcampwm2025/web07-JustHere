@@ -15,7 +15,7 @@ export const KeyboardShortcutsDropdown = () => {
 
   return (
     <div className="relative">
-      <Tooltip content="키보드 단축키" position="bottom">
+      <Tooltip content="키보드 단축키">
         <Button
           size="icon"
           variant="gray"
