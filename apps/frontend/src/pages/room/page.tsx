@@ -113,8 +113,6 @@ export default function RoomPage() {
           participants={participants}
           isOwner={isOwner}
           activeCategoryId={activeCategoryId}
-          slug={slug}
-          currentRegion={currentRegion}
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}
