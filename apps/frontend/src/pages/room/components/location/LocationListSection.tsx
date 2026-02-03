@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
-import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
+import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal, LazyImage } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
@@ -359,7 +359,7 @@ export const LocationListSection = ({
                     >
                       <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
                         {photoUrl ? (
-                          <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                          <LazyImage src={photoUrl} alt={place.displayName.text} className="w-full h-full" />
                         ) : (
                           <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
                             <span className="text-gray-400 text-xs">No Image</span>
