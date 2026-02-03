@@ -1,7 +1,7 @@
 import type { CanvasItemType } from '@/shared/types'
 import type { YjsItemType } from '@/pages/room/types'
 
-const CANVAS_ITEM_TYPES: CanvasItemType[] = ['postit', 'line', 'placeCard', 'textBox']
+const CANVAS_ITEM_TYPES = ['postit', 'line', 'placeCard', 'textBox'] as const satisfies readonly CanvasItemType[]
 
 export const makeKey = (type: CanvasItemType, id: string) => `${type}:${id}`
 
