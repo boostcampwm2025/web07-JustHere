@@ -21,7 +21,7 @@ export default function RoomPage() {
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
   const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
   const [candidatePlaceIds, setCandidatePlaceIds] = useState<string[]>([])
-  const candidatePlaces = useResolvedPlaces(candidatePlaceIds, searchResults)
+  const candidatePlaces = useResolvedPlaces(candidatePlaceIds)
   const [activeLocationTab, setActiveLocationTab] = useState<'locations' | 'candidates'>('locations')
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
