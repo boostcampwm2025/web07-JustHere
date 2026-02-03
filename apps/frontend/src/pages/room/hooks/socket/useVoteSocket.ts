@@ -690,6 +690,83 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     [enabled, roomId, categoryId, userId, status, resolveSocket],
   )
 
+  // [C->S] vote:recast
+  const recastVote = useCallback(
+    (oldCandidateId: string, newCandidateId: string) => {
+      if (!enabled || !roomId || !categoryId) return
+
+      const socket = resolveSocket()
+      if (!socket) return
+
+      // 낙관적 업데이트 적용
+      if (status !== 'IN_PROGRESS') return
+      if (!myVotesRef.current.includes(oldCandidateId)) return
+      if (myVotesRef.current.includes(newCandidateId)) return
+
+      // 1. 기존 투표 해제
+      const nextMyVotes = myVotesRef.current.filter(id => id !== oldCandidateId)
+
+      // 2. 새로운 투표 적용
+      const finalMyVotes = [...nextMyVotes, newCandidateId]
+      myVotesRef.current = finalMyVotes
+      setMyVotes(finalMyVotes)
+
+      // 3. 카운트 업데이트
+      const oldCount = countsRef.current[oldCandidateId] ?? 0
+      const nextOldCount = Math.max(0, oldCount - 1)
+
+      const newCount = countsRef.current[newCandidateId] ?? 0
+      const nextNewCount = newCount + 1
+
+      countsRef.current = {
+        ...countsRef.current,
+        [oldCandidateId]: nextOldCount,
+        [newCandidateId]: nextNewCount,
+      }
+      setCounts(prev => ({
+        ...prev,
+        [oldCandidateId]: Math.max(0, (prev[oldCandidateId] ?? 0) - 1),
+        [newCandidateId]: (prev[newCandidateId] ?? 0) + 1,
+      }))
+
+      // 투표자 새롭게 갱신
+      const oldVoters = votersByCandidateRef.current[oldCandidateId] ?? []
+      const newVoters = votersByCandidateRef.current[newCandidateId] ?? []
+
+      if (oldVoters.includes(userId)) {
+        const nextOldVoters = oldVoters.filter(id => id !== userId)
+        votersByCandidateRef.current = { ...votersByCandidateRef.current, [oldCandidateId]: nextOldVoters }
+      }
+
+      if (!newVoters.includes(userId)) {
+        const nextNewVoters = [...newVoters, userId]
+        votersByCandidateRef.current = { ...votersByCandidateRef.current, [newCandidateId]: nextNewVoters }
+      }
+
+      setVotersByCandidate(prev => {
+        const next = { ...prev }
+        if (prev[oldCandidateId]?.includes(userId)) {
+          next[oldCandidateId] = prev[oldCandidateId].filter(id => id !== userId)
+        }
+        if (!prev[newCandidateId]?.includes(userId)) {
+          next[newCandidateId] = [...(prev[newCandidateId] ?? []), userId]
+        }
+        return next
+      })
+
+      setError(null)
+
+      socket.emit(VOTE_EVENTS.recast, {
+        roomId,
+        categoryId,
+        oldCandidateId,
+        newCandidateId,
+      })
+      addSocketBreadcrumb('vote:recast', { roomId, oldCandidateId, newCandidateId })
+    },
+    [enabled, roomId, categoryId, userId, status, resolveSocket],
+  )
+
   const resetError = useCallback(() => {
     setError(null)
   }, [])
@@ -714,6 +791,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     resetVote,
     castVote,
     revokeVote,
+    recastVote,
     ownerSelect,
     resetError,
   }

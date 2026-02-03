@@ -9,6 +9,7 @@ export const VOTE_EVENTS = {
   candidateRemoved: 'vote:candidate:removed',
   cast: 'vote:cast',
   revoke: 'vote:revoke',
+  recast: 'vote:recast',
   countsUpdated: 'vote:counts:updated',
   meUpdated: 'vote:me:updated',
   start: 'vote:start',

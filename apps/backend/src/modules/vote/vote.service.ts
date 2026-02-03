@@ -426,6 +426,48 @@ export class VoteService {
   }
 
   /**
+   * 투표 변경 (vote:recast)
+   * - 기존 투표 취소 후 새로운 투표
+   * - 조건: IN_PROGRESS 상태
+   * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 투표하는 사용자 ID
+   * @param oldCandidateId 취소할 후보 ID
+   * @param newCandidateId 투표할 후보 ID
+   */
+  recastVote(
+    roomId: string,
+    userId: string,
+    oldCandidateId: string,
+    newCandidateId: string,
+  ): {
+    oldVoteResult: VoteCountsUpdatedPayload
+    newVoteResult: VoteCountsUpdatedPayload
+    changed: boolean
+  } {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status !== VoteStatus.IN_PROGRESS) {
+      throw new CustomException(ErrorType.VoteNotInProgress, '현재 투표 진행 중이 아닙니다.')
+    }
+
+    if (!session.candidates.has(oldCandidateId) || !session.candidates.has(newCandidateId)) {
+      throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
+    }
+
+    // 1. 이전 투표 취소
+    const revokeResult = this.revokeVote(roomId, userId, oldCandidateId)
+
+    // 2. 새로운 투표 진행
+    const castResult = this.castVote(roomId, userId, newCandidateId)
+
+    return {
+      oldVoteResult: revokeResult,
+      newVoteResult: castResult,
+      changed: revokeResult.changed || castResult.changed,
+    }
+  }
+
+  /**
    * 사용자의 현재 투표 목록 조회
    * @param roomId 페이로드 내 카테고리 ID
    * @param userId 사용자 ID
