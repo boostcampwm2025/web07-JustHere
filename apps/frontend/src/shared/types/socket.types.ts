@@ -86,6 +86,7 @@ export type SocketErrorType =
   | 'TARGET_NOT_FOUND'
   | 'INTERNAL_SERVER_ERROR'
   | 'CATEGORY_OVERFLOW_EXCEPTION'
+  | 'NO_CANDIDATES'
   | 'SOCKET_ERROR'
 
 // [S->C] room:error / category:error
