@@ -38,6 +38,10 @@ export const useCanvasDraw = ({ addLine, updateLine, stopCapturing, roomId, canv
         updateLineRef.current(id, { points: [...points] })
       }, 100)
     }
+    return () => {
+      throttledUpdateLineRef.current?.cancel()
+      throttledUpdateLineRef.current = null
+    }
   }, [])
 
   // 드로잉 완료 시 currentDrawingLine을 초기화하는 내부 함수
