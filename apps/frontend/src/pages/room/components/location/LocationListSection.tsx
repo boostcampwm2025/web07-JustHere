@@ -208,7 +208,7 @@ export const LocationListSection = ({
 
       castVote(candidateId)
     },
-    [myVotes, singleVote, castVote, revokeVote],
+    [myVotes, singleVote, castVote, revokeVote, recastVote],
   )
 
   const handleCandidateRegister = useCallback(

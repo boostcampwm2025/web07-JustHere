@@ -40,6 +40,7 @@ export type VoteCountsUpdatedPayload = {
   count: number
   userId: string
   voters: string[]
+  changed?: boolean | undefined
 }
 
 // [S->C] vote:me:updated

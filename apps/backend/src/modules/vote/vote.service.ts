@@ -330,7 +330,7 @@ export class VoteService {
    * @returns 투표 결과와 변경 여부
    */
   // TODO : 동시성 문제 처리 해야함.
-  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -386,7 +386,7 @@ export class VoteService {
    * @param candidateId 페이로드의 placeId
    * @returns 투표 결과와 변경 여부
    */
-  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -442,7 +442,7 @@ export class VoteService {
   ): {
     oldVoteResult: VoteCountsUpdatedPayload
     newVoteResult: VoteCountsUpdatedPayload
-    changed: boolean
+    changed?: boolean
   } {
     const session = this.getSessionOrThrow(roomId)
 
