@@ -83,6 +83,7 @@ export const useCanvasDraw = ({ addLine, updateLine, stopCapturing, roomId, canv
 
   const startDrawing = useCallback(
     (canvasPos: { x: number; y: number }, lineNode: Konva.Line, layer: Konva.Layer) => {
+      if (isDrawingRef.current) return
       stopCapturingRef.current()
 
       const newLineId = `line-${crypto.randomUUID()}`
