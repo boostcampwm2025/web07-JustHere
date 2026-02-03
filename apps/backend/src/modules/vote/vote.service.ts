@@ -203,7 +203,7 @@ export class VoteService {
     if (session.round === 1) {
       return {
         type: 'runoff',
-        payload: this.startRunoff(roomId, session, tiedCandidates),
+        payload: this.startRunoff(session, tiedCandidates),
       }
     }
 
@@ -217,7 +217,7 @@ export class VoteService {
   /**
    * 결선 투표 전환: 동률 후보만 남기고 투표 리셋
    */
-  private startRunoff(roomId: string, session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
+  private startRunoff(session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
     const tiedIds = new Set(tiedCandidates.map(c => c.placeId))
 
     // 동률 후보만 남기기
@@ -331,7 +331,7 @@ export class VoteService {
    * @returns 투표 결과와 변경 여부
    */
   // TODO : 동시성 문제 처리 해야함.
-  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -387,7 +387,7 @@ export class VoteService {
    * @param candidateId 페이로드의 placeId
    * @returns 투표 결과와 변경 여부
    */
-  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -423,6 +423,48 @@ export class VoteService {
       userId,
       voters: this.getVoterIdsForCandidate(session, candidateId),
       changed: true,
+    }
+  }
+
+  /**
+   * 투표 변경 (vote:recast)
+   * - 기존 투표 취소 후 새로운 투표
+   * - 조건: IN_PROGRESS 상태
+   * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 투표하는 사용자 ID
+   * @param oldCandidateId 취소할 후보 ID
+   * @param newCandidateId 투표할 후보 ID
+   */
+  recastVote(
+    roomId: string,
+    userId: string,
+    oldCandidateId: string,
+    newCandidateId: string,
+  ): {
+    oldVoteResult: VoteCountsUpdatedPayload
+    newVoteResult: VoteCountsUpdatedPayload
+    changed?: boolean
+  } {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status !== VoteStatus.IN_PROGRESS) {
+      throw new CustomException(ErrorType.VoteNotInProgress, '현재 투표 진행 중이 아닙니다.')
+    }
+
+    if (!session.candidates.has(oldCandidateId) || !session.candidates.has(newCandidateId)) {
+      throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
+    }
+
+    // 1. 이전 투표 취소
+    const revokeResult = this.revokeVote(roomId, userId, oldCandidateId)
+
+    // 2. 새로운 투표 진행
+    const castResult = this.castVote(roomId, userId, newCandidateId)
+
+    return {
+      oldVoteResult: revokeResult,
+      newVoteResult: castResult,
+      changed: revokeResult.changed || castResult.changed,
     }
   }
 
