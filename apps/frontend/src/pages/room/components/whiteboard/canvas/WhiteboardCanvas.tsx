@@ -316,6 +316,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
       {isChatActive && chatInputPosition && (
         <CursorChatInput
+          key={activeTool}
           position={chatInputPosition}
           name={userName}
           isFading={isChatFading}
