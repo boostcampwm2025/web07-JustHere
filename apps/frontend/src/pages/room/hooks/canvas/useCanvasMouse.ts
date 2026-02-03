@@ -30,11 +30,12 @@ interface UseCanvasMouseProps {
   setChatInputPosition: (pos: { x: number; y: number }) => void
 
   // Drawing
-  isDrawing: boolean
+  getIsDrawing: () => boolean
   cancelDrawing: (reason: 'tool-change' | 'mouse-leave' | 'space-press') => void
-  startDrawing: (pos: { x: number; y: number }) => void
+  startDrawing: (pos: { x: number; y: number }, lineNode: Konva.Line, layer: Konva.Layer) => void
   continueDrawing: (pos: { x: number; y: number }) => void
   endDrawing: () => void
+  currentDrawingLineRef: React.RefObject<Konva.Line | null>
 
   // Canvas items
   postIts: PostIt[]
@@ -73,11 +74,12 @@ export const useCanvasMouse = ({
   updateCursor,
   isChatActive,
   setChatInputPosition,
-  isDrawing,
+  getIsDrawing,
   cancelDrawing,
   startDrawing,
   continueDrawing,
   endDrawing,
+  currentDrawingLineRef,
   postIts,
   placeCards,
   lines,
@@ -180,7 +182,7 @@ export const useCanvasMouse = ({
         })
       }
 
-      if (effectiveTool === 'pencil') {
+      if (effectiveTool === 'pencil' && getIsDrawing()) {
         continueDrawing(canvasPos)
       }
 
@@ -191,7 +193,7 @@ export const useCanvasMouse = ({
         }
       }
     }
-  }, [stageRef, updateCursor, effectiveTool, pendingPlaceCard, isSelecting, continueDrawing, isChatActive, setChatInputPosition])
+  }, [stageRef, updateCursor, effectiveTool, pendingPlaceCard, isSelecting, getIsDrawing, continueDrawing, isChatActive, setChatInputPosition])
 
   const handleMouseLeave = useCallback(() => {
     if (effectiveTool === 'postIt') {
@@ -200,10 +202,10 @@ export const useCanvasMouse = ({
     if (pendingPlaceCard) {
       setPlaceCardCursorPos(null)
     }
-    if (isDrawing) {
+    if (getIsDrawing()) {
       cancelDrawing('mouse-leave')
     }
-  }, [effectiveTool, pendingPlaceCard, isDrawing, cancelDrawing])
+  }, [effectiveTool, pendingPlaceCard, getIsDrawing, cancelDrawing])
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -266,7 +268,12 @@ export const useCanvasMouse = ({
       }
 
       if (effectiveTool === 'pencil') {
-        startDrawing(canvasPos)
+        const layer = stage.getLayers()[0]
+        const lineNode = currentDrawingLineRef.current
+
+        if (layer && lineNode) {
+          startDrawing(canvasPos, lineNode, layer)
+        }
       }
 
       if (effectiveTool === 'textBox') {
@@ -299,13 +306,14 @@ export const useCanvasMouse = ({
       userName,
       addPostIt,
       startDrawing,
+      currentDrawingLineRef,
       addTextBox,
       setActiveTool,
     ],
   )
 
   const handleMouseUp = useCallback(() => {
-    if (effectiveTool === 'pencil') {
+    if (effectiveTool === 'pencil' && getIsDrawing()) {
       endDrawing()
     }
 
@@ -358,7 +366,7 @@ export const useCanvasMouse = ({
       })
       setIsSelecting(false)
     }
-  }, [effectiveTool, endDrawing, isSelecting, postIts, placeCards, lines, textBoxes, setSelectedItems])
+  }, [effectiveTool, getIsDrawing, endDrawing, isSelecting, postIts, placeCards, lines, textBoxes, setSelectedItems])
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {

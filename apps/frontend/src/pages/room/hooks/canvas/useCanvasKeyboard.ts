@@ -7,7 +7,7 @@ interface UseCanvasKeyboardOptions {
   handleDeleteSelectedItems: () => void
   isChatActive: boolean
   activateCursorChat: () => void
-  isDrawing: boolean
+  getIsDrawing: () => boolean
   cancelDrawing: (reason: 'tool-change' | 'mouse-leave' | 'space-press') => void
   handleToolChange: (tool: ToolType) => void
 }
@@ -26,7 +26,7 @@ export const useCanvasKeyboard = ({
   handleDeleteSelectedItems,
   isChatActive,
   activateCursorChat,
-  isDrawing,
+  getIsDrawing,
   cancelDrawing,
   handleToolChange,
 }: UseCanvasKeyboardOptions) => {
@@ -68,7 +68,7 @@ export const useCanvasKeyboard = ({
       // Space: Hand 모드 토글
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
-        if (isDrawing) {
+        if (getIsDrawing()) {
           cancelDrawing('space-press')
         }
         setIsSpacePressed(true)
@@ -88,7 +88,16 @@ export const useCanvasKeyboard = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [onPlaceCardCanceled, hasSelectedItems, handleDeleteSelectedItems, isChatActive, activateCursorChat, isDrawing, cancelDrawing, handleToolChange])
+  }, [
+    onPlaceCardCanceled,
+    hasSelectedItems,
+    handleDeleteSelectedItems,
+    isChatActive,
+    activateCursorChat,
+    getIsDrawing,
+    cancelDrawing,
+    handleToolChange,
+  ])
 
   return { isSpacePressed }
 }

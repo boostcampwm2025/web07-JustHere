@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo, memo, forwardRef } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
 import type { PlaceCard, SelectedItem, ToolType, PostIt, TextBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox } from '@/pages/room/utils'
-import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { DEFAULT_LINE, DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse, useYjsSocket } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
@@ -31,6 +31,22 @@ interface WhiteboardCanvasProps {
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
 }
+// 드로잉 중인 라인 컴포넌트
+const CurrentDrawingLine = memo(
+  forwardRef<Konva.Line>((_, ref) => (
+    <Line
+      ref={ref}
+      stroke={DEFAULT_LINE.stroke}
+      strokeWidth={DEFAULT_LINE.strokeWidth}
+      tension={DEFAULT_LINE.tension}
+      lineCap={DEFAULT_LINE.lineCap}
+      lineJoin={DEFAULT_LINE.lineJoin}
+      globalCompositeOperation="source-over"
+      listening={false}
+    />
+  )),
+)
+CurrentDrawingLine.displayName = 'CurrentDrawingLine'
 
 export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
@@ -103,8 +119,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     resetInactivityTimer,
   } = useCursorChat({ stageRef, sendCursorChat })
 
-  const { isDrawing, cancelDrawing, startDrawing, continueDrawing, endDrawing } = useCanvasDraw({
-    lines,
+  const currentDrawingLineRef = useRef<Konva.Line | null>(null)
+
+  const { getIsDrawing, getCurrentLineId, cancelDrawing, startDrawing, continueDrawing, endDrawing } = useCanvasDraw({
     addLine,
     updateLine,
     stopCapturing,
@@ -114,12 +131,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
-      if (tool !== 'pencil' && isDrawing) {
+      if (tool !== 'pencil' && getIsDrawing()) {
         cancelDrawing('tool-change')
       }
       setActiveTool(tool)
     },
-    [isDrawing, cancelDrawing],
+    [getIsDrawing, cancelDrawing],
   )
 
   const handleDeleteSelectedItems = useCallback(() => {
@@ -177,7 +194,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     handleDeleteSelectedItems,
     isChatActive,
     activateCursorChat,
-    isDrawing,
+    getIsDrawing,
     cancelDrawing,
     handleToolChange,
   })
@@ -208,11 +225,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     updateCursor,
     isChatActive,
     setChatInputPosition,
-    isDrawing,
+    getIsDrawing,
     cancelDrawing,
     startDrawing,
     continueDrawing,
     endDrawing,
+    currentDrawingLineRef,
     postIts,
     placeCards,
     lines,
@@ -244,6 +262,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   }, [selectedItems])
 
   const unifiedItems = useMemo<UnifiedCanvasItem[]>(() => {
+    const currentDrawingLineId = getCurrentLineId()
+
     const linesMap = new Map(lines.map(line => [line.id, line]))
     const postItsMap = new Map(postIts.map(postIt => [postIt.id, postIt]))
     const placeCardsMap = new Map(placeCards.map(card => [card.id, card]))
@@ -253,6 +273,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     const items: UnifiedCanvasItem[] = []
     zIndexOrder.forEach(({ type, id }) => {
       if (type === 'line') {
+        if (id === currentDrawingLineId) return
         const line = linesMap.get(id)
         if (line) {
           items.push({ type: 'line', data: line })
@@ -276,7 +297,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     })
 
     return items
-  }, [lines, postIts, placeCards, textBoxes, zIndexOrder])
+  }, [lines, postIts, placeCards, textBoxes, zIndexOrder, getCurrentLineId])
 
   const getCursorStyle = () => {
     if (pendingPlaceCard) {
@@ -574,6 +595,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               listening={false}
             />
           )}
+
+          {/* 현재 드로잉 중인 라인 */}
+          <CurrentDrawingLine ref={currentDrawingLineRef} />
 
           <Transformer
             ref={transformerRef}
