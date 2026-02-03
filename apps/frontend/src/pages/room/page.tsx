@@ -40,6 +40,9 @@ export default function RoomPage() {
     (results: GooglePlace[]) => {
       if (!activeCategoryId) return
       setSearchResultsByCategory(prev => ({ ...prev, [activeCategoryId]: results }))
+      if (results.length === 0) {
+        setSelectedPlaceByCategory(prev => ({ ...prev, [activeCategoryId]: null }))
+      }
     },
     [activeCategoryId],
   )
