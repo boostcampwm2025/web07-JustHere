@@ -125,6 +125,7 @@ export function useLocationSearch({
     searchQueryRef.current = ''
     setSearchTerm('')
     searchTermRef.current = ''
+    onSearchCompleteRef.current?.([])
   }
 
   return {

@@ -52,6 +52,22 @@ export default function RoomPage() {
     [activeCategoryId],
   )
 
+  const removeKey = useCallback(<T,>(source: Record<string, T>, key: string) => {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) return source
+    const next = { ...source }
+    delete next[key]
+    return next
+  }, [])
+
+  const handleDeleteCategory = useCallback(
+    (categoryId: string) => {
+      deleteCategory(categoryId)
+      setSearchResultsByCategory(prev => removeKey(prev, categoryId))
+      setSelectedPlaceByCategory(prev => removeKey(prev, categoryId))
+    },
+    [deleteCategory, removeKey],
+  )
+
   if (!slug) {
     return <Navigate to="/onboarding" replace />
   }
@@ -156,7 +172,7 @@ export default function RoomPage() {
           roomId={roomId}
           onActiveCategoryChange={setSelectedCategoryId}
           onCreateCategory={createCategory}
-          onDeleteCategory={deleteCategory}
+          onDeleteCategory={handleDeleteCategory}
           categories={categories}
           activeCategoryId={activeCategoryId}
           pendingPlaceCard={pendingPlaceCard}
