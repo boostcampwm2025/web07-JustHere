@@ -18,7 +18,7 @@ import type {
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { addSocketBreadcrumb } from '@/shared/utils'
+import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 import type { YjsItemType, YjsRank } from '@/pages/room/types'
@@ -61,9 +61,20 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
   const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
-  const handleSocketError = useCallback((error: Error) => {
-    console.error('[canvas] socket error:', error)
-  }, [])
+  const handleSocketError = useCallback(
+    (error: Error) => {
+      reportError({
+        error,
+        code: 'SOCKET_ERROR',
+        context: {
+          namespace: 'canvas',
+          roomId,
+          canvasId,
+        },
+      })
+    },
+    [roomId, canvasId],
+  )
 
   const flushSummary = useCallback(() => {
     if (summaryRef.current.size === 0) return

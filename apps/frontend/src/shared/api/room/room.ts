@@ -1,4 +1,4 @@
-import axios from 'axios'
+import { apiClient } from '@/shared/api/client'
 
 export interface RoomRegionPayload {
   x: number
@@ -24,12 +24,12 @@ export interface RoomData {
 }
 
 export const createRoom = async (payload: RoomRegionPayload): Promise<RoomData> => {
-  const response = await axios.post<RoomResponse>('/api/room/create', payload)
+  const response = await apiClient.post<RoomResponse>('/api/room/create', payload)
   return response.data.data
 }
 
 export const updateRoom = async (slug: string, payload: RoomRegionPayload): Promise<RoomData> => {
-  const response = await axios.patch<RoomResponse>(`/api/room/${slug}`, payload)
+  const response = await apiClient.patch<RoomResponse>(`/api/room/${slug}`, payload)
   return response.data.data
 }
 
@@ -59,6 +59,6 @@ interface VoteResultsResponse {
 }
 
 export const getVoteResults = async (roomId: string): Promise<VoteResultItem[]> => {
-  const response = await axios.get<VoteResultsResponse>(`/api/vote/results/${roomId}`)
+  const response = await apiClient.get<VoteResultsResponse>(`/api/vote/results/${roomId}`)
   return response.data.data
 }
