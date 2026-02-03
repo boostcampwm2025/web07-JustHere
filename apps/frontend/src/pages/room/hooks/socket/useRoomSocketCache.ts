@@ -40,6 +40,7 @@ export const useRoomSocketCache = () => {
   const [roomId, setRoomId] = useState<string | null>(null)
   const [currentRegion, setCurrentRegion] = useState<string | null>(null)
   const [error, setError] = useState<Error | null>(null)
+  const [categoryError, setCategoryError] = useState<ErrorPayload | null>(null)
 
   const roomIdRef = useRef<string | null>(null)
   const userInfoRef = useRef<User | null>(null)
@@ -152,6 +153,7 @@ export const useRoomSocketCache = () => {
 
     const onCategoryError = (errorPayload: ErrorPayload) => {
       addSocketBreadcrumb('category:error', { errorType: errorPayload.errorType }, 'warning')
+      setCategoryError(errorPayload)
       handleErrorWithToast(errorPayload)
     }
 
@@ -309,7 +311,7 @@ export const useRoomSocketCache = () => {
     [getSocket],
   )
 
-  return { ready, roomId, currentRegion, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory }
+  return { ready, roomId, currentRegion, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory, categoryError }
 }
 
 const isHardDisconnect = (reason: Socket.DisconnectReason) => {
