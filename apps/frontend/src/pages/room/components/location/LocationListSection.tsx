@@ -7,6 +7,7 @@ import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
+import { PlaceItemSkeleton } from './PlaceItemSkeleton'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
 
@@ -326,7 +327,11 @@ export const LocationListSection = ({
       {!selectedPlace && activeTab === 'locations' && (
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <PlaceItemSkeleton key={index} />
+              ))}
+            </div>
           ) : searchResults.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray text-sm">
               {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
