@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
@@ -40,8 +40,12 @@ interface LocationListSectionProps {
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
   onSearchComplete?: (results: GooglePlace[]) => void
+  activeTab: TabType
+  onActiveTabChange: (tab: TabType) => void
+  onCandidatePlaceIdsChange?: (candidateIds: string[]) => void
   selectedPlace: GooglePlace | null
   onPlaceSelect: (place: GooglePlace | null) => void
+  candidatePlaces?: GooglePlace[]
 }
 
 type TabType = 'locations' | 'candidates'
@@ -62,12 +66,15 @@ export const LocationListSection = ({
   onStartPlaceCard,
   onCancelPlaceCard,
   onSearchComplete,
+  activeTab,
   selectedPlace,
   onPlaceSelect,
+  onActiveTabChange,
+  onCandidatePlaceIdsChange,
+  candidatePlaces,
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
-  const [activeTab, setActiveTab] = useState<TabType>('locations')
-  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, loadMoreRef } =
+  const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
     useLocationSearch({
       roomId,
       categoryId: activeCategoryId,
@@ -135,6 +142,10 @@ export const LocationListSection = ({
     showToast(voteError.message, 'error')
     resetError()
   }, [voteError, showToast, resetError])
+
+  useEffect(() => {
+    onCandidatePlaceIdsChange?.(voteCandidates.map(candidate => candidate.placeId))
+  }, [voteCandidates, onCandidatePlaceIdsChange])
 
   const candidateList = useMemo<Candidate[]>(() => {
     return voteCandidates.map(candidate => ({
@@ -218,6 +229,12 @@ export const LocationListSection = ({
 
   const handleViewDetail = useCallback(
     (candidateId: string) => {
+      const resolved = candidatePlaces?.find(p => p.id === candidateId)
+      if (resolved) {
+        onPlaceSelect(resolved)
+        return
+      }
+
       const candidate = voteCandidates.find(item => item.placeId === candidateId)
       if (!candidate) return
 
@@ -231,7 +248,7 @@ export const LocationListSection = ({
         primaryTypeDisplayName: candidate.category ? { text: candidate.category, languageCode: 'ko' } : undefined,
       })
     },
-    [voteCandidates, onPlaceSelect],
+    [voteCandidates, onPlaceSelect, candidatePlaces],
   )
 
   const handlePlaceSelect = (place: GooglePlace | null) => {
@@ -239,7 +256,7 @@ export const LocationListSection = ({
   }
 
   const handleClear = () => {
-    setSearchQuery('')
+    clearSearch()
   }
 
   const handleAddPlaceCard = (place: GooglePlace) => {
@@ -284,7 +301,7 @@ export const LocationListSection = ({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
+            <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => onActiveTabChange(tab.id)}>
               {tab.label}
             </ChipButton>
           ))}
@@ -319,11 +336,19 @@ export const LocationListSection = ({
 
                 return (
                   <div key={place.id}>
-                    <div className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors">
-                      <div
-                        className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer"
-                        onClick={() => handlePlaceSelect(place)}
-                      >
+                    <div
+                      className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
+                      onClick={() => handlePlaceSelect(place)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e: KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handlePlaceSelect(place)
+                        }
+                      }}
+                    >
+                      <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
                         {photoUrl ? (
                           <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
                         ) : (
@@ -334,7 +359,7 @@ export const LocationListSection = ({
                       </div>
 
                       <div className="flex-1 flex flex-col justify-between py-0.5">
-                        <div className="flex flex-col gap-1 cursor-pointer" onClick={() => handlePlaceSelect(place)}>
+                        <div className="flex flex-col gap-1">
                           <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
                           <div className="flex items-center gap-2">
                             {place.rating && (
@@ -357,7 +382,10 @@ export const LocationListSection = ({
                           <Button
                             size="sm"
                             icon={<PlusIcon className="size-3" />}
-                            onClick={() => handleAddPlaceCard(place)}
+                            onClick={event => {
+                              event.stopPropagation()
+                              handleAddPlaceCard(place)
+                            }}
                             className={cn(
                               'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
                               isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
@@ -370,7 +398,14 @@ export const LocationListSection = ({
                             icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
                             size="sm"
                             className="text-xs"
-                            onClick={() => (isAlreadyCandidate ? removeCandidate(place.id) : handleCandidateRegister(place))}
+                            onClick={event => {
+                              event.stopPropagation()
+                              if (isAlreadyCandidate) {
+                                removeCandidate(place.id)
+                                return
+                              }
+                              handleCandidateRegister(place)
+                            }}
                             disabled={!canRegisterCandidate}
                           >
                             {isAlreadyCandidate ? '담김' : '후보등록'}

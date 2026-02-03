@@ -101,6 +101,20 @@ describe('VoteSessionStore', () => {
       expect(result?.userVotes.size).toBe(2)
       expect(result?.totalCounts.size).toBe(2)
     })
+
+    it('OWNER_PICK 상태와 selectedCandidateId를 저장한다', () => {
+      const canvasId = 'canvas-1'
+      const session: VoteSession = {
+        ...createSession(VoteStatus.OWNER_PICK),
+        selectedCandidateId: 'place-1',
+      }
+
+      store.set(canvasId, session)
+
+      const result = store.get(canvasId)
+      expect(result?.status).toBe(VoteStatus.OWNER_PICK)
+      expect(result?.selectedCandidateId).toBe('place-1')
+    })
   })
 
   describe('delete', () => {
@@ -135,6 +149,20 @@ describe('VoteSessionStore', () => {
       store.delete(canvasId)
 
       expect(store.has(canvasId)).toBe(false)
+    })
+  })
+
+  describe('keys', () => {
+    it('저장된 모든 키를 반환한다', () => {
+      const canvasId1 = 'canvas-1'
+      const canvasId2 = 'canvas-2'
+      store.set(canvasId1, createSession())
+      store.set(canvasId2, createSession())
+
+      const keys = store.keys()
+      expect(keys).toContain(canvasId1)
+      expect(keys).toContain(canvasId2)
+      expect(keys.length).toBe(2)
     })
   })
 
