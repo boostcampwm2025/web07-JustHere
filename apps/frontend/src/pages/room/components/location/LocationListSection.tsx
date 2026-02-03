@@ -201,6 +201,9 @@ export const LocationListSection = ({
       if (singleVote && myVotes.length > 0) {
         // 기존 투표를 취소하고 새로운 후보에 투표 (자동 스위칭)
         const prevCandidateId = myVotes[0]
+        // TODO: revokeVote와 castVote 연속 호출에서 race condition 발생 가능
+        // TODO: 기존에 있는 투표를 제거하고 다른 후보에 투표할 수 있는 별도의 이벤트를 호출하도록 변경
+        // TODO: recastVote(prevCandidateId, candidateId)
         revokeVote(prevCandidateId)
         castVote(candidateId)
         return
