@@ -177,3 +177,10 @@ export interface VoteResettedPayload {
   counts: VoteCounts
   voters: Record<string, string[]>
 }
+
+// [S->C] vote:participant:left - 참여자 퇴장 시 투표 취소
+export interface VoteParticipantLeftPayload {
+  userId: string
+  counts: VoteCounts
+  voters: Record<string, string[]>
+}

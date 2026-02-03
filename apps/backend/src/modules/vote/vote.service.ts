@@ -9,6 +9,7 @@ import {
   VoteCountsUpdatedPayload,
   VoteEndedPayload,
   VoteMeUpdatedPayload,
+  VoteParticipantLeftPayload,
   VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
@@ -527,5 +528,55 @@ export class VoteService {
     }
 
     return winners
+    
+  /**
+   * 특정 방의 모든 카테고리에서 사용자의 투표를 취소
+   * - room 연결 해제 시 호출됨
+   * - voteRoomId 규칙: `${roomId}:${categoryId}`
+   * @param roomId 방 ID
+   * @param userId 사용자 ID
+   * @returns voteRoomId별 변경된 투표 정보 (브로드캐스트용)
+   */
+  revokeAllVotesForUser(roomId: string, userId: string): Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> {
+    const results: Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> = []
+    const prefix = `${roomId}:`
+
+    for (const sessionKey of this.sessions.keys()) {
+      if (!sessionKey.startsWith(prefix)) continue
+
+      const session = this.sessions.get(sessionKey)
+      if (!session) continue
+
+      const userVotes = session.userVotes.get(userId)
+      if (!userVotes || userVotes.size === 0) continue
+
+      if (session.status !== VoteStatus.IN_PROGRESS) continue
+
+      // 해당 사용자의 모든 투표 취소
+      for (const candidateId of userVotes) {
+        const currentCount = session.totalCounts.get(candidateId) || 0
+        const newCount = Math.max(0, currentCount - 1)
+        session.totalCounts.set(candidateId, newCount)
+      }
+
+      // 사용자의 투표 기록 삭제
+      session.userVotes.delete(userId)
+
+      // 해당 voteRoom의 전체 counts와 voters 생성
+      const counts: Record<string, number> = {}
+      const voters: Record<string, string[]> = {}
+
+      for (const candidateId of session.candidates.keys()) {
+        counts[candidateId] = session.totalCounts.get(candidateId) || 0
+        voters[candidateId] = this.getVoterIdsForCandidate(session, candidateId)
+      }
+
+      results.push({
+        voteRoomId: sessionKey,
+        payload: { userId, counts, voters },
+      })
+    }
+
+    return results
   }
 }

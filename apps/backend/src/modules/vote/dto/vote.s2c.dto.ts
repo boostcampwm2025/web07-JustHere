@@ -67,3 +67,10 @@ export type VoteResettedPayload = {
   counts: Record<string, number>
   voters: Record<string, string[]>
 }
+
+// [S->C] vote:participant:left
+export type VoteParticipantLeftPayload = {
+  userId: string
+  counts: Record<string, number>
+  voters: Record<string, string[]>
+}
