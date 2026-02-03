@@ -91,6 +91,7 @@ export function reportError(params: {
   const context = params.context
   const message = params.message ?? resolveErrorMessage(params.error, code)
   const error = params.error instanceof Error ? params.error : new Error(message)
+  const originalError = isAppError(params.error) ? params.error.originalError : undefined
 
   Sentry.addBreadcrumb({
     category: 'client',
@@ -104,6 +105,9 @@ export function reportError(params: {
 
   Sentry.captureException(error, {
     tags: { code },
-    extra: context,
+    extra: {
+      ...context,
+      originalError,
+    },
   })
 }
