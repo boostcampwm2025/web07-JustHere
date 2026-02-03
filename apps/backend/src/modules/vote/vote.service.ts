@@ -528,7 +528,8 @@ export class VoteService {
     }
 
     return winners
-    
+  }
+
   /**
    * 특정 방의 모든 카테고리에서 사용자의 투표를 취소
    * - room 연결 해제 시 호출됨
@@ -537,6 +538,7 @@ export class VoteService {
    * @param userId 사용자 ID
    * @returns voteRoomId별 변경된 투표 정보 (브로드캐스트용)
    */
+
   revokeAllVotesForUser(roomId: string, userId: string): Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> {
     const results: Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> = []
     const prefix = `${roomId}:`
