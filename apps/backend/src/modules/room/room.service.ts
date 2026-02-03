@@ -3,8 +3,10 @@ import { ErrorType } from '@/lib/types/response.type'
 import { CategoryService } from '@/modules/category/category.service'
 import { RoomActivitySchedulerService } from '@/modules/room/room-activity-scheduler.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
+import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import { UserSession } from '@/modules/user/user.type'
+import { VoteService } from '@/modules/vote/vote.service'
 import { Injectable } from '@nestjs/common'
 import { Room } from '@prisma/client'
 import type { Socket } from 'socket.io'
@@ -27,6 +29,8 @@ export class RoomService {
     private readonly categoryService: CategoryService,
     private readonly broadcaster: RoomBroadcaster,
     private readonly roomScheduler: RoomActivitySchedulerService,
+    private readonly voteService: VoteService,
+    private readonly voteBroadcaster: VoteBroadcaster,
   ) {}
 
   async createRoom(data: { x: number; y: number; place_name?: string }): Promise<Room> {
@@ -116,6 +120,12 @@ export class RoomService {
       userId: session.userId,
     }
     this.broadcaster.emitToRoom(session.roomId, 'participant:disconnected', payload)
+
+    // 연결이 끊어진 참여자의 투표를 모두 취소하고 브로드캐스트
+    const voteChanges = this.voteService.revokeAllVotesForUser(roomId, session.userId)
+    for (const { voteRoomId, payload: votePayload } of voteChanges) {
+      this.voteBroadcaster.emitToVote(voteRoomId, 'vote:participant:left', votePayload)
+    }
 
     this.users.removeSession(client.id)
 
