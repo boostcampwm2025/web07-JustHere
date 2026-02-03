@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { cn } from '@/shared/utils'
-import { Button } from './Button'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
+import { Button } from '@/shared/components'
 
 interface ImageSliderProps {
   images: { src: string; alt: string }[]
@@ -159,7 +159,10 @@ export const ImageSlider = ({ images, className, imageClassName, showIndicators 
               type="button"
               aria-label={`이미지 ${idx + 1} 보기`}
               onClick={() => goToSlide(idx)}
-              className={cn('w-2 h-2 rounded-full transition-colors', idx === safeIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/70')}
+              className={cn(
+                'w-2 h-2 rounded-full transition-colors hover:cursor-pointer',
+                idx === safeIndex ? 'bg-white' : 'bg-white/50 hover:bg-white/70',
+              )}
             />
           ))}
           {images.length > maxIndicators && <span className="text-white text-xs ml-1">+{images.length - maxIndicators}</span>}

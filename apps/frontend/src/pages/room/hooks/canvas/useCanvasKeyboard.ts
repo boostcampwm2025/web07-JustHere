@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ToolType } from '@/shared/types'
 
 interface UseCanvasKeyboardOptions {
   onPlaceCardCanceled: () => void
@@ -8,12 +9,13 @@ interface UseCanvasKeyboardOptions {
   activateCursorChat: () => void
   isDrawing: boolean
   cancelDrawing: (reason: 'tool-change' | 'mouse-leave' | 'space-press') => void
+  handleToolChange: (tool: ToolType) => void
 }
 
 /**
  * 캔버스 키보드 이벤트를 통합 관리하는 훅
  *
- * - Escape: 장소 카드 배치 취소
+ * - Escape: 장소 카드 배치 취소, 그리기 취소, 툴 초기화(cursor)
  * - Backspace: 선택된 아이템 삭제
  * - '/': 커서 채팅 활성화
  * - Space: Hand 모드 토글 (누르고 있는 동안)
@@ -26,6 +28,7 @@ export const useCanvasKeyboard = ({
   activateCursorChat,
   isDrawing,
   cancelDrawing,
+  handleToolChange,
 }: UseCanvasKeyboardOptions) => {
   const [isSpacePressed, setIsSpacePressed] = useState(false)
 
@@ -37,10 +40,10 @@ export const useCanvasKeyboard = ({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape: 장소 카드 배치 취소
-      // TODO: 포스트잇, 텍스트박스 취소 기능도 여기에 추가 필요
+      // Escape: 장소 카드 배치 취소, 그리기 취소, 툴 초기화
       if (e.key === 'Escape') {
         onPlaceCardCanceled()
+        handleToolChange('cursor')
         return
       }
 
@@ -85,7 +88,7 @@ export const useCanvasKeyboard = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [onPlaceCardCanceled, hasSelectedItems, handleDeleteSelectedItems, isChatActive, activateCursorChat, isDrawing, cancelDrawing])
+  }, [onPlaceCardCanceled, hasSelectedItems, handleDeleteSelectedItems, isChatActive, activateCursorChat, isDrawing, cancelDrawing, handleToolChange])
 
   return { isSpacePressed }
 }

@@ -3,11 +3,20 @@ import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } from '@/pages/room/constants'
+import {
+  DEFAULT_POST_IT_COLOR,
+  PLACE_CARD_HEIGHT,
+  PLACE_CARD_WIDTH,
+  POST_IT_HEIGHT,
+  POST_IT_WIDTH,
+  TEXT_BOX_WIDTH,
+  TEXT_BOX_HEIGHT,
+} from '@/pages/room/constants'
 
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
   effectiveTool: ToolType
+  setActiveTool: (tool: ToolType) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
 
   // Selection
@@ -39,6 +48,9 @@ interface UseCanvasMouseProps {
   addTextBox: (textBox: TextBox) => void
   stopCapturing: () => void
 
+  // Z-index
+  moveToTop: (type: CanvasItemType, id: string) => void
+
   // Logging
   roomId: string
   canvasId: string
@@ -53,6 +65,7 @@ interface UseCanvasMouseProps {
 export const useCanvasMouse = ({
   stageRef,
   effectiveTool,
+  setActiveTool,
   pendingPlaceCard,
   selectedItems,
   setSelectedItems,
@@ -73,6 +86,7 @@ export const useCanvasMouse = ({
   addPostIt,
   addTextBox,
   stopCapturing,
+  moveToTop,
   roomId,
   canvasId,
   onPlaceCardPlaced,
@@ -90,6 +104,8 @@ export const useCanvasMouse = ({
 
       e.cancelBubble = true
 
+      moveToTop(type, id)
+
       const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
 
@@ -101,7 +117,7 @@ export const useCanvasMouse = ({
         setSelectedItems(prev => [...prev, { id, type }])
       }
     },
-    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems],
+    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems, moveToTop],
   )
 
   const handleObjectClick = useCallback(
@@ -239,12 +255,14 @@ export const useCanvasMouse = ({
           width: POST_IT_WIDTH,
           height: POST_IT_HEIGHT,
           scale: 1,
-          fill: '#FFF9C4',
+          fill: DEFAULT_POST_IT_COLOR,
           text: '',
           authorName: userName,
         }
         addPostIt(newPostIt)
         addSocketBreadcrumb('postit:add', { roomId, canvasId, id: newPostIt.id })
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
 
       if (effectiveTool === 'pencil') {
@@ -255,15 +273,17 @@ export const useCanvasMouse = ({
         stopCapturing()
         const newTextBox: TextBox = {
           id: `textBox-${crypto.randomUUID()}`,
-          x: canvasPos.x - 100,
-          y: canvasPos.y - 25,
-          width: 200,
-          height: 50,
+          x: canvasPos.x - TEXT_BOX_WIDTH / 2,
+          y: canvasPos.y - TEXT_BOX_HEIGHT / 2,
+          width: TEXT_BOX_WIDTH,
+          height: TEXT_BOX_HEIGHT,
           scale: 1,
           text: '',
           authorName: userName,
         }
         addTextBox(newTextBox)
+        setActiveTool('cursor')
+        setCursorPos(null) // ghost 이미지 제거
       }
     },
     [
@@ -280,6 +300,7 @@ export const useCanvasMouse = ({
       addPostIt,
       startDrawing,
       addTextBox,
+      setActiveTool,
     ],
   )
 

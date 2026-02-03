@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
-import type Konva from 'konva'
+import Konva from 'konva'
 import type { PostIt } from '@/shared/types'
+import { POST_IT_HEIGHT, BASE_PADDING, TEXT_FONT_SIZE, TEXT_FONT_FAMILY, TEXT_LINE_HEIGHT } from '@/pages/room/constants'
 
 interface EditablePostItProps {
   postIt: PostIt
@@ -15,6 +16,21 @@ interface EditablePostItProps {
   onEditEnd: () => void
   shapeRef?: (node: Konva.Group | null) => void
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
+}
+
+function measureTextHeight(text: string, width: number, scale: number): number {
+  const padding = BASE_PADDING * scale
+  const measureNode = new Konva.Text({
+    text,
+    fontSize: TEXT_FONT_SIZE * scale,
+    fontFamily: TEXT_FONT_FAMILY,
+    lineHeight: TEXT_LINE_HEIGHT,
+    width: width - padding * 2,
+    wrap: 'word',
+  })
+  const height = measureNode.height() + padding * 2
+  measureNode.destroy()
+  return Math.max(POST_IT_HEIGHT * scale, height)
 }
 
 export const EditablePostIt = ({
@@ -30,6 +46,7 @@ export const EditablePostIt = ({
   onTransformEnd,
 }: EditablePostItProps) => {
   const [isEditing, setIsEditing] = useState(false)
+  const [editingHeight, setEditingHeight] = useState<number | null>(null)
   const isComposingRef = useRef(false)
   const draftRef = useRef(postIt.text)
 
@@ -49,6 +66,22 @@ export const EditablePostIt = ({
     }
   }, [isEditing])
 
+  const scaledPadding = BASE_PADDING * (postIt.scale || 1)
+
+  const syncHeight = useCallback(() => {
+    const scale = postIt.scale || 1
+    const defaultHeight = POST_IT_HEIGHT * scale
+
+    if (!textareaRef.current) return defaultHeight
+
+    const ta = textareaRef.current
+    ta.style.height = '0px'
+    const newHeight = Math.max(defaultHeight, ta.scrollHeight)
+    ta.style.height = `${newHeight}px`
+    setEditingHeight(newHeight)
+    return newHeight
+  }, [postIt.scale])
+
   const handleDblClick = () => {
     draftRef.current = postIt.text
     onEditStart()
@@ -57,24 +90,38 @@ export const EditablePostIt = ({
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     draftRef.current = e.target.value
+
+    const newHeight = syncHeight()
+
     if (!isComposingRef.current) {
-      onChange({ text: e.target.value })
+      const updates: Partial<Omit<PostIt, 'id'>> = { text: e.target.value }
+      if (Math.abs(newHeight - postIt.height) > 1) {
+        updates.height = newHeight
+      }
+      onChange(updates)
     }
   }
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
-    if (value !== postIt.text) onChange({ text: value })
+    const scale = postIt.scale || 1
+    const newHeight = value ? measureTextHeight(value, postIt.width, scale) : POST_IT_HEIGHT * scale
+
+    const updates: Partial<Omit<PostIt, 'id'>> = { text: value }
+    if (Math.abs(newHeight - postIt.height) > 1) {
+      updates.height = newHeight
+    }
+    if (value !== postIt.text || updates.height) {
+      onChange(updates)
+    }
   }
 
   const handleBlur = () => {
     commit()
+    setEditingHeight(null)
     setIsEditing(false)
     onEditEnd()
   }
-
-  const basePadding = 10
-  const scaledPadding = basePadding * (postIt.scale || 1)
 
   // Enter 키 (Shift 없이) → 편집 종료
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -86,13 +133,15 @@ export const EditablePostIt = ({
     }
   }
 
+  const renderHeight = editingHeight !== null ? Math.max(postIt.height, editingHeight) : postIt.height
+
   return (
     <Group
       ref={groupRef}
       x={postIt.x}
       y={postIt.y}
       width={postIt.width}
-      height={postIt.height}
+      height={renderHeight}
       draggable={draggable && !isEditing}
       onDragEnd={e => {
         onDragEnd(e.target.x(), e.target.y())
@@ -105,10 +154,12 @@ export const EditablePostIt = ({
       {/* 포스트잇 배경 */}
       <Rect
         width={postIt.width}
-        height={postIt.height}
+        height={renderHeight}
         fill={postIt.fill}
-        shadowBlur={5}
         cornerRadius={8 * (postIt.scale || 1)}
+        shadowBlur={15}
+        shadowOffsetY={4}
+        shadowOpacity={0.1}
         onDblClick={handleDblClick}
       />
 
@@ -119,7 +170,8 @@ export const EditablePostIt = ({
             className: 'absolute top-0 left-0',
             style: {
               width: `${postIt.width}px`,
-              height: `${postIt.height}px`,
+              height: `${renderHeight}px`,
+              overflow: 'hidden',
             },
           }}
         >
@@ -131,14 +183,26 @@ export const EditablePostIt = ({
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
               isComposingRef.current = false
-              onChange({ text: (e.target as HTMLTextAreaElement).value })
+              const value = (e.target as HTMLTextAreaElement).value
+              const newHeight = syncHeight()
+              const updates: Partial<Omit<PostIt, 'id'>> = { text: value }
+              if (Math.abs(newHeight - postIt.height) > 1) {
+                updates.height = newHeight
+              }
+              onChange(updates)
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
+            className="border-none bg-transparent resize-none outline-none font-sans text-[#333] placeholder:text-gray-disable"
             style={{
-              fontSize: `${14 * (postIt.scale || 1)}px`,
+              width: `${postIt.width}px`,
+              height: `${renderHeight}px`,
+              fontSize: `${TEXT_FONT_SIZE * (postIt.scale || 1)}px`,
               padding: `${scaledPadding}px`,
+              lineHeight: TEXT_LINE_HEIGHT,
+              fontFamily: TEXT_FONT_FAMILY,
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           />
         </Html>
@@ -148,11 +212,10 @@ export const EditablePostIt = ({
           x={scaledPadding}
           y={scaledPadding}
           width={postIt.width - scaledPadding * 2}
-          height={postIt.height - scaledPadding * 2}
-          fontSize={14 * postIt.scale}
-          fontFamily="Arial, sans-serif"
-          fill={postIt.text ? '#333' : '#9CA3AF'}
-          lineHeight={1.4}
+          fontSize={TEXT_FONT_SIZE * postIt.scale}
+          fontFamily={TEXT_FONT_FAMILY}
+          fill={postIt.text ? '#00000A' : '#9FA4A9'}
+          lineHeight={TEXT_LINE_HEIGHT}
           wrap="word"
           onDblClick={handleDblClick}
         />

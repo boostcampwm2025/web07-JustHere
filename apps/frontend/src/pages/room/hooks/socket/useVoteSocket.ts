@@ -12,6 +12,7 @@ import type {
   VoteEndedPayload,
   VoteErrorPayload,
   VoteMeUpdatedPayload,
+  VoteParticipantLeftPayload,
   VoteRunoffPayload,
   VoteOwnerPickPayload,
   VoteResettedPayload,
@@ -324,6 +325,15 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       addSocketBreadcrumb('vote:resetted', { roomId, candidatesCount: payload.candidates.length })
     }
 
+    // [S->C] vote:participant:left - 참여자 퇴장 시 투표 취소
+    const handleParticipantLeft = (payload: VoteParticipantLeftPayload) => {
+      setCounts(payload.counts)
+      setVotersByCandidate(payload.voters)
+      countsRef.current = payload.counts
+      votersByCandidateRef.current = payload.voters
+      addSocketBreadcrumb('vote:participant:left', { roomId, userId: payload.userId })
+    }
+
     // [S->C] vote:error - 에러 발생 시
     const handleError = (payload: VoteErrorPayload) => {
       setError(payload)
@@ -342,6 +352,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     socket.on(VOTE_EVENTS.runoff, handleRunoff)
     socket.on(VOTE_EVENTS.ownerPick, handleOwnerPick)
     socket.on(VOTE_EVENTS.resetted, handleResetted)
+    socket.on(VOTE_EVENTS.participantLeft, handleParticipantLeft)
     socket.on(VOTE_EVENTS.error, handleError)
 
     return () => {
@@ -357,6 +368,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.runoff, handleRunoff)
       socket.off(VOTE_EVENTS.ownerPick, handleOwnerPick)
       socket.off(VOTE_EVENTS.resetted, handleResetted)
+      socket.off(VOTE_EVENTS.participantLeft, handleParticipantLeft)
       socket.off(VOTE_EVENTS.error, handleError)
     }
   }, [enabled, roomId, categoryId, userId, resolveSocket, showToast])
