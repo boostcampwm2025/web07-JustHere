@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'rea
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
+import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
@@ -54,11 +55,6 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-const getPhotoUrl = (place: GooglePlace) => {
-  if (!place.photos || place.photos.length === 0) return null
-  return getGooglePhotoUrl(place.photos[0].name, 200)
-}
-
 export const LocationListSection = ({
   roomId,
   userId,
@@ -87,6 +83,17 @@ export const LocationListSection = ({
       categoryId: activeCategoryId,
       onSearchComplete,
     })
+
+  const photoNames = useMemo(() => searchResults.map(place => place.photos?.[0]?.name), [searchResults])
+  const photoQueries = useGooglePhotos(photoNames, 200, 200)
+
+  const photoUrls = useMemo(() => {
+    const urls: Record<string, string | null> = {}
+    searchResults.forEach((place, index) => {
+      urls[place.id] = photoQueries[index]?.data ?? null
+    })
+    return urls
+  }, [searchResults, photoQueries])
 
   const {
     status: voteStatus,
@@ -220,13 +227,21 @@ export const LocationListSection = ({
   )
 
   const handleCandidateRegister = useCallback(
-    (place: GooglePlace) => {
+    async (place: GooglePlace) => {
+      let imageUrl: string | undefined
+      if (place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
+        } catch (error) {
+          console.error('Failed to get photo for candidate', error)
+        }
+      }
       addCandidate({
         placeId: place.id,
         name: place.displayName.text,
         address: place.formattedAddress,
         category: place.primaryTypeDisplayName?.text,
-        imageUrl: getPhotoUrl(place) ?? undefined,
+        imageUrl,
         rating: place.rating,
         ratingCount: place.userRatingCount,
       })
@@ -266,10 +281,19 @@ export const LocationListSection = ({
     clearSearch()
   }
 
-  const handleAddPlaceCard = (place: GooglePlace) => {
+  const handleAddPlaceCard = async (place: GooglePlace) => {
     if (pendingPlaceCard?.placeId === place.id) {
       onCancelPlaceCard()
       return
+    }
+
+    let imageUrl: string | null = null
+    if (place.photos && place.photos.length > 0) {
+      try {
+        imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
+      } catch (error) {
+        console.error('Failed to get photo for place card', error)
+      }
     }
 
     onStartPlaceCard({
@@ -279,7 +303,7 @@ export const LocationListSection = ({
       address: place.formattedAddress,
       createdAt: new Date().toISOString(),
       scale: 1,
-      image: getPhotoUrl(place),
+      image: imageUrl,
       category: place.primaryTypeDisplayName?.text || '',
       width: PLACE_CARD_WIDTH,
       height: PLACE_CARD_HEIGHT,
@@ -353,7 +377,7 @@ export const LocationListSection = ({
             <div className="flex flex-col gap-4">
               {searchResults.map((place, index) => {
                 const isSelected = pendingPlaceCard?.placeId === place.id
-                const photoUrl = getPhotoUrl(place)
+                const photoUrl = photoUrls[place.id]
                 const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
                 return (
