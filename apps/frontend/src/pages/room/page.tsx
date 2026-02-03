@@ -110,6 +110,24 @@ export default function RoomPage() {
         currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
+        <LocationListSection
+          roomId={roomId}
+          userId={user.userId}
+          userName={user.name}
+          participants={participants}
+          isOwner={isOwner}
+          activeCategoryId={activeCategoryId}
+          pendingPlaceCard={pendingPlaceCard}
+          onStartPlaceCard={handleStartPlaceCard}
+          onCancelPlaceCard={clearPendingPlaceCard}
+          onSearchComplete={setSearchResults}
+          activeTab={activeLocationTab}
+          onActiveTabChange={setActiveLocationTab}
+          onCandidatePlaceIdsChange={setCandidatePlaceIds}
+          selectedPlace={selectedPlace}
+          onPlaceSelect={setSelectedPlace}
+          candidatePlaces={candidatePlaces}
+        />
         <WhiteboardSection
           roomId={roomId}
           onActiveCategoryChange={setSelectedCategoryId}
@@ -123,26 +141,6 @@ export default function RoomPage() {
           searchResults={mapMarkers}
           selectedPlace={selectedPlace}
           onMarkerClick={setSelectedPlace}
-        />
-        <LocationListSection
-          roomId={roomId}
-          userId={user.userId}
-          userName={user.name}
-          participants={participants}
-          isOwner={isOwner}
-          activeCategoryId={activeCategoryId}
-          slug={slug}
-          currentRegion={currentRegion}
-          pendingPlaceCard={pendingPlaceCard}
-          onStartPlaceCard={handleStartPlaceCard}
-          onCancelPlaceCard={clearPendingPlaceCard}
-          onSearchComplete={setSearchResults}
-          activeTab={activeLocationTab}
-          onActiveTabChange={setActiveLocationTab}
-          onCandidatePlaceIdsChange={setCandidatePlaceIds}
-          selectedPlace={selectedPlace}
-          onPlaceSelect={setSelectedPlace}
-          candidatePlaces={candidatePlaces}
         />
       </div>
     </div>

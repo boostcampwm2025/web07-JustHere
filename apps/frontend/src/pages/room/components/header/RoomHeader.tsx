@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { MapMarkerIcon } from '@/shared/assets'
+import { MapMarkerIcon, ChevronDownIcon } from '@/shared/assets'
 import { AvatarList, Button, Divider } from '@/shared/components'
 import type { Participant } from '@/shared/types'
-import { getOrCreateStoredUser, updateStoredUserName } from '@/shared/utils'
+import { getOrCreateStoredUser, updateStoredUserName, cn } from '@/shared/utils'
 import { Header } from '@/shared/components/header/Header'
 import { RoomInfoDropdown } from './room-info'
+import { RegionSelectorDropdown } from '@/pages/room/components/location/region-selector'
 
 interface RoomHeaderProps {
   participants: Participant[]
@@ -16,6 +17,7 @@ interface RoomHeaderProps {
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
   currentRegion?: string
+  onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
 }
 
 export const RoomHeader = ({
@@ -27,6 +29,7 @@ export const RoomHeader = ({
   ownerId,
   onTransferOwner,
   currentRegion,
+  onRegionChange,
 }: RoomHeaderProps) => {
   const { slug } = useParams<{ slug: string }>()
   const [userName, setUserName] = useState(() => (slug ? getOrCreateStoredUser(slug).name : ''))
@@ -45,12 +48,28 @@ export const RoomHeader = ({
   return (
     <Header>
       <div className="flex items-center gap-5">
-        {currentRegion && (
+        {currentRegion && slug && (
           <>
-            <div className="flex items-center gap-1.5">
-              <MapMarkerIcon className="w-4 h-4 text-primary" />
-              <span className="text-sm text-gray-700">{currentRegion}</span>
-            </div>
+            <RegionSelectorDropdown
+              slug={slug}
+              onRegionChange={onRegionChange}
+              align="left"
+              trigger={({ isOpen, toggle }) => (
+                <Button
+                  onClick={toggle}
+                  size="sm"
+                  variant="ghost"
+                  className="hover:bg-gray-100 font-normal"
+                  aria-expanded={isOpen}
+                  aria-haspopup="listbox"
+                  aria-label="지역 선택"
+                >
+                  <MapMarkerIcon className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-gray-700">{currentRegion}</span>
+                  <ChevronDownIcon className={cn('w-4 h-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
+                </Button>
+              )}
+            />
             <Divider orientation="vertical" />
           </>
         )}

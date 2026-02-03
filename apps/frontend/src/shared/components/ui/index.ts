@@ -1,5 +1,6 @@
 export * from './Avatar'
 export * from './Button'
+export * from './ChipButton'
 export * from './Divider'
 export * from './Dropdown'
 export * from './Tooltip'
