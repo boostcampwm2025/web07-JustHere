@@ -434,9 +434,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
 
-    if (index === -1) return
+    const idToIndexMap = new Map<string, number>()
+    yArray.forEach((yMap, index) => {
+      const itemId = yMap.get('id') as string
+      if (itemId) {
+        idToIndexMap.set(itemId, index)
+      }
+    })
+
+    const index = idToIndexMap.get(id)
+    if (index === undefined) return
 
     doc.transact(() => {
       const yMap = yArray.get(index)
@@ -603,10 +611,18 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
     const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
 
-    doc.transact(() => {
-      const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
-      if (index === -1) return
+    const idToIndexMap = new Map<string, number>()
+    yArray.forEach((yMap, index) => {
+      const itemId = yMap.get('id') as string
+      if (itemId) {
+        idToIndexMap.set(itemId, index)
+      }
+    })
 
+    const index = idToIndexMap.get(id)
+    if (index === undefined) return
+
+    doc.transact(() => {
       yArray.delete(index, 1)
       yZRankByKey.delete(makeKey(type, id))
     }, localOriginRef.current)
