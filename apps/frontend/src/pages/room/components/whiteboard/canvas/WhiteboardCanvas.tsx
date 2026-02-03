@@ -261,7 +261,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   const placeCardsMap = useMemo(() => new Map(placeCards.map(card => [card.id, card])), [placeCards])
   const textBoxesMap = useMemo(() => new Map(textBoxes.map(textBox => [textBox.id, textBox])), [textBoxes])
 
-  const getCursorStyle = () => {
+  const cursorStyle = useMemo(() => {
     if (pendingPlaceCard) {
       return 'cursor-crosshair'
     }
@@ -277,10 +277,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       default:
         return 'cursor-default'
     }
-  }
+  }, [pendingPlaceCard, effectiveTool])
+
+  const canDrag = useMemo(() => effectiveTool === 'cursor' && !pendingPlaceCard, [effectiveTool, pendingPlaceCard])
 
   return (
-    <div className={cn('relative w-full h-full bg-slate-50', getCursorStyle())} onContextMenu={e => e.preventDefault()} role="presentation">
+    <div className={cn('relative w-full h-full bg-slate-50', cursorStyle)} onContextMenu={e => e.preventDefault()} role="presentation">
       <Toolbar
         effectiveTool={effectiveTool}
         setActiveTool={handleToolChange}
@@ -331,7 +333,6 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       >
         <Layer>
           {zIndexOrder.map(({ type, id }) => {
-            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
             if (type === 'line') {
               const line = linesMap.get(id)
               if (!line) return null
