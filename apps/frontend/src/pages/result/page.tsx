@@ -1,21 +1,20 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ResultNotFoundError, ResultLoadFailedError } from '@/app/error-boundary'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { Button, Header, type PlaceDetailPlace } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { PlaceResultCard } from './components/PlaceResultCard'
-import { useRoomSocket } from '@/pages/room/hooks/socket'
-import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
+import { useRoomParticipants, useRoomMeta, useVoteResults } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
+import { useRoomSocket } from '@/pages/room/hooks'
 import { RoomHeader } from '@/pages/room/components'
-import { useVoteResults } from '@/shared/hooks/queries/useRoomQueries'
-import type { PlaceDetailPlace } from '@/shared/components/place-detail/PlaceDetailContent'
+import { PlaceResultCard } from './components'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { roomId, updateParticipantName, transferOwner } = useRoomSocket()
+  const { roomId, ready, updateParticipantName, transferOwner } = useRoomSocket()
 
   const [copied, setCopied] = useState(false)
 
@@ -56,32 +55,22 @@ export const ResultPage = () => {
     }
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
-  if (isLoading) {
+  if (isLoading || !ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>로딩 중...</div>
+      <div className="flex flex-col h-screen bg-gray-bg">
+        <Header />
       </div>
     )
   }
 
   if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>결과를 불러오는데 실패했습니다.</div>
-      </div>
-    )
+    throw new ResultLoadFailedError()
   }
 
-  if (resultData.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>투표 결과가 없습니다.</div>
-      </div>
-    )
+  if (roomId && resultData.length === 0) {
+    throw new ResultNotFoundError()
   }
 
   return (
