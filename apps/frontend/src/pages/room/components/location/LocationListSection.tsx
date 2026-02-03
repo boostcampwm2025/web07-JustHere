@@ -277,6 +277,8 @@ export const LocationListSection = ({
       category: place.primaryTypeDisplayName?.text || '',
       width: PLACE_CARD_WIDTH,
       height: PLACE_CARD_HEIGHT,
+      rating: place.rating,
+      userRatingCount: place.userRatingCount,
     })
   }
 
