@@ -3,11 +3,10 @@ import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, getOrCreateStoredUser } from '@/shared/utils'
-import { useYjsSocket } from '@/pages/room/hooks'
-import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
+import type { PlaceCard, SelectedItem, ToolType, PostIt, TextBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox } from '@/pages/room/utils'
 import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
-import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse } from '@/pages/room/hooks'
+import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse, useYjsSocket } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
@@ -16,6 +15,14 @@ import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
+
+type UnifiedCanvasItem =
+  | { type: 'line'; data: LineType }
+  | { type: 'postit'; data: PostIt }
+  | { type: 'placeCard'; data: PlaceCard }
+  | { type: 'textBox'; data: TextBox }
+
+const getRefKey = (type: UnifiedCanvasItem['type'], id: string) => `${type}:${id}`
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -59,9 +66,11 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     addLine,
     updateLine,
     textBoxes,
+    zIndexOrder,
     addTextBox,
     updateTextBox,
     deleteCanvasItem,
+    moveToTop,
   } = useYjsSocket({
     roomId,
     canvasId,
@@ -212,6 +221,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     addPostIt,
     addTextBox,
     stopCapturing,
+    moveToTop,
     roomId,
     canvasId,
     onPlaceCardPlaced,
@@ -223,7 +233,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     if (!transformer) return
 
     const applyNodes = () => {
-      const nodes = selectedItems.map(item => shapeRefs.current.get(item.id)).filter((node): node is Konva.Group => !!node)
+      const nodes = selectedItems.map(item => shapeRefs.current.get(getRefKey(item.type, item.id))).filter((node): node is Konva.Group => !!node)
       transformer.nodes(nodes)
     }
 
@@ -232,6 +242,41 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     })
     return () => cancelAnimationFrame(id)
   }, [selectedItems])
+
+  const unifiedItems = useMemo<UnifiedCanvasItem[]>(() => {
+    const linesMap = new Map(lines.map(line => [line.id, line]))
+    const postItsMap = new Map(postIts.map(postIt => [postIt.id, postIt]))
+    const placeCardsMap = new Map(placeCards.map(card => [card.id, card]))
+    const textBoxesMap = new Map(textBoxes.map(textBox => [textBox.id, textBox]))
+
+    // z-index 순서에 따라 요소를 배열로 변환
+    const items: UnifiedCanvasItem[] = []
+    zIndexOrder.forEach(({ type, id }) => {
+      if (type === 'line') {
+        const line = linesMap.get(id)
+        if (line) {
+          items.push({ type: 'line', data: line })
+        }
+      } else if (type === 'postit') {
+        const postIt = postItsMap.get(id)
+        if (postIt) {
+          items.push({ type: 'postit', data: postIt })
+        }
+      } else if (type === 'placeCard') {
+        const card = placeCardsMap.get(id)
+        if (card) {
+          items.push({ type: 'placeCard', data: card })
+        }
+      } else if (type === 'textBox') {
+        const textBox = textBoxesMap.get(id)
+        if (textBox) {
+          items.push({ type: 'textBox', data: textBox })
+        }
+      }
+    })
+
+    return items
+  }, [lines, postIts, placeCards, textBoxes, zIndexOrder])
 
   const getCursorStyle = () => {
     if (pendingPlaceCard) {
@@ -302,155 +347,159 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         onContextMenu={e => e.evt.preventDefault()}
       >
         <Layer>
-          {lines.map(line => {
+          {unifiedItems.map(item => {
             const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
-            const box = getLineBoundingBox(line.points)
 
-            return (
-              <Group
-                key={line.id}
-                x={box.x}
-                y={box.y}
-                width={box.width}
-                height={box.height}
-                draggable={canDrag}
-                ref={node => {
-                  if (node) {
-                    shapeRefs.current.set(line.id, node)
-                  } else {
-                    shapeRefs.current.delete(line.id)
-                  }
-                }}
-                onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
-                onClick={e => handleObjectClick(e)}
-                onContextMenu={e => handleObjectClick(e)}
-                onDragEnd={e => {
-                  const node = e.target
-                  const dx = node.x() - box.x
-                  const dy = node.y() - box.y
-                  const newPoints = line.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
-                  updateLine(line.id, { points: newPoints })
-                }}
-                onTransformEnd={e => {
-                  const node = e.target as Konva.Group
-                  const scaleX = node.scaleX()
-                  const scaleY = node.scaleY()
+            if (item.type === 'line') {
+              const line = item.data
+              const box = getLineBoundingBox(line.points)
 
-                  node.scaleX(1)
-                  node.scaleY(1)
-
-                  const relativePoints = line.points.map((p, i) => (i % 2 === 0 ? p - box.x : p - box.y))
-
-                  const newAbsolutePoints: number[] = []
-                  for (let i = 0; i < relativePoints.length; i += 2) {
-                    newAbsolutePoints.push(node.x() + relativePoints[i] * scaleX)
-                    newAbsolutePoints.push(node.y() + relativePoints[i + 1] * scaleY)
-                  }
-                  updateLine(line.id, { points: newAbsolutePoints })
-                }}
-              >
-                <Rect width={box.width} height={box.height} fill="transparent" />
-                <Line
-                  points={line.points.map((p, i) => (i % 2 === 0 ? p - box.x : p - box.y))}
-                  stroke={line.stroke}
-                  strokeWidth={line.strokeWidth}
-                  tension={line.tension}
-                  lineCap={line.lineCap}
-                  lineJoin={line.lineJoin}
-                  globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
-                  listening={false}
+              return (
+                <Group
+                  key={getRefKey('line', line.id)}
+                  x={box.x}
+                  y={box.y}
                   width={box.width}
                   height={box.height}
+                  draggable={canDrag}
+                  ref={node => {
+                    if (node) {
+                      shapeRefs.current.set(getRefKey('line', line.id), node)
+                    } else {
+                      shapeRefs.current.delete(getRefKey('line', line.id))
+                    }
+                  }}
+                  onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
+                  onClick={e => handleObjectClick(e)}
+                  onContextMenu={e => handleObjectClick(e)}
+                  onDragEnd={e => {
+                    const node = e.target
+                    const dx = node.x() - box.x
+                    const dy = node.y() - box.y
+                    const newPoints = line.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
+                    updateLine(line.id, { points: newPoints })
+                  }}
+                  onTransformEnd={e => {
+                    const node = e.target as Konva.Group
+                    const scaleX = node.scaleX()
+                    const scaleY = node.scaleY()
+
+                    node.scaleX(1)
+                    node.scaleY(1)
+
+                    const relativePoints = line.points.map((p, i) => (i % 2 === 0 ? p - box.x : p - box.y))
+
+                    const newAbsolutePoints: number[] = []
+                    for (let i = 0; i < relativePoints.length; i += 2) {
+                      newAbsolutePoints.push(node.x() + relativePoints[i] * scaleX)
+                      newAbsolutePoints.push(node.y() + relativePoints[i + 1] * scaleY)
+                    }
+                    updateLine(line.id, { points: newAbsolutePoints })
+                  }}
+                >
+                  <Rect width={box.width} height={box.height} fill="transparent" />
+                  <Line
+                    points={line.points.map((p, i) => (i % 2 === 0 ? p - box.x : p - box.y))}
+                    stroke={line.stroke}
+                    strokeWidth={line.strokeWidth}
+                    tension={line.tension}
+                    lineCap={line.lineCap}
+                    lineJoin={line.lineJoin}
+                    globalCompositeOperation={line.tool === 'pen' ? 'source-over' : 'destination-out'}
+                    listening={false}
+                    width={box.width}
+                    height={box.height}
+                  />
+                </Group>
+              )
+            }
+
+            if (item.type === 'postit') {
+              const postIt = item.data
+              return (
+                <EditablePostIt
+                  key={getRefKey('postit', postIt.id)}
+                  postIt={postIt}
+                  draggable={canDrag}
+                  onEditStart={stopCapturing}
+                  onEditEnd={stopCapturing}
+                  onDragEnd={(x, y) => {
+                    updatePostIt(postIt.id, { x, y })
+                  }}
+                  onChange={updates => {
+                    updatePostIt(postIt.id, updates)
+                  }}
+                  onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
+                  onSelect={e => handleObjectClick(e)}
+                  shapeRef={node => {
+                    if (node) {
+                      shapeRefs.current.set(getRefKey('postit', postIt.id), node)
+                    } else {
+                      shapeRefs.current.delete(getRefKey('postit', postIt.id))
+                    }
+                  }}
+                  onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
                 />
-              </Group>
-            )
-          })}
+              )
+            }
 
-          {postIts.map(postIt => {
-            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
+            if (item.type === 'placeCard') {
+              const card = item.data
+              return (
+                <PlaceCardItem
+                  key={getRefKey('placeCard', card.id)}
+                  card={card}
+                  draggable={canDrag}
+                  onDragEnd={(x, y) => {
+                    updatePlaceCard(card.id, { x, y })
+                  }}
+                  onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
+                  onClick={e => handleObjectClick(e)}
+                  onContextMenu={e => handleObjectClick(e)}
+                  shapeRef={node => {
+                    if (node) {
+                      shapeRefs.current.set(getRefKey('placeCard', card.id), node)
+                    } else {
+                      shapeRefs.current.delete(getRefKey('placeCard', card.id))
+                    }
+                  }}
+                  onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
+                />
+              )
+            }
 
-            return (
-              <EditablePostIt
-                key={postIt.id}
-                postIt={postIt}
-                draggable={canDrag}
-                onEditStart={stopCapturing}
-                onEditEnd={stopCapturing}
-                onDragEnd={(x, y) => {
-                  updatePostIt(postIt.id, { x, y })
-                }}
-                onChange={updates => {
-                  updatePostIt(postIt.id, updates)
-                }}
-                onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
-                onSelect={e => handleObjectClick(e)}
-                shapeRef={node => {
-                  if (node) {
-                    shapeRefs.current.set(postIt.id, node)
-                  } else {
-                    shapeRefs.current.delete(postIt.id)
-                  }
-                }}
-                onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
-              />
-            )
-          })}
+            if (item.type === 'textBox') {
+              const textBox = item.data
+              const isSelected = selectedItems.some(i => i.id === textBox.id && i.type === 'textBox')
+              return (
+                <EditableTextBox
+                  key={getRefKey('textBox', textBox.id)}
+                  textBox={textBox}
+                  draggable={canDrag}
+                  isSelected={isSelected}
+                  onEditStart={stopCapturing}
+                  onEditEnd={stopCapturing}
+                  onDragEnd={(x, y) => {
+                    updateTextBox(textBox.id, { x, y })
+                  }}
+                  onChange={updates => {
+                    updateTextBox(textBox.id, updates)
+                  }}
+                  onMouseDown={e => handleObjectMouseDown(textBox.id, 'textBox', e)}
+                  onSelect={e => handleObjectClick(e)}
+                  shapeRef={node => {
+                    if (node) {
+                      shapeRefs.current.set(getRefKey('textBox', textBox.id), node)
+                    } else {
+                      shapeRefs.current.delete(getRefKey('textBox', textBox.id))
+                    }
+                  }}
+                  onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
+                />
+              )
+            }
 
-          {placeCards.map(card => {
-            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
-
-            return (
-              <PlaceCardItem
-                key={card.id}
-                card={card}
-                draggable={canDrag}
-                onDragEnd={(x, y) => {
-                  updatePlaceCard(card.id, { x, y })
-                }}
-                onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
-                onClick={e => handleObjectClick(e)}
-                onContextMenu={e => handleObjectClick(e)}
-                shapeRef={node => {
-                  if (node) {
-                    shapeRefs.current.set(card.id, node)
-                  } else {
-                    shapeRefs.current.delete(card.id)
-                  }
-                }}
-                onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
-              />
-            )
-          })}
-
-          {textBoxes.map(textBox => {
-            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
-            const isSelected = selectedItems.some(i => i.id === textBox.id && i.type === 'textBox')
-            return (
-              <EditableTextBox
-                key={textBox.id}
-                textBox={textBox}
-                draggable={canDrag}
-                isSelected={isSelected}
-                onEditStart={stopCapturing}
-                onEditEnd={stopCapturing}
-                onDragEnd={(x, y) => {
-                  updateTextBox(textBox.id, { x, y })
-                }}
-                onChange={updates => {
-                  updateTextBox(textBox.id, updates)
-                }}
-                onMouseDown={e => handleObjectMouseDown(textBox.id, 'textBox', e)}
-                onSelect={e => handleObjectClick(e)}
-                shapeRef={node => {
-                  if (node) {
-                    shapeRefs.current.set(textBox.id, node)
-                  } else {
-                    shapeRefs.current.delete(textBox.id)
-                  }
-                }}
-                onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
-              />
-            )
+            return null
           })}
 
           {effectiveTool === 'postIt' && !pendingPlaceCard && cursorPos && (
