@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
-import { throttle } from '@/shared/utils/throttle'
+import { throttle, type ThrottledFunction } from '@/shared/utils/throttle'
 import type { Line as LineType } from '@/shared/types'
 import { DEFAULT_LINE } from '../../constants'
 
@@ -30,7 +30,7 @@ export const useCanvasDraw = ({ addLine, updateLine, stopCapturing, roomId, canv
     stopCapturingRef.current = stopCapturing
   }, [addLine, updateLine, stopCapturing])
 
-  const throttledUpdateLineRef = useRef<((id: string, points: number[]) => void) | null>(null)
+  const throttledUpdateLineRef = useRef<ThrottledFunction<[string, number[]]> | null>(null)
 
   useEffect(() => {
     if (throttledUpdateLineRef.current === null) {
@@ -55,6 +55,9 @@ export const useCanvasDraw = ({ addLine, updateLine, stopCapturing, roomId, canv
       if (!isDrawingRef.current) return
 
       addSocketBreadcrumb('draw:cancel', { roomId, canvasId, lineId: currentLineIdRef.current ?? undefined, reason })
+
+      // pending throttle 호출 취소 (stopCapturing 이후 실행 방지)
+      throttledUpdateLineRef.current?.cancel()
 
       // 취소 시 현재까지의 라인을 저장
       if (currentLineIdRef.current && localPointsRef.current.length > 0) {
@@ -125,6 +128,9 @@ export const useCanvasDraw = ({ addLine, updateLine, stopCapturing, roomId, canv
 
     const lineId = currentLineIdRef.current
     const finalPoints = [...localPointsRef.current]
+
+    // pending throttle 호출 취소 (stopCapturing 이후 실행 방지)
+    throttledUpdateLineRef.current?.cancel()
 
     clearDrawingLineNode()
 

@@ -1,14 +1,19 @@
+export interface ThrottledFunction<TArgs extends unknown[]> {
+  (...args: TArgs): void
+  cancel: () => void
+}
+
 /**
  * 함수 실행을 지정된 시간 간격으로 제한하는 쓰로틀 유틸리티
  * @param func 쓰로틀링할 함수
  * @param delay 최소 실행 간격 (ms)
- * @returns 쓰로틀링된 함수
+ * @returns 쓰로틀링된 함수 (cancel 메서드 포함)
  */
-export function throttle<TArgs extends unknown[], TReturn = void>(func: (...args: TArgs) => TReturn, delay: number): (...args: TArgs) => void {
+export function throttle<TArgs extends unknown[], TReturn = void>(func: (...args: TArgs) => TReturn, delay: number): ThrottledFunction<TArgs> {
   let lastCall = 0
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
-  return (...args: TArgs): void => {
+  const throttled = (...args: TArgs): void => {
     const now = Date.now()
     const timeSinceLastCall = now - lastCall
 
@@ -24,7 +29,17 @@ export function throttle<TArgs extends unknown[], TReturn = void>(func: (...args
       timeoutId = setTimeout(() => {
         lastCall = Date.now()
         func(...args)
+        timeoutId = null
       }, delay - timeSinceLastCall)
     }
   }
+
+  throttled.cancel = () => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+  }
+
+  return throttled
 }
