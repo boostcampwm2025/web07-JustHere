@@ -156,8 +156,10 @@ export const EditablePostIt = ({
         width={postIt.width}
         height={renderHeight}
         fill={postIt.fill}
-        shadowBlur={5}
         cornerRadius={8 * (postIt.scale || 1)}
+        shadowBlur={15}
+        shadowOffsetY={4}
+        shadowOpacity={0.1}
         onDblClick={handleDblClick}
       />
 
@@ -191,7 +193,7 @@ export const EditablePostIt = ({
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="border-none bg-transparent resize-none outline-none font-sans text-[#333] placeholder:text-gray-400"
+            className="border-none bg-transparent resize-none outline-none font-sans text-[#333] placeholder:text-gray-disable"
             style={{
               width: `${postIt.width}px`,
               height: `${renderHeight}px`,
@@ -212,7 +214,7 @@ export const EditablePostIt = ({
           width={postIt.width - scaledPadding * 2}
           fontSize={TEXT_FONT_SIZE * postIt.scale}
           fontFamily={TEXT_FONT_FAMILY}
-          fill={postIt.text ? '#333' : '#9CA3AF'}
+          fill={postIt.text ? '#00000A' : '#9FA4A9'}
           lineHeight={TEXT_LINE_HEIGHT}
           wrap="word"
           onDblClick={handleDblClick}

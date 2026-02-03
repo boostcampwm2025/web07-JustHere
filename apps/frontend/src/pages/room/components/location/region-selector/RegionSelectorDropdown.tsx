@@ -1,17 +1,19 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useGoogleSearch, useUpdateRoom } from '@/shared/hooks'
-import { MapMarkerIcon, ChevronDownIcon } from '@/shared/assets'
-import { Button, Divider, Dropdown, SearchInput } from '@/shared/components'
+import { ChevronDownIcon } from '@/shared/assets'
+import { Divider, Dropdown, SearchInput } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { GooglePlace } from '@/shared/types'
 
-interface RegionSelectorDropdown {
-  currentRegion?: string | null
+interface RegionSelectorDropdownProps {
   slug: string
   onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
+  trigger?: (props: { isOpen: boolean; toggle: () => void }) => ReactNode
+  align?: 'left' | 'right'
 }
 
-export const RegionSelectorDropdown = ({ slug, onRegionChange }: RegionSelectorDropdown) => {
+export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 'right' }: RegionSelectorDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -54,19 +56,25 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange }: RegionSelectorD
     setSearchTerm('')
   }
 
+  const toggle = () => setIsOpen(prev => !prev)
   const places = results?.places ?? []
+
+  const defaultTrigger = (
+    <button
+      type="button"
+      onClick={toggle}
+      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+    >
+      <span className="text-sm font-medium whitespace-nowrap">지역 변경</span>
+      <ChevronDownIcon className={cn('size-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
+    </button>
+  )
 
   return (
     <div className="relative">
-      <Button variant="gray" className="px-3 w-full" onClick={() => setIsOpen(!isOpen)}>
-        <div className="flex items-center gap-1 w-full justify-center">
-          <MapMarkerIcon className="size-4 text-primary shrink-0" />
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">지역 변경</span>
-          <ChevronDownIcon className={cn('size-4 text-gray-400 transition-transform shrink-0', isOpen && 'rotate-180')} />
-        </div>
-      </Button>
+      {trigger ? trigger({ isOpen, toggle }) : defaultTrigger}
       {isOpen && (
-        <Dropdown onOpenChange={setIsOpen} align="right" className="w-72">
+        <Dropdown onOpenChange={setIsOpen} align={align} className="w-72">
           <div className="p-3">
             <SearchInput
               value={keyword}
@@ -90,7 +98,7 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange }: RegionSelectorD
                     <button
                       type="button"
                       onClick={() => handleSelect(place)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors hover:cursor-pointer"
                     >
                       <div className="text-sm font-medium text-gray-900">{place.displayName.text}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{place.formattedAddress}</div>

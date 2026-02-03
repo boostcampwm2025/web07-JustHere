@@ -1,21 +1,20 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ResultNotFoundError, ResultLoadFailedError } from '@/app/error-boundary'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { Button, Header, type PlaceDetailPlace } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { PlaceResultCard } from './components/PlaceResultCard'
-import { useRoomSocket } from '@/pages/room/hooks/socket'
-import { useRoomParticipants, useRoomMeta } from '@/shared/hooks'
+import { useRoomParticipants, useRoomMeta, useVoteResults } from '@/shared/hooks'
 import { getOrCreateStoredUser } from '@/shared/utils'
+import { useRoomSocket } from '@/pages/room/hooks'
 import { RoomHeader } from '@/pages/room/components'
-import { useVoteResults } from '@/shared/hooks/queries/useRoomQueries'
-import type { PlaceDetailPlace } from '@/shared/components/place-detail/PlaceDetailContent'
+import { PlaceResultCard } from './components'
 
 export const ResultPage = () => {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { roomId, updateParticipantName, transferOwner } = useRoomSocket()
+  const { roomId, ready, updateParticipantName, transferOwner } = useRoomSocket()
 
   const [copied, setCopied] = useState(false)
 
@@ -40,7 +39,7 @@ export const ResultPage = () => {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
-  const roomLink = `${socketBaseUrl}/result/${slug}`
+  const roomLink = `${socketBaseUrl}/share/result/${slug}`
 
   const handleGoBack = () => {
     navigate(`/room/${slug}`)
@@ -56,32 +55,22 @@ export const ResultPage = () => {
     }
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user) return null
 
-  if (isLoading) {
+  if (isLoading || !ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>로딩 중...</div>
+      <div className="flex flex-col h-screen bg-gray-bg">
+        <Header />
       </div>
     )
   }
 
   if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>결과를 불러오는데 실패했습니다.</div>
-      </div>
-    )
+    throw new ResultLoadFailedError()
   }
 
-  if (resultData.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div>투표 결과가 없습니다.</div>
-      </div>
-    )
+  if (roomId && resultData.length === 0) {
+    throw new ResultNotFoundError()
   }
 
   return (
@@ -98,10 +87,14 @@ export const ResultPage = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col p-8 min-h-0 overflow-hidden">
         {/* Back Button */}
-        <button type="button" onClick={handleGoBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 w-fit">
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span className="text-sm">이전 페이지로 돌아가기</span>
-        </button>
+        <Button
+          variant="ghost"
+          onClick={handleGoBack}
+          icon={<ArrowLeftIcon className="size-5" />}
+          className="h-fit text-gray-600 mb-4  hover:text-gray-800 px-0"
+        >
+          <span className="text-sm font-medium">이전 페이지로 돌아가기</span>
+        </Button>
 
         {/* Title Section */}
         <div className="flex items-center justify-between mb-8">

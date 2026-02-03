@@ -11,7 +11,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BASE_STYLES =
-  'flex items-center justify-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-lg'
+  'flex items-center justify-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 rounded-lg hover:cursor-pointer'
 
 const VARIANT_STYLES: Record<Variant, string> = {
   primary: 'bg-primary text-white hover:bg-primary-pressed active:bg-primary-pressed/90 focus-visible:ring-primary focus-visible:ring-offset-white',
@@ -30,7 +30,7 @@ const SIZE_STYLES: Record<Size, string> = {
 
 export const Button = ({ className, variant = 'primary', size = 'md', icon, iconPosition = 'left', children, ...props }: ButtonProps) => {
   return (
-    <button className={cn(BASE_STYLES, VARIANT_STYLES[variant], SIZE_STYLES[size], className)} {...props}>
+    <button type="button" className={cn(BASE_STYLES, VARIANT_STYLES[variant], SIZE_STYLES[size], className)} {...props}>
       {iconPosition === 'left' && icon && <span className="shrink-0">{icon}</span>}
       {children}
       {iconPosition === 'right' && icon && <span className="shrink-0">{icon}</span>}

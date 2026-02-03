@@ -19,8 +19,9 @@ export const ToastContainer = () => {
       {toasts.map(toast => (
         <button
           key={toast.id}
+          type="button"
           className={cn(
-            'bg-white px-4 flex items-center gap-2 py-3 rounded-lg shadow-lg cursor-pointer',
+            'bg-white px-4 flex items-center gap-2 py-3 rounded-lg shadow-lg cursor-pointer hover:cursor-pointer',
             toast.isLeaving ? 'animate-fade-out' : 'animate-slide-up',
           )}
           onClick={() => removeToast(toast.id)}

@@ -18,6 +18,8 @@ import {
   ParticipantNameUpdatedPayload,
   RoomOwnerTransferredPayload,
 } from './dto/room.s2c.dto'
+import { VoteService } from '@/modules/vote/vote.service'
+import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 
 function createMockSocket(id = 'socket-1') {
   return {
@@ -34,7 +36,14 @@ function createMockSocket(id = 'socket-1') {
 
 describe('RoomService', () => {
   let service: RoomService
-  let repository: RoomRepository
+
+  // Mock Repository 정의
+  const mockRepository = {
+    createRoom: jest.fn(),
+    findBySlug: jest.fn(),
+    findById: jest.fn(),
+    updateBySlug: jest.fn(),
+  }
 
   const roomId = 'room-1'
   const now = new Date()
@@ -92,22 +101,31 @@ describe('RoomService', () => {
         RoomService,
         {
           provide: RoomRepository,
-          useValue: {
-            createRoom: jest.fn(),
-            findBySlug: jest.fn(),
-            findById: jest.fn(),
-          },
+          useValue: mockRepository,
         },
         { provide: UserService, useValue: users },
 
         { provide: CategoryService, useValue: categoryService },
         { provide: RoomBroadcaster, useValue: broadcaster },
         { provide: RoomActivitySchedulerService, useValue: mockRoomScheduler },
+        {
+          provide: VoteService,
+          useValue: {
+            createVote: jest.fn(),
+            getVote: jest.fn(),
+            revokeAllVotesForUser: jest.fn().mockReturnValue([]),
+          },
+        },
+        {
+          provide: VoteBroadcaster,
+          useValue: {
+            broadcastVote: jest.fn(),
+          },
+        },
       ],
     }).compile()
 
     service = module.get<RoomService>(RoomService)
-    repository = module.get<RoomRepository>(RoomRepository)
   })
 
   describe('createRoom', () => {
@@ -129,13 +147,13 @@ describe('RoomService', () => {
         place_name: '강남역',
       }
 
-      const createRoomSpy = jest.spyOn(repository, 'createRoom').mockResolvedValue(mockRoom)
+      mockRepository.createRoom.mockResolvedValue(mockRoom)
 
       const result = await service.createRoom(inputData)
 
       expect(result).toEqual(mockRoom)
-      expect(createRoomSpy).toHaveBeenCalledWith(inputData)
-      expect(createRoomSpy).toHaveBeenCalledTimes(1)
+      expect(mockRepository.createRoom).toHaveBeenCalledWith(inputData)
+      expect(mockRepository.createRoom).toHaveBeenCalledTimes(1)
     })
 
     it('place_name 없이 방을 생성할 수 있어야 한다', async () => {
@@ -155,12 +173,12 @@ describe('RoomService', () => {
         y: 37.497952,
       }
 
-      const createRoomSpy = jest.spyOn(repository, 'createRoom').mockResolvedValue(mockRoom)
+      mockRepository.createRoom.mockResolvedValue(mockRoom)
 
       const result = await service.createRoom(inputData)
 
       expect(result).toEqual(mockRoom)
-      expect(createRoomSpy).toHaveBeenCalledWith(inputData)
+      expect(mockRepository.createRoom).toHaveBeenCalledWith(inputData)
     })
   })
 
@@ -180,7 +198,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA, sessionB])
       categoryService.findByRoomId.mockResolvedValue([mockCategory])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
+      mockRepository.findBySlug.mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -231,7 +249,7 @@ describe('RoomService', () => {
       users.createSession.mockReturnValue(sessionA)
       users.getSessionsByRoom.mockReturnValue([sessionA])
       categoryService.findByRoomId.mockResolvedValue([])
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: roomId } as Room)
+      mockRepository.findBySlug.mockResolvedValue({ id: roomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId,
@@ -279,8 +297,7 @@ describe('RoomService', () => {
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
       categoryService.findByRoomId.mockResolvedValue([])
 
-      jest.spyOn(repository, 'findById').mockResolvedValue({ id: uuidRoomId, place_name: '테스트 지역' } as Room)
-      const findBySlugSpy = jest.spyOn(repository, 'findBySlug')
+      mockRepository.findById.mockResolvedValue({ id: uuidRoomId, place_name: '테스트 지역' } as Room)
 
       const payload: RoomJoinPayload = {
         roomId: uuidRoomId,
@@ -289,7 +306,7 @@ describe('RoomService', () => {
 
       await service.joinRoom(client, payload)
 
-      expect(findBySlugSpy).not.toHaveBeenCalled()
+      expect(mockRepository.findBySlug).not.toHaveBeenCalled()
       expect(client.join).toHaveBeenCalledWith(`room:${uuidRoomId}`)
     })
 
@@ -303,7 +320,7 @@ describe('RoomService', () => {
       users.getSessionsByRoom.mockReturnValue([{ ...sessionA, roomId: uuidRoomId }])
       categoryService.findByRoomId.mockResolvedValue([])
 
-      const findBySlugSpy = jest.spyOn(repository, 'findBySlug').mockResolvedValue({ id: uuidRoomId } as Room)
+      mockRepository.findBySlug.mockResolvedValue({ id: uuidRoomId } as Room)
 
       const payload: RoomJoinPayload = {
         roomId: slug,
@@ -312,7 +329,7 @@ describe('RoomService', () => {
 
       await service.joinRoom(client, payload)
 
-      expect(findBySlugSpy).toHaveBeenCalledWith(slug)
+      expect(mockRepository.findBySlug).toHaveBeenCalledWith(slug)
       expect(client.join).toHaveBeenCalledWith(`room:${uuidRoomId}`)
     })
 
@@ -321,7 +338,7 @@ describe('RoomService', () => {
       const slug = 'invalid-slug'
 
       users.getSession.mockReturnValue(null)
-      jest.spyOn(repository, 'findBySlug').mockResolvedValue(null)
+      mockRepository.findBySlug.mockResolvedValue(null)
 
       const payload: RoomJoinPayload = {
         roomId: slug,
@@ -490,7 +507,7 @@ describe('RoomService', () => {
 
       users.getSession.mockReturnValue(notOwnerSession)
 
-      expect(() => service.transferOwner(client, 'user-1')).toThrow(new CustomException(ErrorType.Forbidden, '방장만 권한을 위임할 수 있습니다.'))
+      expect(() => service.transferOwner(client, 'user-1')).toThrow(new CustomException(ErrorType.NotOwner, '방장만 권한을 위임할 수 있습니다.'))
     })
 
     it('대상 유저가 없으면 NotFound 예외를 던진다', () => {
@@ -570,6 +587,41 @@ describe('RoomService', () => {
 
       const [, event] = calls[0] as [string, string]
       expect(event).toBe('participant:disconnected')
+    })
+  })
+
+  describe('updateRoom', () => {
+    it('방 정보를 업데이트하고 브로드캐스트해야 한다', async () => {
+      const slug = 'a3k9m2x7'
+      const updateData = { x: 127.1, y: 37.5, place_name: '잠실역' }
+      const mockRoom = { id: roomId, slug, ...updateData } as Room
+
+      mockRepository.findBySlug.mockResolvedValue(mockRoom)
+      mockRepository.updateBySlug.mockResolvedValue(mockRoom)
+
+      const result = await service.updateRoom(slug, updateData)
+
+      expect(result).toEqual(mockRoom)
+      expect(mockRepository.findBySlug).toHaveBeenCalledWith(slug)
+      expect(mockRepository.updateBySlug).toHaveBeenCalledWith(slug, updateData)
+
+      expect(broadcaster.emitToRoom).toHaveBeenCalledWith(roomId, 'room:region_updated', {
+        x: updateData.x,
+        y: updateData.y,
+        place_name: updateData.place_name,
+      })
+    })
+
+    it('방을 찾을 수 없으면 NotFound 예외를 던져야 한다', async () => {
+      const slug = 'invalid-slug'
+      const updateData = { x: 127.1, y: 37.5 }
+
+      mockRepository.findBySlug.mockResolvedValue(null)
+
+      await expect(service.updateRoom(slug, updateData)).rejects.toThrow(new CustomException(ErrorType.NotFound, '방을 찾을 수 없습니다.'))
+
+      expect(mockRepository.updateBySlug).not.toHaveBeenCalled()
+      expect(broadcaster.emitToRoom).not.toHaveBeenCalled()
     })
   })
 })

@@ -16,8 +16,6 @@ export class CursorInfo {
   x!: number
   y!: number
   name!: string
-  chatActive?: boolean
-  chatMessage?: string
 }
 
 export class AwarenessState {
