@@ -4,7 +4,7 @@ import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
 import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
-import { getLineBoundingBox, makeKey } from '@/pages/room/utils'
+import { getLineBoundingBox, makeKey, createSelectedItemsSet } from '@/pages/room/utils'
 import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse, useYjsSocket } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
@@ -142,11 +142,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
   // 선택된 포스트잇 ID Set
   const selectedPostItIdsSet = useMemo(
-    () =>
-      createSelectedItemsSet(selectedItems, {
-        filter: item => item.type === 'postit',
-        keyFn: item => item.id,
-      }),
+    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === 'postit', keyFn: item => item.id }),
     [selectedItems],
   )
 
@@ -154,13 +150,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
   const selectedPostItIds = useMemo(() => Array.from(selectedPostItIdsSet), [selectedPostItIdsSet])
 
   // 선택된 모든 아이템 Set
-  const selectedItemsSet = useMemo(
-    () =>
-      createSelectedItemsSet(selectedItems, {
-        keyFn: item => makeKey(item.type, item.id),
-      }),
-    [selectedItems],
-  )
+  const selectedItemsSet = useMemo(() => createSelectedItemsSet(selectedItems, { keyFn: item => makeKey(item.type, item.id) }), [selectedItems])
 
   const selectedPostItCurrentFill = useMemo(() => {
     if (selectedPostItIdsSet.size === 0) return undefined
@@ -582,16 +572,4 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       </Stage>
     </div>
   )
-}
-
-function createSelectedItemsSet(
-  selectedItems: SelectedItem[],
-  options: { filter?: (item: SelectedItem) => boolean; keyFn: (item: SelectedItem) => string },
-): Set<string> {
-  const set = new Set<string>()
-  selectedItems.forEach(item => {
-    if (!options.filter || options.filter(item)) set.add(options.keyFn(item))
-  })
-
-  return set
 }
