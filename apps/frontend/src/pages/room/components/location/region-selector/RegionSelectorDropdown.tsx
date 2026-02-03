@@ -90,7 +90,7 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange }: RegionSelectorD
                     <button
                       type="button"
                       onClick={() => handleSelect(place)}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors hover:cursor-pointer"
                     >
                       <div className="text-sm font-medium text-gray-900">{place.displayName.text}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{place.formattedAddress}</div>

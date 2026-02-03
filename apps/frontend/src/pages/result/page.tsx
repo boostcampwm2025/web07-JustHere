@@ -98,10 +98,14 @@ export const ResultPage = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col p-8 min-h-0 overflow-hidden">
         {/* Back Button */}
-        <button type="button" onClick={handleGoBack} className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 w-fit">
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span className="text-sm">이전 페이지로 돌아가기</span>
-        </button>
+        <Button
+          variant="ghost"
+          onClick={handleGoBack}
+          icon={<ArrowLeftIcon className="size-5" />}
+          className="h-fit text-gray-600 mb-4  hover:text-gray-800 px-0"
+        >
+          <span className="text-sm font-medium">이전 페이지로 돌아가기</span>
+        </Button>
 
         {/* Title Section */}
         <div className="flex items-center justify-between mb-8">
