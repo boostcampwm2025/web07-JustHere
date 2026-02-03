@@ -64,6 +64,17 @@ describe('RoomRepository', () => {
 
   describe('createRoom', () => {
     it('방을 생성하고 slug를 포함한 Room 객체를 반환해야 한다', async () => {
+      const mockRoom: Room = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        slug: 'a3k9m2x7',
+        x: 127.027621,
+        y: 37.497952,
+        place_name: '강남역',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActiveAt: new Date(),
+      }
+
       prisma.room.create.mockResolvedValue(mockRoom)
 
       const result = await repository.createRoom({
@@ -87,6 +98,17 @@ describe('RoomRepository', () => {
     })
 
     it('place_name이 없으면 빈 문자열로 저장해야 한다', async () => {
+      const mockRoom: Room = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        slug: 'a3k9m2x7',
+        x: 127.027621,
+        y: 37.497952,
+        place_name: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActiveAt: new Date(),
+      }
+
       const mockRoomNoPlace = { ...mockRoom, place_name: '' }
       prisma.room.create.mockResolvedValue(mockRoomNoPlace)
 
@@ -104,6 +126,17 @@ describe('RoomRepository', () => {
 
     it('slug 중복 시 재시도해야 한다', async () => {
       const duplicateError = { code: 'P2002' }
+      const mockRoom: Room = {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        slug: 'b4k8m3x9',
+        x: 127.027621,
+        y: 37.497952,
+        place_name: '강남역',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastActiveAt: new Date(),
+      }
+
       prisma.room.create.mockRejectedValueOnce(duplicateError).mockResolvedValueOnce(mockRoom)
 
       const result = await repository.createRoom({

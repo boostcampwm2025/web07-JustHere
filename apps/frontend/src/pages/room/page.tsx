@@ -6,7 +6,7 @@ import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
-import { Button } from '@/shared/components'
+import { Button, SEO } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -42,12 +42,16 @@ export default function RoomPage() {
     return null
   }
 
-  const roomLink = `${socketBaseUrl}/room/${slug}`
+  const roomLink = `${socketBaseUrl}/share/room/${slug}`
+  const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
+  const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
+  const pageUrl = typeof window === 'undefined' ? '' : window.location.href
   const mapMarkers = activeLocationTab === 'candidates' ? candidatePlaces : searchResults
 
   if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
+        <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -64,6 +68,7 @@ export default function RoomPage() {
   if (!categories.length) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
+        <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
         <RoomHeader
           participants={participants}
           currentUserId={user.userId}
@@ -99,6 +104,7 @@ export default function RoomPage() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-bg">
+      <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
       <RoomHeader
         participants={participants}
         currentUserId={user.userId}

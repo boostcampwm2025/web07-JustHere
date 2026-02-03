@@ -39,7 +39,7 @@ export const ResultPage = () => {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
-  const roomLink = `${socketBaseUrl}/result/${slug}`
+  const roomLink = `${socketBaseUrl}/share/result/${slug}`
 
   const handleGoBack = () => {
     navigate(`/room/${slug}`)
