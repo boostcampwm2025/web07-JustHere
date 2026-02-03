@@ -78,26 +78,30 @@ export default function RoomPage() {
           ownerId={ownerId}
           onTransferOwner={transferOwner}
         />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-          {isCreateCategoryModalOpen ? (
+
+        {isCreateCategoryModalOpen ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
             <AddCategoryModal
               onClose={() => setIsCreateCategoryModalOpen(false)}
               onComplete={name => {
                 createCategory(name)
               }}
             />
-          ) : (
-            <div className="flex flex-col items-center justify-center text-gray-disable">
+          </div>
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200" />
+            <div className="flex flex-1 flex-col items-center justify-center text-gray-disable">
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">캔버스가 없습니다</p>
                 <p className="text-sm">새 카테고리를 추가해주세요</p>
               </div>
-              <Button className="mt-4" onClick={() => setIsCreateCategoryModalOpen(true)}>
+              <Button variant="gray" className="mt-4" onClick={() => setIsCreateCategoryModalOpen(true)}>
                 추가하기
               </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     )
   }
