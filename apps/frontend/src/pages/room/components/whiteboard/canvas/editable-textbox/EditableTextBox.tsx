@@ -3,7 +3,7 @@ import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { TextBox } from '@/shared/types'
-import { TEXT_BOX_HEIGHT } from '@/pages/room/constants'
+import { TEXT_BOX_HEIGHT, BASE_PADDING, TEXT_FONT_SIZE, TEXT_FONT_FAMILY, TEXT_LINE_HEIGHT } from '@/pages/room/constants'
 
 interface EditableTextBoxProps {
   textBox: TextBox
@@ -19,15 +19,13 @@ interface EditableTextBoxProps {
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
 
-const BASE_PADDING = 10
-
 function measureTextHeight(text: string, width: number, scale: number): number {
   const padding = BASE_PADDING * scale
   const measureNode = new Konva.Text({
     text,
-    fontSize: 14 * scale,
-    fontFamily: 'Arial, sans-serif',
-    lineHeight: 1.4,
+    fontSize: TEXT_FONT_SIZE * scale,
+    fontFamily: TEXT_FONT_FAMILY,
+    lineHeight: TEXT_LINE_HEIGHT,
     width: width - padding * 2,
     wrap: 'word',
   })
@@ -201,10 +199,10 @@ export const EditableTextBox = ({
             style={{
               width: `${textBox.width}px`,
               height: `${renderHeight}px`,
-              fontSize: `${14 * (textBox.scale || 1)}px`,
+              fontSize: `${TEXT_FONT_SIZE * (textBox.scale || 1)}px`,
               padding: `${scaledPadding}px`,
-              lineHeight: 1.4,
-              fontFamily: 'Arial, sans-serif',
+              lineHeight: TEXT_LINE_HEIGHT,
+              fontFamily: TEXT_FONT_FAMILY,
               boxSizing: 'border-box',
               overflow: 'hidden',
             }}
@@ -216,10 +214,10 @@ export const EditableTextBox = ({
           x={scaledPadding}
           y={scaledPadding}
           width={Math.max(1, textBox.width - scaledPadding * 2)}
-          fontSize={14 * textBox.scale}
-          fontFamily="Arial, sans-serif"
+          fontSize={TEXT_FONT_SIZE * textBox.scale}
+          fontFamily={TEXT_FONT_FAMILY}
           fill={textBox.text ? '#333' : '#9CA3AF'}
-          lineHeight={1.4}
+          lineHeight={TEXT_LINE_HEIGHT}
           wrap="word"
           onDblClick={handleDblClick}
         />
