@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { PencilIcon, ContentCopyIcon, ShareVariantIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, Avatar, Dropdown } from '@/shared/components'
 import type { Participant } from '@/shared/types'
+import { useToast } from '@/shared/hooks'
+import { reportError, resolveErrorMessage } from '@/shared/utils'
 
 interface RoomInfoDropdownProps {
   open: boolean
@@ -30,6 +32,7 @@ export const RoomInfoDropdown = ({
 }: RoomInfoDropdownProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
   const [copied, setCopied] = useState(false)
+  const { showToast } = useToast()
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ socketId: '', userId: currentUserId, name: userName }, ...participants]
@@ -51,7 +54,8 @@ export const RoomInfoDropdown = ({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('링크 복사에 실패했습니다.', error)
+      reportError({ error, code: 'CLIENT_CLIPBOARD_WRITE_FAILED', context: { roomLink } })
+      showToast(resolveErrorMessage(error, 'CLIENT_CLIPBOARD_WRITE_FAILED'), 'error')
     }
   }
 

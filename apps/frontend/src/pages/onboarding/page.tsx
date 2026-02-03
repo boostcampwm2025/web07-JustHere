@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Header } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useCreateRoom } from '@/shared/hooks'
+import { useCreateRoom, useToast } from '@/shared/hooks'
+import { getErrorCode, reportError, resolveErrorMessage } from '@/shared/utils'
 import { LocationStep, InviteStep, OnboardingProgress } from './components'
 import type { OnboardingStep, SelectedLocation } from './types'
 
@@ -14,6 +15,7 @@ export default function OnboardingPage() {
   const [roomSlug, setRoomSlug] = useState<string | null>(null)
 
   const { mutate: createRoom } = useCreateRoom()
+  const { showToast } = useToast()
 
   const handleLocationSelect = (location: SelectedLocation) => {
     setSelectedLocation(location)
@@ -30,7 +32,9 @@ export default function OnboardingPage() {
           setCurrentStep('invite')
         },
         onError: error => {
-          console.error('방 생성 실패', error)
+          const code = getErrorCode(error, 'CLIENT_ROOM_CREATE_FAILED')
+          reportError({ error, code, context: { action: 'create_room' } })
+          showToast(resolveErrorMessage(error, code), 'error')
         },
       },
     )

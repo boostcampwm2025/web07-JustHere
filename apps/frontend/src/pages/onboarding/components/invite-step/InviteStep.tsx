@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ContentCopyIcon, CheckIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
+import { useToast } from '@/shared/hooks'
+import { reportError, resolveErrorMessage } from '@/shared/utils'
 
 interface InviteStepProps {
   selectedLocation: string
@@ -10,6 +12,7 @@ interface InviteStepProps {
 
 export const InviteStep = ({ selectedLocation, inviteLink, onComplete }: InviteStepProps) => {
   const [copied, setCopied] = useState(false)
+  const { showToast } = useToast()
 
   const handleCopy = async () => {
     try {
@@ -17,7 +20,8 @@ export const InviteStep = ({ selectedLocation, inviteLink, onComplete }: InviteS
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      reportError({ error: err, code: 'CLIENT_CLIPBOARD_WRITE_FAILED', context: { inviteLink } })
+      showToast(resolveErrorMessage(err, 'CLIENT_CLIPBOARD_WRITE_FAILED'), 'error')
     }
   }
 

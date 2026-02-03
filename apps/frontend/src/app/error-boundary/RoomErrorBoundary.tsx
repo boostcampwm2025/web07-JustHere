@@ -1,8 +1,8 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import * as Sentry from '@sentry/react'
 import { RoomErrorPage } from '@/pages'
-import { RoomNotFoundError, ResultNotFoundError, ResultLoadFailedError } from './error'
-import { ERROR_TYPE, type ErrorType } from './error-type'
+import { ERROR_TYPE, type ErrorType } from '@/shared/types'
+import { reportError, isAppError } from '@/shared/utils'
 
 type Props = {
   children: ReactNode
@@ -31,7 +31,7 @@ export class RoomErrorBoundary extends Component<Props, State> {
       // 초기화 필요한 작업 수행
       await this.props.onResetCleanup?.()
     } catch (err) {
-      console.error(err)
+      reportError({ error: err, code: 'CLIENT_RESET_FAILED' })
     } finally {
       // resetKey 증가 → children을 key로 감싸서 완전 재마운트
       this.setState(prev => ({ error: null, resetKey: prev.resetKey + 1 }))
@@ -52,16 +52,17 @@ export class RoomErrorBoundary extends Component<Props, State> {
 }
 
 function getErrorPageConfig(error: Error): { errorType: ErrorType } {
-  if (error instanceof RoomNotFoundError) {
-    return { errorType: ERROR_TYPE.ROOM_NOT_FOUND }
-  }
-
-  if (error instanceof ResultNotFoundError) {
-    return { errorType: ERROR_TYPE.RESULT_NOT_FOUND }
-  }
-
-  if (error instanceof ResultLoadFailedError) {
-    return { errorType: ERROR_TYPE.RESULT_LOAD_FAILED }
+  if (isAppError(error)) {
+    switch (error.code) {
+      case 'ROOM_NOT_FOUND':
+      case 'NOT_FOUND':
+      case 'TARGET_NOT_FOUND':
+        return { errorType: ERROR_TYPE.ROOM_NOT_FOUND }
+      case 'RESULT_NOT_FOUND':
+        return { errorType: ERROR_TYPE.RESULT_NOT_FOUND }
+      case 'RESULT_LOAD_FAILED':
+        return { errorType: ERROR_TYPE.RESULT_LOAD_FAILED }
+    }
   }
 
   return { errorType: ERROR_TYPE.UNKNOWN }
