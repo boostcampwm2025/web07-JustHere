@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { getOrCreateStoredUser } from '@/shared/utils'
 import { socketBaseUrl } from '@/shared/config/socket'
@@ -19,13 +19,15 @@ export default function RoomPage() {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
   const [pendingPlaceCard, setPendingPlaceCard] = useState<Omit<PlaceCard, 'x' | 'y'> | null>(null)
-  const [searchResults, setSearchResults] = useState<GooglePlace[]>([])
+  const [searchResultsByCategory, setSearchResultsByCategory] = useState<Record<string, GooglePlace[]>>({})
   const [candidatePlaceIds, setCandidatePlaceIds] = useState<string[]>([])
-  const candidatePlaces = useResolvedPlaces(candidatePlaceIds, searchResults)
+  const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
   const [activeLocationTab, setActiveLocationTab] = useState<'locations' | 'candidates'>('locations')
-  const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const activeCategoryId = useMemo(() => resolveActiveCategoryId(categories, selectedCategoryId), [categories, selectedCategoryId])
+  const activeSearchResults = searchResultsByCategory[activeCategoryId] ?? []
+  const activeSelectedPlace = selectedPlaceByCategory[activeCategoryId] ?? null
+  const candidatePlaces = useResolvedPlaces(candidatePlaceIds, activeSearchResults)
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(() => !categories.length)
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
@@ -33,6 +35,22 @@ export default function RoomPage() {
   const clearPendingPlaceCard = () => {
     setPendingPlaceCard(null)
   }
+
+  const handleSearchComplete = useCallback(
+    (results: GooglePlace[]) => {
+      if (!activeCategoryId) return
+      setSearchResultsByCategory(prev => ({ ...prev, [activeCategoryId]: results }))
+    },
+    [activeCategoryId],
+  )
+
+  const handlePlaceSelect = useCallback(
+    (place: GooglePlace | null) => {
+      if (!activeCategoryId) return
+      setSelectedPlaceByCategory(prev => ({ ...prev, [activeCategoryId]: place }))
+    },
+    [activeCategoryId],
+  )
 
   if (!slug) {
     return <Navigate to="/onboarding" replace />
@@ -46,7 +64,7 @@ export default function RoomPage() {
   const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
   const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
-  const mapMarkers = activeLocationTab === 'candidates' ? candidatePlaces : searchResults
+  const mapMarkers = activeLocationTab === 'candidates' ? candidatePlaces : activeSearchResults
 
   if (!ready || !roomId) {
     return (
@@ -126,12 +144,12 @@ export default function RoomPage() {
           pendingPlaceCard={pendingPlaceCard}
           onStartPlaceCard={handleStartPlaceCard}
           onCancelPlaceCard={clearPendingPlaceCard}
-          onSearchComplete={setSearchResults}
+          onSearchComplete={handleSearchComplete}
           activeTab={activeLocationTab}
           onActiveTabChange={setActiveLocationTab}
           onCandidatePlaceIdsChange={setCandidatePlaceIds}
-          selectedPlace={selectedPlace}
-          onPlaceSelect={setSelectedPlace}
+          selectedPlace={activeSelectedPlace}
+          onPlaceSelect={handlePlaceSelect}
           candidatePlaces={candidatePlaces}
         />
         <WhiteboardSection
@@ -145,8 +163,8 @@ export default function RoomPage() {
           onPlaceCardPlaced={clearPendingPlaceCard}
           onPlaceCardCanceled={clearPendingPlaceCard}
           searchResults={mapMarkers}
-          selectedPlace={selectedPlace}
-          onMarkerClick={setSelectedPlace}
+          selectedPlace={activeSelectedPlace}
+          onMarkerClick={handlePlaceSelect}
         />
       </div>
     </div>
