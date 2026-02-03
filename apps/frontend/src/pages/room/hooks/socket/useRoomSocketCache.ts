@@ -311,7 +311,23 @@ export const useRoomSocketCache = () => {
     [getSocket],
   )
 
-  return { ready, roomId, currentRegion, joinRoom, leaveRoom, updateParticipantName, transferOwner, createCategory, deleteCategory, categoryError }
+  const clearCategoryError = useCallback(() => {
+    setCategoryError(null)
+  }, [])
+
+  return {
+    ready,
+    roomId,
+    currentRegion,
+    joinRoom,
+    leaveRoom,
+    updateParticipantName,
+    transferOwner,
+    createCategory,
+    deleteCategory,
+    categoryError,
+    clearCategoryError,
+  }
 }
 
 const isHardDisconnect = (reason: Socket.DisconnectReason) => {

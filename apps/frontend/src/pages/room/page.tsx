@@ -11,7 +11,8 @@ import { Button, SEO } from '@/shared/components'
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
-  const { ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory, categoryError } = useRoomSocket()
+  const { ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory, categoryError, clearCategoryError } =
+    useRoomSocket()
 
   const { data: participants = [] } = useRoomParticipants(roomId)
   const { data: roomMeta } = useRoomMeta(roomId)
@@ -61,14 +62,23 @@ export default function RoomPage() {
     if (!categoryError) return
 
     const errorKey = categoryError.timestamp
-    if (lastHandledCategoryErrorRef.current === errorKey) return
+    if (lastHandledCategoryErrorRef.current === errorKey) {
+      clearCategoryError()
+      return
+    }
     lastHandledCategoryErrorRef.current = errorKey
 
     const categoryId = getCategoryIdFromError(categoryError)
-    if (!categoryId) return
+    if (!categoryId) {
+      clearCategoryError()
+      return
+    }
 
     const snapshot = pendingDeleteRef.current.get(categoryId)
-    if (!snapshot) return
+    if (!snapshot) {
+      clearCategoryError()
+      return
+    }
 
     if (snapshot.hasSearchResults) {
       setSearchResultsByCategory(prev =>
@@ -83,7 +93,8 @@ export default function RoomPage() {
     }
 
     pendingDeleteRef.current.delete(categoryId)
-  }, [categoryError])
+    clearCategoryError()
+  }, [categoryError, clearCategoryError])
 
   useEffect(() => {
     const activeCategoryIds = new Set(categories.map(category => category.id))
