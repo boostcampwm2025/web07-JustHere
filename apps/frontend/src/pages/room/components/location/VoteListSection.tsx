@@ -11,21 +11,34 @@ interface VoteListSectionProps {
   round?: number
   isOwner?: boolean
   voteStatus: VoteStatus
+  selectedCandidateId: string | null
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onResetVote?: () => void
   onViewDetail?: (candidateId: string) => void
 }
 
-export const VoteListSection = ({ candidates, round, isOwner, voteStatus, onVote, onEndVote, onResetVote, onViewDetail }: VoteListSectionProps) => {
+export const VoteListSection = ({
+  candidates,
+  round,
+  isOwner,
+  voteStatus,
+  selectedCandidateId,
+  onVote,
+  onEndVote,
+  onResetVote,
+  onViewDetail,
+}: VoteListSectionProps) => {
   const disabled = voteStatus === 'OWNER_PICK'
 
   const winnerId = useMemo(() => {
     if (voteStatus !== 'COMPLETED' || candidates.length === 0) return null
+    // 방장이 최종 선택한 후보가 있으면 해당 후보를 winner로 표시
+    if (selectedCandidateId) return selectedCandidateId
     const maxPercentage = Math.max(...candidates.map(c => c.votePercentage))
     if (maxPercentage === 0) return null
     return candidates.find(c => c.votePercentage === maxPercentage)?.id ?? null
-  }, [candidates, voteStatus])
+  }, [candidates, voteStatus, selectedCandidateId])
 
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()

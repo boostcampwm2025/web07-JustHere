@@ -85,6 +85,7 @@ export const LocationListSection = ({
     status: voteStatus,
     singleVote,
     round,
+    selectedCandidateId,
     candidates: voteCandidates,
     counts: voteCounts,
     myVotes,
@@ -447,6 +448,7 @@ export const LocationListSection = ({
             round={round}
             isOwner={isOwner}
             voteStatus={voteStatus}
+            selectedCandidateId={selectedCandidateId}
             onVote={handleVote}
             onViewDetail={handleViewDetail}
             onEndVote={endVote}
