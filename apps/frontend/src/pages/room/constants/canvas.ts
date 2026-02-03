@@ -13,6 +13,17 @@ export const POST_IT_HEIGHT = 150
 /** 포스트잇 기본 색상 (노란색) */
 export const DEFAULT_POST_IT_COLOR = '#FEF08A'
 
+/** 텍스트박스 기본 크기 */
+export const TEXT_BOX_WIDTH = 200
+export const TEXT_BOX_HEIGHT = 50
+
+export const BASE_PADDING = 10
+
+/** 텍스트 공통 스타일 */
+export const TEXT_FONT_SIZE = 14
+export const TEXT_FONT_FAMILY = 'Arial, sans-serif'
+export const TEXT_LINE_HEIGHT = 1.4
+
 /** 포스트잇 색상 목록 */
 export const POST_IT_COLORS = [
   { color: '#FBCFE8', name: '분홍색' }, // pink-200

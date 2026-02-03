@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useRef, useState, useEffect, useCallback, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
-import type Konva from 'konva'
+import Konva from 'konva'
 import type { TextBox } from '@/shared/types'
+import { TEXT_BOX_HEIGHT, BASE_PADDING, TEXT_FONT_SIZE, TEXT_FONT_FAMILY, TEXT_LINE_HEIGHT } from '@/pages/room/constants'
 
 interface EditableTextBoxProps {
   textBox: TextBox
@@ -16,6 +17,21 @@ interface EditableTextBoxProps {
   onEditEnd: () => void
   shapeRef?: (node: Konva.Group | null) => void
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
+}
+
+function measureTextHeight(text: string, width: number, scale: number): number {
+  const padding = BASE_PADDING * scale
+  const measureNode = new Konva.Text({
+    text,
+    fontSize: TEXT_FONT_SIZE * scale,
+    fontFamily: TEXT_FONT_FAMILY,
+    lineHeight: TEXT_LINE_HEIGHT,
+    width: width - padding * 2,
+    wrap: 'word',
+  })
+  const height = measureNode.height() + padding * 2
+  measureNode.destroy()
+  return Math.max(TEXT_BOX_HEIGHT * scale, height)
 }
 
 export const EditableTextBox = ({
@@ -34,6 +50,7 @@ export const EditableTextBox = ({
   const [isEditing, setIsEditing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [editingHeight, setEditingHeight] = useState<number | null>(null)
   const isComposingRef = useRef(false)
   const draftRef = useRef(textBox.text)
   const groupRef = useRef<Konva.Group>(null)
@@ -53,6 +70,22 @@ export const EditableTextBox = ({
     }
   }, [isEditing])
 
+  const scaledPadding = BASE_PADDING * (textBox.scale || 1)
+
+  const syncHeight = useCallback(() => {
+    const scale = textBox.scale || 1
+    const defaultHeight = TEXT_BOX_HEIGHT * scale
+
+    if (!textareaRef.current) return defaultHeight
+
+    const ta = textareaRef.current
+    ta.style.height = '0px'
+    const newHeight = Math.max(defaultHeight, ta.scrollHeight)
+    ta.style.height = `${newHeight}px`
+    setEditingHeight(newHeight)
+    return newHeight
+  }, [textBox.scale])
+
   const handleDblClick = () => {
     draftRef.current = textBox.text
     onEditStart()
@@ -61,18 +94,37 @@ export const EditableTextBox = ({
 
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     draftRef.current = e.target.value
+
+    // 높이는 조합 중이든 아니든 항상 즉시 반영
+    const newHeight = syncHeight()
+
+    // 텍스트 동기화는 조합 완료 후에만
     if (!isComposingRef.current) {
-      onChange({ text: e.target.value })
+      const updates: Partial<Omit<TextBox, 'id'>> = { text: e.target.value }
+      if (Math.abs(newHeight - textBox.height) > 1) {
+        updates.height = newHeight
+      }
+      onChange(updates)
     }
   }
 
   const commit = (nextText?: string) => {
     const value = nextText ?? draftRef.current
-    if (value !== textBox.text) onChange({ text: value })
+    const scale = textBox.scale || 1
+    const newHeight = value ? measureTextHeight(value, textBox.width, scale) : TEXT_BOX_HEIGHT * scale
+
+    const updates: Partial<Omit<TextBox, 'id'>> = { text: value }
+    if (Math.abs(newHeight - textBox.height) > 1) {
+      updates.height = newHeight
+    }
+    if (value !== textBox.text || updates.height) {
+      onChange(updates)
+    }
   }
 
   const handleBlur = () => {
     commit()
+    setEditingHeight(null)
     setIsEditing(false)
     onEditEnd()
   }
@@ -85,9 +137,8 @@ export const EditableTextBox = ({
     }
   }
 
-  const basePadding = 10
-  const scaledPadding = basePadding * (textBox.scale || 1)
   const showBorder = isSelected || isHovered || isEditing
+  const renderHeight = editingHeight !== null ? Math.max(textBox.height, editingHeight) : textBox.height
 
   return (
     <Group
@@ -95,7 +146,7 @@ export const EditableTextBox = ({
       x={textBox.x}
       y={textBox.y}
       width={textBox.width}
-      height={textBox.height}
+      height={renderHeight}
       draggable={draggable && !isEditing}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={e => {
@@ -111,7 +162,7 @@ export const EditableTextBox = ({
     >
       <Rect
         width={textBox.width}
-        height={textBox.height}
+        height={renderHeight}
         fill="transparent"
         stroke={showBorder ? '#9CA3AF' : 'transparent'}
         strokeWidth={showBorder ? 1 : 0}
@@ -123,7 +174,7 @@ export const EditableTextBox = ({
         <Html
           transform
           divProps={{
-            style: { width: `${textBox.width}px`, height: `${textBox.height}px` },
+            style: { width: `${textBox.width}px`, height: `${renderHeight}px`, overflow: 'hidden' },
           }}
         >
           <textarea
@@ -134,14 +185,26 @@ export const EditableTextBox = ({
             onCompositionStart={() => (isComposingRef.current = true)}
             onCompositionEnd={e => {
               isComposingRef.current = false
-              onChange({ text: (e.target as HTMLTextAreaElement).value })
+              const value = (e.target as HTMLTextAreaElement).value
+              const newHeight = syncHeight()
+              const updates: Partial<Omit<TextBox, 'id'>> = { text: value }
+              if (Math.abs(newHeight - textBox.height) > 1) {
+                updates.height = newHeight
+              }
+              onChange(updates)
             }}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full h-full border-none bg-transparent resize-none outline-none font-sans text-sm text-[#333] p-2.5 leading-[1.4] placeholder:text-gray-400"
+            className="border-none bg-transparent resize-none outline-none font-sans text-[#333] placeholder:text-gray-400"
             style={{
-              fontSize: `${14 * (textBox.scale || 1)}px`,
+              width: `${textBox.width}px`,
+              height: `${renderHeight}px`,
+              fontSize: `${TEXT_FONT_SIZE * (textBox.scale || 1)}px`,
               padding: `${scaledPadding}px`,
+              lineHeight: TEXT_LINE_HEIGHT,
+              fontFamily: TEXT_FONT_FAMILY,
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           />
         </Html>
@@ -151,11 +214,10 @@ export const EditableTextBox = ({
           x={scaledPadding}
           y={scaledPadding}
           width={Math.max(1, textBox.width - scaledPadding * 2)}
-          height={Math.max(1, textBox.height - scaledPadding * 2)}
-          fontSize={14 * textBox.scale}
-          fontFamily="Arial, sans-serif"
+          fontSize={TEXT_FONT_SIZE * textBox.scale}
+          fontFamily={TEXT_FONT_FAMILY}
           fill={textBox.text ? '#333' : '#9CA3AF'}
-          lineHeight={1.4}
+          lineHeight={TEXT_LINE_HEIGHT}
           wrap="word"
           onDblClick={handleDblClick}
         />
