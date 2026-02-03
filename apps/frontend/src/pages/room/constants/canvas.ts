@@ -14,6 +14,8 @@ export const POST_IT_HEIGHT = 150
 export const TEXT_BOX_WIDTH = 200
 export const TEXT_BOX_HEIGHT = 50
 
+export const BASE_PADDING = 10
+
 /** 포스트잇 색상 목록 */
 export const POST_IT_COLORS = [
   { color: '#FBCFE8', name: '분홍색' }, // pink-200

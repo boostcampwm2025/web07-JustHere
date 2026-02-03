@@ -3,7 +3,7 @@ import { Group, Rect, Text } from 'react-konva'
 import { Html } from 'react-konva-utils'
 import Konva from 'konva'
 import type { PostIt } from '@/shared/types'
-import { POST_IT_HEIGHT } from '@/pages/room/constants'
+import { POST_IT_HEIGHT, BASE_PADDING } from '@/pages/room/constants'
 
 interface EditablePostItProps {
   postIt: PostIt
@@ -17,8 +17,6 @@ interface EditablePostItProps {
   shapeRef?: (node: Konva.Group | null) => void
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
 }
-
-const BASE_PADDING = 10
 
 function measureTextHeight(text: string, width: number, scale: number): number {
   const padding = BASE_PADDING * scale
