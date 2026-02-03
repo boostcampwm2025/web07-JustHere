@@ -180,6 +180,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     isDrawing,
     cancelDrawing,
     handleToolChange,
+    undo,
+    redo,
   })
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
