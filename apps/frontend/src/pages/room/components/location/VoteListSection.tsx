@@ -11,7 +11,7 @@ interface VoteListSectionProps {
   round?: number
   isOwner?: boolean
   voteStatus: VoteStatus
-  selectedCandidateId?: string | null
+  selectedCandidateId: string | null
   onVote?: (candidateId: string) => void
   onEndVote?: () => void
   onResetVote?: () => void
