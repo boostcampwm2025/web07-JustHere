@@ -671,9 +671,18 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         const current = yZRankByKey.get(key)
         const nextTimestamp = localMaxTimestampRef.current + 1
 
-        // 이미 충분히 top이면(옵션): skip
-        // (엄밀히는 "현재가 maxTimestamp인지"만 체크하면 OK)
-        if (current?.timestamp === localMaxTimestampRef.current) return
+        // timestamp가 max이고
+        // 같은 timestamp를 가진 아이템 중 clientId가 가장 작은 아이템인지 확인
+        if (current?.timestamp === localMaxTimestampRef.current) {
+          let minClientId = current.clientId
+          yZRankByKey.forEach(rank => {
+            if (rank?.timestamp === localMaxTimestampRef.current && rank.clientId < minClientId) {
+              minClientId = rank.clientId
+            }
+          })
+
+          if (current.clientId === minClientId) return
+        }
 
         localMaxTimestampRef.current = nextTimestamp
         yZRankByKey.set(key, { timestamp: nextTimestamp, clientId: doc.clientID })
