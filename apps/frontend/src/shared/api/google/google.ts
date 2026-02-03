@@ -23,6 +23,15 @@ type GooglePlaceApiResponse = {
   timestamp: string
 }
 
+type GooglePhotoApiResponse = {
+  status: string
+  statusCode: 200
+  data: {
+    photoUri: string
+  }
+  timestamp: string
+}
+
 export const searchText = async (params: SearchTextParams): Promise<GoogleSearchResponse> => {
   const response = await axios.post<GoogleSearchApiResponse>('/api/google/search', params)
   return response.data.data
@@ -33,6 +42,12 @@ export const getPlaceDetails = async (placeId: string): Promise<GooglePlace> => 
   return response.data.data
 }
 
-export const getPhotoUrl = (photoName: string, maxWidthPx = 400, maxHeightPx = 400): string => {
-  return `/api/google/photos/${photoName}?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}`
+export const getPhotoUrl = async (photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<string> => {
+  const response = await axios.get<GooglePhotoApiResponse>(`/api/google/photos/${photoName}`, {
+    params: {
+      maxWidthPx,
+      maxHeightPx,
+    },
+  })
+  return response.data.data.photoUri
 }

@@ -1,5 +1,4 @@
-import { Controller, Get, Post, Query, Param, Body, Header, StreamableFile, Res } from '@nestjs/common'
-import type { Response } from 'express'
+import { Controller, Get, Post, Query, Param, Body } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger'
 import { GoogleService } from './google.service'
 import { SearchTextDto } from './dto/search-text.dto'
@@ -50,26 +49,22 @@ export class GoogleController {
   }
 
   @Get('photos/places/:placeId/photos/:photoId')
-  @Header('Cache-Control', 'public, max-age=86400')
   @ApiOperation({
     summary: 'Google Place Photo',
-    description: '장소 사진을 프록시하여 반환합니다.',
+    description: '장소 사진의 원본 URI를 반환합니다.',
   })
   @ApiParam({ name: 'placeId', description: 'Google Place ID' })
   @ApiParam({ name: 'photoId', description: 'Photo ID' })
   @ApiQuery({ name: 'maxWidthPx', required: false, description: '최대 너비 (px)', example: 400 })
   @ApiQuery({ name: 'maxHeightPx', required: false, description: '최대 높이 (px)', example: 400 })
-  @ApiResponse({ status: 200, description: '사진 반환' })
+  @ApiResponse({ status: 200, description: '사진 URI 반환' })
   async getPhoto(
-    @Res({ passthrough: true }) res: Response,
     @Param('placeId') placeId: string,
     @Param('photoId') photoId: string,
     @Query('maxWidthPx') maxWidthPx?: number,
     @Query('maxHeightPx') maxHeightPx?: number,
-  ): Promise<StreamableFile> {
+  ): Promise<{ photoUri: string }> {
     const photoName = `places/${placeId}/photos/${photoId}`
-    const { data, contentType } = await this.googleService.getPhoto(photoName, maxWidthPx || 400, maxHeightPx || 400)
-    res.set('Content-Type', contentType)
-    return new StreamableFile(data)
+    return this.googleService.getPhoto(photoName, maxWidthPx || 400, maxHeightPx || 400)
   }
 }
