@@ -1,0 +1,33 @@
+config:
+  target: "http://localhost:3000" # 서버 주소
+  phases:
+    - duration: 30             # 30초 동안 테스트
+      arrivalRate: 2           # 초당 2명의 사용자 진입 (총 60회 요청)
+      name: "Warm up"
+    - duration: 60             # 1분 동안 테스트
+      arrivalRate: 5           # 초당 5명의 사용자 (부하 증가)
+      name: "Sustained load"
+  processor: "./processor.js"  # 위에서 만든 JS 파일 연결
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Google Place Search & Get Photo Flow"
+    flow:
+      # 1. 장소 검색 (Search Text)
+      - post:
+          url: "/api/google/search"
+          json:
+            textQuery: "Starbucks Gangnam" # 검색어 예시
+          capture:
+            - json: "$"
+              as: "searchResponse" # 전체 응답 임시 저장 (디버깅용)
+          afterResponse: "extractIds" # processor.js의 함수 실행
+
+      # 2. 사진 가져오기 (Get Photo)
+      # extractIds 함수가 targetPlaceId와 targetPhotoId를 성공적으로 추출했을 때만 실행
+      - get:
+          # Controller 경로: photos/places/:placeId/photos/:photoId
+          url: "/api/google/photos/places/{{ targetPlaceId }}/photos/{{ targetPhotoId }}?maxWidthPx=400"
+          ifTrue: "targetPlaceId" # 변수가 존재할 때만 실행
