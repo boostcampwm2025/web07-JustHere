@@ -5,7 +5,7 @@ import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
-import { cn } from '@/shared/utils'
+import { cn, reportError } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceItemSkeleton } from './PlaceItemSkeleton'
@@ -233,7 +233,7 @@ export const LocationListSection = ({
         try {
           imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
         } catch (error) {
-          console.error('Failed to get photo for candidate', error)
+          reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId: place.id, source: 'handleCandidateRegister' } })
         }
       }
       addCandidate({
@@ -294,7 +294,7 @@ export const LocationListSection = ({
         try {
           imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
         } catch (error) {
-          console.error('Failed to get photo for place card', error)
+          reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId: place.id, source: 'handleAddPlaceCard' } })
         }
       }
 

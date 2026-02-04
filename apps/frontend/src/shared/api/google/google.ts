@@ -43,7 +43,7 @@ export const getPlaceDetails = async (placeId: string): Promise<GooglePlace> => 
 }
 
 export const getPhotoUrl = async (photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<string> => {
-  const response = await axios.get<GooglePhotoApiResponse>(`/api/google/photos/${photoName}`, {
+  const response = await apiClient.get<GooglePhotoApiResponse>(`/api/google/photos/${photoName}`, {
     params: {
       maxWidthPx,
       maxHeightPx,
