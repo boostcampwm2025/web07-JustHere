@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { MapMarkerIcon, ChevronDownIcon } from '@/shared/assets'
 import { AvatarList, Button, Divider } from '@/shared/components'
@@ -42,6 +42,7 @@ export const RoomHeader = ({
     onUpdateName?.(name)
   }
   const [isRoomInfoDropdownOpen, setIsRoomInfoDropdownOpen] = useState(false)
+  const avatarTriggerRef = useRef<HTMLButtonElement>(null)
 
   const hasParticipants = participants.length > 0
 
@@ -74,12 +75,20 @@ export const RoomHeader = ({
           </>
         )}
         {hasParticipants && (
-          <Button variant="ghost" className="px-0 rounded-full" onClick={() => setIsRoomInfoDropdownOpen(true)}>
+          <Button
+            ref={avatarTriggerRef}
+            variant="ghost"
+            className="px-0 rounded-full"
+            onClick={() => setIsRoomInfoDropdownOpen(!isRoomInfoDropdownOpen)}
+            aria-expanded={isRoomInfoDropdownOpen}
+            aria-haspopup="dialog"
+          >
             <AvatarList participants={participants} ownerId={ownerId} />
           </Button>
         )}
       </div>
       <RoomInfoDropdown
+        triggerRef={avatarTriggerRef}
         open={isRoomInfoDropdownOpen}
         onOpenChange={setIsRoomInfoDropdownOpen}
         userName={userName}

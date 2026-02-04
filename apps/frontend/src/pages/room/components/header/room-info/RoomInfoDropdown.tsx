@@ -16,6 +16,7 @@ interface RoomInfoDropdownProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
+  triggerRef?: React.RefObject<HTMLElement | null>
 }
 
 export const RoomInfoDropdown = ({
@@ -29,8 +30,10 @@ export const RoomInfoDropdown = ({
   isOwner = false,
   ownerId,
   onTransferOwner,
+  triggerRef,
 }: RoomInfoDropdownProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const shareTriggerRef = useRef<HTMLButtonElement>(null)
   const [copied, setCopied] = useState(false)
   const { showToast } = useToast()
 
@@ -61,11 +64,16 @@ export const RoomInfoDropdown = ({
 
   return (
     <div className="relative">
-      <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
-        Share
+      <Button ref={shareTriggerRef} size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
+        공유하기
       </Button>
       {open && (
-        <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
+        <Dropdown
+          ignoreRef={triggerRef ? [triggerRef, shareTriggerRef] : [shareTriggerRef]}
+          onOpenChange={onOpenChange}
+          align="right"
+          className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0"
+        >
           <div className="p-6">
             <h3 className="text-lg font-bold text-center mb-6">참여자</h3>
             <div className="flex flex-col gap-2">

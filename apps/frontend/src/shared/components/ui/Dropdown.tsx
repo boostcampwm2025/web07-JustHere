@@ -8,14 +8,22 @@ interface DropdownProps extends HTMLAttributes<HTMLDivElement> {
   onOpenChange: (open: boolean) => void
   align?: Align
   className?: string
+  ignoreRef?: React.RefObject<HTMLElement | null> | React.RefObject<HTMLElement | null>[]
 }
 
-export const Dropdown = ({ children, onOpenChange, align = 'left', className, ...props }: DropdownProps) => {
+export const Dropdown = ({ children, onOpenChange, align = 'left', className, ignoreRef, ...props }: DropdownProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClickOutside = (event: globalThis.MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        if (ignoreRef) {
+          const refs = Array.isArray(ignoreRef) ? ignoreRef : [ignoreRef]
+          if (refs.some(ref => ref.current?.contains(target))) {
+            return
+          }
+        }
         onOpenChange(false)
       }
     }
@@ -33,7 +41,7 @@ export const Dropdown = ({ children, onOpenChange, align = 'left', className, ..
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [onOpenChange])
+  }, [onOpenChange, ignoreRef])
 
   const alignClasses = {
     left: 'left-0',
