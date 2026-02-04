@@ -1,7 +1,8 @@
+import { UseFilters, UseGuards, UsePipes } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { defaultValidationPipe } from '@/lib/pipes/validation.pipe'
 import { ErrorType } from '@/lib/types/response.type'
-import { UseFilters, UseGuards } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -35,6 +36,7 @@ import { VoteService } from './vote.service'
   cors: { origin: '*' },
 })
 @UseFilters(new WebsocketExceptionsFilter('vote'))
+@UsePipes(defaultValidationPipe)
 export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server

@@ -1,5 +1,5 @@
-import { WebsocketExceptionsFilter } from '@/lib/filter'
 import { UseFilters } from '@nestjs/common'
+import { WebsocketExceptionsFilter } from '@/lib/filter'
 import {
   WebSocketGateway,
   WebSocketServer,
