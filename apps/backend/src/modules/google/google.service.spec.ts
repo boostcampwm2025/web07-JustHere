@@ -144,26 +144,21 @@ describe('GoogleService', () => {
   describe('getPhoto', () => {
     const photoName = 'places/place-1/photos/photo-1'
 
-    it('API 호출이 성공하면 이미지 버퍼와 컨텐츠 타입을 반환해야 한다', async () => {
-      const mockBuffer = Buffer.from('image-data')
+    it('API 호출이 성공하면 photoUri를 반환해야 한다', async () => {
+      const mockPhotoUri = 'https://lh3.googleusercontent.com/places/...'
 
       // getPhoto 메서드는 정적 axios.get을 사용하므로 이를 모킹
       ;(axios.get as jest.Mock).mockResolvedValue({
-        data: mockBuffer,
-        headers: { 'content-type': 'image/png' },
+        data: { photoUri: mockPhotoUri },
       })
 
       const result = await service.getPhoto(photoName)
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(axios.get as jest.Mock).toHaveBeenCalledWith(
-        expect.stringContaining(photoName),
-        expect.objectContaining({ responseType: 'arraybuffer' }) as Record<string, unknown>,
-      )
+      expect(axios.get as jest.Mock).toHaveBeenCalledWith(expect.stringContaining(photoName))
 
       expect(result).toEqual({
-        data: mockBuffer,
-        contentType: 'image/png',
+        photoUri: mockPhotoUri,
       })
     })
 

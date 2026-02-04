@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'rea
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
+import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
+import { PlaceItemSkeleton } from './PlaceItemSkeleton'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
+import { LazyImage } from '@/shared/components/lazy-image'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -50,11 +53,6 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-const getPhotoUrl = (place: GooglePlace) => {
-  if (!place.photos || place.photos.length === 0) return null
-  return getGooglePhotoUrl(place.photos[0].name, 200)
-}
-
 export const LocationListSection = ({
   roomId,
   userId,
@@ -81,6 +79,17 @@ export const LocationListSection = ({
       onSearchComplete,
     })
 
+  const photoNames = useMemo(() => searchResults.map(place => place.photos?.[0]?.name), [searchResults])
+  const photoQueries = useGooglePhotos(photoNames, 200, 200)
+
+  const photoUrls = useMemo(() => {
+    const urls: Record<string, string | null> = {}
+    searchResults.forEach((place, index) => {
+      urls[place.id] = photoQueries[index]?.data ?? null
+    })
+    return urls
+  }, [searchResults, photoQueries])
+
   const {
     status: voteStatus,
     singleVote,
@@ -99,6 +108,7 @@ export const LocationListSection = ({
     endVote,
     resetVote,
     castVote,
+    recastVote,
     revokeVote,
     ownerSelect,
     resetError,
@@ -204,28 +214,39 @@ export const LocationListSection = ({
       }
 
       if (singleVote && myVotes.length > 0) {
-        showToast('결선 투표에서는 1개의 후보에만 투표할 수 있습니다.', 'error')
+        // 기존 투표를 취소하고 새로운 후보에 투표 (자동 스위칭)
+        const prevCandidateId = myVotes[0]
+        recastVote(prevCandidateId, candidateId)
         return
       }
 
       castVote(candidateId)
     },
-    [myVotes, singleVote, castVote, revokeVote, showToast],
+    [myVotes, singleVote, castVote, revokeVote, recastVote],
   )
 
   const handleCandidateRegister = useCallback(
-    (place: GooglePlace) => {
+    async (place: GooglePlace) => {
+      let imageUrl: string | undefined = photoUrls[place.id] ?? undefined
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
+        } catch (error) {
+          console.error('Failed to get photo for candidate', error)
+        }
+      }
       addCandidate({
         placeId: place.id,
         name: place.displayName.text,
         address: place.formattedAddress,
         category: place.primaryTypeDisplayName?.text,
-        imageUrl: getPhotoUrl(place) ?? undefined,
+        imageUrl,
         rating: place.rating,
         ratingCount: place.userRatingCount,
       })
     },
-    [addCandidate],
+    [addCandidate, photoUrls],
   )
 
   const handleViewDetail = useCallback(
@@ -260,25 +281,40 @@ export const LocationListSection = ({
     clearSearch()
   }
 
-  const handleAddPlaceCard = (place: GooglePlace) => {
-    if (pendingPlaceCard?.placeId === place.id) {
-      onCancelPlaceCard()
-      return
-    }
+  const handleAddPlaceCard = useCallback(
+    async (place: GooglePlace) => {
+      if (pendingPlaceCard?.placeId === place.id) {
+        onCancelPlaceCard()
+        return
+      }
 
-    onStartPlaceCard({
-      id: `placeCard-${crypto.randomUUID()}`,
-      placeId: place.id,
-      name: place.displayName.text,
-      address: place.formattedAddress,
-      createdAt: new Date().toISOString(),
-      scale: 1,
-      image: getPhotoUrl(place),
-      category: place.primaryTypeDisplayName?.text || '',
-      width: PLACE_CARD_WIDTH,
-      height: PLACE_CARD_HEIGHT,
-    })
-  }
+      let imageUrl: string | null = photoUrls[place.id] ?? null
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
+        } catch (error) {
+          console.error('Failed to get photo for place card', error)
+        }
+      }
+
+      onStartPlaceCard({
+        id: `placeCard-${crypto.randomUUID()}`,
+        placeId: place.id,
+        name: place.displayName.text,
+        address: place.formattedAddress,
+        createdAt: new Date().toISOString(),
+        scale: 1,
+        image: imageUrl,
+        category: place.primaryTypeDisplayName?.text || '',
+        width: PLACE_CARD_WIDTH,
+        height: PLACE_CARD_HEIGHT,
+        rating: place.rating,
+        userRatingCount: place.userRatingCount,
+      })
+    },
+    [pendingPlaceCard, onCancelPlaceCard, onStartPlaceCard, photoUrls],
+  )
 
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
@@ -323,7 +359,11 @@ export const LocationListSection = ({
       {!selectedPlace && activeTab === 'locations' && (
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <PlaceItemSkeleton key={index} />
+              ))}
+            </div>
           ) : searchResults.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray text-sm">
               {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
@@ -332,7 +372,7 @@ export const LocationListSection = ({
             <div className="flex flex-col gap-4">
               {searchResults.map((place, index) => {
                 const isSelected = pendingPlaceCard?.placeId === place.id
-                const photoUrl = getPhotoUrl(place)
+                const photoUrl = photoUrls[place.id]
                 const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
                 return (
@@ -351,7 +391,7 @@ export const LocationListSection = ({
                     >
                       <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
                         {photoUrl ? (
-                          <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                          <LazyImage src={photoUrl} alt={place.displayName.text} className="w-full h-full" />
                         ) : (
                           <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
                             <span className="text-gray-400 text-xs">No Image</span>
@@ -437,7 +477,7 @@ export const LocationListSection = ({
             candidates={candidateList}
             isOwner={isOwner}
             onStartVote={() => {
-              if (!isOwner) return
+              if (!isOwner || !candidateList.length) return
               startVote()
             }}
             onRemoveCandidate={removeCandidate}

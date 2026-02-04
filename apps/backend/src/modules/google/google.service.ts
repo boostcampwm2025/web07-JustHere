@@ -68,13 +68,18 @@ export class GoogleService {
         'places.rating',
         'places.userRatingCount',
         'places.photos',
+        'places.reviews',
         'places.regularOpeningHours',
         'places.priceLevel',
+        'places.priceRange',
         'places.nationalPhoneNumber',
         'places.websiteUri',
         'places.types',
         'places.primaryType',
         'places.primaryTypeDisplayName',
+        'places.parkingOptions',
+        'places.reservable',
+        'places.allowsDogs',
         'nextPageToken',
       ].join(',')
 
@@ -131,17 +136,14 @@ export class GoogleService {
     }
   }
 
-  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ data: Buffer; contentType: string }> {
+  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ photoUri: string }> {
     try {
-      const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&key=${this.apiKey}`
+      const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&skipHttpRedirect=true&key=${this.apiKey}`
 
-      const response = await axios.get<ArrayBuffer>(url, {
-        responseType: 'arraybuffer',
-      })
+      const response = await axios.get<{ photoUri: string }>(url)
 
       return {
-        data: Buffer.from(response.data),
-        contentType: (response.headers['content-type'] as string) || 'image/jpeg',
+        photoUri: response.data.photoUri,
       }
     } catch (error) {
       this.handleError(error)

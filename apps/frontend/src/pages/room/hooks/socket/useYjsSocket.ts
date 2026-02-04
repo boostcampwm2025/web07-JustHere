@@ -21,7 +21,8 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
-import { migrateZIndexOrder } from '@/pages/room/utils'
+import type { YjsItemType, YjsRank } from '@/pages/room/types'
+import { makeKey, parseKey } from '@/pages/room/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -38,12 +39,13 @@ const typeToArrayName: Record<CanvasItemType, string> = {
 }
 
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
+  const localMaxTimestampRef = useRef(0)
   const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
-  const [zIndexOrder, setZIndexOrder] = useState<Array<{ type: CanvasItemType; id: string }>>([])
+  const [zIndexOrder, setZIndexOrder] = useState<Array<YjsItemType>>([])
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
@@ -121,9 +123,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
     const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
 
-    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes, yZIndexOrder], {
+    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes, yZRankByKey], {
       trackedOrigins: new Set([localOriginRef.current]),
       captureTimeout: CAPTURE_FREQUENCY,
     })
@@ -169,6 +171,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
         category: (yMap.get('category') as string | undefined) ?? '',
+        rating: yMap.get('rating') as number | undefined,
+        userRatingCount: yMap.get('userRatingCount') as number | undefined,
       }))
       setPlaceCards(items)
     }
@@ -202,10 +206,25 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
 
     const syncZIndexOrderToState = () => {
-      const items = yZIndexOrder.toArray().map(yMap => ({
-        type: yMap.get('type') as CanvasItemType,
-        id: yMap.get('id') as string,
-      }))
+      const entries: Array<{ key: string; rank: YjsRank; parsed: YjsItemType | null }> = []
+      let maxTimestamp = localMaxTimestampRef.current
+
+      yZRankByKey.forEach((rank, key) => {
+        if (rank?.timestamp != null) maxTimestamp = Math.max(maxTimestamp, rank.timestamp)
+        const parsed = parseKey(key)
+        entries.push({ key, rank: rank ?? { timestamp: 0, clientId: 0 }, parsed })
+      })
+      localMaxTimestampRef.current = maxTimestamp
+
+      entries.sort((a, b) => {
+        if (a.rank.timestamp !== b.rank.timestamp) return a.rank.timestamp - b.rank.timestamp
+        return a.rank.clientId - b.rank.clientId
+      })
+
+      const items: Array<YjsItemType> = []
+      for (const entry of entries) {
+        if (entry.parsed) items.push(entry.parsed)
+      }
       setZIndexOrder(items)
     }
 
@@ -216,7 +235,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
     yTextBoxes.observeDeep(syncTextBoxesToState)
-    yZIndexOrder.observe(syncZIndexOrderToState)
+    yZRankByKey.observe(syncZIndexOrderToState)
 
     // 초기 동기화
     syncPostitsToState()
@@ -230,7 +249,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
       yTextBoxes.unobserveDeep(syncTextBoxesToState)
-      yZIndexOrder.unobserve(syncZIndexOrderToState)
+      yZRankByKey.unobserve(syncZIndexOrderToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
@@ -276,17 +295,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
       addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
-
-      // 서버 데이터 수신 후 마이그레이션 실행
-      if (!migrationExecutedRef.current) {
-        migrationExecutedRef.current = true
-        const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-        const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-        const yLines = doc.getArray<Y.Map<unknown>>('lines')
-        const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-        const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
-        migrateZIndexOrder(yPostits, yPlaceCards, yLines, yTextBoxes, yZIndexOrder, localOriginRef.current)
-      }
     }
 
     const handleCanvasDetached = () => {
@@ -428,9 +436,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
 
-    if (index === -1) return
+    const idToIndexMap = new Map<string, number>()
+    yArray.forEach((yMap, index) => {
+      const itemId = yMap.get('id') as string
+      if (itemId) {
+        idToIndexMap.set(itemId, index)
+      }
+    })
+
+    const index = idToIndexMap.get(id)
+    if (index === undefined) return
 
     doc.transact(() => {
       const yMap = yArray.get(index)
@@ -488,7 +504,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
     const yMap = new Y.Map()
     yMap.set('id', postit.id)
     yMap.set('x', postit.x)
@@ -506,7 +522,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     doc.transact(() => {
       yPostits.push([yMap])
-      yZIndexOrder.push([zIndexMap])
+      const nextTimestamp = localMaxTimestampRef.current + 1
+      localMaxTimestampRef.current = nextTimestamp
+      yZRankByKey.set(makeKey('postit', postit.id), { timestamp: nextTimestamp, clientId: doc.clientID })
     }, localOriginRef.current)
   }
 
@@ -521,7 +539,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
     const yMap = new Y.Map()
     yMap.set('id', card.id)
     yMap.set('placeId', card.placeId)
@@ -535,6 +553,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
     yMap.set('category', card.category ?? '')
+    if (card.rating !== undefined) yMap.set('rating', card.rating)
+    if (card.userRatingCount !== undefined) yMap.set('userRatingCount', card.userRatingCount)
 
     const zIndexMap = new Y.Map()
     zIndexMap.set('type', 'placeCard')
@@ -542,7 +562,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     doc.transact(() => {
       yPlaceCards.push([yMap])
-      yZIndexOrder.push([zIndexMap])
+      const nextTimestamp = localMaxTimestampRef.current + 1
+      localMaxTimestampRef.current = nextTimestamp
+      yZRankByKey.set(makeKey('placeCard', card.id), { timestamp: nextTimestamp, clientId: doc.clientID })
     }, localOriginRef.current)
   }
 
@@ -557,7 +579,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
     const yMap = new Y.Map()
     yMap.set('id', line.id)
     yMap.set('points', line.points)
@@ -574,7 +596,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     doc.transact(() => {
       yLines.push([yMap])
-      yZIndexOrder.push([zIndexMap])
+      const nextTimestamp = localMaxTimestampRef.current + 1
+      localMaxTimestampRef.current = nextTimestamp
+      yZRankByKey.set(makeKey('line', line.id), { timestamp: nextTimestamp, clientId: doc.clientID })
     }, localOriginRef.current)
   }
 
@@ -589,18 +613,22 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const arrayName = typeToArrayName[type]
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+
+    const idToIndexMap = new Map<string, number>()
+    yArray.forEach((yMap, index) => {
+      const itemId = yMap.get('id') as string
+      if (itemId) {
+        idToIndexMap.set(itemId, index)
+      }
+    })
+
+    const index = idToIndexMap.get(id)
+    if (index === undefined) return
 
     doc.transact(() => {
-      const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
-      if (index === -1) return
-
-      const zIndexIndex = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
-
       yArray.delete(index, 1)
-      if (zIndexIndex !== -1) {
-        yZIndexOrder.delete(zIndexIndex, 1)
-      }
+      yZRankByKey.delete(makeKey(type, id))
     }, localOriginRef.current)
   }
 
@@ -610,7 +638,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
     const yMap = new Y.Map()
 
     Object.entries(textBox).forEach(([key, value]) => {
@@ -623,7 +651,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     doc.transact(() => {
       yTextBoxes.push([yMap])
-      yZIndexOrder.push([zIndexMap])
+      const nextTimestamp = localMaxTimestampRef.current + 1
+      localMaxTimestampRef.current = nextTimestamp
+      yZRankByKey.set(makeKey('textBox', textBox.id), { timestamp: nextTimestamp, clientId: doc.clientID })
     }, localOriginRef.current)
   }
 
@@ -638,46 +668,30 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       const doc = docRef.current
       if (!doc) return
 
-      const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const key = makeKey(type, id)
 
       doc.transact(() => {
-        // 트랜잭션 내부에서 인덱스를 조회하여 경쟁 조건 방지
-        // 다른 클라이언트가 배열을 수정해도 트랜잭션 내부에서는 일관된 상태 보장
-        const index = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
+        const current = yZRankByKey.get(key)
+        const nextTimestamp = localMaxTimestampRef.current + 1
 
-        if (index === -1) {
-          const newZIndexMap = new Y.Map()
-          newZIndexMap.set('type', type)
-          newZIndexMap.set('id', id)
-          yZIndexOrder.push([newZIndexMap])
-          return
+        // timestamp가 max이고
+        // 같은 timestamp를 가진 아이템 중 clientId가 가장 작은 아이템인지 확인
+        if (current?.timestamp === localMaxTimestampRef.current) {
+          let minClientId = current.clientId
+          yZRankByKey.forEach(rank => {
+            if (rank?.timestamp === localMaxTimestampRef.current && rank.clientId < minClientId) {
+              minClientId = rank.clientId
+            }
+          })
+
+          if (current.clientId === minClientId) return
         }
 
-        // 이미 맨 위에 있으면 변경하지 않음
-        if (index === yZIndexOrder.length - 1) return
-
-        const oldZIndexMap = yZIndexOrder.get(index)
-
-        // 기존 Y.Map의 모든 속성을 읽어서 일반 객체로 변환
-        const data: Record<string, unknown> = {}
-        oldZIndexMap.forEach((value, key) => {
-          data[key] = value
-        })
-
-        // 배열에서 요소 제거
-        yZIndexOrder.delete(index, 1)
-
-        // 새로운 Y.Map 생성하고 속성 복사
-        const newZIndexMap = new Y.Map()
-        Object.entries(data).forEach(([key, value]) => {
-          newZIndexMap.set(key, value)
-        })
-
-        // 배열 끝에 추가하여 맨 위로 이동
-        yZIndexOrder.push([newZIndexMap])
+        localMaxTimestampRef.current = nextTimestamp
+        yZRankByKey.set(key, { timestamp: nextTimestamp, clientId: doc.clientID })
       }, localOriginRef.current)
 
-      // UndoManager가 변경사항을 즉시 캡처하도록 함
       const undoManager = undoManagerRef.current
       if (undoManager) {
         undoManager.stopCapturing()

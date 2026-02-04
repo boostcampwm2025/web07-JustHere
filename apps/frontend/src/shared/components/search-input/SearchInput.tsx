@@ -14,7 +14,12 @@ interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const SearchInput = ({ value, onChange, onClear, onSearch, onKeyDown, className, containerClassName, ...props }: SearchInputProps) => {
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event)
+    if (event.nativeEvent.isComposing) {
+      return
+    }
     if (!event.defaultPrevented && event.key === 'Enter') {
+      event.preventDefault()
+      event.stopPropagation()
       onSearch?.()
     }
   }

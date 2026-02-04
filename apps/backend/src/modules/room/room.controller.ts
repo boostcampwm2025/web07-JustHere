@@ -1,9 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Patch, Param } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 import { RoomService } from './room.service'
-import { CreateRoomDto } from './dto/create-room.dto'
-import { RoomResponseDto } from './dto/room-response.dto'
-import { UpdateRoomDto } from './dto/update-room.dto'
+import { CreateRoomDto, RoomResponseDto, UpdateRoomDto } from './dto'
 
 @ApiTags('room')
 @Controller('room')

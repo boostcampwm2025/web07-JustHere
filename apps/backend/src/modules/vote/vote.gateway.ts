@@ -22,6 +22,7 @@ import {
   VoteCandidateRemovePayload,
   VoteCastPayload,
   VoteRevokePayload,
+  VoteRecastPayload,
   VoteStartPayload,
   VoteEndPayload,
   VoteOwnerSelectPayload,
@@ -175,6 +176,27 @@ export class VoteGateway implements OnGatewayInit, OnGatewayDisconnect {
     const voteRoomId = this.getVoteRoomId(roomId, categoryId)
     const { changed, ...countsPayload } = this.voteService.revokeVote(voteRoomId, user.userId, candidateId)
     this.broadcaster.emitToVote(voteRoomId, 'vote:counts:updated', countsPayload)
+
+    if (changed) {
+      const meUpdatedPayload = this.voteService.getMyVotes(voteRoomId, user.userId)
+      client.emit('vote:me:updated', meUpdatedPayload)
+    }
+  }
+
+  @SubscribeMessage('vote:recast')
+  onRecastVote(@ConnectedSocket() client: Socket, @MessageBody() payload: VoteRecastPayload) {
+    const { roomId, categoryId, oldCandidateId, newCandidateId } = payload
+    const user = this.resolveUserSession(client, roomId, payload.userId)
+
+    if (!user || user.roomId !== roomId) {
+      throw new CustomException(ErrorType.NotInRoom, 'Room에 접속되지 않았습니다.')
+    }
+
+    const voteRoomId = this.getVoteRoomId(roomId, categoryId)
+    const { oldVoteResult, newVoteResult, changed } = this.voteService.recastVote(voteRoomId, user.userId, oldCandidateId, newCandidateId)
+
+    this.broadcaster.emitToVote(voteRoomId, 'vote:counts:updated', oldVoteResult)
+    this.broadcaster.emitToVote(voteRoomId, 'vote:counts:updated', newVoteResult)
 
     if (changed) {
       const meUpdatedPayload = this.voteService.getMyVotes(voteRoomId, user.userId)

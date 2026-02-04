@@ -232,6 +232,63 @@ describe('VoteService', () => {
       expect(result.count).toBe(0)
     })
 
+    it('투표 변경(recastVote)이 동작해야 한다', () => {
+      // 세션 초기화 (WAITING 상태로)
+      service.deleteSession(roomId)
+      service.getOrCreateSession(roomId, userId)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+
+      service.startVote(roomId) // 투표 시작
+
+      // 1. 초기 투표
+      service.castVote(roomId, userId, mockPlaceData.placeId)
+
+      // 2. 투표 변경 (place-123 -> place-456)
+      const result = service.recastVote(roomId, userId, mockPlaceData.placeId, place2.placeId)
+
+      // 검증
+      expect(result.changed).toBe(true)
+
+      // oldVoteResult 검증
+      expect(result.oldVoteResult.candidateId).toBe(mockPlaceData.placeId)
+      expect(result.oldVoteResult.count).toBe(0)
+
+      // newVoteResult 검증
+      expect(result.newVoteResult.candidateId).toBe(place2.placeId)
+      expect(result.newVoteResult.count).toBe(1)
+
+      // 상태 검증
+      const state = service.getVoteState(roomId, userId)
+      expect(state.counts[mockPlaceData.placeId]).toBe(0)
+      expect(state.counts[place2.placeId]).toBe(1)
+      expect(state.myVotes).not.toContain(mockPlaceData.placeId)
+      expect(state.myVotes).toContain(place2.placeId)
+    })
+
+    it('투표하지 않은 후보를 변경하려고 하면 예외를 던지지 않고 새 투표만 적용된다', () => {
+      // 세션 초기화 (WAITING 상태로)
+      service.deleteSession(roomId)
+      service.getOrCreateSession(roomId, userId)
+      service.addCandidatePlace(roomId, userId, mockPlaceData)
+
+      const place2 = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(roomId, userId, place2)
+
+      service.startVote(roomId) // 투표 시작
+
+      const result = service.recastVote(roomId, userId, mockPlaceData.placeId, place2.placeId)
+
+      expect(result.oldVoteResult.changed).toBe(false) // 취소 실패
+      expect(result.newVoteResult.changed).toBe(true) // 투표 성공
+      expect(result.changed).toBe(true)
+
+      const state = service.getVoteState(roomId, userId)
+      expect(state.myVotes).toContain(place2.placeId)
+    })
+
     it('존재하지 않는 후보에 투표하면 예외를 던져야 한다', () => {
       expect(() => {
         service.castVote(roomId, userId, 'invalid-id')

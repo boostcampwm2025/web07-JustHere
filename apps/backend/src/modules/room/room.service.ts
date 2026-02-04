@@ -10,15 +10,15 @@ import { VoteService } from '@/modules/vote/vote.service'
 import { Injectable } from '@nestjs/common'
 import { Room } from '@prisma/client'
 import type { Socket } from 'socket.io'
-import type { RoomJoinPayload } from './dto/room.c2s.dto'
 import {
   Participant,
   ParticipantConnectedPayload,
   ParticipantDisconnectedPayload,
   ParticipantNameUpdatedPayload,
   RoomJoinedPayload,
+  RoomJoinPayload,
   RoomOwnerTransferredPayload,
-} from './dto/room.s2c.dto'
+} from './dto'
 import { RoomRepository } from './room.repository'
 
 @Injectable()

@@ -13,7 +13,7 @@ export const CandidateListSection = ({ candidates, isOwner = false, onStartVote,
   return (
     <>
       <div className="flex-1 overflow-y-auto">
-        {candidates.length === 0 ? (
+        {!candidates.length ? (
           <div className="flex items-center justify-center h-32 text-gray text-sm">등록된 후보가 없습니다</div>
         ) : (
           <ul className="divide-y divide-gray-100">
@@ -58,7 +58,7 @@ export const CandidateListSection = ({ candidates, isOwner = false, onStartVote,
       {/* Footer Button */}
       {isOwner && (
         <div className="p-4">
-          <Button size="lg" className="w-full" variant="primary" onClick={onStartVote}>
+          <Button size="lg" className="w-full" variant="primary" onClick={onStartVote} disabled={!candidates.length}>
             투표 시작
           </Button>
         </div>

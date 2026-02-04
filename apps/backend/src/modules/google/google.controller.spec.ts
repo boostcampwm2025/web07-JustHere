@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { GoogleController } from './google.controller'
 import { GoogleService } from './google.service'
-import { StreamableFile } from '@nestjs/common'
-import { Response } from 'express'
 
 describe('GoogleController', () => {
   let controller: GoogleController
@@ -71,30 +69,17 @@ describe('GoogleController', () => {
   })
 
   describe('getPhoto', () => {
-    it('서비스의 getPhoto를 호출하고 StreamableFile을 반환해야 한다', async () => {
+    it('서비스의 getPhoto를 호출하고 photoUri를 반환해야 한다', async () => {
       const placeId = 'place-1'
       const photoId = 'photo-1'
-      const mockBuffer = Buffer.from('image')
-      const mockContentType = 'image/jpeg'
+      const expectedResult = { photoUri: 'https://example.com/photo.jpg' }
 
-      service.getPhoto.mockResolvedValue({
-        data: mockBuffer,
-        contentType: mockContentType,
-      })
+      service.getPhoto.mockResolvedValue(expectedResult)
 
-      // mockSet을 별도로 정의하여 unbound-method 에러 방지
-      const mockSet = jest.fn()
-      const mockRes = {
-        set: mockSet,
-      } as unknown as Response
-
-      const result = await controller.getPhoto(mockRes, placeId, photoId)
+      const result = await controller.getPhoto(placeId, photoId)
 
       expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, 400, 400)
-
-      // mockRes.set 대신 mockSet을 검증
-      expect(mockSet).toHaveBeenCalledWith('Content-Type', mockContentType)
-      expect(result).toBeInstanceOf(StreamableFile)
+      expect(result).toEqual(expectedResult)
     })
 
     it('쿼리 파라미터로 크기를 지정하면 해당 크기로 호출해야 한다', async () => {
@@ -102,18 +87,13 @@ describe('GoogleController', () => {
       const photoId = 'photo-1'
       const maxWidth = 800
       const maxHeight = 600
+      const expectedResult = { photoUri: 'https://example.com/photo.jpg' }
 
-      service.getPhoto.mockResolvedValue({
-        data: Buffer.from(''),
-        contentType: 'image/jpeg',
-      })
+      service.getPhoto.mockResolvedValue(expectedResult)
 
-      const mockSet = jest.fn()
-      const mockRes = { set: mockSet } as unknown as Response
+      await controller.getPhoto(placeId, photoId, maxWidth, maxHeight)
 
-      await controller.getPhoto(mockRes, placeId, photoId, maxWidth, maxHeight)
-
-      expect(service.getPhoto).toHaveBeenCalledWith(expect.any(String) as string, maxWidth, maxHeight)
+      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, maxWidth, maxHeight)
     })
   })
 })
