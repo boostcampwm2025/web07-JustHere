@@ -98,9 +98,7 @@ describe('GoogleService', () => {
     it('Room이 존재하지 않으면 NotFound 예외를 던져야 한다', async () => {
       mockRoomRepository.findById.mockResolvedValue(null)
 
-      await expect(service.searchText(dto)).rejects.toThrow(
-        new CustomException(ErrorType.BadGateway, 'Google API 호출 실패: Room을 찾을 수 없습니다.'),
-      )
+      await expect(service.searchText(dto)).rejects.toThrow(new CustomException(ErrorType.NotFound, 'Room을 찾을 수 없습니다.'))
     })
 
     it('API 호출 실패 시 예외를 처리해야 한다', async () => {
