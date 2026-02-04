@@ -61,7 +61,7 @@ const ERROR_PAGE_MESSAGES: Partial<Record<AppErrorCode, string>> = {
 }
 
 export function getDefaultErrorMessage(code: AppErrorCode): string {
-  return TOAST_MESSAGES[code] ?? TOAST_MESSAGES.CLIENT_UNKNOWN ?? '잠시 후 다시 시도해주세요.'
+  return TOAST_MESSAGES[code] ?? TOAST_MESSAGES.CLIENT_UNKNOWN!
 }
 
 export function getErrorDescription(code: AppErrorCode): string {
