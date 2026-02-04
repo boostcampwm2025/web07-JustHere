@@ -17,6 +17,7 @@ export const LazyImage = ({ src, alt, className, rootMargin = '100px' }: LazyIma
   useEffect(() => {
     const target = containerRef.current
     if (!target) return
+    if (isInView) return
 
     const observer = new IntersectionObserver(
       entries => {
