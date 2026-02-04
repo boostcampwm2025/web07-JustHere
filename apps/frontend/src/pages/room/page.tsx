@@ -130,6 +130,14 @@ export default function RoomPage() {
     [deleteCategory],
   )
 
+  const handleActiveLocationTab = useCallback(
+    (tab: 'locations' | 'candidates') => {
+      handlePlaceSelect(null)
+      setActiveLocationTab(tab)
+    },
+    [handlePlaceSelect],
+  )
+
   if (!slug) {
     return <Navigate to="/onboarding" replace />
   }
@@ -213,7 +221,7 @@ export default function RoomPage() {
           onCancelPlaceCard={clearPendingPlaceCard}
           onSearchComplete={handleSearchComplete}
           activeTab={activeLocationTab}
-          onActiveTabChange={setActiveLocationTab}
+          onActiveTabChange={handleActiveLocationTab}
           onCandidatePlaceIdsChange={setCandidatePlaceIds}
           selectedPlace={activeSelectedPlace}
           onPlaceSelect={handlePlaceSelect}
