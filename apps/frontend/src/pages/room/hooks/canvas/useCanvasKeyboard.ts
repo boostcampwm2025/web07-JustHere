@@ -10,6 +10,8 @@ interface UseCanvasKeyboardOptions {
   getIsDrawing: () => boolean
   cancelDrawing: (reason: 'tool-change' | 'mouse-leave' | 'space-press') => void
   handleToolChange: (tool: ToolType) => void
+  undo: () => void
+  redo: () => void
 }
 
 /**
@@ -19,6 +21,8 @@ interface UseCanvasKeyboardOptions {
  * - Backspace: 선택된 아이템 삭제
  * - '/': 커서 채팅 활성화
  * - Space: Hand 모드 토글 (누르고 있는 동안)
+ * - Ctrl + Z: 실행 취소 (Undo)
+ * - Ctrl + Shift + Z: 다시 실행 (Redo)
  */
 export const useCanvasKeyboard = ({
   onPlaceCardCanceled,
@@ -29,6 +33,8 @@ export const useCanvasKeyboard = ({
   getIsDrawing,
   cancelDrawing,
   handleToolChange,
+  undo,
+  redo,
 }: UseCanvasKeyboardOptions) => {
   const [isSpacePressed, setIsSpacePressed] = useState(false)
 
@@ -49,6 +55,17 @@ export const useCanvasKeyboard = ({
 
       // 입력 필드에서는 나머지 단축키 무시
       if (isInputElement(e.target)) return
+
+      // Undo / Redo 단축키 적용
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault()
+        if (e.shiftKey) {
+          redo()
+        } else {
+          undo()
+        }
+        return
+      }
 
       // Backspace: 선택 아이템 삭제
       if (e.key === 'Backspace' && hasSelectedItems) {
@@ -97,6 +114,8 @@ export const useCanvasKeyboard = ({
     getIsDrawing,
     cancelDrawing,
     handleToolChange,
+    undo,
+    redo,
   ])
 
   return { isSpacePressed }

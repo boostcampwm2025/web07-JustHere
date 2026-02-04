@@ -372,12 +372,17 @@ export const useCanvasMouse = ({
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault()
 
-      if (!e.evt.metaKey && !e.evt.ctrlKey) {
-        return
-      }
-
       const stage = stageRef.current
       if (!stage) return
+
+      if (!e.evt.metaKey && !e.evt.ctrlKey) {
+        const nextX = stage.x() - e.evt.deltaX
+        const nextY = stage.y() - e.evt.deltaY
+
+        stage.position({ x: nextX, y: nextY })
+        stage.batchDraw()
+        return
+      }
 
       const scaleBy = 1.05
       const oldScale = stage.scaleX()
@@ -398,6 +403,7 @@ export const useCanvasMouse = ({
 
       stage.scale({ x: newScale, y: newScale })
       stage.position(newPos)
+      stage.batchDraw()
     },
     [stageRef],
   )

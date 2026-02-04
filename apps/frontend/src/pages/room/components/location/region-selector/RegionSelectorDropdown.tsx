@@ -5,6 +5,7 @@ import { ChevronDownIcon } from '@/shared/assets'
 import { Divider, Dropdown, SearchInput } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import type { GooglePlace } from '@/shared/types'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface RegionSelectorDropdownProps {
   slug: string
@@ -14,6 +15,7 @@ interface RegionSelectorDropdownProps {
 }
 
 export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 'right' }: RegionSelectorDropdownProps) => {
+  const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -49,6 +51,11 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
         },
       },
     )
+    queryClient.invalidateQueries({
+      queryKey: ['google', 'search'],
+      exact: false,
+      refetchType: 'none',
+    })
   }
 
   const handleClear = () => {
