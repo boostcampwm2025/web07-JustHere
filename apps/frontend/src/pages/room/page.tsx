@@ -138,7 +138,7 @@ export default function RoomPage() {
     return null
   }
 
-  const roomLink = `${socketBaseUrl}/share/room/${slug}`
+  const roomLink = `${socketBaseUrl}/room/${slug}`
   const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
   const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href

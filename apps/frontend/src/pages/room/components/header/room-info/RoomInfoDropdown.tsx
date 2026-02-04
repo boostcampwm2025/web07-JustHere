@@ -62,7 +62,7 @@ export const RoomInfoDropdown = ({
   return (
     <div className="relative">
       <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
-        Share
+        공유하기
       </Button>
       {open && (
         <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
