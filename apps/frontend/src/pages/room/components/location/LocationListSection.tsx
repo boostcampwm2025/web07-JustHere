@@ -225,8 +225,9 @@ export const LocationListSection = ({
 
   const handleCandidateRegister = useCallback(
     async (place: GooglePlace) => {
-      let imageUrl: string | undefined
-      if (place.photos && place.photos.length > 0) {
+      let imageUrl: string | undefined = photoUrls[place.id] ?? undefined
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
         try {
           imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
         } catch (error) {
@@ -243,7 +244,7 @@ export const LocationListSection = ({
         ratingCount: place.userRatingCount,
       })
     },
-    [addCandidate],
+    [addCandidate, photoUrls],
   )
 
   const handleViewDetail = useCallback(
@@ -278,34 +279,38 @@ export const LocationListSection = ({
     clearSearch()
   }
 
-  const handleAddPlaceCard = async (place: GooglePlace) => {
-    if (pendingPlaceCard?.placeId === place.id) {
-      onCancelPlaceCard()
-      return
-    }
-
-    let imageUrl: string | null = null
-    if (place.photos && place.photos.length > 0) {
-      try {
-        imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
-      } catch (error) {
-        console.error('Failed to get photo for place card', error)
+  const handleAddPlaceCard = useCallback(
+    async (place: GooglePlace) => {
+      if (pendingPlaceCard?.placeId === place.id) {
+        onCancelPlaceCard()
+        return
       }
-    }
 
-    onStartPlaceCard({
-      id: `placeCard-${crypto.randomUUID()}`,
-      placeId: place.id,
-      name: place.displayName.text,
-      address: place.formattedAddress,
-      createdAt: new Date().toISOString(),
-      scale: 1,
-      image: imageUrl,
-      category: place.primaryTypeDisplayName?.text || '',
-      width: PLACE_CARD_WIDTH,
-      height: PLACE_CARD_HEIGHT,
-    })
-  }
+      let imageUrl: string | null = photoUrls[place.id] ?? null
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
+        } catch (error) {
+          console.error('Failed to get photo for place card', error)
+        }
+      }
+
+      onStartPlaceCard({
+        id: `placeCard-${crypto.randomUUID()}`,
+        placeId: place.id,
+        name: place.displayName.text,
+        address: place.formattedAddress,
+        createdAt: new Date().toISOString(),
+        scale: 1,
+        image: imageUrl,
+        category: place.primaryTypeDisplayName?.text || '',
+        width: PLACE_CARD_WIDTH,
+        height: PLACE_CARD_HEIGHT,
+      })
+    },
+    [pendingPlaceCard, onCancelPlaceCard, onStartPlaceCard, photoUrls],
+  )
 
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 

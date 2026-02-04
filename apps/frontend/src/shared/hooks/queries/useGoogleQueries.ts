@@ -51,12 +51,14 @@ export const useGooglePlaceDetails = (placeId: string) => {
 
 export const useGooglePhotos = (photoNames: (string | undefined | null)[], maxWidthPx = 400, maxHeightPx = 400) => {
   return useQueries({
-    queries: photoNames.map(name => ({
-      queryKey: googleKeys.photo(name!, maxWidthPx, maxHeightPx),
-      queryFn: () => getPhotoUrl(name!, maxWidthPx, maxHeightPx),
-      enabled: !!name,
-      staleTime: Infinity,
-      gcTime: 1000 * 60 * 60, // Cache for 1 hour
-    })),
+    queries: photoNames
+      .map((name, index) => (name ? { name, index } : null))
+      .filter((item): item is { name: string; index: number } => item !== null)
+      .map(({ name }) => ({
+        queryKey: googleKeys.photo(name, maxWidthPx, maxHeightPx),
+        queryFn: () => getPhotoUrl(name, maxWidthPx, maxHeightPx),
+        staleTime: Infinity,
+        gcTime: 1000 * 60 * 60, // Cache for 1 hour
+      })),
   })
 }
