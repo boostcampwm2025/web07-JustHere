@@ -1,0 +1,5 @@
+export * from './create-room.dto'
+export * from './room.s2c.dto'
+export * from './room.s2c.dto'
+export * from './room-response.dto'
+export * from './update-room.dto'
