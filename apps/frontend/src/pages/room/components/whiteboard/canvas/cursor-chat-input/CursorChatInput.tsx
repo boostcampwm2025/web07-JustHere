@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react'
 import { getParticipantColor, cn } from '@/shared/utils'
-import { useToast } from '@/shared/hooks'
 import { MAX_CURSOR_CHAT_LENGTH } from '@/pages/room/constants'
 
 interface CursorChatInputProps {
@@ -14,8 +13,6 @@ interface CursorChatInputProps {
 
 export const CursorChatInput = ({ position, name, isFading, message, onMessageChange, onEscape }: CursorChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
-  const toastShownRef = useRef(false)
-  const { showToast } = useToast()
 
   useEffect(() => {
     if (inputRef.current) {
@@ -26,13 +23,8 @@ export const CursorChatInput = ({ position, name, isFading, message, onMessageCh
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     if (newValue.length > MAX_CURSOR_CHAT_LENGTH) {
-      if (!toastShownRef.current) {
-        toastShownRef.current = true
-        showToast(`메시지는 ${MAX_CURSOR_CHAT_LENGTH}자까지 입력할 수 있습니다.`, 'error')
-      }
       return
     }
-    toastShownRef.current = false
     onMessageChange(newValue)
   }
 
