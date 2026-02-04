@@ -270,6 +270,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     return () => cancelAnimationFrame(id)
   }, [selectedItems])
 
+  useEffect(() => {
+    return () => {
+      setSelectedItems([])
+    }
+  }, [canvasId])
+
   const linesMap = useMemo(() => new Map(lines.map(line => [line.id, line])), [lines])
   const postItsMap = useMemo(() => new Map(postIts.map(postIt => [postIt.id, postIt])), [postIts])
   const placeCardsMap = useMemo(() => new Map(placeCards.map(card => [card.id, card])), [placeCards])
