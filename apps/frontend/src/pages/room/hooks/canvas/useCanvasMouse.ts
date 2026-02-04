@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
@@ -28,6 +28,7 @@ interface UseCanvasMouseProps {
   updateCursor: (x: number, y: number) => void
   isChatActive: boolean
   setChatInputPosition: (pos: { x: number; y: number }) => void
+  deactivateCursorChat: () => void
 
   // Drawing
   getIsDrawing: () => boolean
@@ -74,6 +75,7 @@ export const useCanvasMouse = ({
   updateCursor,
   isChatActive,
   setChatInputPosition,
+  deactivateCursorChat,
   getIsDrawing,
   cancelDrawing,
   startDrawing,
@@ -101,6 +103,10 @@ export const useCanvasMouse = ({
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (isChatActive) {
+        deactivateCursorChat()
+      }
+
       if (pendingPlaceCard) return
       if (effectiveTool !== 'cursor') return
 
@@ -119,7 +125,7 @@ export const useCanvasMouse = ({
         setSelectedItems(prev => [...prev, { id, type }])
       }
     },
-    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems, moveToTop],
+    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems, moveToTop, isChatActive, deactivateCursorChat],
   )
 
   const handleObjectClick = useCallback(
@@ -147,12 +153,16 @@ export const useCanvasMouse = ({
 
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (isChatActive) {
+        deactivateCursorChat()
+      }
+
       if (e.target === e.target.getStage()) {
         setSelectedItems([])
         setContextMenu(null)
       }
     },
-    [setSelectedItems, setContextMenu],
+    [setSelectedItems, setContextMenu, isChatActive, deactivateCursorChat],
   )
 
   const handleMouseMove = useCallback(() => {
@@ -209,6 +219,10 @@ export const useCanvasMouse = ({
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (isChatActive) {
+        deactivateCursorChat()
+      }
+
       const isMouseEvent = e.evt.type.startsWith('mouse')
       if (isMouseEvent) {
         const mouseEvt = e.evt as MouseEvent
@@ -309,6 +323,8 @@ export const useCanvasMouse = ({
       currentDrawingLineRef,
       addTextBox,
       setActiveTool,
+      isChatActive,
+      deactivateCursorChat,
     ],
   )
 
