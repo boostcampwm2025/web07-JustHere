@@ -178,7 +178,6 @@ export default function RoomPage() {
         {!categories.length && (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
             <AddCategoryModal
-              onClose={() => {}}
               onComplete={name => {
                 createCategory(name)
               }}

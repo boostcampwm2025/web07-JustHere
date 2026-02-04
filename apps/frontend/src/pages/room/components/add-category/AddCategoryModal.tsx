@@ -17,8 +17,8 @@ const categories: Category[] = [
 ]
 
 interface AddCategoryModalProps {
-  onClose: () => void
   onComplete: (category: string) => void
+  onClose?: () => void
   closeable?: boolean
 }
 
@@ -40,7 +40,7 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
   const onClickClose = () => {
     setSelectedCategory(undefined)
     setCustomCategory('')
-    onClose()
+    onClose?.()
   }
 
   const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory
