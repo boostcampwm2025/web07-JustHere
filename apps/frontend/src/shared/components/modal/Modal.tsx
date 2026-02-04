@@ -7,9 +7,10 @@ interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   title: string
   onClose: () => void
   children: ReactNode
+  closeable?: boolean
 }
 
-export const Modal = ({ title, onClose, children, className }: ModalProps) => {
+export const Modal = ({ title, onClose, children, className, closeable = true }: ModalProps) => {
   return (
     <div className="fixed inset-0 z-60">
       <div className="absolute inset-0 bg-gray-500/50" onClick={onClose} />
@@ -18,9 +19,11 @@ export const Modal = ({ title, onClose, children, className }: ModalProps) => {
         <div className="bg-white shadow-xl border border-gray-100 rounded-3xl overflow-hidden flex flex-col h-full">
           <div className="flex items-center justify-between px-6 py-5">
             <h3 className="text-xl font-bold">{title}</h3>
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-disable hover:bg-transparent hover:text-gray">
-              <CloseIcon className="w-6 h-6" />
-            </Button>
+            {closeable && (
+              <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-disable hover:bg-transparent hover:text-gray">
+                <CloseIcon className="w-6 h-6" />
+              </Button>
+            )}
           </div>
           {children}
         </div>

@@ -46,7 +46,7 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
   const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory
 
   return (
-    <Modal title="카테고리 추가" onClose={onClickClose}>
+    <Modal title="카테고리 추가" onClose={onClickClose} closeable={closeable}>
       <Modal.Body className="pt-0">
         <div className="flex flex-col gap-6">
           <span className="text-sm text-gray-700">어떤 종류의 장소를 찾고 계신가요?</span>
