@@ -83,6 +83,17 @@ export class VoteRevokePayload extends BasePayload {
   candidateId: string
 }
 
+// [C->S] vote:recast
+export class VoteRecastPayload extends BasePayload {
+  @IsString({ message: 'oldCandidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'oldCandidateId는 비어있을 수 없습니다' })
+  oldCandidateId: string
+
+  @IsString({ message: 'newCandidateId는 문자열이어야 합니다' })
+  @IsNotEmpty({ message: 'newCandidateId는 비어있을 수 없습니다' })
+  newCandidateId: string
+}
+
 // [C->S] vote:owner-select
 export class VoteOwnerSelectPayload extends BasePayload {
   @IsString({ message: 'candidateId는 문자열이어야 합니다' })

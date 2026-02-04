@@ -40,6 +40,7 @@ export type VoteCountsUpdatedPayload = {
   count: number
   userId: string
   voters: string[]
+  changed?: boolean | undefined
 }
 
 // [S->C] vote:me:updated
@@ -64,6 +65,13 @@ export type VoteOwnerPickPayload = {
 export type VoteResettedPayload = {
   status: 'WAITING'
   candidates: Candidate[]
+  counts: Record<string, number>
+  voters: Record<string, string[]>
+}
+
+// [S->C] vote:participant:left
+export type VoteParticipantLeftPayload = {
+  userId: string
   counts: Record<string, number>
   voters: Record<string, string[]>
 }

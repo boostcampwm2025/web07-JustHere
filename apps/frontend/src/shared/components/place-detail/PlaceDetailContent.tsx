@@ -3,8 +3,9 @@ import { useGooglePlaceDetails, useGooglePhotos } from '@/shared/hooks'
 import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 import { renderStars, getPriceRangeText, getParkingText } from './place-detail.utils'
-import { Button, ImageSlider } from '../ui'
+import { Button } from '@/shared/components'
 import { ArrowLeftIcon } from '@/shared/assets'
+import { ImageSlider } from './image-slider'
 
 export type PlaceDetailPlace = Pick<GooglePlace, 'id' | 'displayName' | 'formattedAddress'>
 

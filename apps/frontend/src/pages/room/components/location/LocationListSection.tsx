@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react'
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
-import { Button, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
+import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
-import { RegionSelectorDropdown } from './region-selector'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
@@ -38,9 +37,6 @@ interface LocationListSectionProps {
   participants: Participant[]
   isOwner: boolean
   activeCategoryId: string
-  slug: string
-  currentRegion?: string | null
-  onRegionChange?: (region: { x: number; y: number; place_name: string }) => void
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
@@ -62,9 +58,6 @@ export const LocationListSection = ({
   participants,
   isOwner,
   activeCategoryId,
-  slug,
-  currentRegion,
-  onRegionChange,
   pendingPlaceCard,
   onStartPlaceCard,
   onCancelPlaceCard,
@@ -99,6 +92,7 @@ export const LocationListSection = ({
     status: voteStatus,
     singleVote,
     round,
+    selectedCandidateId,
     candidates: voteCandidates,
     counts: voteCounts,
     myVotes,
@@ -112,6 +106,7 @@ export const LocationListSection = ({
     endVote,
     resetVote,
     castVote,
+    recastVote,
     revokeVote,
     ownerSelect,
     resetError,
@@ -217,13 +212,15 @@ export const LocationListSection = ({
       }
 
       if (singleVote && myVotes.length > 0) {
-        showToast('결선 투표에서는 1개의 후보에만 투표할 수 있습니다.', 'error')
+        // 기존 투표를 취소하고 새로운 후보에 투표 (자동 스위칭)
+        const prevCandidateId = myVotes[0]
+        recastVote(prevCandidateId, candidateId)
         return
       }
 
       castVote(candidateId)
     },
-    [myVotes, singleVote, castVote, revokeVote, showToast],
+    [myVotes, singleVote, castVote, revokeVote, recastVote],
   )
 
   const handleCandidateRegister = useCallback(
@@ -332,25 +329,10 @@ export const LocationListSection = ({
         {/* Tab Buttons */}
         <div className="flex items-center gap-2">
           {tabs.map(tab => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? 'primary' : 'gray'}
-              onClick={() => {
-                onActiveTabChange(tab.id)
-              }}
-              className="px-4 text-sm transition-colors shrink-0"
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </Button>
+            <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => onActiveTabChange(tab.id)}>
+              {tab.label}
+            </ChipButton>
           ))}
-
-          {/* Region Selector - 장소 리스트 탭에서만 표시 */}
-          {activeTab === 'locations' && (
-            <div className="ml-auto">
-              <RegionSelectorDropdown currentRegion={currentRegion} slug={slug} onRegionChange={onRegionChange} />
-            </div>
-          )}
         </div>
         {activeTab === 'locations' && (
           <SearchInput
@@ -493,6 +475,7 @@ export const LocationListSection = ({
             round={round}
             isOwner={isOwner}
             voteStatus={voteStatus}
+            selectedCandidateId={selectedCandidateId}
             onVote={handleVote}
             onViewDetail={handleViewDetail}
             onEndVote={endVote}

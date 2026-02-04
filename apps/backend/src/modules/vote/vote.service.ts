@@ -9,6 +9,7 @@ import {
   VoteCountsUpdatedPayload,
   VoteEndedPayload,
   VoteMeUpdatedPayload,
+  VoteParticipantLeftPayload,
   VoteResettedPayload,
   VoteStartedPayload,
   VoteStatePayload,
@@ -202,7 +203,7 @@ export class VoteService {
     if (session.round === 1) {
       return {
         type: 'runoff',
-        payload: this.startRunoff(roomId, session, tiedCandidates),
+        payload: this.startRunoff(session, tiedCandidates),
       }
     }
 
@@ -216,7 +217,7 @@ export class VoteService {
   /**
    * 결선 투표 전환: 동률 후보만 남기고 투표 리셋
    */
-  private startRunoff(roomId: string, session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
+  private startRunoff(session: VoteSession, tiedCandidates: Candidate[]): VoteRunOffPayload {
     const tiedIds = new Set(tiedCandidates.map(c => c.placeId))
 
     // 동률 후보만 남기기
@@ -330,7 +331,7 @@ export class VoteService {
    * @returns 투표 결과와 변경 여부
    */
   // TODO : 동시성 문제 처리 해야함.
-  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  castVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -386,7 +387,7 @@ export class VoteService {
    * @param candidateId 페이로드의 placeId
    * @returns 투표 결과와 변경 여부
    */
-  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload & { changed: boolean } {
+  revokeVote(roomId: string, userId: string, candidateId: string): VoteCountsUpdatedPayload {
     const session = this.getSessionOrThrow(roomId)
 
     if (session.status !== VoteStatus.IN_PROGRESS) {
@@ -422,6 +423,48 @@ export class VoteService {
       userId,
       voters: this.getVoterIdsForCandidate(session, candidateId),
       changed: true,
+    }
+  }
+
+  /**
+   * 투표 변경 (vote:recast)
+   * - 기존 투표 취소 후 새로운 투표
+   * - 조건: IN_PROGRESS 상태
+   * @param roomId 페이로드 내 카테고리 ID
+   * @param userId 투표하는 사용자 ID
+   * @param oldCandidateId 취소할 후보 ID
+   * @param newCandidateId 투표할 후보 ID
+   */
+  recastVote(
+    roomId: string,
+    userId: string,
+    oldCandidateId: string,
+    newCandidateId: string,
+  ): {
+    oldVoteResult: VoteCountsUpdatedPayload
+    newVoteResult: VoteCountsUpdatedPayload
+    changed?: boolean
+  } {
+    const session = this.getSessionOrThrow(roomId)
+
+    if (session.status !== VoteStatus.IN_PROGRESS) {
+      throw new CustomException(ErrorType.VoteNotInProgress, '현재 투표 진행 중이 아닙니다.')
+    }
+
+    if (!session.candidates.has(oldCandidateId) || !session.candidates.has(newCandidateId)) {
+      throw new CustomException(ErrorType.NotFound, '존재하지 않는 후보입니다.')
+    }
+
+    // 1. 이전 투표 취소
+    const revokeResult = this.revokeVote(roomId, userId, oldCandidateId)
+
+    // 2. 새로운 투표 진행
+    const castResult = this.castVote(roomId, userId, newCandidateId)
+
+    return {
+      oldVoteResult: revokeResult,
+      newVoteResult: castResult,
+      changed: revokeResult.changed || castResult.changed,
     }
   }
 
@@ -482,5 +525,102 @@ export class VoteService {
     }
 
     return voters
+  }
+
+  // TODO: 승자를 세션에 넣어 불필요한 계산을 개선할 여지가 있다.
+  /**
+   * 해당 투표 세션의 승리 후보 반환 (완료된 경우)
+   * 동점자 발생 시, 동점인 모든 후보를 반환
+   * @param voteRoomId 투표 룸 ID (${roomId}:${categoryId})
+   */
+  getWinnerCandidates(voteRoomId: string): Candidate[] {
+    const session = this.sessions.get(voteRoomId)
+    // 세션이 없거나 투표가 완료되지 않았으면 빈 배열 반환
+    if (!session || session.status !== VoteStatus.COMPLETED) {
+      return []
+    }
+
+    // 1. 방장 선택(Pick)이 있는 경우 최우선 반환
+    const selectedCandidateId = session.selectedCandidateId
+    if (selectedCandidateId) {
+      const selected = session.candidates.get(selectedCandidateId)
+      return selected ? [selected] : []
+    }
+
+    // 2. 투표 수 집계
+    let maxVotes = 0
+    for (const count of session.totalCounts.values()) {
+      if (count > maxVotes) {
+        maxVotes = count
+      }
+    }
+
+    // 득표가 아예 없으면 승자 없음
+    if (maxVotes === 0) {
+      return []
+    }
+
+    // 3. 최다 득표자 모두 찾기 (동점자 처리)
+    const winners: Candidate[] = []
+    for (const candidate of session.candidates.values()) {
+      const count = session.totalCounts.get(candidate.placeId) ?? 0
+      if (count === maxVotes) {
+        winners.push(candidate)
+      }
+    }
+
+    return winners
+  }
+
+  /**
+   * 특정 방의 모든 카테고리에서 사용자의 투표를 취소
+   * - room 연결 해제 시 호출됨
+   * - voteRoomId 규칙: `${roomId}:${categoryId}`
+   * @param roomId 방 ID
+   * @param userId 사용자 ID
+   * @returns voteRoomId별 변경된 투표 정보 (브로드캐스트용)
+   */
+
+  revokeAllVotesForUser(roomId: string, userId: string): Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> {
+    const results: Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> = []
+    const prefix = `${roomId}:`
+
+    for (const sessionKey of this.sessions.keys()) {
+      if (!sessionKey.startsWith(prefix)) continue
+
+      const session = this.sessions.get(sessionKey)
+      if (!session) continue
+
+      const userVotes = session.userVotes.get(userId)
+      if (!userVotes || userVotes.size === 0) continue
+
+      if (session.status !== VoteStatus.IN_PROGRESS) continue
+
+      // 해당 사용자의 모든 투표 취소
+      for (const candidateId of userVotes) {
+        const currentCount = session.totalCounts.get(candidateId) || 0
+        const newCount = Math.max(0, currentCount - 1)
+        session.totalCounts.set(candidateId, newCount)
+      }
+
+      // 사용자의 투표 기록 삭제
+      session.userVotes.delete(userId)
+
+      // 해당 voteRoom의 전체 counts와 voters 생성
+      const counts: Record<string, number> = {}
+      const voters: Record<string, string[]> = {}
+
+      for (const candidateId of session.candidates.keys()) {
+        counts[candidateId] = session.totalCounts.get(candidateId) || 0
+        voters[candidateId] = this.getVoterIdsForCandidate(session, candidateId)
+      }
+
+      results.push({
+        voteRoomId: sessionKey,
+        payload: { userId, counts, voters },
+      })
+    }
+
+    return results
   }
 }

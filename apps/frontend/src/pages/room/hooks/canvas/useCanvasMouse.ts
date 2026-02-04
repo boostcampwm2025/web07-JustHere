@@ -3,7 +3,15 @@ import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
-import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, POST_IT_HEIGHT, POST_IT_WIDTH } from '@/pages/room/constants'
+import {
+  DEFAULT_POST_IT_COLOR,
+  PLACE_CARD_HEIGHT,
+  PLACE_CARD_WIDTH,
+  POST_IT_HEIGHT,
+  POST_IT_WIDTH,
+  TEXT_BOX_WIDTH,
+  TEXT_BOX_HEIGHT,
+} from '@/pages/room/constants'
 
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -40,6 +48,9 @@ interface UseCanvasMouseProps {
   addTextBox: (textBox: TextBox) => void
   stopCapturing: () => void
 
+  // Z-index
+  moveToTop: (type: CanvasItemType, id: string) => void
+
   // Logging
   roomId: string
   canvasId: string
@@ -75,6 +86,7 @@ export const useCanvasMouse = ({
   addPostIt,
   addTextBox,
   stopCapturing,
+  moveToTop,
   roomId,
   canvasId,
   onPlaceCardPlaced,
@@ -92,6 +104,8 @@ export const useCanvasMouse = ({
 
       e.cancelBubble = true
 
+      moveToTop(type, id)
+
       const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey
       const isAlreadySelected = selectedItems.some(item => item.id === id && item.type === type)
 
@@ -103,7 +117,7 @@ export const useCanvasMouse = ({
         setSelectedItems(prev => [...prev, { id, type }])
       }
     },
-    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems],
+    [effectiveTool, pendingPlaceCard, selectedItems, setSelectedItems, moveToTop],
   )
 
   const handleObjectClick = useCallback(
@@ -259,10 +273,10 @@ export const useCanvasMouse = ({
         stopCapturing()
         const newTextBox: TextBox = {
           id: `textBox-${crypto.randomUUID()}`,
-          x: canvasPos.x - 100,
-          y: canvasPos.y - 25,
-          width: 200,
-          height: 50,
+          x: canvasPos.x - TEXT_BOX_WIDTH / 2,
+          y: canvasPos.y - TEXT_BOX_HEIGHT / 2,
+          width: TEXT_BOX_WIDTH,
+          height: TEXT_BOX_HEIGHT,
           scale: 1,
           text: '',
           authorName: userName,

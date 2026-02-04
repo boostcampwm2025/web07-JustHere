@@ -9,6 +9,7 @@ export const VOTE_EVENTS = {
   candidateRemoved: 'vote:candidate:removed',
   cast: 'vote:cast',
   revoke: 'vote:revoke',
+  recast: 'vote:recast',
   countsUpdated: 'vote:counts:updated',
   meUpdated: 'vote:me:updated',
   start: 'vote:start',
@@ -20,6 +21,7 @@ export const VOTE_EVENTS = {
   ownerSelect: 'vote:owner-select',
   reset: 'vote:reset',
   resetted: 'vote:resetted',
+  participantLeft: 'vote:participant:left',
 } as const
 
 export type VoteEventName = (typeof VOTE_EVENTS)[keyof typeof VOTE_EVENTS]

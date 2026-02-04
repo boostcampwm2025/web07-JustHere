@@ -1,0 +1,8 @@
+export const ERROR_TYPE = {
+  ROOM_NOT_FOUND: 'ROOM_NOT_FOUND',
+  RESULT_NOT_FOUND: 'RESULT_NOT_FOUND',
+  RESULT_LOAD_FAILED: 'RESULT_LOAD_FAILED',
+  UNKNOWN: 'UNKNOWN',
+} as const
+
+export type ErrorType = (typeof ERROR_TYPE)[keyof typeof ERROR_TYPE]

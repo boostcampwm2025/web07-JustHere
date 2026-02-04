@@ -21,6 +21,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
+import { migrateZIndexOrder } from '@/pages/room/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -42,6 +43,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
+  const [zIndexOrder, setZIndexOrder] = useState<Array<{ type: CanvasItemType; id: string }>>([])
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
@@ -52,6 +54,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
   const summaryTimerRef = useRef<number | null>(null)
   const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
+  const migrationExecutedRef = useRef(false)
   // 현재 커서 위치 저장 (커서챗 전송 시 사용)
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
@@ -108,6 +111,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const isConnected = status === 'connected'
 
   useEffect(() => {
+    migrationExecutedRef.current = false
     // Yjs 문서 초기화
     const doc = new Y.Doc()
     docRef.current = doc
@@ -117,8 +121,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
     const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
 
-    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes], {
+    const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes, yZIndexOrder], {
       trackedOrigins: new Set([localOriginRef.current]),
       captureTimeout: CAPTURE_FREQUENCY,
     })
@@ -196,6 +201,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       setTextBoxes(items)
     }
 
+    const syncZIndexOrderToState = () => {
+      const items = yZIndexOrder.toArray().map(yMap => ({
+        type: yMap.get('type') as CanvasItemType,
+        id: yMap.get('id') as string,
+      }))
+      setZIndexOrder(items)
+    }
+
     // Yjs 변경 감지 리스너
     // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
     // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
@@ -203,18 +216,21 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
     yTextBoxes.observeDeep(syncTextBoxesToState)
+    yZIndexOrder.observe(syncZIndexOrderToState)
 
     // 초기 동기화
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
     syncTextBoxesToState()
+    syncZIndexOrderToState()
 
     return () => {
       yPostits.unobserveDeep(syncPostitsToState)
       yPlaceCards.unobserveDeep(syncPlaceCardsToState)
       yLines.unobserveDeep(syncLinesToState)
       yTextBoxes.unobserveDeep(syncTextBoxesToState)
+      yZIndexOrder.unobserve(syncZIndexOrderToState)
       undoManager.off('stack-item-added', handleStackChange)
       undoManager.off('stack-item-popped', handleStackChange)
       undoManager.off('stack-item-updated', handleStackChange)
@@ -260,6 +276,17 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       // origin을 socket으로 명시하여 재전송 방지
       Y.applyUpdate(doc, updateArray, socket)
       addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
+
+      // 서버 데이터 수신 후 마이그레이션 실행
+      if (!migrationExecutedRef.current) {
+        migrationExecutedRef.current = true
+        const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+        const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+        const yLines = doc.getArray<Y.Map<unknown>>('lines')
+        const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+        const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+        migrateZIndexOrder(yPostits, yPlaceCards, yLines, yTextBoxes, yZIndexOrder, localOriginRef.current)
+      }
     }
 
     const handleCanvasDetached = () => {
@@ -461,6 +488,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yPostits = doc.getArray<Y.Map<unknown>>('postits')
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
     const yMap = new Y.Map()
     yMap.set('id', postit.id)
     yMap.set('x', postit.x)
@@ -471,8 +499,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('fill', postit.fill)
     yMap.set('text', postit.text)
     yMap.set('authorName', postit.authorName)
+
+    const zIndexMap = new Y.Map()
+    zIndexMap.set('type', 'postit')
+    zIndexMap.set('id', postit.id)
+
     doc.transact(() => {
       yPostits.push([yMap])
+      yZIndexOrder.push([zIndexMap])
     }, localOriginRef.current)
   }
 
@@ -487,6 +521,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
     const yMap = new Y.Map()
     yMap.set('id', card.id)
     yMap.set('placeId', card.placeId)
@@ -500,8 +535,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
     yMap.set('category', card.category ?? '')
+
+    const zIndexMap = new Y.Map()
+    zIndexMap.set('type', 'placeCard')
+    zIndexMap.set('id', card.id)
+
     doc.transact(() => {
       yPlaceCards.push([yMap])
+      yZIndexOrder.push([zIndexMap])
     }, localOriginRef.current)
   }
 
@@ -516,6 +557,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yLines = doc.getArray<Y.Map<unknown>>('lines')
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
     const yMap = new Y.Map()
     yMap.set('id', line.id)
     yMap.set('points', line.points)
@@ -525,8 +567,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('lineCap', line.lineCap)
     yMap.set('lineJoin', line.lineJoin)
     yMap.set('tool', line.tool)
+
+    const zIndexMap = new Y.Map()
+    zIndexMap.set('type', 'line')
+    zIndexMap.set('id', line.id)
+
     doc.transact(() => {
       yLines.push([yMap])
+      yZIndexOrder.push([zIndexMap])
     }, localOriginRef.current)
   }
 
@@ -541,12 +589,18 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const arrayName = typeToArrayName[type]
     const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-    const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
-
-    if (index === -1) return
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
 
     doc.transact(() => {
+      const index = yArray.toArray().findIndex(yMap => yMap.get('id') === id)
+      if (index === -1) return
+
+      const zIndexIndex = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
+
       yArray.delete(index, 1)
+      if (zIndexIndex !== -1) {
+        yZIndexOrder.delete(zIndexIndex, 1)
+      }
     }, localOriginRef.current)
   }
 
@@ -556,13 +610,20 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (!doc) return
 
     const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
     const yMap = new Y.Map()
 
     Object.entries(textBox).forEach(([key, value]) => {
       yMap.set(key, value)
     })
+
+    const zIndexMap = new Y.Map()
+    zIndexMap.set('type', 'textBox')
+    zIndexMap.set('id', textBox.id)
+
     doc.transact(() => {
       yTextBoxes.push([yMap])
+      yZIndexOrder.push([zIndexMap])
     }, localOriginRef.current)
   }
 
@@ -571,12 +632,69 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateItem('textBoxes', id, updates)
   }
 
+  // 요소를 배열의 맨 위로 이동하는 함수
+  const moveToTop = useCallback(
+    (type: CanvasItemType, id: string) => {
+      const doc = docRef.current
+      if (!doc) return
+
+      const yZIndexOrder = doc.getArray<Y.Map<unknown>>('zIndexOrder')
+
+      doc.transact(() => {
+        // 트랜잭션 내부에서 인덱스를 조회하여 경쟁 조건 방지
+        // 다른 클라이언트가 배열을 수정해도 트랜잭션 내부에서는 일관된 상태 보장
+        const index = yZIndexOrder.toArray().findIndex(yMap => yMap.get('type') === type && yMap.get('id') === id)
+
+        if (index === -1) {
+          const newZIndexMap = new Y.Map()
+          newZIndexMap.set('type', type)
+          newZIndexMap.set('id', id)
+          yZIndexOrder.push([newZIndexMap])
+          return
+        }
+
+        // 이미 맨 위에 있으면 변경하지 않음
+        if (index === yZIndexOrder.length - 1) return
+
+        const oldZIndexMap = yZIndexOrder.get(index)
+
+        // 기존 Y.Map의 모든 속성을 읽어서 일반 객체로 변환
+        const data: Record<string, unknown> = {}
+        oldZIndexMap.forEach((value, key) => {
+          data[key] = value
+        })
+
+        // 배열에서 요소 제거
+        yZIndexOrder.delete(index, 1)
+
+        // 새로운 Y.Map 생성하고 속성 복사
+        const newZIndexMap = new Y.Map()
+        Object.entries(data).forEach(([key, value]) => {
+          newZIndexMap.set(key, value)
+        })
+
+        // 배열 끝에 추가하여 맨 위로 이동
+        yZIndexOrder.push([newZIndexMap])
+      }, localOriginRef.current)
+
+      // UndoManager가 변경사항을 즉시 캡처하도록 함
+      const undoManager = undoManagerRef.current
+      if (undoManager) {
+        undoManager.stopCapturing()
+        updateHistoryState()
+      }
+    },
+    [updateHistoryState],
+  )
+
   return {
     isConnected,
     cursors,
     postits,
     placeCards,
     lines,
+    textBoxes,
+    zIndexOrder,
     canUndo,
     canRedo,
     updateCursor,
@@ -590,9 +708,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updatePlaceCard,
     addLine,
     updateLine,
-    textBoxes,
     addTextBox,
     updateTextBox,
     deleteCanvasItem,
+    moveToTop,
   }
 }
