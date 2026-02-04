@@ -8,8 +8,10 @@ import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
+import { PlaceItemSkeleton } from './PlaceItemSkeleton'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
+import { LazyImage } from '@/shared/components/lazy-image'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -357,7 +359,11 @@ export const LocationListSection = ({
       {!selectedPlace && activeTab === 'locations' && (
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32 text-gray">검색 중...</div>
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <PlaceItemSkeleton key={index} />
+              ))}
+            </div>
           ) : searchResults.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-gray text-sm">
               {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
@@ -385,7 +391,7 @@ export const LocationListSection = ({
                     >
                       <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
                         {photoUrl ? (
-                          <img src={photoUrl} alt={place.displayName.text} className="w-full h-full object-cover" />
+                          <LazyImage src={photoUrl} alt={place.displayName.text} className="w-full h-full" />
                         ) : (
                           <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
                             <span className="text-gray-400 text-xs">No Image</span>
