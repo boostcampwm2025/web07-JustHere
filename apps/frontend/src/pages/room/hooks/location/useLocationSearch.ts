@@ -62,7 +62,7 @@ export function useLocationSearch({
     }
   }, [categoryId])
 
-  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess } = useInfiniteGoogleSearch({
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage, isSuccess, refetch } = useInfiniteGoogleSearch({
     textQuery: searchTerm,
     roomId,
     radius,
@@ -111,8 +111,13 @@ export function useLocationSearch({
       searchTermRef.current = ''
       return
     }
-    setSearchTerm(trimmed)
-    searchTermRef.current = trimmed
+
+    if (trimmed === searchTerm) {
+      refetch()
+    } else {
+      setSearchTerm(trimmed)
+      searchTermRef.current = trimmed
+    }
   }
 
   const updateSearchQuery = (value: string) => {
