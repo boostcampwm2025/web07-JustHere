@@ -52,6 +52,13 @@ apiClient.interceptors.response.use(
       )
     }
 
-    return Promise.reject(error)
+    return Promise.reject(
+      new AppError({
+        code: 'CLIENT_UNKNOWN',
+        message: getDefaultErrorMessage('CLIENT_UNKNOWN'),
+        source: 'api',
+        originalError: error,
+      }),
+    )
   },
 )
