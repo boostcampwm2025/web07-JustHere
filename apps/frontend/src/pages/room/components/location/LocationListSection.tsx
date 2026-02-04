@@ -9,9 +9,10 @@ import { cn, reportError } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceItemSkeleton } from './PlaceItemSkeleton'
-import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, type TabType } from '@/pages/room/constants'
+import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
 import { LazyImage } from '@/shared/components/lazy-image'
+import type { TabType } from '@/pages/room/types/location'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {

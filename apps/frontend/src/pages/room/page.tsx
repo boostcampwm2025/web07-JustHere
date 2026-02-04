@@ -7,7 +7,7 @@ import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/ho
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
-import type { TabType } from '@/pages/room/constants'
+import type { TabType } from '@/pages/room/types/location'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
