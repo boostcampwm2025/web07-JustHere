@@ -12,7 +12,7 @@ import {
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
-import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
+import { ParticipantUpdateNamePayload, RoomJoinPayload, RoomTransferOwnerPayload } from './dto'
 import { RoomService } from './room.service'
 
 @WebSocketGateway({

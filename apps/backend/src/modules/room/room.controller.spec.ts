@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import type { Room } from '@prisma/client'
 import { RoomController } from './room.controller'
 import { RoomService } from './room.service'
-import { CreateRoomDto } from './dto/create-room.dto'
-import { UpdateRoomDto } from './dto/update-room.dto'
+import { CreateRoomDto, UpdateRoomDto } from './dto'
 
 describe('RoomController', () => {
   let controller: RoomController

@@ -10,14 +10,14 @@ import { CategoryService } from '@/modules/category/category.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import type { UserSession } from '@/modules/user/user.type'
-import type { RoomJoinPayload } from './dto/room.c2s.dto'
 import {
   ParticipantConnectedPayload,
   ParticipantDisconnectedPayload,
   RoomJoinedPayload,
   ParticipantNameUpdatedPayload,
   RoomOwnerTransferredPayload,
-} from './dto/room.s2c.dto'
+  RoomJoinPayload,
+} from './dto'
 import { VoteService } from '@/modules/vote/vote.service'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 
