@@ -56,6 +56,8 @@ export interface PlaceCard {
   createdAt: string
   image?: string | null
   category: string
+  rating?: number
+  userRatingCount?: number
 }
 
 export interface Line {

@@ -171,6 +171,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         createdAt: yMap.get('createdAt') as string,
         image: (yMap.get('image') as string | null | undefined) ?? null,
         category: (yMap.get('category') as string | undefined) ?? '',
+        rating: yMap.get('rating') as number | undefined,
+        userRatingCount: yMap.get('userRatingCount') as number | undefined,
       }))
       setPlaceCards(items)
     }
@@ -551,6 +553,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('createdAt', card.createdAt)
     yMap.set('image', card.image ?? null)
     yMap.set('category', card.category ?? '')
+    if (card.rating !== undefined) yMap.set('rating', card.rating)
+    if (card.userRatingCount !== undefined) yMap.set('userRatingCount', card.userRatingCount)
 
     const zIndexMap = new Y.Map()
     zIndexMap.set('type', 'placeCard')

@@ -514,33 +514,59 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               <Rect
                 width={PLACE_CARD_WIDTH}
                 height={PLACE_CARD_HEIGHT}
-                fill="#FFFBE6"
-                opacity={0.6}
+                fill="#FFFFFF"
+                opacity={0.8}
                 cornerRadius={10}
                 stroke="#9CA3AF"
                 strokeWidth={2}
                 dash={[6, 6]}
+                shadowBlur={15}
+                shadowOffsetY={4}
+                shadowOpacity={0.1}
               />
+              <Rect width={PLACE_CARD_WIDTH} height={100} fill="#E5E7EB" opacity={0.8} cornerRadius={[10, 10, 0, 0]} />
               <Text
                 text={pendingPlaceCard.name}
                 x={12}
-                y={12}
+                y={110}
                 width={PLACE_CARD_WIDTH - 24}
                 fontSize={14}
                 fontFamily="Arial, sans-serif"
                 fontStyle="bold"
+                fill="#374151"
+                ellipsis={true}
+                wrap="none"
+              />
+              {pendingPlaceCard.rating != null && (
+                <>
+                  <Text text="★" x={12} y={130} fontSize={11} fill="#FACC15" />
+                  <Text
+                    text={`${pendingPlaceCard.rating.toFixed(1)}${pendingPlaceCard.userRatingCount ? ` (${pendingPlaceCard.userRatingCount.toLocaleString()})` : ''}`}
+                    x={26}
+                    y={130}
+                    width={PLACE_CARD_WIDTH - 38}
+                    fontSize={11}
+                    fill="#6B7280"
+                  />
+                </>
+              )}
+              <Text
+                text={pendingPlaceCard.category || ''}
+                x={12}
+                y={pendingPlaceCard.rating != null ? 146 : 130}
+                width={PLACE_CARD_WIDTH - 24}
+                fontSize={11}
                 fill="#6B7280"
-                wrap="word"
               />
               <Text
                 text={pendingPlaceCard.address}
                 x={12}
-                y={36}
+                y={pendingPlaceCard.rating != null ? 162 : 146}
                 width={PLACE_CARD_WIDTH - 24}
-                fontSize={12}
+                fontSize={11}
                 fontFamily="Arial, sans-serif"
-                fill="#9CA3AF"
-                wrap="word"
+                fill="#6B7280"
+                wrap="char"
               />
             </Group>
           )}
