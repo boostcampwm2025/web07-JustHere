@@ -50,7 +50,6 @@ interface LocationListSectionProps {
   selectedPlace: GooglePlace | null
   onPlaceSelect: (place: GooglePlace | null) => void
   candidatePlaces?: GooglePlace[]
-  isCollapsed: boolean
 }
 
 export const LocationListSection = ({
@@ -70,7 +69,6 @@ export const LocationListSection = ({
   onActiveTabChange,
   onCandidatePlaceIdsChange,
   candidatePlaces,
-  isCollapsed,
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
@@ -333,12 +331,7 @@ export const LocationListSection = ({
   ]
 
   return (
-    <div
-      className={cn(
-        'relative flex flex-col h-full bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden',
-        isCollapsed ? 'w-0' : 'w-[420px]',
-      )}
-    >
+    <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200">
       {/* Header Section */}
       <div className="flex flex-col gap-4 p-5 pb-4">
         {/* Tab Buttons */}

@@ -212,25 +212,27 @@ export default function RoomPage() {
         currentRegion={currentRegion ?? undefined}
       />
       <div className="flex flex-1 overflow-hidden">
-        <LocationListSection
-          roomId={roomId}
-          userId={user.userId}
-          userName={user.name}
-          participants={participants}
-          isOwner={isOwner}
-          activeCategoryId={activeCategoryId}
-          pendingPlaceCard={pendingPlaceCard}
-          onStartPlaceCard={handleStartPlaceCard}
-          onCancelPlaceCard={clearPendingPlaceCard}
-          onSearchComplete={handleSearchComplete}
-          activeTab={activeLocationTab}
-          onActiveTabChange={handleActiveLocationTab}
-          onCandidatePlaceIdsChange={setCandidatePlaceIds}
-          selectedPlace={activeSelectedPlace}
-          onPlaceSelect={handlePlaceSelect}
-          candidatePlaces={candidatePlaces}
-          isCollapsed={isLocationListCollapsed}
-        />
+        {/* LocationListSection wrapper */}
+        <div className={`overflow-hidden transition-all duration-300 ${isLocationListCollapsed ? 'w-0' : 'w-[420px]'}`}>
+          <LocationListSection
+            roomId={roomId}
+            userId={user.userId}
+            userName={user.name}
+            participants={participants}
+            isOwner={isOwner}
+            activeCategoryId={activeCategoryId}
+            pendingPlaceCard={pendingPlaceCard}
+            onStartPlaceCard={handleStartPlaceCard}
+            onCancelPlaceCard={clearPendingPlaceCard}
+            onSearchComplete={handleSearchComplete}
+            activeTab={activeLocationTab}
+            onActiveTabChange={handleActiveLocationTab}
+            onCandidatePlaceIdsChange={setCandidatePlaceIds}
+            selectedPlace={activeSelectedPlace}
+            onPlaceSelect={handlePlaceSelect}
+            candidatePlaces={candidatePlaces}
+          />
+        </div>
         {/* 패널 토글 버튼 */}
         <button
           type="button"
