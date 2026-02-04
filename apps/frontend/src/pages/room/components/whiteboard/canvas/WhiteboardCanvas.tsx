@@ -233,6 +233,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     updateCursor,
     isChatActive,
     setChatInputPosition,
+    deactivateCursorChat,
     getIsDrawing,
     cancelDrawing,
     startDrawing,
