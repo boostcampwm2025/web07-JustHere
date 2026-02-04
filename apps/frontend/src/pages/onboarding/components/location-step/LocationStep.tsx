@@ -97,6 +97,7 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
 
       {places.length > 0 && <p className="text-sm text-gray mb-3">검색 결과 ({places.length})</p>}
       {isLoading && <p className="text-sm text-gray mb-3">검색 중...</p>}
+      {!isLoading && searchTerm && places.length === 0 && <p className="text-sm text-gray mt-6 text-center">검색 결과가 없습니다</p>}
 
       <SearchResultsList ref={listContainerRef} results={places} selectedPlace={selectedPlace} onSelect={setSelectedPlace} />
 
