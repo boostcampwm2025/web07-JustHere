@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
@@ -51,7 +51,6 @@ interface LocationListSectionProps {
   onPlaceSelect: (place: GooglePlace | null) => void
   candidatePlaces?: GooglePlace[]
   isCollapsed: boolean
-  onToggleCollapse: () => void
 }
 
 export const LocationListSection = ({
@@ -72,7 +71,6 @@ export const LocationListSection = ({
   onCandidatePlaceIdsChange,
   candidatePlaces,
   isCollapsed,
-  onToggleCollapse,
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
@@ -338,7 +336,7 @@ export const LocationListSection = ({
     <div
       className={cn(
         'relative flex flex-col h-full bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden',
-        isCollapsed ? 'w-6' : 'w-[420px]',
+        isCollapsed ? 'w-0' : 'w-[420px]',
       )}
     >
       {/* Header Section */}
@@ -545,16 +543,6 @@ export const LocationListSection = ({
           </Modal.Body>
         </Modal>
       )}
-
-      {/* 토글 버튼 */}
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-colors z-10"
-        aria-label={isCollapsed ? '패널 열기' : '패널 접기'}
-      >
-        {isCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
-      </button>
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
+import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
@@ -229,8 +230,16 @@ export default function RoomPage() {
           onPlaceSelect={handlePlaceSelect}
           candidatePlaces={candidatePlaces}
           isCollapsed={isLocationListCollapsed}
-          onToggleCollapse={() => setIsLocationListCollapsed(prev => !prev)}
         />
+        {/* 패널 토글 버튼 */}
+        <button
+          type="button"
+          onClick={() => setIsLocationListCollapsed(prev => !prev)}
+          className="flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-colors self-center shrink-0"
+          aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
+        >
+          {isLocationListCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
+        </button>
         <WhiteboardSection
           roomId={roomId}
           onActiveCategoryChange={setSelectedCategoryId}
