@@ -86,6 +86,7 @@ export default function RoomPage() {
               onComplete={name => {
                 createCategory(name)
               }}
+              closeable={false}
             />
           </div>
         )}

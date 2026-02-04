@@ -19,9 +19,10 @@ const categories: Category[] = [
 interface AddCategoryModalProps {
   onClose: () => void
   onComplete: (category: string) => void
+  closeable?: boolean
 }
 
-export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps) => {
+export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddCategoryModalProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [customCategory, setCustomCategory] = useState('')
 
@@ -96,9 +97,11 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="outline" size="sm" onClick={onClickClose} className="bg-white">
-          취소
-        </Button>
+        {closeable && (
+          <Button variant="outline" size="sm" onClick={onClickClose} className="bg-white">
+            취소
+          </Button>
+        )}
         <Button variant="primary" size="sm" onClick={onSelectCategory} disabled={isSubmitDisabled}>
           선택 완료
         </Button>
