@@ -7,9 +7,11 @@ interface GooglePlaceMarkerProps {
   place: GooglePlace
   isSelected?: boolean
   onClick?: (place: GooglePlace) => void
+  showLabel?: boolean
+  showTooltip?: boolean
 }
 
-export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMarkerProps) => {
+export const GooglePlaceMarker = ({ place, isSelected, onClick, showLabel = true, showTooltip = true }: GooglePlaceMarkerProps) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const position = {
@@ -24,7 +26,7 @@ export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMar
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {(isHovered || isSelected) && (
+        {showTooltip && (isHovered || isSelected) && (
           <div className="absolute bottom-full mb-2 px-3 py-1.5 bg-white rounded-lg shadow-lg border border-gray-200 whitespace-nowrap z-10">
             <p className="text-sm font-bold text-gray-800">{place.displayName.text}</p>
             {place.primaryTypeDisplayName && <p className="text-xs text-gray">{place.primaryTypeDisplayName.text}</p>}
@@ -54,9 +56,11 @@ export const GooglePlaceMarker = ({ place, isSelected, onClick }: GooglePlaceMar
           )}
         />
 
-        <div className="absolute top-full mt-1 px-1.5 py-0.5 bg-white/90 rounded-md shadow-sm border border-gray-100 backdrop-blur-[2px]">
-          <p className="text-[11px] font-semibold text-gray-700 whitespace-nowrap max-w-[120px] truncate">{place.displayName.text}</p>
-        </div>
+        {showLabel && (
+          <div className="absolute top-full mt-1 px-1.5 py-0.5 bg-white/90 rounded-md shadow-sm border border-gray-100 backdrop-blur-[2px]">
+            <p className="text-[11px] font-semibold text-gray-700 whitespace-nowrap max-w-[120px] truncate">{place.displayName.text}</p>
+          </div>
+        )}
       </div>
     </AdvancedMarker>
   )

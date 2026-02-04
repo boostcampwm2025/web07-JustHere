@@ -69,6 +69,8 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
           className="w-full h-full"
           markers={selectedPlace ? [selectedPlace] : []}
           selectedMarkerId={selectedPlace?.id}
+          showMarkerLabel={false}
+          showMarkerTooltip={false}
         />
 
         {selectedPlace && isMapLoaded && (
