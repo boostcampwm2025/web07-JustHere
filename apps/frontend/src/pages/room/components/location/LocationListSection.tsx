@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react'
-import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
+import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
 import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
@@ -50,6 +50,8 @@ interface LocationListSectionProps {
   selectedPlace: GooglePlace | null
   onPlaceSelect: (place: GooglePlace | null) => void
   candidatePlaces?: GooglePlace[]
+  isCollapsed: boolean
+  onToggleCollapse: () => void
 }
 
 export const LocationListSection = ({
@@ -69,6 +71,8 @@ export const LocationListSection = ({
   onActiveTabChange,
   onCandidatePlaceIdsChange,
   candidatePlaces,
+  isCollapsed,
+  onToggleCollapse,
 }: LocationListSectionProps) => {
   const { showToast } = useToast()
   const { searchQuery, setSearchQuery, searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } =
@@ -331,211 +335,229 @@ export const LocationListSection = ({
   ]
 
   return (
-    <div className="flex flex-col w-[420px] h-full bg-white border-l border-gray-200">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 p-5 pb-4">
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2">
-          {tabs.map(tab => (
-            <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => onActiveTabChange(tab.id)}>
-              {tab.label}
-            </ChipButton>
-          ))}
-        </div>
-        {activeTab === 'locations' && (
-          <SearchInput
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            onClear={handleClear}
-            onSearch={handleSearch}
-            placeholder="검색"
-          />
+    <div className="relative flex h-full">
+      {/* 패널 컨텐츠 */}
+      <div
+        className={cn(
+          'flex flex-col h-full bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden',
+          isCollapsed ? 'w-0' : 'w-[420px]',
         )}
-      </div>
+      >
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 p-5 pb-4">
+          {/* Tab Buttons */}
+          <div className="flex items-center gap-2">
+            {tabs.map(tab => (
+              <ChipButton key={tab.id} icon={tab.icon} selected={activeTab === tab.id} onClick={() => onActiveTabChange(tab.id)}>
+                {tab.label}
+              </ChipButton>
+            ))}
+          </div>
+          {activeTab === 'locations' && (
+            <SearchInput
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onClear={handleClear}
+              onSearch={handleSearch}
+              placeholder="검색"
+            />
+          )}
+        </div>
 
-      <Divider />
-      {selectedPlace && <PlaceDetailContent place={selectedPlace} className="flex-1" showHeader={true} onBack={() => handlePlaceSelect(null)} />}
-      {!selectedPlace && activeTab === 'locations' && (
-        <div className="flex-1 overflow-y-auto p-5">
-          {isLoading ? (
-            <div className="flex flex-col gap-4">
-              {Array.from({ length: 10 }).map((_, index) => (
-                <PlaceItemSkeleton key={index} />
-              ))}
-            </div>
-          ) : searchResults.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-gray text-sm">
-              {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {searchResults.map((place, index) => {
-                const isSelected = pendingPlaceCard?.placeId === place.id
-                const photoUrl = photoUrls[place.id]
-                const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
+        <Divider />
+        {selectedPlace && <PlaceDetailContent place={selectedPlace} className="flex-1" showHeader={true} onBack={() => handlePlaceSelect(null)} />}
+        {!selectedPlace && activeTab === 'locations' && (
+          <div className="flex-1 overflow-y-auto p-5">
+            {isLoading ? (
+              <div className="flex flex-col gap-4">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <PlaceItemSkeleton key={index} />
+                ))}
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-gray text-sm">
+                {hasSearched ? '검색 결과가 없습니다' : '검색어를 입력하고 Enter를 눌러주세요'}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {searchResults.map((place, index) => {
+                  const isSelected = pendingPlaceCard?.placeId === place.id
+                  const photoUrl = photoUrls[place.id]
+                  const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
-                return (
-                  <div key={place.id}>
-                    <div
-                      className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
-                      onClick={() => handlePlaceSelect(place)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e: KeyboardEvent) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handlePlaceSelect(place)
-                        }
-                      }}
-                    >
-                      <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
-                        {photoUrl ? (
-                          <LazyImage src={photoUrl} alt={place.displayName.text} className="w-full h-full" />
-                        ) : (
-                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">No Image</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-between py-0.5">
-                        <div className="flex flex-col gap-1">
-                          <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
-                          <div className="flex items-center gap-2">
-                            {place.rating && (
-                              <span className="text-xs text-yellow-500 flex items-center gap-0.5">
-                                ★ {place.rating.toFixed(1)}
-                                {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
-                              </span>
-                            )}
-                            {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
-                          </div>
-                          <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
-                          {place.regularOpeningHours && (
-                            <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
-                              {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
-                            </span>
+                  return (
+                    <div key={place.id}>
+                      <div
+                        className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors cursor-pointer"
+                        onClick={() => handlePlaceSelect(place)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e: KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            handlePlaceSelect(place)
+                          }
+                        }}
+                      >
+                        <div className="w-24 h-24 bg-gray-200 rounded-lg shrink-0 overflow-hidden cursor-pointer">
+                          {photoUrl ? (
+                            <LazyImage src={photoUrl} alt={place.displayName.text} className="w-full h-full" />
+                          ) : (
+                            <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">No Image</span>
+                            </div>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 mt-1">
-                          <Button
-                            size="sm"
-                            icon={<PlusIcon className="size-3" />}
-                            onClick={event => {
-                              event.stopPropagation()
-                              handleAddPlaceCard(place)
-                            }}
-                            className={cn(
-                              'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
-                              isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
+                        <div className="flex-1 flex flex-col justify-between py-0.5">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="font-bold text-gray-800 text-base line-clamp-1">{place.displayName.text}</h3>
+                            <div className="flex items-center gap-2">
+                              {place.rating && (
+                                <span className="text-xs text-yellow-500 flex items-center gap-0.5">
+                                  ★ {place.rating.toFixed(1)}
+                                  {place.userRatingCount && <span className="text-gray-400">({place.userRatingCount})</span>}
+                                </span>
+                              )}
+                              {place.primaryTypeDisplayName && <span className="text-gray text-xs">{place.primaryTypeDisplayName.text}</span>}
+                            </div>
+                            <p className="text-gray-400 text-xs line-clamp-1">{place.formattedAddress}</p>
+                            {place.regularOpeningHours && (
+                              <span className={cn('text-xs w-fit', place.regularOpeningHours.openNow ? 'text-green-600' : 'text-red-500')}>
+                                {place.regularOpeningHours.openNow ? '영업 중' : '영업 종료'}
+                              </span>
                             )}
-                          >
-                            캔버스
-                          </Button>
-                          <Button
-                            variant={isAlreadyCandidate ? 'gray' : 'outline'}
-                            icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
-                            size="sm"
-                            className="text-xs"
-                            onClick={event => {
-                              event.stopPropagation()
-                              if (isAlreadyCandidate) {
-                                removeCandidate(place.id)
-                                return
-                              }
-                              handleCandidateRegister(place)
-                            }}
-                            disabled={!canRegisterCandidate}
-                          >
-                            {isAlreadyCandidate ? '담김' : '후보등록'}
-                          </Button>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                            <Button
+                              size="sm"
+                              icon={<PlusIcon className="size-3" />}
+                              onClick={event => {
+                                event.stopPropagation()
+                                handleAddPlaceCard(place)
+                              }}
+                              className={cn(
+                                'border transition-colors text-xs gap-1 hover:bg-primary/20 text-primary active:bg-primary/30',
+                                isSelected ? 'border-primary bg-white' : 'border-transparent bg-primary-bg',
+                              )}
+                            >
+                              캔버스
+                            </Button>
+                            <Button
+                              variant={isAlreadyCandidate ? 'gray' : 'outline'}
+                              icon={isAlreadyCandidate && <CheckIcon className="size-3" />}
+                              size="sm"
+                              className="text-xs"
+                              onClick={event => {
+                                event.stopPropagation()
+                                if (isAlreadyCandidate) {
+                                  removeCandidate(place.id)
+                                  return
+                                }
+                                handleCandidateRegister(place)
+                              }}
+                              disabled={!canRegisterCandidate}
+                            >
+                              {isAlreadyCandidate ? '담김' : '후보등록'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {index < searchResults.length - 1 && <Divider className="mt-4" />}
-                  </div>
-                )
-              })}
-              <div ref={loadMoreRef} />
-              {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
-              {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
-                <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 후보 리스트 탭 */}
-      {!selectedPlace &&
-        activeTab === 'candidates' &&
-        (voteStatus === 'WAITING' ? (
-          <CandidateListSection
-            candidates={candidateList}
-            isOwner={isOwner}
-            onStartVote={() => {
-              if (!isOwner || !candidateList.length) return
-              startVote()
-            }}
-            onRemoveCandidate={removeCandidate}
-          />
-        ) : (
-          <VoteListSection
-            candidates={votingCandidates}
-            round={round}
-            isOwner={isOwner}
-            voteStatus={voteStatus}
-            selectedCandidateId={selectedCandidateId}
-            onVote={handleVote}
-            onViewDetail={handleViewDetail}
-            onEndVote={endVote}
-            onResetVote={resetVote}
-          />
-        ))}
-
-      {/* 방장 최종 선택 Modal */}
-      {!selectedPlace && voteStatus === 'OWNER_PICK' && (
-        <Modal title={isOwner ? '최종 장소를 선택해주세요' : '방장이 최종 선택 중입니다'} onClose={() => {}}>
-          <Modal.Body>
-            {!isOwner ? (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <p className="text-gray-500 text-sm text-center">
-                  결선 투표에서도 동률이 발생했습니다.
-                  <br />
-                  방장이 최종 장소를 선택하고 있습니다...
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <p className="text-gray-500 text-sm mb-2">결선 투표에서도 동률이 발생했습니다. 최종 장소를 선택해주세요.</p>
-                {votingCandidates.map(candidate => (
-                  <button
-                    key={candidate.id}
-                    type="button"
-                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-primary hover:bg-primary-bg transition-colors text-left"
-                    onClick={() => ownerSelect(candidate.id)}
-                  >
-                    <div className="w-14 h-14 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
-                      {candidate.imageUrl ? (
-                        <img src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
-                      )}
+                      {index < searchResults.length - 1 && <Divider className="mt-4" />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-800 truncate">{candidate.name}</h4>
-                      <p className="text-xs text-gray-500">{candidate.category}</p>
-                      {candidate.rating !== undefined && <span className="text-xs text-yellow-500">★ {candidate.rating.toFixed(1)}</span>}
-                    </div>
-                  </button>
-                ))}
+                  )
+                })}
+                <div ref={loadMoreRef} />
+                {isFetchingMore && <div className="text-center text-xs text-gray">더 불러오는 중...</div>}
+                {!hasMore && searchResults.length > 0 && !isLoading && !isFetchingMore && (
+                  <div className="text-center text-xs text-gray-400">모든 결과를 불러왔어요</div>
+                )}
               </div>
             )}
-          </Modal.Body>
-        </Modal>
-      )}
+          </div>
+        )}
+
+        {/* 후보 리스트 탭 */}
+        {!selectedPlace &&
+          activeTab === 'candidates' &&
+          (voteStatus === 'WAITING' ? (
+            <CandidateListSection
+              candidates={candidateList}
+              isOwner={isOwner}
+              onStartVote={() => {
+                if (!isOwner || !candidateList.length) return
+                startVote()
+              }}
+              onRemoveCandidate={removeCandidate}
+            />
+          ) : (
+            <VoteListSection
+              candidates={votingCandidates}
+              round={round}
+              isOwner={isOwner}
+              voteStatus={voteStatus}
+              selectedCandidateId={selectedCandidateId}
+              onVote={handleVote}
+              onViewDetail={handleViewDetail}
+              onEndVote={endVote}
+              onResetVote={resetVote}
+            />
+          ))}
+
+        {/* 방장 최종 선택 Modal */}
+        {!selectedPlace && voteStatus === 'OWNER_PICK' && (
+          <Modal title={isOwner ? '최종 장소를 선택해주세요' : '방장이 최종 선택 중입니다'} onClose={() => {}}>
+            <Modal.Body>
+              {!isOwner ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <p className="text-gray-500 text-sm text-center">
+                    결선 투표에서도 동률이 발생했습니다.
+                    <br />
+                    방장이 최종 장소를 선택하고 있습니다...
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <p className="text-gray-500 text-sm mb-2">결선 투표에서도 동률이 발생했습니다. 최종 장소를 선택해주세요.</p>
+                  {votingCandidates.map(candidate => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl hover:border-primary hover:bg-primary-bg transition-colors text-left"
+                      onClick={() => ownerSelect(candidate.id)}
+                    >
+                      <div className="w-14 h-14 bg-gray-200 rounded-lg shrink-0 overflow-hidden">
+                        {candidate.imageUrl ? (
+                          <img src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-linear-to-br from-gray-100 to-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-800 truncate">{candidate.name}</h4>
+                        <p className="text-xs text-gray-500">{candidate.category}</p>
+                        {candidate.rating !== undefined && <span className="text-xs text-yellow-500">★ {candidate.rating.toFixed(1)}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Modal.Body>
+          </Modal>
+        )}
+      </div>
+
+      {/* 토글 버튼 - 패널 외부에 위치 */}
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        className="flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-colors self-center"
+        aria-label={isCollapsed ? '패널 열기' : '패널 접기'}
+      >
+        {isCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
+      </button>
     </div>
   )
 }
