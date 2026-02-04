@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, useMemo, memo, forwardRef } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
@@ -31,21 +31,24 @@ interface WhiteboardCanvasProps {
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
 }
+interface CurrentDrawingLineProps {
+  ref?: React.Ref<Konva.Line>
+}
+
 // 드로잉 중인 라인 컴포넌트
-const CurrentDrawingLine = memo(
-  forwardRef<Konva.Line>((_, ref) => (
-    <Line
-      ref={ref}
-      stroke={DEFAULT_LINE.stroke}
-      strokeWidth={DEFAULT_LINE.strokeWidth}
-      tension={DEFAULT_LINE.tension}
-      lineCap={DEFAULT_LINE.lineCap}
-      lineJoin={DEFAULT_LINE.lineJoin}
-      globalCompositeOperation="source-over"
-      listening={false}
-    />
-  )),
-)
+const CurrentDrawingLine = memo(({ ref }: CurrentDrawingLineProps) => (
+  <Line
+    ref={ref}
+    stroke={DEFAULT_LINE.stroke}
+    strokeWidth={DEFAULT_LINE.strokeWidth}
+    tension={DEFAULT_LINE.tension}
+    lineCap={DEFAULT_LINE.lineCap}
+    lineJoin={DEFAULT_LINE.lineJoin}
+    globalCompositeOperation="source-over"
+    listening={false}
+  />
+))
+
 CurrentDrawingLine.displayName = 'CurrentDrawingLine'
 
 export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
