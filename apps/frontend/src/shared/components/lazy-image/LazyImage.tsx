@@ -31,7 +31,7 @@ export const LazyImage = ({ src, alt, className, rootMargin = '100px' }: LazyIma
 
     observer.observe(target)
     return () => observer.disconnect()
-  }, [rootMargin])
+  }, [isInView, rootMargin])
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
