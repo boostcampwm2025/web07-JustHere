@@ -10,7 +10,7 @@ interface LazyImageProps {
 }
 
 export const LazyImage = ({ src, alt, className, rootMargin = '100px' }: LazyImageProps) => {
-  const [isInView, setIsInView] = useState(false)
+  const [isInView, setIsInView] = useState(typeof IntersectionObserver === 'undefined')
   const [isLoaded, setIsLoaded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -40,6 +40,7 @@ export const LazyImage = ({ src, alt, className, rootMargin = '100px' }: LazyIma
           src={src}
           alt={alt}
           onLoad={() => setIsLoaded(true)}
+          onError={() => setIsLoaded(true)}
           className={cn('w-full h-full object-cover transition-opacity duration-300', isLoaded ? 'opacity-100' : 'opacity-0')}
         />
       )}
