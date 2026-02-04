@@ -7,6 +7,7 @@ import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/ho
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
+import type { TabType } from '@/pages/room/constants'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -23,7 +24,7 @@ export default function RoomPage() {
   const [searchResultsByCategory, setSearchResultsByCategory] = useState<Record<string, GooglePlace[]>>({})
   const [candidatePlaceIds, setCandidatePlaceIds] = useState<string[]>([])
   const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
-  const [activeLocationTab, setActiveLocationTab] = useState<'locations' | 'candidates'>('locations')
+  const [activeLocationTab, setActiveLocationTab] = useState<TabType>('locations')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
   const lastHandledCategoryErrorRef = useRef<string | null>(null)
@@ -131,7 +132,7 @@ export default function RoomPage() {
   )
 
   const handleActiveLocationTab = useCallback(
-    (tab: 'locations' | 'candidates') => {
+    (tab: TabType) => {
       handlePlaceSelect(null)
       setActiveLocationTab(tab)
     },
