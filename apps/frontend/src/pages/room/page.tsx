@@ -26,6 +26,7 @@ export default function RoomPage() {
   const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
   const [activeLocationTab, setActiveLocationTab] = useState<TabType>('locations')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
+  const [isLocationListCollapsed, setIsLocationListCollapsed] = useState(false)
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
   const lastHandledCategoryErrorRef = useRef<string | null>(null)
   const activeCategoryId = useMemo(() => resolveActiveCategoryId(categories, selectedCategoryId), [categories, selectedCategoryId])
@@ -227,6 +228,8 @@ export default function RoomPage() {
           selectedPlace={activeSelectedPlace}
           onPlaceSelect={handlePlaceSelect}
           candidatePlaces={candidatePlaces}
+          isCollapsed={isLocationListCollapsed}
+          onToggleCollapse={() => setIsLocationListCollapsed(prev => !prev)}
         />
         <WhiteboardSection
           roomId={roomId}
