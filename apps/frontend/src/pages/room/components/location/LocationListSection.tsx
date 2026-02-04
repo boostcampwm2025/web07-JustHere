@@ -335,12 +335,12 @@ export const LocationListSection = ({
   ]
 
   return (
-    <div className="relative flex h-full">
+    <div className={cn('relative h-full transition-all duration-300', isCollapsed ? 'w-6' : 'w-[426px]')}>
       {/* 패널 컨텐츠 */}
       <div
         className={cn(
-          'flex flex-col h-full bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden',
-          isCollapsed ? 'w-0' : 'w-[420px]',
+          'flex flex-col w-[420px] h-full bg-white border-l border-gray-200 transition-transform duration-300',
+          isCollapsed && '-translate-x-full',
         )}
       >
         {/* Header Section */}
@@ -549,11 +549,14 @@ export const LocationListSection = ({
         )}
       </div>
 
-      {/* 토글 버튼 - 패널 외부에 위치 */}
+      {/* 토글 버튼 */}
       <button
         type="button"
         onClick={onToggleCollapse}
-        className="flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-colors self-center"
+        className={cn(
+          'absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300 z-10',
+          isCollapsed ? 'left-0' : 'left-[420px]',
+        )}
         aria-label={isCollapsed ? '패널 열기' : '패널 접기'}
       >
         {isCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
