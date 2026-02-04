@@ -6,7 +6,15 @@ import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
 import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
 import { getLineBoundingBox, makeKey, createSelectedItemsSet } from '@/pages/room/utils'
 import { DEFAULT_LINE, DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
-import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse, useYjsSocket } from '@/pages/room/hooks'
+import {
+  useCanvasTransform,
+  useCursorChat,
+  useCanvasKeyboard,
+  useCanvasDraw,
+  useCanvasMouse,
+  useYjsSocket,
+  useCanvasStageTransform,
+} from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
@@ -15,13 +23,16 @@ import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
+
 interface WhiteboardCanvasProps {
   roomId: string
   canvasId: string
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
+  canvasTransformRef?: React.MutableRefObject<{ x: number; y: number; scale: number }>
 }
+
 interface CurrentDrawingLineProps {
   ref?: React.Ref<Konva.Line>
 }
@@ -42,7 +53,14 @@ const CurrentDrawingLine = memo(({ ref }: CurrentDrawingLineProps) => (
 
 CurrentDrawingLine.displayName = 'CurrentDrawingLine'
 
-export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCardPlaced, onPlaceCardCanceled }: WhiteboardCanvasProps) => {
+export const WhiteboardCanvas = ({
+  roomId,
+  canvasId,
+  pendingPlaceCard,
+  onPlaceCardPlaced,
+  onPlaceCardCanceled,
+  canvasTransformRef,
+}: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
   const shapeRefs = useRef(new Map<string, Konva.Group>())
@@ -255,6 +273,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     userName,
   })
 
+  const { handleDragEnd, handleWheelZoom } = useCanvasStageTransform({
+    stageRef,
+    canvasTransformRef,
+    onWheel: handleWheel, // useCanvasMouse의 handleWheel을 전달
+  })
+
   useEffect(() => {
     const transformer = transformerRef.current
     if (!transformer) return
@@ -338,13 +362,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onWheel={handleWheel}
+        onWheel={handleWheelZoom}
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
         onClick={handleStageClick}
         onTap={handleStageClick}
         onContextMenu={e => e.evt.preventDefault()}
+        onDragEnd={handleDragEnd}
       >
         <Layer>
           {zIndexOrder.map(({ type, id }) => {

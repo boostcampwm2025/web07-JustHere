@@ -1,3 +1,5 @@
+export type ToggleType = 'map' | 'canvas'
+
 export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
 
 export type CanvasItemType = 'postit' | 'line' | 'placeCard' | 'textBox'
