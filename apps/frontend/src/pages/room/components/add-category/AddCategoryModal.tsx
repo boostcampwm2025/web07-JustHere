@@ -43,7 +43,7 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
     onClose?.()
   }
 
-  const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory
+  const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() || customCategory.length > 15 : !selectedCategory
 
   return (
     <Modal title="카테고리 추가" onClose={onClickClose} closeable={closeable}>
@@ -88,9 +88,14 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
                 value={customCategory}
                 onChange={e => setCustomCategory(e.target.value)}
                 placeholder="카테고리 이름을 입력하세요"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                maxLength={15}
+                className={cn(
+                  'w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                  customCategory.length > 15 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200',
+                )}
                 autoFocus
               />
+              {customCategory.length > 15 && <span className="text-xs text-red-500">15자 이하로 입력해주세요</span>}
             </div>
           )}
         </div>
