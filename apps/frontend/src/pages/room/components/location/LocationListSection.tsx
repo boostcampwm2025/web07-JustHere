@@ -471,7 +471,7 @@ export const LocationListSection = ({
             candidates={candidateList}
             isOwner={isOwner}
             onStartVote={() => {
-              if (!isOwner) return
+              if (!isOwner || !candidateList.length) return
               startVote()
             }}
             onRemoveCandidate={removeCandidate}

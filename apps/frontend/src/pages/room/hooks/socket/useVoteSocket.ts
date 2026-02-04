@@ -336,6 +336,13 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
 
     // [S->C] vote:error - 에러 발생 시
     const handleError = (payload: VoteErrorPayload) => {
+      // Optimistic Update 롤백
+      // 투표 시작 실패 시 상태를 WAITING으로 되돌림
+      if (payload.errorType === 'NO_CANDIDATES') {
+        setStatus(prev => (prev === 'IN_PROGRESS' ? 'WAITING' : prev))
+        addSocketBreadcrumb('vote:error:rollback', { roomId, errorType: payload.errorType }, 'warning')
+      }
+
       setError(payload)
       addSocketBreadcrumb('vote:error', { roomId, code: payload.errorType, message: payload.message }, 'error')
     }
