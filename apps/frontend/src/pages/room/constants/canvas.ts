@@ -51,3 +51,6 @@ export const DEFAULT_LINE = {
   lineJoin: 'round',
   tool: 'pen',
 } as const
+
+/** 커서 채팅 최대 글자수 */
+export const MAX_CURSOR_CHAT_LENGTH = 50
