@@ -553,7 +553,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                 ellipsis={true}
                 wrap="none"
               />
-              {pendingPlaceCard.rating && (
+              {pendingPlaceCard.rating != null && (
                 <>
                   <Text text="★" x={12} y={130} fontSize={11} fill="#FACC15" />
                   <Text
@@ -569,7 +569,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               <Text
                 text={pendingPlaceCard.category || ''}
                 x={12}
-                y={pendingPlaceCard.rating ? 146 : 130}
+                y={pendingPlaceCard.rating != null ? 146 : 130}
                 width={PLACE_CARD_WIDTH - 24}
                 fontSize={11}
                 fill="#6B7280"
@@ -577,7 +577,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               <Text
                 text={pendingPlaceCard.address}
                 x={12}
-                y={pendingPlaceCard.rating ? 162 : 146}
+                y={pendingPlaceCard.rating != null ? 162 : 146}
                 width={PLACE_CARD_WIDTH - 24}
                 fontSize={11}
                 fontFamily="Arial, sans-serif"

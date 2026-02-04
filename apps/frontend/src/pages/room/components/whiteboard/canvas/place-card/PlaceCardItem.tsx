@@ -109,7 +109,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       />
 
       {/* 평점 및 리뷰 개수 */}
-      {card.rating && (
+      {card.rating != null && (
         <>
           <Text text="★" x={scaledPadding} y={scaledImageHeight + 30 * scale} fontSize={11 * scale} fill="#FACC15" />
           <Text
@@ -127,7 +127,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       <Text
         text={card.category || ''}
         x={scaledPadding}
-        y={scaledImageHeight + (card.rating ? 46 : 30) * scale}
+        y={scaledImageHeight + (card.rating != null ? 46 : 30) * scale}
         width={textWidth}
         fontSize={11 * scale}
         fill="#6B7280"
@@ -137,7 +137,7 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
       <Text
         text={card.address}
         x={scaledPadding}
-        y={scaledImageHeight + (card.rating ? 62 : 46) * scale}
+        y={scaledImageHeight + (card.rating != null ? 62 : 46) * scale}
         width={textWidth}
         fontSize={11 * scale}
         fill={PLACE_CARD_COLORS.ADDRESS}
