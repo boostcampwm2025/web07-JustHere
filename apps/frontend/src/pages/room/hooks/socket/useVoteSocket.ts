@@ -378,7 +378,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       socket.off(VOTE_EVENTS.participantLeft, handleParticipantLeft)
       socket.off(VOTE_EVENTS.error, handleError)
     }
-  }, [enabled, roomId, categoryId, userId, status, resolveSocket, showToast])
+  }, [enabled, roomId, categoryId, userId, resolveSocket, showToast])
 
   const join = useCallback(() => {
     if (!enabled || !roomId || !categoryId) return
