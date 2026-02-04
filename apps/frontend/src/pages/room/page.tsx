@@ -6,7 +6,7 @@ import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
-import { Button, SEO } from '@/shared/components'
+import { SEO } from '@/shared/components'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -31,7 +31,7 @@ export default function RoomPage() {
   const activeSearchResults = searchResultsByCategory[activeCategoryId] ?? []
   const activeSelectedPlace = selectedPlaceByCategory[activeCategoryId] ?? null
   const candidatePlaces = useResolvedPlaces(candidatePlaceIds, activeSearchResults)
-  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(() => !categories.length)
+
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
   }
@@ -174,25 +174,14 @@ export default function RoomPage() {
           ownerId={ownerId}
           onTransferOwner={transferOwner}
         />
+
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-          {isCreateCategoryModalOpen ? (
-            <AddCategoryModal
-              onClose={() => setIsCreateCategoryModalOpen(false)}
-              onComplete={name => {
-                createCategory(name)
-              }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center text-gray-disable">
-              <div className="text-center">
-                <p className="text-lg font-semibold mb-2">캔버스가 없습니다</p>
-                <p className="text-sm">새 카테고리를 추가해주세요</p>
-              </div>
-              <Button className="mt-4" onClick={() => setIsCreateCategoryModalOpen(true)}>
-                추가하기
-              </Button>
-            </div>
-          )}
+          <AddCategoryModal
+            onComplete={name => {
+              createCategory(name)
+            }}
+            closeable={false}
+          />
         </div>
       </div>
     )

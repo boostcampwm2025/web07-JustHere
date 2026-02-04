@@ -17,11 +17,12 @@ const categories: Category[] = [
 ]
 
 interface AddCategoryModalProps {
-  onClose: () => void
   onComplete: (category: string) => void
+  onClose?: () => void
+  closeable?: boolean
 }
 
-export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps) => {
+export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddCategoryModalProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined)
   const [customCategory, setCustomCategory] = useState('')
 
@@ -39,13 +40,13 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
   const onClickClose = () => {
     setSelectedCategory(undefined)
     setCustomCategory('')
-    onClose()
+    onClose?.()
   }
 
   const isSubmitDisabled = selectedCategory === '직접 입력' ? !customCategory.trim() : !selectedCategory
 
   return (
-    <Modal title="카테고리 추가" onClose={onClickClose}>
+    <Modal title="카테고리 추가" onClose={onClickClose} closeable={closeable}>
       <Modal.Body className="pt-0">
         <div className="flex flex-col gap-6">
           <span className="text-sm text-gray-700">어떤 종류의 장소를 찾고 계신가요?</span>
@@ -96,9 +97,11 @@ export const AddCategoryModal = ({ onClose, onComplete }: AddCategoryModalProps)
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="outline" size="sm" onClick={onClickClose} className="bg-white">
-          취소
-        </Button>
+        {closeable && (
+          <Button variant="outline" size="sm" onClick={onClickClose} className="bg-white">
+            취소
+          </Button>
+        )}
         <Button variant="primary" size="sm" onClick={onSelectCategory} disabled={isSubmitDisabled}>
           선택 완료
         </Button>
