@@ -1,7 +1,7 @@
-import { useGooglePlaceDetails } from '@/shared/hooks'
+import { useMemo } from 'react'
+import { useGooglePlaceDetails, useGooglePhotos } from '@/shared/hooks'
 import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
-import { getPhotoUrl } from '@/shared/api'
 import { renderStars, getPriceRangeText, getParkingText } from './place-detail.utils'
 import { Button } from '@/shared/components'
 import { ArrowLeftIcon, MapMarkerIcon } from '@/shared/assets'
@@ -27,11 +27,22 @@ export const PlaceDetailContent = ({ place, className, showHeader = false, onBac
   const priceRangeText = getPriceRangeText(details.priceRange)
   const parkingText = getParkingText(details.parkingOptions)
 
-  const sliderImages =
-    details.photos?.slice(0, 5).map(photo => ({
-      src: getPhotoUrl(photo.name, 800),
-      alt: details.displayName.text,
-    })) || []
+  const photoNames = useMemo(() => (details.photos?.slice(0, 5) ?? []).map(p => p.name), [details.photos])
+  const photoQueries = useGooglePhotos(photoNames, 800, 800)
+
+  const photoData = photoQueries.map(q => q.data)
+
+  const sliderImages = useMemo(() => {
+    return photoData
+      .map(data => {
+        if (!data) return null
+        return {
+          src: data,
+          alt: details.displayName.text,
+        }
+      })
+      .filter((img): img is { src: string; alt: string } => img !== null)
+  }, [photoData, details.displayName.text])
 
   if (isLoading) {
     return (

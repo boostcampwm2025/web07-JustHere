@@ -46,10 +46,3 @@ export type RoomOwnerTransferredPayload = {
   previousOwnerId: string
   newOwnerId: string
 }
-
-// [S->C] room:region_updated
-export type RoomRegionUpdatedPayload = {
-  x: number
-  y: number
-  place_name: string | null
-}

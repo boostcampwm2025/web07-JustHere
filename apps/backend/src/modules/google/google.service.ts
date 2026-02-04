@@ -136,17 +136,14 @@ export class GoogleService {
     }
   }
 
-  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ data: Buffer; contentType: string }> {
+  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ photoUri: string }> {
     try {
-      const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&key=${this.apiKey}`
+      const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&skipHttpRedirect=true&key=${this.apiKey}`
 
-      const response = await axios.get<ArrayBuffer>(url, {
-        responseType: 'arraybuffer',
-      })
+      const response = await axios.get<{ photoUri: string }>(url)
 
       return {
-        data: Buffer.from(response.data),
-        contentType: (response.headers['content-type'] as string) || 'image/jpeg',
+        photoUri: response.data.photoUri,
       }
     } catch (error) {
       this.handleError(error)
