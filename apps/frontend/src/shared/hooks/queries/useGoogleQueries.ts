@@ -13,6 +13,8 @@ export const useGoogleSearch = (params: SearchTextParams) => {
     queryKey: googleKeys.search(params),
     queryFn: () => searchText(params),
     enabled: !!params.textQuery,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60,
   })
 }
 
@@ -32,8 +34,8 @@ export const useInfiniteGoogleSearch = (params: Omit<SearchTextParams, 'pageToke
     initialPageParam: undefined as string | undefined,
     getNextPageParam: lastPage => lastPage.nextPageToken,
     enabled: !!textQuery,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60,
     select: data => ({
       pages: data.pages.flatMap(page => page.places),
       pageParams: data.pageParams,
@@ -46,6 +48,8 @@ export const useGooglePlaceDetails = (placeId: string) => {
     queryKey: googleKeys.placeDetails(placeId),
     queryFn: () => getPlaceDetails(placeId),
     enabled: !!placeId,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60,
   })
 }
 
@@ -58,7 +62,7 @@ export const useGooglePhotos = (photoNames: (string | undefined | null)[], maxWi
         queryKey: googleKeys.photo(name, maxWidthPx, maxHeightPx),
         queryFn: () => getPhotoUrl(name, maxWidthPx, maxHeightPx),
         staleTime: Infinity,
-        gcTime: 1000 * 60 * 60, // Cache for 1 hour
+        gcTime: 1000 * 60 * 60,
       })),
   })
 }
