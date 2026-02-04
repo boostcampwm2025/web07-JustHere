@@ -175,16 +175,14 @@ export default function RoomPage() {
           onTransferOwner={transferOwner}
         />
 
-        {!categories.length && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-            <AddCategoryModal
-              onComplete={name => {
-                createCategory(name)
-              }}
-              closeable={false}
-            />
-          </div>
-        )}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+          <AddCategoryModal
+            onComplete={name => {
+              createCategory(name)
+            }}
+            closeable={false}
+          />
+        </div>
       </div>
     )
   }
