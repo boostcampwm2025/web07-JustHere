@@ -1,5 +1,8 @@
 import React, { useRef, useEffect } from 'react'
 import { getParticipantColor, cn } from '@/shared/utils'
+import { useToast } from '@/shared/hooks'
+
+const MAX_CHAT_LENGTH = 50
 
 interface CursorChatInputProps {
   position: { x: number; y: number }
@@ -12,6 +15,7 @@ interface CursorChatInputProps {
 
 export const CursorChatInput = ({ position, name, isFading, message, onMessageChange, onEscape }: CursorChatInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (inputRef.current) {
@@ -20,7 +24,12 @@ export const CursorChatInput = ({ position, name, isFading, message, onMessageCh
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onMessageChange(e.target.value)
+    const newValue = e.target.value
+    if (newValue.length > MAX_CHAT_LENGTH) {
+      showToast(`메시지는 ${MAX_CHAT_LENGTH}자까지 입력할 수 있습니다.`, 'error')
+      return
+    }
+    onMessageChange(newValue)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -41,18 +50,21 @@ export const CursorChatInput = ({ position, name, isFading, message, onMessageCh
         transition: isFading ? 'opacity 3s ease-out' : 'none',
       }}
     >
-      <input
-        ref={inputRef}
-        type="text"
-        value={message}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder="메시지 입력..."
-        className={cn(
-          'px-3 py-1.5 text-sm text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-[200px]',
-          getParticipantColor(name),
-        )}
-      />
+      <div className="relative inline-block">
+        <span className="invisible whitespace-pre px-3 py-1.5 text-sm min-w-[100px] inline-block">{message || '메시지 입력...'}</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={message}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="메시지 입력..."
+          className={cn(
+            'absolute inset-0 px-3 py-1.5 text-sm text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-full',
+            getParticipantColor(name),
+          )}
+        />
+      </div>
     </div>
   )
 }

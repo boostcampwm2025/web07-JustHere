@@ -142,6 +142,7 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
+            width: 'max-content',
           },
         }}
       >
@@ -150,7 +151,7 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
 
           <div
             className={cn(
-              'ml-5 -mt-1 text-white shadow-lg whitespace-nowrap',
+              'ml-5 -mt-1 text-white shadow-lg whitespace-nowrap w-max',
               getParticipantColor(cursor.name),
               cursor.chatActive && !isChatFaded ? 'px-3 py-2' : 'px-2 py-1',
             )}
@@ -163,10 +164,10 @@ export const AnimatedCursor = React.memo(({ cursor }: AnimatedCursorProps) => {
 
             {cursor.chatActive && (
               <div
-                className="text-sm wrap-break-word max-w-[200px] overflow-hidden"
+                className="text-sm"
                 style={{
                   opacity: isChatFading || isChatFaded ? 0 : 1,
-                  transition: isChatFading ? 'opacity 3s ease-out, max-height 0.3s ease-out 3s' : 'opacity 0.1s ease-out, max-height 0.3s ease-out',
+                  transition: isChatFading ? 'opacity 3s ease-out' : 'opacity 0.1s ease-out',
                 }}
               >
                 {cursor.chatMessage || 'ㅤ'}
