@@ -5,10 +5,14 @@ import { AppError, getDefaultErrorMessage } from '@/shared/utils'
 const isApiErrorResponse = (data: unknown): data is ApiErrorResponse => {
   if (!data || typeof data !== 'object') return false
   const target = data as ApiErrorResponse
-  return target.status === 'ERROR' && typeof target.errorType === 'string' && typeof target.message === 'string'
+  return (
+    target.status === 'ERROR' && typeof target.errorType === 'string' && typeof target.message === 'string' && typeof target.statusCode === 'number'
+  )
 }
 
-export const apiClient = axios.create()
+export const apiClient = axios.create({
+  timeout: 10000,
+})
 
 apiClient.interceptors.response.use(
   response => response,
