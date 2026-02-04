@@ -1,6 +1,6 @@
+import { Catch, ArgumentsHost, HttpException } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType, ResponseStatus, ErrorStatusMap } from '@/lib/types/response.type'
-import { Catch, ArgumentsHost } from '@nestjs/common'
 import { BaseWsExceptionFilter } from '@nestjs/websockets'
 import { Socket } from 'socket.io'
 
@@ -24,6 +24,22 @@ export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
       message = exception.message
       statusCode = ErrorStatusMap[exception.type] || 500
     }
+
+    // ValidationPipe 등 HttpException 처리
+    else if (exception instanceof HttpException) {
+      statusCode = exception.getStatus()
+      const res = exception.getResponse()
+
+      if (typeof res === 'string') {
+        message = res
+      } else {
+        const msg = (res as { message: string | string[] }).message
+        message = Array.isArray(msg) ? msg.join(', ') : msg
+      }
+
+      errorType = ErrorType.BadRequest
+    }
+
     // 일반 에러 처리
     else if (exception instanceof Error) {
       message = exception.message
