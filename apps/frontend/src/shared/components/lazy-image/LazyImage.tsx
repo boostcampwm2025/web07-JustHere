@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/shared/utils'
-import { Skeleton } from './Skeleton'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 
 interface LazyImageProps {
   src: string
