@@ -3,7 +3,7 @@ import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import { throttle, type ThrottledFunction } from '@/shared/utils/throttle'
 import type { Line as LineType } from '@/shared/types'
-import { DEFAULT_LINE } from '../../constants'
+import { DEFAULT_LINE } from '@/pages/room/constants'
 
 interface UseCanvasDrawProps {
   addLine: (line: LineType) => void
