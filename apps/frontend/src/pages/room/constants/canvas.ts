@@ -1,6 +1,6 @@
 /** 플레이스 카드(장소 카드) 크기 */
 export const PLACE_CARD_WIDTH = 240
-export const PLACE_CARD_HEIGHT = 200
+export const PLACE_CARD_HEIGHT = 220
 export const PLACE_CARD_PADDING = 12
 export const PLACE_CARD_IMAGE_HEIGHT = 100
 export const PLACE_CARD_PLACEHOLDER_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='

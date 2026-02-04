@@ -3,8 +3,8 @@ import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
-import type { PlaceCard, SelectedItem, ToolType, PostIt, TextBox, Line as LineType } from '@/shared/types'
-import { getLineBoundingBox } from '@/pages/room/utils'
+import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
+import { getLineBoundingBox, makeKey, createSelectedItemsSet } from '@/pages/room/utils'
 import { DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useCanvasTransform, useCursorChat, useCanvasKeyboard, useCanvasDraw, useCanvasMouse, useYjsSocket } from '@/pages/room/hooks'
 import { AnimatedCursor } from './animated-cursor'
@@ -15,15 +15,6 @@ import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
-
-type UnifiedCanvasItem =
-  | { type: 'line'; data: LineType }
-  | { type: 'postit'; data: PostIt }
-  | { type: 'placeCard'; data: PlaceCard }
-  | { type: 'textBox'; data: TextBox }
-
-const getRefKey = (type: UnifiedCanvasItem['type'], id: string) => `${type}:${id}`
-
 interface WhiteboardCanvasProps {
   roomId: string
   canvasId: string
@@ -149,25 +140,37 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     setContextMenu(null)
   }, [canvasId, deleteCanvasItem, roomId, selectedItems])
 
-  const selectedPostItIds = useMemo(() => selectedItems.filter(item => item.type === 'postit').map(item => item.id), [selectedItems])
+  // 선택된 포스트잇 ID Set
+  const selectedPostItIdsSet = useMemo(
+    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === 'postit', keyFn: item => item.id }),
+    [selectedItems],
+  )
+
+  // PostItColorPicker에 전달하기 위한 배열
+  const selectedPostItIds = useMemo(() => Array.from(selectedPostItIdsSet), [selectedPostItIdsSet])
+
+  // 선택된 모든 아이템 Set
+  const selectedItemsSet = useMemo(() => createSelectedItemsSet(selectedItems, { keyFn: item => makeKey(item.type, item.id) }), [selectedItems])
 
   const selectedPostItCurrentFill = useMemo(() => {
-    if (selectedPostItIds.length === 0) return undefined
+    if (selectedPostItIdsSet.size === 0) return undefined
 
-    const fills = selectedPostItIds.map(id => postIts.find(p => p.id === id)?.fill).filter((f): f is string => f != null)
+    const fills = Array.from(selectedPostItIdsSet)
+      .map(id => postIts.find(p => p.id === id)?.fill)
+      .filter((f): f is string => f != null)
     if (fills.length === 0) return undefined
 
     const first = fills[0]
     return fills.every(f => f === first) ? first : undefined
-  }, [selectedPostItIds, postIts])
+  }, [selectedPostItIdsSet, postIts])
 
   const handlePostItColorChange = useCallback(
     (color: string) => {
-      selectedPostItIds.forEach(id => {
+      selectedPostItIdsSet.forEach(id => {
         updatePostIt(id, { fill: color })
       })
     },
-    [selectedPostItIds, updatePostIt],
+    [selectedPostItIdsSet, updatePostIt],
   )
 
   const hasSelectedItems = selectedItems.length > 0
@@ -180,6 +183,8 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     isDrawing,
     cancelDrawing,
     handleToolChange,
+    undo,
+    redo,
   })
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
@@ -233,7 +238,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     if (!transformer) return
 
     const applyNodes = () => {
-      const nodes = selectedItems.map(item => shapeRefs.current.get(getRefKey(item.type, item.id))).filter((node): node is Konva.Group => !!node)
+      const nodes = selectedItems.map(item => shapeRefs.current.get(makeKey(item.type, item.id))).filter((node): node is Konva.Group => !!node)
       transformer.nodes(nodes)
     }
 
@@ -243,42 +248,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
     return () => cancelAnimationFrame(id)
   }, [selectedItems])
 
-  const unifiedItems = useMemo<UnifiedCanvasItem[]>(() => {
-    const linesMap = new Map(lines.map(line => [line.id, line]))
-    const postItsMap = new Map(postIts.map(postIt => [postIt.id, postIt]))
-    const placeCardsMap = new Map(placeCards.map(card => [card.id, card]))
-    const textBoxesMap = new Map(textBoxes.map(textBox => [textBox.id, textBox]))
+  const linesMap = useMemo(() => new Map(lines.map(line => [line.id, line])), [lines])
+  const postItsMap = useMemo(() => new Map(postIts.map(postIt => [postIt.id, postIt])), [postIts])
+  const placeCardsMap = useMemo(() => new Map(placeCards.map(card => [card.id, card])), [placeCards])
+  const textBoxesMap = useMemo(() => new Map(textBoxes.map(textBox => [textBox.id, textBox])), [textBoxes])
 
-    // z-index 순서에 따라 요소를 배열로 변환
-    const items: UnifiedCanvasItem[] = []
-    zIndexOrder.forEach(({ type, id }) => {
-      if (type === 'line') {
-        const line = linesMap.get(id)
-        if (line) {
-          items.push({ type: 'line', data: line })
-        }
-      } else if (type === 'postit') {
-        const postIt = postItsMap.get(id)
-        if (postIt) {
-          items.push({ type: 'postit', data: postIt })
-        }
-      } else if (type === 'placeCard') {
-        const card = placeCardsMap.get(id)
-        if (card) {
-          items.push({ type: 'placeCard', data: card })
-        }
-      } else if (type === 'textBox') {
-        const textBox = textBoxesMap.get(id)
-        if (textBox) {
-          items.push({ type: 'textBox', data: textBox })
-        }
-      }
-    })
-
-    return items
-  }, [lines, postIts, placeCards, textBoxes, zIndexOrder])
-
-  const getCursorStyle = () => {
+  const cursorStyle = useMemo(() => {
     if (pendingPlaceCard) {
       return 'cursor-crosshair'
     }
@@ -294,10 +269,12 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
       default:
         return 'cursor-default'
     }
-  }
+  }, [pendingPlaceCard, effectiveTool])
+
+  const canDrag = useMemo(() => effectiveTool === 'cursor' && !pendingPlaceCard, [effectiveTool, pendingPlaceCard])
 
   return (
-    <div className={cn('relative w-full h-full bg-slate-50', getCursorStyle())} onContextMenu={e => e.preventDefault()} role="presentation">
+    <div className={cn('relative w-full h-full bg-slate-50', cursorStyle)} onContextMenu={e => e.preventDefault()} role="presentation">
       <Toolbar
         effectiveTool={effectiveTool}
         setActiveTool={handleToolChange}
@@ -316,6 +293,7 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
 
       {isChatActive && chatInputPosition && (
         <CursorChatInput
+          key={activeTool}
           position={chatInputPosition}
           name={userName}
           isFading={isChatFading}
@@ -347,16 +325,16 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
         onContextMenu={e => e.evt.preventDefault()}
       >
         <Layer>
-          {unifiedItems.map(item => {
-            const canDrag = effectiveTool === 'cursor' && !pendingPlaceCard
+          {zIndexOrder.map(({ type, id }) => {
+            if (type === 'line') {
+              const line = linesMap.get(id)
+              if (!line) return null
 
-            if (item.type === 'line') {
-              const line = item.data
               const box = getLineBoundingBox(line.points)
 
               return (
                 <Group
-                  key={getRefKey('line', line.id)}
+                  key={makeKey('line', line.id)}
                   x={box.x}
                   y={box.y}
                   width={box.width}
@@ -364,9 +342,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   draggable={canDrag}
                   ref={node => {
                     if (node) {
-                      shapeRefs.current.set(getRefKey('line', line.id), node)
+                      shapeRefs.current.set(makeKey('line', line.id), node)
                     } else {
-                      shapeRefs.current.delete(getRefKey('line', line.id))
+                      shapeRefs.current.delete(makeKey('line', line.id))
                     }
                   }}
                   onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
@@ -414,11 +392,13 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               )
             }
 
-            if (item.type === 'postit') {
-              const postIt = item.data
+            if (type === 'postit') {
+              const postIt = postItsMap.get(id)
+              if (!postIt) return null
+
               return (
                 <EditablePostIt
-                  key={getRefKey('postit', postIt.id)}
+                  key={makeKey('postit', postIt.id)}
                   postIt={postIt}
                   draggable={canDrag}
                   onEditStart={stopCapturing}
@@ -433,9 +413,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(getRefKey('postit', postIt.id), node)
+                      shapeRefs.current.set(makeKey('postit', postIt.id), node)
                     } else {
-                      shapeRefs.current.delete(getRefKey('postit', postIt.id))
+                      shapeRefs.current.delete(makeKey('postit', postIt.id))
                     }
                   }}
                   onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
@@ -443,11 +423,13 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               )
             }
 
-            if (item.type === 'placeCard') {
-              const card = item.data
+            if (type === 'placeCard') {
+              const card = placeCardsMap.get(id)
+              if (!card) return null
+
               return (
                 <PlaceCardItem
-                  key={getRefKey('placeCard', card.id)}
+                  key={makeKey('placeCard', card.id)}
                   card={card}
                   draggable={canDrag}
                   onDragEnd={(x, y) => {
@@ -458,9 +440,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onContextMenu={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(getRefKey('placeCard', card.id), node)
+                      shapeRefs.current.set(makeKey('placeCard', card.id), node)
                     } else {
-                      shapeRefs.current.delete(getRefKey('placeCard', card.id))
+                      shapeRefs.current.delete(makeKey('placeCard', card.id))
                     }
                   }}
                   onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
@@ -468,12 +450,14 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               )
             }
 
-            if (item.type === 'textBox') {
-              const textBox = item.data
-              const isSelected = selectedItems.some(i => i.id === textBox.id && i.type === 'textBox')
+            if (type === 'textBox') {
+              const textBox = textBoxesMap.get(id)
+              if (!textBox) return null
+
+              const isSelected = selectedItemsSet.has(makeKey('textBox', textBox.id))
               return (
                 <EditableTextBox
-                  key={getRefKey('textBox', textBox.id)}
+                  key={makeKey('textBox', textBox.id)}
                   textBox={textBox}
                   draggable={canDrag}
                   isSelected={isSelected}
@@ -489,9 +473,9 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(getRefKey('textBox', textBox.id), node)
+                      shapeRefs.current.set(makeKey('textBox', textBox.id), node)
                     } else {
-                      shapeRefs.current.delete(getRefKey('textBox', textBox.id))
+                      shapeRefs.current.delete(makeKey('textBox', textBox.id))
                     }
                   }}
                   onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
@@ -530,33 +514,59 @@ export const WhiteboardCanvas = ({ roomId, canvasId, pendingPlaceCard, onPlaceCa
               <Rect
                 width={PLACE_CARD_WIDTH}
                 height={PLACE_CARD_HEIGHT}
-                fill="#FFFBE6"
-                opacity={0.6}
+                fill="#FFFFFF"
+                opacity={0.8}
                 cornerRadius={10}
                 stroke="#9CA3AF"
                 strokeWidth={2}
                 dash={[6, 6]}
+                shadowBlur={15}
+                shadowOffsetY={4}
+                shadowOpacity={0.1}
               />
+              <Rect width={PLACE_CARD_WIDTH} height={100} fill="#E5E7EB" opacity={0.8} cornerRadius={[10, 10, 0, 0]} />
               <Text
                 text={pendingPlaceCard.name}
                 x={12}
-                y={12}
+                y={110}
                 width={PLACE_CARD_WIDTH - 24}
                 fontSize={14}
                 fontFamily="Arial, sans-serif"
                 fontStyle="bold"
+                fill="#374151"
+                ellipsis={true}
+                wrap="none"
+              />
+              {pendingPlaceCard.rating != null && (
+                <>
+                  <Text text="★" x={12} y={130} fontSize={11} fill="#FACC15" />
+                  <Text
+                    text={`${pendingPlaceCard.rating.toFixed(1)}${pendingPlaceCard.userRatingCount ? ` (${pendingPlaceCard.userRatingCount.toLocaleString()})` : ''}`}
+                    x={26}
+                    y={130}
+                    width={PLACE_CARD_WIDTH - 38}
+                    fontSize={11}
+                    fill="#6B7280"
+                  />
+                </>
+              )}
+              <Text
+                text={pendingPlaceCard.category || ''}
+                x={12}
+                y={pendingPlaceCard.rating != null ? 146 : 130}
+                width={PLACE_CARD_WIDTH - 24}
+                fontSize={11}
                 fill="#6B7280"
-                wrap="word"
               />
               <Text
                 text={pendingPlaceCard.address}
                 x={12}
-                y={36}
+                y={pendingPlaceCard.rating != null ? 162 : 146}
                 width={PLACE_CARD_WIDTH - 24}
-                fontSize={12}
+                fontSize={11}
                 fontFamily="Arial, sans-serif"
-                fill="#9CA3AF"
-                wrap="word"
+                fill="#6B7280"
+                wrap="char"
               />
             </Group>
           )}

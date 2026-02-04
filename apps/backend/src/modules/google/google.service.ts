@@ -68,13 +68,18 @@ export class GoogleService {
         'places.rating',
         'places.userRatingCount',
         'places.photos',
+        'places.reviews',
         'places.regularOpeningHours',
         'places.priceLevel',
+        'places.priceRange',
         'places.nationalPhoneNumber',
         'places.websiteUri',
         'places.types',
         'places.primaryType',
         'places.primaryTypeDisplayName',
+        'places.parkingOptions',
+        'places.reservable',
+        'places.allowsDogs',
         'nextPageToken',
       ].join(',')
 

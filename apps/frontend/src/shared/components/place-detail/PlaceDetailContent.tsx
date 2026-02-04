@@ -4,8 +4,12 @@ import type { GooglePlace } from '@/shared/types'
 import { cn } from '@/shared/utils'
 import { renderStars, getPriceRangeText, getParkingText } from './place-detail.utils'
 import { Button } from '@/shared/components'
-import { ArrowLeftIcon } from '@/shared/assets'
+import { ArrowLeftIcon, MapMarkerIcon } from '@/shared/assets'
 import { ImageSlider } from './image-slider'
+
+const getGoogleMapsUrl = (placeId: string, placeName: string) => {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}&query_place_id=${placeId}`
+}
 
 export type PlaceDetailPlace = Pick<GooglePlace, 'id' | 'displayName' | 'formattedAddress'>
 
@@ -82,7 +86,18 @@ export const PlaceDetailContent = ({ place, className, showHeader = false, onBac
         {priceRangeText && <p className="text-sm text-gray-600 mb-2">{priceRangeText}</p>}
 
         {/* 주소 */}
-        <p className="text-gray-700">{details.formattedAddress}</p>
+        <p className="text-gray-700 mb-3">{details.formattedAddress}</p>
+
+        {/* 구글맵에서 보기 버튼 */}
+        <a
+          href={getGoogleMapsUrl(details.id, details.displayName.text)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+        >
+          <MapMarkerIcon className="w-4 h-4 text-red-500" />
+          Google Maps에서 보기
+        </a>
       </div>
 
       {/* 편의시설 태그 */}
