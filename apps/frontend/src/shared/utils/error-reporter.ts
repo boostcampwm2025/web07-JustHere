@@ -40,7 +40,7 @@ export class AppError extends Error {
 
 export const isAppError = (error: unknown): error is AppError => error instanceof AppError
 
-const TOAST_MESSAGES: Partial<Record<AppErrorCode, string>> = {
+const TOAST_MESSAGES: Partial<Record<AppErrorCode, string>> & { CLIENT_UNKNOWN: string } = {
   CLIENT_UNKNOWN: '잠시 후 다시 시도해주세요.',
   CLIENT_NETWORK_ERROR: '네트워크 연결이 원활하지 않습니다.',
   CLIENT_CLIPBOARD_WRITE_FAILED: '링크 복사에 실패했습니다.',
@@ -61,7 +61,7 @@ const ERROR_PAGE_MESSAGES: Partial<Record<AppErrorCode, string>> = {
 }
 
 export function getDefaultErrorMessage(code: AppErrorCode): string {
-  return TOAST_MESSAGES[code] ?? TOAST_MESSAGES.CLIENT_UNKNOWN!
+  return TOAST_MESSAGES[code] ?? TOAST_MESSAGES.CLIENT_UNKNOWN
 }
 
 export function getErrorDescription(code: AppErrorCode): string {
@@ -88,10 +88,13 @@ export function reportError(params: {
 }) {
   const level = params.level ?? 'error'
   const code = params.code ?? getErrorCode(params.error, 'CLIENT_UNKNOWN')
-  const context = params.context
   const message = params.message ?? resolveErrorMessage(params.error, code)
+
   const error = params.error instanceof Error ? params.error : new Error(message)
+
   const originalError = isAppError(params.error) ? params.error.originalError : undefined
+  const source = isAppError(params.error) ? params.error.source : undefined
+  const data = isAppError(params.error) ? params.error.data : undefined
 
   Sentry.addBreadcrumb({
     category: 'client',
@@ -99,14 +102,16 @@ export function reportError(params: {
     level,
     data: {
       code,
-      ...context,
+      source,
+      ...params.context,
     },
   })
 
   Sentry.captureException(error, {
-    tags: { code },
+    tags: { code, source },
     extra: {
-      ...context,
+      ...params.context,
+      data,
       originalError,
     },
   })
