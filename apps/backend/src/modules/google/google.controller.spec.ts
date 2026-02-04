@@ -93,7 +93,7 @@ describe('GoogleController', () => {
 
       await controller.getPhoto(placeId, photoId, maxWidth, maxHeight)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(expect.any(String) as string, maxWidth, maxHeight)
+      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, maxWidth, maxHeight)
     })
   })
 })
