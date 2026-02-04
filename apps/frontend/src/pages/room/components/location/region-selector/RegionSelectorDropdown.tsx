@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useGoogleSearch, useUpdateRoom } from '@/shared/hooks'
+import { useGoogleSearch, useUpdateRoom, useToast } from '@/shared/hooks'
 import { ChevronDownIcon } from '@/shared/assets'
 import { Divider, Dropdown, SearchInput } from '@/shared/components'
-import { cn } from '@/shared/utils'
+import { cn, getErrorCode, reportError, resolveErrorMessage } from '@/shared/utils'
 import type { GooglePlace } from '@/shared/types'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -20,6 +20,7 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const { data: results, isLoading } = useGoogleSearch({ textQuery: searchTerm })
+  const { showToast } = useToast()
 
   const { mutate: updateRoom } = useUpdateRoom(slug)
 
@@ -47,7 +48,9 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
           setSearchTerm('')
         },
         onError: error => {
-          console.error('지역 변경 실패:', error)
+          const code = getErrorCode(error, 'CLIENT_ROOM_UPDATE_FAILED')
+          reportError({ error, code, context: { action: 'update_room_region', placeId: place.id } })
+          showToast(resolveErrorMessage(error, code), 'error')
         },
       },
     )
