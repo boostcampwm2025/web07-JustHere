@@ -41,3 +41,13 @@ export const PLACE_CARD_COLORS = {
   ADDRESS: '#4B5563', // gray-600
   CATEGORY: '#6B7280', // gray-500
 }
+
+/** 라인 기본 속성 */
+export const DEFAULT_LINE = {
+  stroke: '#000000',
+  strokeWidth: 2,
+  tension: 0.5,
+  lineCap: 'round',
+  lineJoin: 'round',
+  tool: 'pen',
+} as const
