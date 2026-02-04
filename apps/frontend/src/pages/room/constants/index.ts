@@ -1,4 +1,5 @@
 export * from './vote'
+export * from './category'
 export * from './canvas'
 export * from './yjs'
 export * from './canvas'
