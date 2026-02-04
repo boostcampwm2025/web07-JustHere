@@ -108,7 +108,10 @@ export function reportError(params: {
   })
 
   Sentry.captureException(error, {
-    tags: { code, source },
+    tags: {
+      code,
+      ...(source ? { source } : {}),
+    },
     extra: {
       ...params.context,
       data,
