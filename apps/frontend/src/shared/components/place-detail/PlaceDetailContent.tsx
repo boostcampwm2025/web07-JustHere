@@ -26,17 +26,19 @@ export const PlaceDetailContent = ({ place, className, showHeader = false, onBac
   const photoNames = useMemo(() => (details.photos?.slice(0, 5) ?? []).map(p => p.name), [details.photos])
   const photoQueries = useGooglePhotos(photoNames, 800, 800)
 
+  const photoData = photoQueries.map(q => q.data)
+
   const sliderImages = useMemo(() => {
-    return photoQueries
-      .map(query => {
-        if (!query.data) return null
+    return photoData
+      .map(data => {
+        if (!data) return null
         return {
-          src: query.data,
+          src: data,
           alt: details.displayName.text,
         }
       })
       .filter((img): img is { src: string; alt: string } => img !== null)
-  }, [photoQueries, details.displayName.text])
+  }, [photoData, details.displayName.text])
 
   if (isLoading) {
     return (
