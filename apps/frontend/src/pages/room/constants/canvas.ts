@@ -1,6 +1,6 @@
 /** 플레이스 카드(장소 카드) 크기 */
 export const PLACE_CARD_WIDTH = 240
-export const PLACE_CARD_HEIGHT = 200
+export const PLACE_CARD_HEIGHT = 220
 export const PLACE_CARD_PADDING = 12
 export const PLACE_CARD_IMAGE_HEIGHT = 100
 export const PLACE_CARD_PLACEHOLDER_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
@@ -41,3 +41,13 @@ export const PLACE_CARD_COLORS = {
   ADDRESS: '#4B5563', // gray-600
   CATEGORY: '#6B7280', // gray-500
 }
+
+/** 라인 기본 속성 */
+export const DEFAULT_LINE = {
+  stroke: '#000000',
+  strokeWidth: 2,
+  tension: 0.5,
+  lineCap: 'round',
+  lineJoin: 'round',
+  tool: 'pen',
+} as const

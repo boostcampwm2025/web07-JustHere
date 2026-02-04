@@ -108,16 +108,38 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         wrap="none"
       />
 
+      {/* 평점 및 리뷰 개수 */}
+      {card.rating != null && (
+        <>
+          <Text text="★" x={scaledPadding} y={scaledImageHeight + 30 * scale} fontSize={11 * scale} fill="#FACC15" />
+          <Text
+            text={`${card.rating.toFixed(1)}${card.userRatingCount ? ` (${card.userRatingCount.toLocaleString()})` : ''}`}
+            x={scaledPadding + 14 * scale}
+            y={scaledImageHeight + 30 * scale}
+            width={textWidth - 14 * scale}
+            fontSize={11 * scale}
+            fill="#6B7280"
+          />
+        </>
+      )}
+
       {/* 카테고리 */}
-      <Text text={card.category || ''} x={scaledPadding} y={scaledImageHeight + 30 * scale} width={textWidth} fontSize={11 * scale} fill="#6B7280" />
+      <Text
+        text={card.category || ''}
+        x={scaledPadding}
+        y={scaledImageHeight + (card.rating != null ? 46 : 30) * scale}
+        width={textWidth}
+        fontSize={11 * scale}
+        fill="#6B7280"
+      />
 
       {/* 주소 */}
       <Text
         text={card.address}
         x={scaledPadding}
-        y={scaledImageHeight + 49 * scale}
+        y={scaledImageHeight + (card.rating != null ? 62 : 46) * scale}
         width={textWidth}
-        fontSize={12 * scale}
+        fontSize={11 * scale}
         fill={PLACE_CARD_COLORS.ADDRESS}
         wrap="char"
       />

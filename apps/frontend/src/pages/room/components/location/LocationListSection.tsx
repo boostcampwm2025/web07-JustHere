@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'rea
 import { ListBoxOutlineIcon, VoteIcon, PlusIcon, CheckIcon } from '@/shared/assets'
 import { Button, ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
+import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
 import { cn } from '@/shared/utils'
@@ -50,11 +51,6 @@ interface LocationListSectionProps {
 
 type TabType = 'locations' | 'candidates'
 
-const getPhotoUrl = (place: GooglePlace) => {
-  if (!place.photos || place.photos.length === 0) return null
-  return getGooglePhotoUrl(place.photos[0].name, 200)
-}
-
 export const LocationListSection = ({
   roomId,
   userId,
@@ -80,6 +76,17 @@ export const LocationListSection = ({
       categoryId: activeCategoryId,
       onSearchComplete,
     })
+
+  const photoNames = useMemo(() => searchResults.map(place => place.photos?.[0]?.name), [searchResults])
+  const photoQueries = useGooglePhotos(photoNames, 200, 200)
+
+  const photoUrls = useMemo(() => {
+    const urls: Record<string, string | null> = {}
+    searchResults.forEach((place, index) => {
+      urls[place.id] = photoQueries[index]?.data ?? null
+    })
+    return urls
+  }, [searchResults, photoQueries])
 
   const {
     status: voteStatus,
@@ -217,18 +224,27 @@ export const LocationListSection = ({
   )
 
   const handleCandidateRegister = useCallback(
-    (place: GooglePlace) => {
+    async (place: GooglePlace) => {
+      let imageUrl: string | undefined = photoUrls[place.id] ?? undefined
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
+        } catch (error) {
+          console.error('Failed to get photo for candidate', error)
+        }
+      }
       addCandidate({
         placeId: place.id,
         name: place.displayName.text,
         address: place.formattedAddress,
         category: place.primaryTypeDisplayName?.text,
-        imageUrl: getPhotoUrl(place) ?? undefined,
+        imageUrl,
         rating: place.rating,
         ratingCount: place.userRatingCount,
       })
     },
-    [addCandidate],
+    [addCandidate, photoUrls],
   )
 
   const handleViewDetail = useCallback(
@@ -263,25 +279,40 @@ export const LocationListSection = ({
     clearSearch()
   }
 
-  const handleAddPlaceCard = (place: GooglePlace) => {
-    if (pendingPlaceCard?.placeId === place.id) {
-      onCancelPlaceCard()
-      return
-    }
+  const handleAddPlaceCard = useCallback(
+    async (place: GooglePlace) => {
+      if (pendingPlaceCard?.placeId === place.id) {
+        onCancelPlaceCard()
+        return
+      }
 
-    onStartPlaceCard({
-      id: `placeCard-${crypto.randomUUID()}`,
-      placeId: place.id,
-      name: place.displayName.text,
-      address: place.formattedAddress,
-      createdAt: new Date().toISOString(),
-      scale: 1,
-      image: getPhotoUrl(place),
-      category: place.primaryTypeDisplayName?.text || '',
-      width: PLACE_CARD_WIDTH,
-      height: PLACE_CARD_HEIGHT,
-    })
-  }
+      let imageUrl: string | null = photoUrls[place.id] ?? null
+
+      if (!imageUrl && place.photos && place.photos.length > 0) {
+        try {
+          imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
+        } catch (error) {
+          console.error('Failed to get photo for place card', error)
+        }
+      }
+
+      onStartPlaceCard({
+        id: `placeCard-${crypto.randomUUID()}`,
+        placeId: place.id,
+        name: place.displayName.text,
+        address: place.formattedAddress,
+        createdAt: new Date().toISOString(),
+        scale: 1,
+        image: imageUrl,
+        category: place.primaryTypeDisplayName?.text || '',
+        width: PLACE_CARD_WIDTH,
+        height: PLACE_CARD_HEIGHT,
+        rating: place.rating,
+        userRatingCount: place.userRatingCount,
+      })
+    },
+    [pendingPlaceCard, onCancelPlaceCard, onStartPlaceCard, photoUrls],
+  )
 
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
@@ -335,7 +366,7 @@ export const LocationListSection = ({
             <div className="flex flex-col gap-4">
               {searchResults.map((place, index) => {
                 const isSelected = pendingPlaceCard?.placeId === place.id
-                const photoUrl = getPhotoUrl(place)
+                const photoUrl = photoUrls[place.id]
                 const isAlreadyCandidate = voteCandidates.some(c => c.placeId === place.id)
 
                 return (

@@ -5,7 +5,7 @@ import type { Server, Socket } from 'socket.io'
 import { RoomGateway } from './room.gateway'
 import { RoomService } from './room.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
-import { RoomJoinPayload, ParticipantUpdateNamePayload, RoomTransferOwnerPayload } from './dto/room.c2s.dto'
+import { RoomJoinPayload, ParticipantUpdateNamePayload, RoomTransferOwnerPayload } from './dto'
 
 describe('RoomGateway', () => {
   let gateway: RoomGateway
