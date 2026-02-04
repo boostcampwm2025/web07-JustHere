@@ -7,6 +7,7 @@ import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/ho
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
+import type { TabType } from '@/pages/room/types/location'
 
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -23,7 +24,7 @@ export default function RoomPage() {
   const [searchResultsByCategory, setSearchResultsByCategory] = useState<Record<string, GooglePlace[]>>({})
   const [candidatePlaceIds, setCandidatePlaceIds] = useState<string[]>([])
   const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
-  const [activeLocationTab, setActiveLocationTab] = useState<'locations' | 'candidates'>('locations')
+  const [activeLocationTab, setActiveLocationTab] = useState<TabType>('locations')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
   const lastHandledCategoryErrorRef = useRef<string | null>(null)
@@ -130,6 +131,14 @@ export default function RoomPage() {
     [deleteCategory],
   )
 
+  const handleActiveLocationTab = useCallback(
+    (tab: TabType) => {
+      handlePlaceSelect(null)
+      setActiveLocationTab(tab)
+    },
+    [handlePlaceSelect],
+  )
+
   if (!slug) {
     return <Navigate to="/onboarding" replace />
   }
@@ -138,7 +147,7 @@ export default function RoomPage() {
     return null
   }
 
-  const roomLink = `${socketBaseUrl}/share/room/${slug}`
+  const roomLink = `${socketBaseUrl}/room/${slug}`
   const roomTitle = '딱! 여기 - 모임 장소를 실시간으로 정하는 서비스'
   const roomDescription = '우리 어디서 만나? 딱! 여기에서 실시간으로 재밌게 정하자!'
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
@@ -213,7 +222,7 @@ export default function RoomPage() {
           onCancelPlaceCard={clearPendingPlaceCard}
           onSearchComplete={handleSearchComplete}
           activeTab={activeLocationTab}
-          onActiveTabChange={setActiveLocationTab}
+          onActiveTabChange={handleActiveLocationTab}
           onCandidatePlaceIdsChange={setCandidatePlaceIds}
           selectedPlace={activeSelectedPlace}
           onPlaceSelect={handlePlaceSelect}

@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ResultNotFoundError, ResultLoadFailedError } from '@/app/error-boundary'
+import { AppError } from '@/shared/utils'
 import { ArrowLeftIcon, ShareVariantIcon, PartyPopperIcon, CheckIcon } from '@/shared/assets'
 import { Button, Header, type PlaceDetailPlace } from '@/shared/components'
 import { socketBaseUrl } from '@/shared/config/socket'
-import { useRoomParticipants, useRoomMeta, useVoteResults } from '@/shared/hooks'
-import { getOrCreateStoredUser } from '@/shared/utils'
+import { useRoomParticipants, useRoomMeta, useVoteResults, useToast } from '@/shared/hooks'
+import { getOrCreateStoredUser, reportError, resolveErrorMessage } from '@/shared/utils'
 import { useRoomSocket } from '@/pages/room/hooks'
 import { RoomHeader } from '@/pages/room/components'
 import { PlaceResultCard } from './components'
@@ -15,6 +15,7 @@ export const ResultPage = () => {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { roomId, ready, updateParticipantName, transferOwner } = useRoomSocket()
+  const { showToast } = useToast()
 
   const [copied, setCopied] = useState(false)
 
@@ -39,7 +40,7 @@ export const ResultPage = () => {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
-  const roomLink = `${socketBaseUrl}/share/result/${slug}`
+  const roomLink = `${socketBaseUrl}/result/${slug}`
 
   const handleGoBack = () => {
     navigate(`/room/${slug}`)
@@ -51,7 +52,8 @@ export const ResultPage = () => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('링크 복사에 실패했습니다.', error)
+      reportError({ error, code: 'CLIENT_CLIPBOARD_WRITE_FAILED', context: { roomLink } })
+      showToast(resolveErrorMessage(error, 'CLIENT_CLIPBOARD_WRITE_FAILED'), 'error')
     }
   }
 
@@ -66,11 +68,20 @@ export const ResultPage = () => {
   }
 
   if (error) {
-    throw new ResultLoadFailedError()
+    throw new AppError({
+      code: 'RESULT_LOAD_FAILED',
+      message: '결과를 불러오는데 실패했습니다.',
+      source: 'client',
+      originalError: error,
+    })
   }
 
   if (roomId && resultData.length === 0) {
-    throw new ResultNotFoundError()
+    throw new AppError({
+      code: 'RESULT_NOT_FOUND',
+      message: '투표 결과가 없습니다.',
+      source: 'client',
+    })
   }
 
   return (

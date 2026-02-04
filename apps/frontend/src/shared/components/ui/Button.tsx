@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/shared/utils'
 
 type Variant = 'primary' | 'gray' | 'ghost' | 'outline' | 'primary_outline'
@@ -28,12 +28,16 @@ const SIZE_STYLES: Record<Size, string> = {
   lg: 'h-12 w-full text-base gap-2',
 }
 
-export const Button = ({ className, variant = 'primary', size = 'md', icon, iconPosition = 'left', children, ...props }: ButtonProps) => {
-  return (
-    <button type="button" className={cn(BASE_STYLES, VARIANT_STYLES[variant], SIZE_STYLES[size], className)} {...props}>
-      {iconPosition === 'left' && icon && <span className="shrink-0">{icon}</span>}
-      {children}
-      {iconPosition === 'right' && icon && <span className="shrink-0">{icon}</span>}
-    </button>
-  )
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'primary', size = 'md', icon, iconPosition = 'left', children, ...props }: ButtonProps, ref) => {
+    return (
+      <button ref={ref} type="button" className={cn(BASE_STYLES, VARIANT_STYLES[variant], SIZE_STYLES[size], className)} {...props}>
+        {iconPosition === 'left' && icon && <span className="shrink-0">{icon}</span>}
+        {children}
+        {iconPosition === 'right' && icon && <span className="shrink-0">{icon}</span>}
+      </button>
+    )
+  },
+)
+
+Button.displayName = 'Button'

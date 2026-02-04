@@ -16,6 +16,8 @@ interface GoogleMapProps {
   markers?: GooglePlace[]
   selectedMarkerId?: string
   onMarkerClick?: (place: GooglePlace) => void
+  showMarkerLabel?: boolean
+  showMarkerTooltip?: boolean
 }
 
 const DEFAULT_CENTER = { lat: 37.566826, lng: 126.9786567 }
@@ -52,6 +54,8 @@ export const GoogleMap = ({
   markers = [],
   selectedMarkerId,
   onMarkerClick,
+  showMarkerLabel = true,
+  showMarkerTooltip = true,
 }: GoogleMapProps) => {
   const isLoadedRef = useRef(false)
   const containerStyle = { width, height }
@@ -84,7 +88,14 @@ export const GoogleMap = ({
       >
         <MapController center={center} />
         {markers.map(place => (
-          <GooglePlaceMarker key={place.id} place={place} isSelected={place.id === selectedMarkerId} onClick={onMarkerClick} />
+          <GooglePlaceMarker
+            key={place.id}
+            place={place}
+            isSelected={place.id === selectedMarkerId}
+            onClick={onMarkerClick}
+            showLabel={showMarkerLabel}
+            showTooltip={showMarkerTooltip}
+          />
         ))}
         {children}
       </Map>

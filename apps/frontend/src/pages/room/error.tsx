@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ERROR_TYPE, type ErrorType } from '@/app/error-boundary'
+import { ERROR_TYPE, type ErrorType } from '@/shared/types'
+import { getErrorDescription } from '@/shared/utils'
 import { AlertCircleIcon } from '@/shared/assets'
 import { Button, Header } from '@/shared/components'
 
@@ -12,13 +13,7 @@ interface ErrorPageProps {
 export default function RoomErrorPage({ errorType, onReset, errorMessage }: ErrorPageProps) {
   const navigate = useNavigate()
   const { slug } = useParams<{ slug: string }>()
-
-  const errorDescription: Record<ErrorType, string> = {
-    [ERROR_TYPE.ROOM_NOT_FOUND]: '존재하지 않거나 삭제된 방입니다.',
-    [ERROR_TYPE.RESULT_NOT_FOUND]: '투표를 먼저 진행해주세요.',
-    [ERROR_TYPE.RESULT_LOAD_FAILED]: '잠시 후 다시 시도해주세요.',
-    [ERROR_TYPE.UNKNOWN]: '잠시 후 다시 시도해주세요.',
-  }
+  const errorDescription = getErrorDescription(errorType)
 
   const handleCreateRoom = () => navigate('/onboarding')
   const handleReset = () => onReset()
@@ -40,7 +35,7 @@ export default function RoomErrorPage({ errorType, onReset, errorMessage }: Erro
             <AlertCircleIcon className="size-24 text-primary" />
           </div>
           <h1 className="text-3xl font-bold text-black mb-2">{errorMessage}</h1>
-          <h3 className="text-gray text-lg mb-8">{errorDescription[errorType]}</h3>
+          <h3 className="text-gray text-lg mb-8">{errorDescription}</h3>
 
           {errorType === ERROR_TYPE.ROOM_NOT_FOUND && (
             <Button onClick={handleCreateRoom} size="lg">

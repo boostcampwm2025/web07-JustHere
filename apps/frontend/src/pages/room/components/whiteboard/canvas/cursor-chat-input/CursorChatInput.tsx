@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import { getParticipantColor, cn } from '@/shared/utils'
+import { MAX_CURSOR_CHAT_LENGTH } from '@/pages/room/constants'
 
 interface CursorChatInputProps {
   position: { x: number; y: number }
@@ -20,7 +21,11 @@ export const CursorChatInput = ({ position, name, isFading, message, onMessageCh
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onMessageChange(e.target.value)
+    const newValue = e.target.value
+    if (newValue.length > MAX_CURSOR_CHAT_LENGTH) {
+      return
+    }
+    onMessageChange(newValue)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -41,18 +46,21 @@ export const CursorChatInput = ({ position, name, isFading, message, onMessageCh
         transition: isFading ? 'opacity 3s ease-out' : 'none',
       }}
     >
-      <input
-        ref={inputRef}
-        type="text"
-        value={message}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder="메시지 입력..."
-        className={cn(
-          'px-3 py-1.5 text-sm text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-[200px]',
-          getParticipantColor(name),
-        )}
-      />
+      <div className="relative inline-block">
+        <span className="invisible whitespace-pre px-3 py-1.5 text-sm min-w-[100px] inline-block">{message || '메시지 입력...'}</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={message}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="메시지 입력..."
+          className={cn(
+            'absolute inset-0 px-3 py-1.5 text-sm text-white placeholder-blue-200 rounded-lg shadow-lg border-none outline-none w-full',
+            getParticipantColor(name),
+          )}
+        />
+      </div>
     </div>
   )
 }

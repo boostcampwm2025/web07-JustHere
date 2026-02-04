@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Socket } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { RoomNotFoundError } from '@/app/error-boundary'
+import { AppError } from '@/shared/utils'
 import type {
   RoomJoinPayload,
   RoomJoinedPayload,
@@ -165,7 +165,13 @@ export const useRoomSocketCache = () => {
         userInfoRef.current = null
         setRoomId(null)
         setIsReady(false)
-        setError(new RoomNotFoundError(errorPayload.message))
+        setError(
+          new AppError({
+            code: 'ROOM_NOT_FOUND',
+            message: errorPayload.message,
+            source: 'socket',
+          }),
+        )
         return
       }
 

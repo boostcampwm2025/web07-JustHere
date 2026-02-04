@@ -5,13 +5,14 @@ import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useLocationSearch, useVoteSocket } from '@/pages/room/hooks'
-import { cn } from '@/shared/utils'
+import { cn, reportError } from '@/shared/utils'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceItemSkeleton } from './PlaceItemSkeleton'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import { useToast } from '@/shared/hooks'
 import { LazyImage } from '@/shared/components/lazy-image'
+import type { TabType } from '@/pages/room/types/location'
 
 // 후보 장소 기본 타입 (GooglePlace 기반)
 export interface Candidate {
@@ -50,8 +51,6 @@ interface LocationListSectionProps {
   onPlaceSelect: (place: GooglePlace | null) => void
   candidatePlaces?: GooglePlace[]
 }
-
-type TabType = 'locations' | 'candidates'
 
 export const LocationListSection = ({
   roomId,
@@ -233,7 +232,7 @@ export const LocationListSection = ({
         try {
           imageUrl = (await getGooglePhotoUrl(place.photos[0].name, 200)) ?? undefined
         } catch (error) {
-          console.error('Failed to get photo for candidate', error)
+          reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId: place.id, source: 'handleCandidateRegister' } })
         }
       }
       addCandidate({
@@ -294,7 +293,7 @@ export const LocationListSection = ({
         try {
           imageUrl = await getGooglePhotoUrl(place.photos[0].name, 200)
         } catch (error) {
-          console.error('Failed to get photo for place card', error)
+          reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId: place.id, source: 'handleAddPlaceCard' } })
         }
       }
 

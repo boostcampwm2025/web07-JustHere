@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { PencilIcon, ContentCopyIcon, ShareVariantIcon, CheckIcon } from '@/shared/assets'
 import { Button, Divider, Avatar, Dropdown } from '@/shared/components'
 import type { Participant } from '@/shared/types'
+import { useToast } from '@/shared/hooks'
+import { reportError, resolveErrorMessage } from '@/shared/utils'
 
 interface RoomInfoDropdownProps {
   open: boolean
@@ -14,6 +16,7 @@ interface RoomInfoDropdownProps {
   isOwner?: boolean
   ownerId?: string
   onTransferOwner?: (targetUserId: string) => void
+  triggerRef?: React.RefObject<HTMLElement | null>
 }
 
 export const RoomInfoDropdown = ({
@@ -27,9 +30,12 @@ export const RoomInfoDropdown = ({
   isOwner = false,
   ownerId,
   onTransferOwner,
+  triggerRef,
 }: RoomInfoDropdownProps) => {
   const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const shareTriggerRef = useRef<HTMLButtonElement>(null)
   const [copied, setCopied] = useState(false)
+  const { showToast } = useToast()
 
   const hasCurrentUser = participants.some(p => p.userId === currentUserId)
   const visibleParticipants = hasCurrentUser ? participants : [{ socketId: '', userId: currentUserId, name: userName }, ...participants]
@@ -51,17 +57,23 @@ export const RoomInfoDropdown = ({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('링크 복사에 실패했습니다.', error)
+      reportError({ error, code: 'CLIENT_CLIPBOARD_WRITE_FAILED', context: { roomLink } })
+      showToast(resolveErrorMessage(error, 'CLIENT_CLIPBOARD_WRITE_FAILED'), 'error')
     }
   }
 
   return (
     <div className="relative">
-      <Button size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
-        Share
+      <Button ref={shareTriggerRef} size="sm" icon={<ShareVariantIcon className="size-4.5" />} onClick={() => onOpenChange(!open)}>
+        공유하기
       </Button>
       {open && (
-        <Dropdown onOpenChange={onOpenChange} align="right" className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0">
+        <Dropdown
+          ignoreRef={triggerRef ? [triggerRef, shareTriggerRef] : [shareTriggerRef]}
+          onOpenChange={onOpenChange}
+          align="right"
+          className="w-xs max-h-[600px] overflow-y-auto scrollbar-hide p-0"
+        >
           <div className="p-6">
             <h3 className="text-lg font-bold text-center mb-6">참여자</h3>
             <div className="flex flex-col gap-2">

@@ -6,7 +6,7 @@ const SHORTCUTS = [
   { key: 'Space bar', description: '누르는 동안 이동 도구 전환' },
   { key: 'Backspace', description: '선택된 캔버스 요소 삭제' },
   { key: 'ESC', description: '선택 도구 전환' },
-  { key: '/', description: '마우스 채팅' },
+  { key: '/', description: '마우스 채팅(최대 50자)' },
   { key: 'Ctrl + 마우스 휠', description: '줌 인/아웃' },
   { key: '마우스 우클릭', description: '추가 옵션' },
 ]
