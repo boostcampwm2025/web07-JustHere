@@ -1,6 +1,6 @@
 {
   "name": "web07-boostcamp",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "실시간 만장일치 장소 결정 서비스, 딱! 여기",
   "main": "index.js",
   "private": true,
