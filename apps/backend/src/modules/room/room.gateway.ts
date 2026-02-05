@@ -1,6 +1,7 @@
+import { UseFilters, UsePipes } from '@nestjs/common'
 import { WebsocketExceptionsFilter } from '@/lib/filter'
+import { defaultValidationPipe } from '@/lib/pipes/validation.pipe'
 import { MetricService } from '@/lib/metric/metric.service'
-import { UseFilters } from '@nestjs/common'
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -20,6 +21,7 @@ import { RoomService } from './room.service'
   cors: { origin: '*' },
 })
 @UseFilters(new WebsocketExceptionsFilter('room'))
+@UsePipes(defaultValidationPipe)
 export class RoomGateway implements OnGatewayInit, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server

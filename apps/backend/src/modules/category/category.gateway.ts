@@ -1,5 +1,6 @@
+import { UseFilters, UsePipes } from '@nestjs/common'
 import { WebsocketExceptionsFilter } from '@/lib/filter'
-import { UseFilters } from '@nestjs/common'
+import { defaultValidationPipe } from '@/lib/pipes/validation.pipe'
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, OnGatewayInit, MessageBody, ConnectedSocket } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
@@ -11,6 +12,7 @@ import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s
   cors: { origin: '*' },
 })
 @UseFilters(new WebsocketExceptionsFilter('category'))
+@UsePipes(defaultValidationPipe)
 export class CategoryGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server

@@ -7,13 +7,13 @@ datasource db {
 }
 
 model Room {
-  id        String   @id @default(uuid()) @db.Uuid
-  slug      String   @unique @db.VarChar(50) 
-  x         Float    @default(0)
-  y         Float    @default(0)
-  place_name String   @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  slug         String   @unique @db.VarChar(50)
+  x            Float    @default(0)
+  y            Float    @default(0)
+  place_name   String   @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
   lastActiveAt DateTime @default(now()) @map("last_active_at")
 
   categories Category[]
@@ -25,13 +25,13 @@ model Room {
 model Category {
   id         String   @id @default(uuid()) @db.Uuid
   roomId     String   @map("room_id") @db.Uuid
-  title      String   @db.VarChar(100) 
-  orderIndex Int      @default(0) @map("order_index") 
+  title      String   @db.VarChar(15)
+  orderIndex Int      @default(0) @map("order_index")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  room              Room               @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  updateLogs        CategoryUpdateLog[]
-  snapshot          CategorySnapshot?
+  room       Room                @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  updateLogs CategoryUpdateLog[]
+  snapshot   CategorySnapshot?
 
   @@index([roomId])
   @@index([roomId, orderIndex])
@@ -41,7 +41,7 @@ model Category {
 model CategoryUpdateLog {
   id         BigInt   @id @default(autoincrement())
   categoryId String   @map("category_id") @db.Uuid
-  updateData Bytes    @map("update_data") 
+  updateData Bytes    @map("update_data")
   createdAt  DateTime @default(now()) @map("created_at")
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -52,7 +52,7 @@ model CategoryUpdateLog {
 
 model CategorySnapshot {
   categoryId  String   @id @map("category_id") @db.Uuid
-  stateVector Bytes    @map("state_vector") 
+  stateVector Bytes    @map("state_vector")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
