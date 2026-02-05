@@ -77,6 +77,18 @@ export class UserService {
   }
 
   /**
+   * 세션 방장 권한 업데이트
+   */
+  updateSessionOwner(socketId: string, isOwner: boolean): UserSession | undefined {
+    const session = this.sessions.get(socketId)
+    if (!session) return undefined
+
+    session.isOwner = isOwner
+    this.sessions.set(socketId, session)
+    return session
+  }
+
+  /**
    * 방장 권한 이전
    */
   transferOwnership(roomId: string, currentOwnerId: string, newOwnerId: string): boolean {

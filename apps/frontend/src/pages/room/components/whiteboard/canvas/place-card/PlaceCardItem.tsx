@@ -45,6 +45,24 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
 
   const [image] = useImage(card.image || PLACE_CARD_PLACEHOLDER_IMAGE, 'anonymous')
 
+  // shadowBlur 성능 최적화: 그림자를 포함한 전체 Group을 비트맵으로 캐시
+  useEffect(() => {
+    const group = groupRef.current
+    if (!group) return
+
+    // 이미지 로드 완료 후 또는 placeholder 상태에서 캐시
+    const shadowOffset = 20 // shadowBlur(15) + shadowOffsetY(4) + 여유
+    group.cache({
+      offset: shadowOffset,
+      width: cardWidth + shadowOffset * 2,
+      height: cardHeight + shadowOffset * 2,
+    })
+
+    return () => {
+      group.clearCache()
+    }
+  }, [image, cardWidth, cardHeight, scale, card.name, card.rating, card.category, card.address])
+
   const imageWidth = textWidth + scaledPadding * 2
   const imageHeight = scaledImageHeight
 
