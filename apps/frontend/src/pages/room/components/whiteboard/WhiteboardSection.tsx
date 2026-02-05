@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { GoogleMap } from '@/shared/components/google-map'
@@ -42,8 +42,19 @@ export const WhiteboardSection = ({
 
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
 
-  // 캔버스 위치/줌 상태 저장
-  const canvasTransformRef = useRef({ x: 0, y: 0, scale: 1 })
+  // 캔버스 위치/줌 상태 저장 (Map으로 관리)
+  const canvasTransformMapRef = useRef<Map<string, { x: number; y: number; scale: number }>>(new Map())
+
+  const canvasTransformRef = useMemo(() => {
+    return {
+      get current() {
+        return canvasTransformMapRef.current.get(activeCategoryId) ?? { x: 0, y: 0, scale: 1 }
+      },
+      set current(value) {
+        canvasTransformMapRef.current.set(activeCategoryId, value)
+      },
+    }
+  }, [activeCategoryId])
 
   // 지도 중심 좌표 관리
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(() => {

@@ -19,7 +19,7 @@ export const useCanvasStageTransform = ({ stageRef, canvasTransformRef, onWheel 
     }
   }, [stageRef, canvasTransformRef])
 
-  // 1. 초기 마운트 시 저장된 위치/줌 복원
+  // 1. 초기 마운트 시 및 canvasTransformRef 변경(탭 전환) 시 저장된 위치/줌 복원
   useEffect(() => {
     if (stageRef.current && canvasTransformRef) {
       const { x, y, scale } = canvasTransformRef.current
