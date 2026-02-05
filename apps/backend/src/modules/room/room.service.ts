@@ -136,6 +136,8 @@ export class RoomService {
         // 가장 먼저 입장한 유저에게 방장 위임
         const nextOwner = remainingSessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
         nextOwner.isOwner = true
+        // UserService를 통해 상태 업데이트
+        this.users.updateSessionOwner(nextOwner.socketId, true)
 
         // 방장 변경 알림
         const ownerPayload: RoomOwnerTransferredPayload = {
@@ -215,6 +217,10 @@ export class RoomService {
 
     // 없으면 가장 먼저 들어온 유저
     const oldest = sessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
+
+    // 데이터 불일치 해결: 방장이 없는 경우 가장 오래된 유저를 방장으로 승격
+    this.users.updateSessionOwner(oldest.socketId, true)
+
     return oldest.userId
   }
 
