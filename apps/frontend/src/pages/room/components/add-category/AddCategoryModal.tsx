@@ -92,7 +92,6 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
                 value={custom}
                 onChange={e => setCustom(e.target.value)}
                 placeholder="카테고리 이름을 입력하세요"
-                maxLength={MAX_CUSTOM_LEN}
                 className={cn(
                   'w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
                   trimmedCustom.length > MAX_CUSTOM_LEN ? 'border-red-300 focus:ring-red-500' : 'border-gray-200',
