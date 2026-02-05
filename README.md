@@ -14,7 +14,8 @@
 
 ## 프로젝트 소개
 
-<img width="600" alt="image" src="https://github.com/user-attachments/assets/7bed3cdd-3179-4943-ab19-c4634da16027" />
+
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/7df91103-b3fc-44c5-8b51-e0582ce57353" />
 
 
 **딱! 여기**는 여러 사람이 함께 모여야 하는 상황에서 **"어디서 만날까?"** 라는 복잡한 고민을 <br/>
