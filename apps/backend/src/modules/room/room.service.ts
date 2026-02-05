@@ -135,7 +135,7 @@ export class RoomService {
       if (remainingSessions.length > 0) {
         // 가장 먼저 입장한 유저에게 방장 위임
         const nextOwner = remainingSessions.reduce((prev, curr) => (prev.joinedAt < curr.joinedAt ? prev : curr))
-        nextOwner.isOwner = true
+
         // UserService를 통해 상태 업데이트
         this.users.updateSessionOwner(nextOwner.socketId, true)
 
