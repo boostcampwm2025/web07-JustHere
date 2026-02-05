@@ -6,6 +6,8 @@ import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
+import { Button } from '@/shared/components'
+import { cn } from '@/shared/utils'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
@@ -213,7 +215,7 @@ export default function RoomPage() {
       />
       <div className="relative flex flex-1 overflow-hidden">
         {/* LocationListSection wrapper */}
-        <div className={`overflow-hidden transition-all duration-300 ${isLocationListCollapsed ? 'w-0' : 'w-[420px]'}`}>
+        <div className={cn('overflow-hidden transition-all duration-300', isLocationListCollapsed ? 'w-0' : 'w-[420px]')}>
           <LocationListSection
             roomId={roomId}
             userId={user.userId}
@@ -234,14 +236,18 @@ export default function RoomPage() {
           />
         </div>
         {/* 패널 토글 버튼 */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setIsLocationListCollapsed(prev => !prev)}
-          className={`absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300 ${isLocationListCollapsed ? 'left-0' : 'left-[420px]'}`}
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300',
+            isLocationListCollapsed ? 'left-0' : 'left-[420px]',
+          )}
           aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
         >
           {isLocationListCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
-        </button>
+        </Button>
         <WhiteboardSection
           roomId={roomId}
           onActiveCategoryChange={setSelectedCategoryId}
