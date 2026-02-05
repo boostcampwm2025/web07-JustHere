@@ -1,10 +1,17 @@
 import type { BoundingBox, SelectionBox } from '@/shared/types'
 
 // 드로잉 객체의 Bounding Box 계산 함수
-export const getLineBoundingBox = (points: number[]): BoundingBox => {
-  if (points.length === 0) return { x: 0, y: 0, width: 0, height: 0 }
+export const getLineBoundingBox = (points: number[] | null | undefined): BoundingBox => {
+  if (!points || points.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 }
+  }
+
   const xs = points.filter((_, i) => i % 2 === 0)
   const ys = points.filter((_, i) => i % 2 === 1)
+  if (xs.length === 0 || ys.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 }
+  }
+
   const minX = Math.min(...xs)
   const maxX = Math.max(...xs)
   const minY = Math.min(...ys)
