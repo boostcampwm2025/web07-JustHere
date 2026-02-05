@@ -191,7 +191,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     const syncLinesToState = () => {
       const items: Line[] = yLines.toArray().map(yMap => ({
         id: yMap.get('id') as string,
-        points: yMap.get('points') as number[],
+        points: (yMap.get('points') as number[]) || [],
         stroke: yMap.get('stroke') as string,
         strokeWidth: yMap.get('strokeWidth') as number,
         tension: yMap.get('tension') as number,
