@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useGoogleSearch, useUpdateRoom, useToast } from '@/shared/hooks'
 import { ChevronDownIcon } from '@/shared/assets'
 import { Divider, Dropdown, SearchInput } from '@/shared/components'
@@ -17,6 +17,7 @@ interface RegionSelectorDropdownProps {
 export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 'right' }: RegionSelectorDropdownProps) => {
   const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const { data: results, isLoading } = useGoogleSearch({ textQuery: searchTerm })
@@ -81,10 +82,10 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
   )
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       {trigger ? trigger({ isOpen, toggle }) : defaultTrigger}
       {isOpen && (
-        <Dropdown onOpenChange={setIsOpen} align={align} className="w-72">
+        <Dropdown onOpenChange={setIsOpen} align={align} className="w-72" ignoreRef={containerRef}>
           <div className="p-3">
             <SearchInput
               value={keyword}

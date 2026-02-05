@@ -1,8 +1,9 @@
+import { RequestMethod } from '@nestjs/common'
 import './instrument'
 import { SwaggerConfigModule } from '@/lib/swagger/swagger.module'
 import { SwaggerService } from '@/lib/swagger/swagger.service'
+import { defaultValidationPipe } from '@/lib/pipes/validation.pipe'
 import { NestFactory } from '@nestjs/core'
-import { RequestMethod, ValidationPipe } from '@nestjs/common'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
@@ -12,13 +13,7 @@ async function bootstrap() {
     exclude: [{ path: 'metrics', method: RequestMethod.GET }],
   })
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  )
+  app.useGlobalPipes(defaultValidationPipe)
 
   const swaggerModule = app.select(SwaggerConfigModule)
   const swaggerService = swaggerModule.get(SwaggerService)
