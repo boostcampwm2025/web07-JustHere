@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { SilverwareForkKnifeIcon, CoffeeIcon, LiquorIcon, PlusIcon, CompassIcon, PencilIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { GoogleMap } from '@/shared/components/google-map'
 import { cn } from '@/shared/utils'
-import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
+import type { Category, GooglePlace, PlaceCard, ToggleType } from '@/shared/types'
 import { AddCategoryModal } from '@/pages/room/components/add-category'
 import { DeleteCategoryModal } from './delete-category'
 import { WhiteboardCanvas } from './canvas'
-
-type ToggleType = 'map' | 'canvas'
 
 interface WhiteboardSectionProps {
   roomId: string
@@ -43,6 +41,20 @@ export const WhiteboardSection = ({
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
 
   const [viewMode, setViewMode] = useState<ToggleType>('canvas')
+
+  // 캔버스 위치/줌 상태 저장 (Map으로 관리)
+  const canvasTransformMapRef = useRef<Map<string, { x: number; y: number; scale: number }>>(new Map())
+
+  const canvasTransformRef = useMemo(() => {
+    return {
+      get current() {
+        return canvasTransformMapRef.current.get(activeCategoryId) ?? { x: 0, y: 0, scale: 1 }
+      },
+      set current(value) {
+        canvasTransformMapRef.current.set(activeCategoryId, value)
+      },
+    }
+  }, [activeCategoryId])
 
   // 지도 중심 좌표 관리
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(() => {
@@ -172,6 +184,7 @@ export const WhiteboardSection = ({
             pendingPlaceCard={pendingPlaceCard}
             onPlaceCardPlaced={onPlaceCardPlaced}
             onPlaceCardCanceled={onPlaceCardCanceled}
+            canvasTransformRef={canvasTransformRef}
           />
         ) : (
           <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400">
