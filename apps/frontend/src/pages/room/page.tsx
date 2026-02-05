@@ -5,6 +5,9 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
+import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
+import { Button } from '@/shared/components'
+import { cn } from '@/shared/utils'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
@@ -26,6 +29,7 @@ export default function RoomPage() {
   const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
   const [activeLocationTab, setActiveLocationTab] = useState<TabType>('locations')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
+  const [isLocationListCollapsed, setIsLocationListCollapsed] = useState(false)
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
   const lastHandledCategoryErrorRef = useRef<string | null>(null)
   const activeCategoryId = useMemo(() => resolveActiveCategoryId(categories, selectedCategoryId), [categories, selectedCategoryId])
@@ -209,25 +213,41 @@ export default function RoomPage() {
         onTransferOwner={transferOwner}
         currentRegion={currentRegion ?? undefined}
       />
-      <div className="flex flex-1 overflow-hidden">
-        <LocationListSection
-          roomId={roomId}
-          userId={user.userId}
-          userName={user.name}
-          participants={participants}
-          isOwner={isOwner}
-          activeCategoryId={activeCategoryId}
-          pendingPlaceCard={pendingPlaceCard}
-          onStartPlaceCard={handleStartPlaceCard}
-          onCancelPlaceCard={clearPendingPlaceCard}
-          onSearchComplete={handleSearchComplete}
-          activeTab={activeLocationTab}
-          onActiveTabChange={handleActiveLocationTab}
-          onCandidatePlaceIdsChange={setCandidatePlaceIds}
-          selectedPlace={activeSelectedPlace}
-          onPlaceSelect={handlePlaceSelect}
-          candidatePlaces={candidatePlaces}
-        />
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* LocationListSection wrapper */}
+        <div className={cn('overflow-hidden transition-all duration-300', isLocationListCollapsed ? 'w-0' : 'w-[420px]')}>
+          <LocationListSection
+            roomId={roomId}
+            userId={user.userId}
+            userName={user.name}
+            participants={participants}
+            isOwner={isOwner}
+            activeCategoryId={activeCategoryId}
+            pendingPlaceCard={pendingPlaceCard}
+            onStartPlaceCard={handleStartPlaceCard}
+            onCancelPlaceCard={clearPendingPlaceCard}
+            onSearchComplete={handleSearchComplete}
+            activeTab={activeLocationTab}
+            onActiveTabChange={handleActiveLocationTab}
+            onCandidatePlaceIdsChange={setCandidatePlaceIds}
+            selectedPlace={activeSelectedPlace}
+            onPlaceSelect={handlePlaceSelect}
+            candidatePlaces={candidatePlaces}
+          />
+        </div>
+        {/* 패널 토글 버튼 */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsLocationListCollapsed(prev => !prev)}
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300',
+            isLocationListCollapsed ? 'left-0' : 'left-[420px]',
+          )}
+          aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
+        >
+          {isLocationListCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
+        </Button>
         <WhiteboardSection
           roomId={roomId}
           onActiveCategoryChange={setSelectedCategoryId}
