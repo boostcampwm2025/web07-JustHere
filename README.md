@@ -47,7 +47,7 @@
 
 ### 😌 쉽고 간편하게!
 
-![온보딩](https://github.com/user-attachments/assets/b5a35c67-9cb2-426e-9c49-51cc489eca98)
+![온보딩](https://github.com/user-attachments/assets/4d98b211-f969-436d-90c3-543631a52882)
 
 - 만나고자 하는 지역만 설정한다면, 간편하게 방을 만들어요!
 - 링크 공유를 통해 쉽게 접근해요!
@@ -56,7 +56,7 @@
 
 ### 🤝 모두 다같이 함께!
 
-![메인](https://github.com/user-attachments/assets/e17fde5f-cc36-4f94-9c3b-44d9e09ce30c)
+![메인진짜](https://github.com/user-attachments/assets/cfaf9568-084e-4c5c-86f6-404a00808bf7)
 
 
 - Socket.io 기반 실시간 통신 화이트보드 환경을 제공해요!
@@ -68,7 +68,7 @@
 
 ### 🗳️ 이제는 결정할 때!
 
-![투표](https://github.com/user-attachments/assets/945fd1cf-d0c7-4acf-97fc-4423da60a301)
+![투표](https://github.com/user-attachments/assets/0e78d7e4-5382-418e-8476-26a27ffa603a)
 
 - 나눈 의견을 바탕으로 가고 싶은 장소를 투표해요!
 - 모두 함께 투표가 끝나면 최종 결과를 확인할 수 있어요!
