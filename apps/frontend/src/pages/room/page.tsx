@@ -211,7 +211,7 @@ export default function RoomPage() {
         onTransferOwner={transferOwner}
         currentRegion={currentRegion ?? undefined}
       />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* LocationListSection wrapper */}
         <div className={`overflow-hidden transition-all duration-300 ${isLocationListCollapsed ? 'w-0' : 'w-[420px]'}`}>
           <LocationListSection
@@ -237,7 +237,7 @@ export default function RoomPage() {
         <button
           type="button"
           onClick={() => setIsLocationListCollapsed(prev => !prev)}
-          className="flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-colors self-center shrink-0"
+          className={`absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300 ${isLocationListCollapsed ? 'left-0' : 'left-[420px]'}`}
           aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
         >
           {isLocationListCollapsed ? <ChevronRightIcon className="w-4 h-4 text-gray-600" /> : <ChevronLeftIcon className="w-4 h-4 text-gray-600" />}
