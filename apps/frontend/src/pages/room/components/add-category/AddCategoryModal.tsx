@@ -98,7 +98,7 @@ export const AddCategoryModal = ({ onClose, onComplete, closeable = true }: AddC
                 )}
                 autoFocus
               />
-              {trimmedCustom.length > MAX_CUSTOM_LEN && <span className="text-xs text-red-500">15자 이하로 입력해주세요</span>}
+              {trimmedCustom.length > MAX_CUSTOM_LEN && <span className="text-xs text-red-500">{MAX_CUSTOM_LEN}자 이하로 입력해주세요</span>}
             </div>
           )}
         </div>
