@@ -7,7 +7,7 @@ import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/ho
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
-import { cn } from '@/shared/utils'
+import { cn, reportError } from '@/shared/utils'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
@@ -56,7 +56,7 @@ export default function RoomPage() {
         }))
       }
     } catch (error) {
-      console.error('Failed to fetch place details', error)
+      reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId, source: 'handleShowDetail' } })
     }
   }
 
