@@ -158,7 +158,7 @@ export const PlaceCardItem = ({
           }}
           onMouseLeave={e => {
             const container = e.target.getStage()?.container()
-            if (container) container.style.cursor = 'default'
+            if (container) container.style.cursor = ''
           }}
         >
           <Rect width={50 * scale} height={20 * scale} fill="transparent" />

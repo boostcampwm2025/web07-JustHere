@@ -35,6 +35,7 @@ export default function RoomPage() {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const [isLocationListCollapsed, setIsLocationListCollapsed] = useState(false)
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
   const lastHandledCategoryErrorRef = useRef<string | null>(null)
   const activeCategoryId = useMemo(() => resolveActiveCategoryId(categories, selectedCategoryId), [categories, selectedCategoryId])
@@ -42,23 +43,29 @@ export default function RoomPage() {
   const activeSelectedPlace = selectedPlaceByCategory[activeCategoryId] ?? null
   const candidatePlaces = useResolvedPlaces(candidatePlaceIds, activeSearchResults)
 
-  const handleShowDetail = async (placeId: string) => {
-    setIsLocationListCollapsed(false)
-    try {
-      const data = await queryClient.fetchQuery({
-        queryKey: googleKeys.placeDetails(placeId),
-        queryFn: () => getPlaceDetails(placeId),
-      })
-      if (activeCategoryId) {
-        setSelectedPlaceByCategory(prev => ({
-          ...prev,
-          [activeCategoryId]: data,
-        }))
+  const handleShowDetail = useCallback(
+    async (placeId: string) => {
+      setIsLocationListCollapsed(false)
+      setIsLoadingDetail(true)
+      try {
+        const data = await queryClient.fetchQuery({
+          queryKey: googleKeys.placeDetails(placeId),
+          queryFn: () => getPlaceDetails(placeId),
+        })
+        if (activeCategoryId) {
+          setSelectedPlaceByCategory(prev => ({
+            ...prev,
+            [activeCategoryId]: data,
+          }))
+        }
+      } catch (error) {
+        reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId, source: 'handleShowDetail' } })
+      } finally {
+        setIsLoadingDetail(false)
       }
-    } catch (error) {
-      reportError({ error, code: 'CLIENT_UNKNOWN', context: { placeId, source: 'handleShowDetail' } })
-    }
-  }
+    },
+    [activeCategoryId, queryClient],
+  )
 
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
@@ -256,6 +263,7 @@ export default function RoomPage() {
             selectedPlace={activeSelectedPlace}
             onPlaceSelect={handlePlaceSelect}
             candidatePlaces={candidatePlaces}
+            isLoadingDetail={isLoadingDetail}
           />
         </div>
         {/* 패널 토글 버튼 */}
