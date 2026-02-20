@@ -16,12 +16,12 @@ export const KeyboardShortcutsDropdown = () => {
 
   return (
     <div className="relative">
-      <Tooltip content="키보드 단축키">
+      <Tooltip content="단축키">
         <Button
           size="icon"
           variant="gray"
           className="rounded-full bg-transparent text-gray-400 hover:text-gray-900"
-          aria-label="키보드 단축키 안내"
+          aria-label="단축키 안내"
           onClick={() => setOpen(prev => !prev)}
         >
           <HelpCircleIcon className="size-5" />
@@ -30,7 +30,7 @@ export const KeyboardShortcutsDropdown = () => {
 
       {open && (
         <Dropdown onOpenChange={setOpen} align="right" className="w-80 p-4">
-          <h3 className="font-semibold mb-3">키보드 단축키</h3>
+          <h3 className="font-semibold mb-3">단축키</h3>
           <Divider className="mb-3" />
           <div className="space-y-2">
             {SHORTCUTS.map(shortcut => (
