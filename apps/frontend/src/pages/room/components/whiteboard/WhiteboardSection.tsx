@@ -21,6 +21,7 @@ interface WhiteboardSectionProps {
   selectedPlace: GooglePlace | null
   onMarkerClick?: (place: GooglePlace | null) => void
   onActiveCategoryChange: (categoryId: string) => void
+  onShowDetail: (placeId: string) => void
 }
 
 export const WhiteboardSection = ({
@@ -36,6 +37,7 @@ export const WhiteboardSection = ({
   searchResults = [],
   selectedPlace,
   onMarkerClick,
+  onShowDetail,
 }: WhiteboardSectionProps) => {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<Category>()
@@ -184,6 +186,7 @@ export const WhiteboardSection = ({
             pendingPlaceCard={pendingPlaceCard}
             onPlaceCardPlaced={onPlaceCardPlaced}
             onPlaceCardCanceled={onPlaceCardCanceled}
+            onShowDetail={onShowDetail}
             canvasTransformRef={canvasTransformRef}
           />
         ) : (

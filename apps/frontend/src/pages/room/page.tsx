@@ -11,8 +11,12 @@ import { cn } from '@/shared/utils'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
+import { useQueryClient } from '@tanstack/react-query'
+import { getPlaceDetails } from '@/shared/api/google'
+import { googleKeys } from '@/shared/hooks/queries/useGoogleQueries'
 
 export default function RoomPage() {
+  const queryClient = useQueryClient()
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
   const { ready, roomId, currentRegion, updateParticipantName, transferOwner, createCategory, deleteCategory, categoryError, clearCategoryError } =
@@ -28,6 +32,7 @@ export default function RoomPage() {
   const [candidatePlaceIds, setCandidatePlaceIds] = useState<string[]>([])
   const [selectedPlaceByCategory, setSelectedPlaceByCategory] = useState<Record<string, GooglePlace | null>>({})
   const [activeLocationTab, setActiveLocationTab] = useState<TabType>('locations')
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const [isLocationListCollapsed, setIsLocationListCollapsed] = useState(false)
   const pendingDeleteRef = useRef<Map<string, CategoryDeleteSnapshot>>(new Map())
@@ -36,6 +41,24 @@ export default function RoomPage() {
   const activeSearchResults = searchResultsByCategory[activeCategoryId] ?? []
   const activeSelectedPlace = selectedPlaceByCategory[activeCategoryId] ?? null
   const candidatePlaces = useResolvedPlaces(candidatePlaceIds, activeSearchResults)
+
+  const handleShowDetail = async (placeId: string) => {
+    setIsLocationListCollapsed(false)
+    try {
+      const data = await queryClient.fetchQuery({
+        queryKey: googleKeys.placeDetails(placeId),
+        queryFn: () => getPlaceDetails(placeId),
+      })
+      if (activeCategoryId) {
+        setSelectedPlaceByCategory(prev => ({
+          ...prev,
+          [activeCategoryId]: data,
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch place details', error)
+    }
+  }
 
   const handleStartPlaceCard = (card: Omit<PlaceCard, 'x' | 'y'>) => {
     setPendingPlaceCard(card)
@@ -250,6 +273,7 @@ export default function RoomPage() {
         </Button>
         <WhiteboardSection
           roomId={roomId}
+          onShowDetail={handleShowDetail}
           onActiveCategoryChange={setSelectedCategoryId}
           onCreateCategory={createCategory}
           onDeleteCategory={handleDeleteCategory}
