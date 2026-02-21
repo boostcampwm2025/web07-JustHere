@@ -6,7 +6,7 @@ import type { Category, GooglePlace, PlaceCard } from '@/shared/types'
 import { useRoomCategories, useRoomMeta, useRoomParticipants } from '@/shared/hooks'
 import { AddCategoryModal, LocationListSection, RoomHeader, WhiteboardSection } from './components'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/shared/assets'
-import { Button } from '@/shared/components'
+import { Button, Skeleton } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
@@ -157,19 +157,39 @@ export default function RoomPage() {
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
   const mapMarkers = activeLocationTab === 'candidates' ? candidatePlaces : activeSearchResults
 
+  // 데이터가 로딩되지 못했을 때 동작하는 스켈레톤 UI이지만, RoomHeader 또한 마찬가지로 로딩된 데이터를 props로 받아오는 컴포넌트이므로 새로고침 시 flickering 발생
+  // 따라서, 데이터 로딩 시 정적인 스켈레톤 UI로 대체하여 Flikering 방지
   if (!ready || !roomId) {
     return (
       <div className="flex flex-col h-screen bg-gray-bg">
         <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
-        <RoomHeader
-          participants={participants}
-          currentUserId={user.userId}
-          roomLink={roomLink}
-          onUpdateName={updateParticipantName}
-          isOwner={isOwner}
-          ownerId={ownerId}
-          onTransferOwner={transferOwner}
-        />
+        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-32 h-8" />
+            <Skeleton className="w-24 h-8" />
+          </div>
+          <div className="flex items-center gap-4">
+            <Skeleton className="w-8 h-8 rounded-full" />
+            <Skeleton className="w-24 h-8" />
+          </div>
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-[420px] border-r border-gray-200 bg-white p-6">
+            <div className="space-y-6">
+              <Skeleton className="w-full h-12" />
+              <div className="space-y-4">
+                <Skeleton className="w-full h-24" />
+                <Skeleton className="w-full h-24" />
+                <Skeleton className="w-full h-24" />
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 bg-gray-50 p-6">
+            <div className="w-full h-full bg-white rounded-lg border border-gray-200 p-6">
+              <Skeleton className="w-full h-full" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -215,7 +235,7 @@ export default function RoomPage() {
       />
       <div className="relative flex flex-1 overflow-hidden">
         {/* LocationListSection wrapper */}
-        <div className={cn('overflow-hidden transition-all duration-300', isLocationListCollapsed ? 'w-0' : 'w-[420px]')}>
+        <div className={cn('overflow-hidden transition-[width] duration-300 ease-in-out', isLocationListCollapsed ? 'w-0' : 'w-[420px]')}>
           <LocationListSection
             roomId={roomId}
             userId={user.userId}
@@ -241,7 +261,7 @@ export default function RoomPage() {
           size="icon"
           onClick={() => setIsLocationListCollapsed(prev => !prev)}
           className={cn(
-            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-all duration-300',
+            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-[left] duration-300 ease-in-out',
             isLocationListCollapsed ? 'left-0' : 'left-[420px]',
           )}
           aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
