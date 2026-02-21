@@ -75,6 +75,7 @@ describe('RoomService', () => {
     removeSession: jest.fn(),
     getSessionsByRoom: jest.fn(),
     updateSessionName: jest.fn(),
+    updateSessionOwner: jest.fn(),
     getSessionByUserIdInRoom: jest.fn(),
     transferOwnership: jest.fn(),
   }
@@ -119,7 +120,7 @@ describe('RoomService', () => {
         {
           provide: VoteBroadcaster,
           useValue: {
-            broadcastVote: jest.fn(),
+            emitToVote: jest.fn(),
           },
         },
       ],
