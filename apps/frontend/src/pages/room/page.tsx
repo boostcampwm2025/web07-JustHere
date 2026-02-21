@@ -221,7 +221,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-bg">
+    <div className="flex flex-col h-screen bg-gray-bg" role="status" aria-label="페이지 로딩 중" aria-busy="true">
       <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
       <RoomHeader
         participants={participants}
