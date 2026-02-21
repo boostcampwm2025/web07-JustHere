@@ -12,6 +12,9 @@ import { useResolvedPlaces, useRoomSocket } from './hooks'
 import { SEO } from '@/shared/components'
 import type { TabType } from '@/pages/room/types/location'
 
+const LOCATION_PANEL_WIDTH = 420
+const LOCATION_PANEL_CLASS = `w-[${LOCATION_PANEL_WIDTH}px]`
+
 export default function RoomPage() {
   const { slug } = useParams<{ slug: string }>()
   const user = useMemo(() => (slug ? getOrCreateStoredUser(slug) : null), [slug])
@@ -161,9 +164,9 @@ export default function RoomPage() {
   // 따라서, 데이터 로딩 시 정적인 스켈레톤 UI로 대체하여 Flikering 방지
   if (!ready || !roomId) {
     return (
-      <div className="flex flex-col h-screen bg-gray-bg">
+      <div className="flex flex-col h-screen bg-gray-bg" role="status" aria-label="페이지 로딩 중" aria-busy="true">
         <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-4">
             <Skeleton className="w-32 h-8" />
             <Skeleton className="w-24 h-8" />
@@ -174,7 +177,7 @@ export default function RoomPage() {
           </div>
         </div>
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-[420px] border-r border-gray-200 bg-white p-6">
+          <div className={cn('border-r border-gray-200 bg-white p-6', LOCATION_PANEL_CLASS)}>
             <div className="space-y-6">
               <Skeleton className="w-full h-12" />
               <div className="space-y-4">
@@ -221,7 +224,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-bg" role="status" aria-label="페이지 로딩 중" aria-busy="true">
+    <div className="flex flex-col h-screen bg-gray-bg">
       <SEO title={roomTitle} description={roomDescription} url={pageUrl} />
       <RoomHeader
         participants={participants}
@@ -235,7 +238,7 @@ export default function RoomPage() {
       />
       <div className="relative flex flex-1 overflow-hidden">
         {/* LocationListSection wrapper */}
-        <div className={cn('overflow-hidden transition-[width] duration-300 ease-in-out', isLocationListCollapsed ? 'w-0' : 'w-[420px]')}>
+        <div className={cn('overflow-hidden transition-[width] duration-300 ease-in-out', isLocationListCollapsed ? 'w-0' : LOCATION_PANEL_CLASS)}>
           <LocationListSection
             roomId={roomId}
             userId={user.userId}
@@ -262,7 +265,7 @@ export default function RoomPage() {
           onClick={() => setIsLocationListCollapsed(prev => !prev)}
           className={cn(
             'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-[left] duration-300 ease-in-out',
-            isLocationListCollapsed ? 'left-0' : 'left-[420px]',
+            isLocationListCollapsed ? 'left-0' : `left-[${LOCATION_PANEL_WIDTH}px]`,
           )}
           aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
         >
