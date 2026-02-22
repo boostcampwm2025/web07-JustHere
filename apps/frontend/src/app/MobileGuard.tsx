@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { LogoKo } from '@/shared/assets'
 
-const isMobile = /Android|iPhone|iPod/i.test(navigator.userAgent)
+const isMobile =
+  typeof navigator !== 'undefined' &&
+  /Android|iPhone|iPod/i.test(navigator.userAgent)
 
 interface MobileGuardProps {
   children: ReactNode
