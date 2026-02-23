@@ -6,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { ToastContainer } from '@/shared/components'
 import { ToastProvider } from '@/shared/providers'
-import { App } from '@/app'
+import { App, MobileGuard } from '@/app'
 import './index.css'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
@@ -55,8 +55,10 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ToastProvider>
-            <App />
-            <ToastContainer />
+            <MobileGuard>
+              <App />
+              <ToastContainer />
+            </MobileGuard>
           </ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
