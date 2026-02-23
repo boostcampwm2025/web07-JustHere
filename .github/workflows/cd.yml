@@ -3,7 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - fix/429-opengraph
+      - main
 
 jobs:
   build-and-push:
