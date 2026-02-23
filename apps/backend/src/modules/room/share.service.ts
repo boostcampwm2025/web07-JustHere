@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import axios from 'axios'
 import { RoomService } from './room.service'
 import { VoteService } from '../vote/vote.service'
 import { CategoryService } from '../category/category.service'
@@ -62,7 +63,7 @@ export class ShareService {
       const categories = await this.categoryService.findByRoomId(room.id)
 
       let winnerName = ''
-      let winnerImage = ''
+      let winnerPlaceId = ''
 
       for (const category of categories) {
         const voteRoomId = `${room.id}:${category.id}`
@@ -74,22 +75,53 @@ export class ShareService {
           if (winners.length > 1) {
             winnerName += ` 외 ${winners.length - 1}곳`
           }
-          winnerImage = winner.imageUrl || ''
+          winnerPlaceId = winner.placeId
           break
         }
       }
 
       const title = winnerName ? `${winnerName} - 모임 장소 결정완료!` : defaultMeta.title
       const description = winnerName ? `${winnerName}, 딱! 여기에서 만나요!` : defaultMeta.description
-      const imageUrl = winnerImage || defaultMeta.imageUrl
+      const imageUrl = winnerPlaceId ? `${baseUrl}/api/share/image/${winnerPlaceId}` : defaultMeta.imageUrl
 
       return { title, description, imageUrl, redirectUrl }
     } catch (error) {
-      this.logger.error(`Error generating result metadata for slug ${slug}`, error)
       if (error instanceof CustomException) {
         throw error
       }
+      this.logger.error(`Error generating result metadata for slug ${slug}`, error)
       return defaultMeta
     }
+  }
+
+  async getLatestPhotoUri(placeId: string): Promise<string> {
+    const apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY')
+    if (!apiKey) return `${this.getBaseUrl()}/logo-kr.png`
+
+    try {
+      const { data } = await axios.get<{ photos?: { name: string }[] }>(`https://places.googleapis.com/v1/places/${placeId}`, {
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'photos',
+        },
+        params: { languageCode: 'ko' },
+      })
+
+      const photos = data.photos ?? []
+      if (photos.length > 0) {
+        const photoUrl = `https://places.googleapis.com/v1/${photos[0].name}/media?maxWidthPx=400&maxHeightPx=400&skipHttpRedirect=true&key=${apiKey}`
+        const photoResponse = await axios.get<{ photoUri: string }>(photoUrl)
+        return photoResponse.data.photoUri
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        const message = (error.response?.data as { error?: { message?: string } })?.error?.message ?? error.message
+        this.logger.error(`Google API error fetching photo for placeId ${placeId} [${status}]: ${message}`)
+      } else {
+        this.logger.error(`Error fetching latest photo for placeId ${placeId}`, error)
+      }
+    }
+    return `${this.getBaseUrl()}/logo-kr.png`
   }
 }
