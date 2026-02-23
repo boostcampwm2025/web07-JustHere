@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Header, Req, Res } from '@nestjs/common'
-import type { Request, Response } from 'express'
+import { Controller, Get, Param, Header, Req } from '@nestjs/common'
+import type { Request } from 'express'
 import { ShareService } from './share.service'
 import { generateOgHtml } from '@/lib/utils/og-template.util'
 
@@ -33,12 +33,5 @@ export class ShareController {
   async shareResult(@Param('slug') slug: string, @Req() req: Request) {
     const { title, description, imageUrl, redirectUrl } = await this.shareService.getResultMetadata(slug)
     return generateOgHtml(title, description, imageUrl, this.appendQueryString(redirectUrl, req))
-  }
-
-  @Get('image/:placeId')
-  async shareImage(@Param('placeId') placeId: string, @Res() res: Response) {
-    const photoUri = await this.shareService.getLatestPhotoUri(placeId)
-    res.setHeader('Cache-Control', 'public, max-age=3600')
-    res.redirect(302, photoUri)
   }
 }
