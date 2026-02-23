@@ -23,9 +23,20 @@ interface PlaceCardItemProps {
   onContextMenu?: (e: Konva.KonvaEventObject<MouseEvent>) => void
   shapeRef?: (node: Konva.Group | null) => void
   onTransformEnd?: (e: Konva.KonvaEventObject<Event>) => void
+  onShowDetail?: (placeId: string) => void
 }
 
-export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick, onContextMenu, shapeRef, onTransformEnd }: PlaceCardItemProps) => {
+export const PlaceCardItem = ({
+  card,
+  draggable,
+  onDragEnd,
+  onMouseDown,
+  onClick,
+  onContextMenu,
+  shapeRef,
+  onTransformEnd,
+  onShowDetail,
+}: PlaceCardItemProps) => {
   const groupRef = useRef<Konva.Group>(null)
 
   const scale = card.scale || 1
@@ -118,13 +129,42 @@ export const PlaceCardItem = ({ card, draggable, onDragEnd, onMouseDown, onClick
         text={card.name}
         x={scaledPadding}
         y={scaledImageHeight + 10 * scale}
-        width={textWidth}
+        width={onShowDetail ? textWidth - 50 * scale : textWidth}
         fontSize={14 * scale}
         fontStyle="bold"
         fill={PLACE_CARD_COLORS.TITLE}
         ellipsis={true}
         wrap="none"
       />
+
+      {/* 상세보기 버튼 */}
+      {onShowDetail && (
+        <Group
+          x={cardWidth - scaledPadding - 50 * scale}
+          y={scaledImageHeight + 10 * scale}
+          width={50 * scale}
+          height={20 * scale}
+          onClick={e => {
+            e.cancelBubble = true
+            onShowDetail(card.placeId)
+          }}
+          onTap={e => {
+            e.cancelBubble = true
+            onShowDetail(card.placeId)
+          }}
+          onMouseEnter={e => {
+            const container = e.target.getStage()?.container()
+            if (container) container.style.cursor = 'pointer'
+          }}
+          onMouseLeave={e => {
+            const container = e.target.getStage()?.container()
+            if (container) container.style.cursor = ''
+          }}
+        >
+          <Rect width={50 * scale} height={20 * scale} fill="transparent" />
+          <Text text="상세보기" fontSize={12 * scale} fill="#3B82F6" align="right" width={50 * scale} />
+        </Group>
+      )}
 
       {/* 평점 및 리뷰 개수 */}
       {card.rating != null && (
