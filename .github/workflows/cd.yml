@@ -3,7 +3,7 @@ name: cd.yml
 on:
   push:
     branches:
-      - refactor/432-build-optimization
+      - main
 
 jobs:
   build-and-push:
