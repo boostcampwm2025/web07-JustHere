@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { YjsService } from './yjs.service'
-import { PrismaService } from '@/lib/prisma/prisma.service'
+import { CanvasRepository } from './canvas.repository'
 import { Logger } from '@nestjs/common'
 import * as Y from 'yjs'
 import { CustomException } from '@/lib/exceptions/custom.exception'
@@ -8,38 +8,33 @@ import { CustomException } from '@/lib/exceptions/custom.exception'
 describe('YjsService', () => {
   let service: YjsService
 
-  // 1. PrismaService의 필요한 메서드만 타입 정의 (Manual Mocking)
-  let prisma: {
-    categoryUpdateLog: {
-      findMany: jest.Mock
-      create: jest.Mock
-    }
+  // Manual Mock 객체 정의
+  let mockRepository: {
+    getMergedUpdate: jest.Mock
+    saveUpdateLog: jest.Mock
   }
 
   beforeEach(async () => {
-    // 2. 타이머 모킹 설정 (각 테스트마다 초기화)
+    // 타이머 모킹 설정 (각 테스트마다 초기화)
     jest.useFakeTimers()
 
-    // 3. Mock 구현체 초기화
-    prisma = {
-      categoryUpdateLog: {
-        findMany: jest.fn(),
-        create: jest.fn(),
-      },
+    // Mock 구현체 초기화
+    mockRepository = {
+      getMergedUpdate: jest.fn(),
+      saveUpdateLog: jest.fn(),
     }
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         YjsService,
         {
-          provide: PrismaService,
-          // 4. 타입 호환성을 위해 강제 단언하여 주입
-          useValue: prisma as unknown as PrismaService,
+          provide: CanvasRepository,
+          useValue: mockRepository, // Manual Mock 주입
         },
       ],
     }).compile()
 
-    service = module.get(YjsService)
+    service = module.get<YjsService>(YjsService)
 
     // Logger 모킹
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
@@ -59,17 +54,15 @@ describe('YjsService', () => {
     const socketId = 'socket-1'
 
     it('새 문서를 생성하고 초기 업데이트 데이터를 반환해야 한다', async () => {
-      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
+      // spyOn 대신 mock 객체 직접 제어
+      mockRepository.getMergedUpdate.mockResolvedValue(new Uint8Array())
 
       const result = await service.initializeConnection(roomId, categoryId, socketId)
 
       expect(result.docKey).toBe(`${roomId}-${categoryId}`)
       expect(result.update).toBeDefined()
 
-      expect(prisma.categoryUpdateLog.findMany).toHaveBeenCalledWith({
-        where: { categoryId },
-        orderBy: { createdAt: 'asc' },
-      })
+      expect(mockRepository.getMergedUpdate).toHaveBeenCalledWith(categoryId)
     })
 
     it('기존 DB 데이터를 불러와 문서를 초기화해야 한다', async () => {
@@ -77,14 +70,8 @@ describe('YjsService', () => {
       doc.getText('test').insert(0, 'hello')
       const update = Y.encodeStateAsUpdate(doc)
 
-      const mockLog = {
-        id: 1,
-        categoryId,
-        updateData: Buffer.from(update),
-        createdAt: new Date(),
-      }
-
-      prisma.categoryUpdateLog.findMany.mockResolvedValue([mockLog])
+      // YDoc 문서 병합
+      mockRepository.getMergedUpdate.mockResolvedValue(update)
 
       const result = await service.initializeConnection(roomId, categoryId, socketId)
 
@@ -104,7 +91,7 @@ describe('YjsService', () => {
     const socketId = 'socket-1'
 
     beforeEach(async () => {
-      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
+      mockRepository.getMergedUpdate.mockResolvedValue(new Uint8Array())
       await service.initializeConnection(roomId, categoryId, socketId)
     })
 
@@ -127,7 +114,7 @@ describe('YjsService', () => {
       const roomId = 'room-1'
       const categoryId = 'cat-1'
 
-      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
+      mockRepository.getMergedUpdate.mockResolvedValue(new Uint8Array())
       await service.initializeConnection(roomId, categoryId, 'socket-1')
 
       const doc = new Y.Doc()
@@ -141,23 +128,17 @@ describe('YjsService', () => {
       // 2. 시간 앞당기기
       jest.advanceTimersByTime(5000)
 
-      // 3. ✨ 핵심 수정: 비동기 콜백(DB 저장)이 완료될 때까지 마이크로태스크 큐 비우기
+      // 3. 비동기 콜백(DB 저장)이 완료될 때까지 마이크로태스크 큐 비우기
       await Promise.resolve()
 
-      expect(prisma.categoryUpdateLog.create).toHaveBeenCalledWith({
-        data: {
-          categoryId,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          updateData: expect.any(Buffer),
-        },
-      })
+      expect(mockRepository.saveUpdateLog).toHaveBeenCalledWith(categoryId, expect.any(Uint8Array))
     })
   })
 
   describe('disconnectClient', () => {
     it('클라이언트 연결을 해제하고 참여 중이던 캔버스 ID 목록을 반환해야 한다', async () => {
       const socketId = 'user-1'
-      prisma.categoryUpdateLog.findMany.mockResolvedValue([])
+      mockRepository.getMergedUpdate.mockResolvedValue(new Uint8Array())
 
       await service.initializeConnection('room-1', 'cat-1', socketId)
       await service.initializeConnection('room-1', 'cat-2', socketId)
