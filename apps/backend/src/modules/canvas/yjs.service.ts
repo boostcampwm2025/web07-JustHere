@@ -9,7 +9,6 @@ interface YjsDocument {
   doc: Y.Doc
   roomId: string
   categoryId: string
-  connections: Set<string> // socketId들
 }
 
 @Injectable()
@@ -20,6 +19,9 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
   // categoryId -> YjsDocument 매핑
   private documents = new Map<string, YjsDocument>()
+
+  // socketId -> Set<categoryId> 매핑 (역방향 인덱스)
+  private clientConnections = new Map<string, Set<string>>()
 
   // 업데이트 버퍼: categoryId -> 업데이트 바이너리 배열
   private updateBuffer = new Map<string, Uint8Array[]>()
@@ -69,7 +71,6 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
       doc,
       roomId,
       categoryId,
-      connections: new Set(),
     })
 
     return doc
@@ -79,24 +80,36 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    * 클라이언트를 문서에 연결
    */
   connectClient(categoryId: string, socketId: string) {
-    const yjsDoc = this.documents.get(categoryId)
-    if (yjsDoc) yjsDoc.connections.add(socketId)
+    // 문서가 존재하는지 확인
+    if (this.documents.has(categoryId)) {
+      // 역방향 매핑 업데이트
+      if (!this.clientConnections.has(socketId)) {
+        this.clientConnections.set(socketId, new Set())
+      }
+      this.clientConnections.get(socketId)!.add(categoryId)
+    }
   }
 
   /**
    * 클라이언트 연결 해제
    */
   disconnectClient(socketId: string): string[] {
-    const canvasIds: string[] = []
+    const categoryIds = this.clientConnections.get(socketId)
+    if (!categoryIds) return []
 
-    for (const [, yjsDoc] of this.documents.entries()) {
-      if (yjsDoc.connections.has(socketId)) {
-        yjsDoc.connections.delete(socketId)
-        canvasIds.push(yjsDoc.categoryId)
+    const disconnectedCategories: string[] = []
+
+    for (const categoryId of categoryIds) {
+      // 문서가 메모리에 존재하는지 확인
+      if (this.documents.has(categoryId)) {
+        disconnectedCategories.push(categoryId)
       }
     }
 
-    return canvasIds
+    // 역방향 매핑 제거
+    this.clientConnections.delete(socketId)
+
+    return disconnectedCategories
   }
 
   /**
