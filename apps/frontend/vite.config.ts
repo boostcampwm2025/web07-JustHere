@@ -45,7 +45,6 @@ export default defineConfig(() => {
             'vendor-canvas': ['konva', 'react-konva', 'react-konva-utils'],
             'vendor-collab': ['yjs', 'socket.io-client'],
             'vendor-map': ['@vis.gl/react-google-maps'],
-            'vendor-sentry': ['@sentry/react'],
           },
         },
       },
