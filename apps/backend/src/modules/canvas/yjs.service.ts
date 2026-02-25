@@ -1,10 +1,16 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { YjsDocument } from './yjs.type'
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import * as Y from 'yjs'
 import { encodeStateAsUpdate, applyUpdate } from 'yjs'
 import { CanvasRepository } from './canvas.repository'
+
+interface YjsDocument {
+  doc: Y.Doc
+  roomId: string
+  categoryId: string
+  connections: Set<string> // socketId들
+}
 
 @Injectable()
 export class YjsService implements OnModuleInit, OnModuleDestroy {

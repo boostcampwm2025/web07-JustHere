@@ -9,4 +9,4 @@ import { CanvasRepository } from './canvas.repository'
   providers: [YjsService, CanvasGateway, CanvasRepository],
   exports: [YjsService],
 })
-export class YjsModule {}
+export class CanvasModule {}
