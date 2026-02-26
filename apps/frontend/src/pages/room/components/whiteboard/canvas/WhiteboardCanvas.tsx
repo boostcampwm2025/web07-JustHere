@@ -15,9 +15,9 @@ import {
   useYjsSocket,
   useCanvasStageTransform,
 } from '@/pages/room/hooks'
-import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
+import { CursorLayer } from './cursor-layer'
 import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
@@ -76,7 +76,6 @@ export const WhiteboardCanvas = ({
   const userName = user ? user.name : 'Unknown User'
 
   const {
-    cursors,
     postits: postIts,
     placeCards,
     lines,
@@ -649,11 +648,9 @@ export const WhiteboardCanvas = ({
             onDragStart={handleTransformerDragStart}
             onDragEnd={handleTransformerDragEnd}
           />
-
-          {Array.from(cursors.values()).map(cursor => (
-            <AnimatedCursor key={cursor.socketId} cursor={cursor} />
-          ))}
         </Layer>
+
+        <CursorLayer />
       </Stage>
     </div>
   )
