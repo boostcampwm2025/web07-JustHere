@@ -23,6 +23,7 @@ import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 import type { YjsItemType, YjsRank } from '@/pages/room/types'
 import { makeKey, assignNextRank, resolveZIndexState, shouldSkipMoveToTop } from '@/pages/room/utils'
+import { canvasSyncHandlers } from './canvasSyncHandlers'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -152,86 +153,28 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     undoManager.on('stack-cleared', handleStackChange)
     handleStackChange()
 
-    // Yjs 변경사항을 React state에 반영하는 함수
-    const syncPostitsToState = () => {
-      const items: PostIt[] = yPostits.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        x: yMap.get('x') as number,
-        y: yMap.get('y') as number,
-        width: yMap.get('width') as number,
-        height: yMap.get('height') as number,
-        scale: yMap.get('scale') as number,
-        fill: yMap.get('fill') as string,
-        text: yMap.get('text') as string,
-        authorName: yMap.get('authorName') as string,
-      }))
-      setPostits(items)
-    }
+    const { syncPostitsToState, syncPlaceCardsToState, syncLinesToState, syncTextBoxesToState, syncZIndexOrderToState } = canvasSyncHandlers({
+      localMaxTimestampRef,
+      setPostits,
+      setPlaceCards,
+      setLines,
+      setTextBoxes,
+      setZIndexOrder,
+      resolveZIndexState,
+    })({
+      yPostits,
+      yPlaceCards,
+      yLines,
+      yTextBoxes,
+      yZRankByKey,
+    })
 
-    const syncPlaceCardsToState = () => {
-      const items: PlaceCard[] = yPlaceCards.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        placeId: yMap.get('placeId') as string,
-        name: yMap.get('name') as string,
-        address: yMap.get('address') as string,
-        x: yMap.get('x') as number,
-        y: yMap.get('y') as number,
-        width: (yMap.get('width') as number | undefined) ?? PLACE_CARD_WIDTH,
-        height: (yMap.get('height') as number | undefined) ?? PLACE_CARD_HEIGHT,
-        scale: yMap.get('scale') as number,
-        createdAt: yMap.get('createdAt') as string,
-        image: (yMap.get('image') as string | null | undefined) ?? null,
-        category: (yMap.get('category') as string | undefined) ?? '',
-        rating: yMap.get('rating') as number | undefined,
-        userRatingCount: yMap.get('userRatingCount') as number | undefined,
-      }))
-      setPlaceCards(items)
-    }
-
-    const syncLinesToState = () => {
-      const items: Line[] = yLines.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        points: (yMap.get('points') as number[]) || [],
-        stroke: yMap.get('stroke') as string,
-        strokeWidth: yMap.get('strokeWidth') as number,
-        tension: yMap.get('tension') as number,
-        lineCap: yMap.get('lineCap') as 'round' | 'butt' | 'square',
-        lineJoin: yMap.get('lineJoin') as 'round' | 'bevel' | 'miter',
-        tool: yMap.get('tool') as 'pen',
-      }))
-      setLines(items)
-    }
-
-    const syncTextBoxesToState = () => {
-      const items: TextBox[] = yTextBoxes.toArray().map(yMap => ({
-        id: yMap.get('id') as string,
-        x: yMap.get('x') as number,
-        y: yMap.get('y') as number,
-        width: yMap.get('width') as number,
-        height: yMap.get('height') as number,
-        scale: yMap.get('scale') as number,
-        text: yMap.get('text') as string,
-        authorName: yMap.get('authorName') as string,
-      }))
-      setTextBoxes(items)
-    }
-
-    const syncZIndexOrderToState = () => {
-      const { items, maxTimestamp } = resolveZIndexState(yZRankByKey, localMaxTimestampRef.current)
-      localMaxTimestampRef.current = maxTimestamp
-      setZIndexOrder(items)
-    }
-
-    // Yjs 변경 감지 리스너
-    // observe: Y.Array의 추가/삭제만 감지 (드래그 위치 변경 감지를 못함)
-    // observeDeep: 모든 변경 감지 (배열 구조 변경 + 내부 Y.Map 속성 변경)
     yPostits.observeDeep(syncPostitsToState)
     yPlaceCards.observeDeep(syncPlaceCardsToState)
     yLines.observeDeep(syncLinesToState)
     yTextBoxes.observeDeep(syncTextBoxesToState)
     yZRankByKey.observe(syncZIndexOrderToState)
 
-    // 초기 동기화
     syncPostitsToState()
     syncPlaceCardsToState()
     syncLinesToState()
