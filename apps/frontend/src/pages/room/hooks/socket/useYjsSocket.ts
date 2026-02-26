@@ -22,7 +22,7 @@ import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import type { CanvasItemType } from '@/shared/types'
 import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 import type { YjsItemType, YjsRank } from '@/pages/room/types'
-import { makeKey, parseKey } from '@/pages/room/utils'
+import { makeKey, assignNextRank, resolveZIndexState, shouldSkipMoveToTop } from '@/pages/room/utils'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -217,25 +217,8 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }
 
     const syncZIndexOrderToState = () => {
-      const entries: Array<{ key: string; rank: YjsRank; parsed: YjsItemType | null }> = []
-      let maxTimestamp = localMaxTimestampRef.current
-
-      yZRankByKey.forEach((rank, key) => {
-        if (rank?.timestamp != null) maxTimestamp = Math.max(maxTimestamp, rank.timestamp)
-        const parsed = parseKey(key)
-        entries.push({ key, rank: rank ?? { timestamp: 0, clientId: 0 }, parsed })
-      })
+      const { items, maxTimestamp } = resolveZIndexState(yZRankByKey, localMaxTimestampRef.current)
       localMaxTimestampRef.current = maxTimestamp
-
-      entries.sort((a, b) => {
-        if (a.rank.timestamp !== b.rank.timestamp) return a.rank.timestamp - b.rank.timestamp
-        return a.rank.clientId - b.rank.clientId
-      })
-
-      const items: Array<YjsItemType> = []
-      for (const entry of entries) {
-        if (entry.parsed) items.push(entry.parsed)
-      }
       setZIndexOrder(items)
     }
 
@@ -527,15 +510,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('text', postit.text)
     yMap.set('authorName', postit.authorName)
 
-    const zIndexMap = new Y.Map()
-    zIndexMap.set('type', 'postit')
-    zIndexMap.set('id', postit.id)
-
     doc.transact(() => {
       yPostits.push([yMap])
-      const nextTimestamp = localMaxTimestampRef.current + 1
-      localMaxTimestampRef.current = nextTimestamp
-      yZRankByKey.set(makeKey('postit', postit.id), { timestamp: nextTimestamp, clientId: doc.clientID })
+      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('postit', postit.id), localMaxTimestampRef.current, doc.clientID)
     }, localOriginRef.current)
   }
 
@@ -567,15 +544,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     if (card.rating !== undefined) yMap.set('rating', card.rating)
     if (card.userRatingCount !== undefined) yMap.set('userRatingCount', card.userRatingCount)
 
-    const zIndexMap = new Y.Map()
-    zIndexMap.set('type', 'placeCard')
-    zIndexMap.set('id', card.id)
-
     doc.transact(() => {
       yPlaceCards.push([yMap])
-      const nextTimestamp = localMaxTimestampRef.current + 1
-      localMaxTimestampRef.current = nextTimestamp
-      yZRankByKey.set(makeKey('placeCard', card.id), { timestamp: nextTimestamp, clientId: doc.clientID })
+      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('placeCard', card.id), localMaxTimestampRef.current, doc.clientID)
     }, localOriginRef.current)
   }
 
@@ -601,15 +572,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     yMap.set('lineJoin', line.lineJoin)
     yMap.set('tool', line.tool)
 
-    const zIndexMap = new Y.Map()
-    zIndexMap.set('type', 'line')
-    zIndexMap.set('id', line.id)
-
     doc.transact(() => {
       yLines.push([yMap])
-      const nextTimestamp = localMaxTimestampRef.current + 1
-      localMaxTimestampRef.current = nextTimestamp
-      yZRankByKey.set(makeKey('line', line.id), { timestamp: nextTimestamp, clientId: doc.clientID })
+      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('line', line.id), localMaxTimestampRef.current, doc.clientID)
     }, localOriginRef.current)
   }
 
@@ -656,15 +621,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       yMap.set(key, value)
     })
 
-    const zIndexMap = new Y.Map()
-    zIndexMap.set('type', 'textBox')
-    zIndexMap.set('id', textBox.id)
-
     doc.transact(() => {
       yTextBoxes.push([yMap])
-      const nextTimestamp = localMaxTimestampRef.current + 1
-      localMaxTimestampRef.current = nextTimestamp
-      yZRankByKey.set(makeKey('textBox', textBox.id), { timestamp: nextTimestamp, clientId: doc.clientID })
+      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('textBox', textBox.id), localMaxTimestampRef.current, doc.clientID)
     }, localOriginRef.current)
   }
 
@@ -684,23 +643,10 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
       doc.transact(() => {
         const current = yZRankByKey.get(key)
-        const nextTimestamp = localMaxTimestampRef.current + 1
-
-        // timestamp가 max이고
-        // 같은 timestamp를 가진 아이템 중 clientId가 가장 작은 아이템인지 확인
-        if (current?.timestamp === localMaxTimestampRef.current) {
-          let minClientId = current.clientId
-          yZRankByKey.forEach(rank => {
-            if (rank?.timestamp === localMaxTimestampRef.current && rank.clientId < minClientId) {
-              minClientId = rank.clientId
-            }
-          })
-
-          if (current.clientId === minClientId) return
+        if (shouldSkipMoveToTop(yZRankByKey, current, localMaxTimestampRef.current)) {
+          return
         }
-
-        localMaxTimestampRef.current = nextTimestamp
-        yZRankByKey.set(key, { timestamp: nextTimestamp, clientId: doc.clientID })
+        localMaxTimestampRef.current = assignNextRank(yZRankByKey, key, localMaxTimestampRef.current, doc.clientID)
       }, localOriginRef.current)
 
       const undoManager = undoManagerRef.current
