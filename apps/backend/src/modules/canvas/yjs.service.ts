@@ -197,8 +197,14 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
         this.logger.log(`[Yjs] Flushed ${updates.length} updates for category ${categoryId}`)
       } catch (err) {
-        this.logger.error(`[Yjs] Failed to flush buffer for ${categoryId}`, err)
-        // TODO: 만약 flush 실패 시 다시 버퍼에 넣거나, 재시도 큐에 넣는 로직 필요
+        this.logger.error(`Flush failed for ${categoryId}, restoring buffer...`, err)
+
+        // [DB Flush 실패 시 업데이트 로그 복구 로직]
+        // 1. 현재 버퍼에 쌓인 데이터 가져오기 (Flush 도중 새로 들어온 데이터)
+        const newUpdates = this.updateBuffer.get(categoryId) || []
+
+        // 2. 실패한 데이터(updates)를 앞에, 새 데이터(newUpdates)를 뒤에 붙여서 복구 (순서: 실패한 과거 데이터 -> 새로 들어온 최신 데이터)
+        this.updateBuffer.set(categoryId, [...updates, ...newUpdates])
       }
     }
   }
