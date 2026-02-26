@@ -2,15 +2,31 @@ export type ToggleType = 'map' | 'canvas'
 
 export type ToolType = 'cursor' | 'hand' | 'pencil' | 'postIt' | 'textBox'
 
-export type CanvasItemType = 'postit' | 'line' | 'placeCard' | 'textBox'
+export const CANVAS_ITEM_TYPE = {
+  POST_IT: 'postit',
+  LINE: 'line',
+  PLACE_CARD: 'placeCard',
+  TEXT_BOX: 'textBox',
+} as const
+
+export type CanvasItemType = (typeof CANVAS_ITEM_TYPE)[keyof typeof CANVAS_ITEM_TYPE]
+
+export const CANVAS_ITEM_ARRAY_TYPE: Record<CanvasItemType, string> = {
+  [CANVAS_ITEM_TYPE.POST_IT]: 'postits',
+  [CANVAS_ITEM_TYPE.LINE]: 'lines',
+  [CANVAS_ITEM_TYPE.PLACE_CARD]: 'placeCards',
+  [CANVAS_ITEM_TYPE.TEXT_BOX]: 'textBoxes',
+}
+
+type DraggableCanvasItemType = (typeof CANVAS_ITEM_TYPE)[keyof Pick<typeof CANVAS_ITEM_TYPE, 'POST_IT' | 'PLACE_CARD' | 'TEXT_BOX'>]
 
 export type DragInitialState =
   | {
-      type: 'postit' | 'placeCard' | 'textBox'
+      type: DraggableCanvasItemType
       x: number
       y: number
     }
-  | { type: 'line'; points: number[] }
+  | { type: typeof CANVAS_ITEM_TYPE.LINE; points: number[] }
 
 export interface SelectedItem {
   id: string
