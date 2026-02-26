@@ -2,17 +2,13 @@ import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
 import { Injectable } from '@nestjs/common'
 import { Category } from '@prisma/client'
-import type { Socket } from 'socket.io'
-import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
 import { CategoryRepository } from './category.repository'
-import { CategoryCreatedPayload, CategoryDeletedPayload } from './dto/category.s2c.dto'
 
 @Injectable()
 export class CategoryService {
   constructor(
     private readonly categoryRepository: CategoryRepository,
-    private readonly broadcaster: RoomBroadcaster,
     private readonly userService: UserService,
   ) {}
 
@@ -20,10 +16,12 @@ export class CategoryService {
     return this.categoryRepository.findByRoomId(roomId)
   }
 
-  async createCategory(client: Socket, name: string) {
-    const session = this.userService.getSession(client.id)
+  async createCategory(clientId: string, name: string): Promise<{ category: Category; roomId: string }> {
+    const session = this.userService.getSession(clientId)
 
-    if (!session) throw new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.')
+    if (!session) {
+      throw new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.')
+    }
 
     const existingCategories = await this.categoryRepository.findByRoomId(session.roomId)
     if (existingCategories.length >= 10) {
@@ -39,18 +37,15 @@ export class CategoryService {
       orderIndex,
     })
 
-    const response: CategoryCreatedPayload = {
-      categoryId: category.id,
-      name: category.title,
-    }
-
-    this.broadcaster.emitToRoom(category.roomId, 'category:created', response)
+    return { category, roomId: session.roomId }
   }
 
-  async deleteCategory(client: Socket, categoryId: string) {
-    const session = this.userService.getSession(client.id)
+  async deleteCategory(clientId: string, categoryId: string): Promise<{ roomId: string; categoryId: string }> {
+    const session = this.userService.getSession(clientId)
 
-    if (!session) throw new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.')
+    if (!session) {
+      throw new CustomException(ErrorType.NotInRoom, '방에 참여하지 않았습니다.')
+    }
 
     const existingCategories = await this.categoryRepository.findByRoomId(session.roomId)
 
@@ -65,10 +60,6 @@ export class CategoryService {
 
     await this.categoryRepository.delete(categoryId)
 
-    const response: CategoryDeletedPayload = {
-      categoryId,
-    }
-
-    this.broadcaster.emitToRoom(session.roomId, 'category:deleted', response)
+    return { roomId: session.roomId, categoryId }
   }
 }
