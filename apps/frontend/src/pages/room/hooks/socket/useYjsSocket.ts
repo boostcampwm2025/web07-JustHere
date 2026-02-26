@@ -6,7 +6,7 @@ import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { reportError } from '@/shared/utils'
 import { CURSOR_FREQUENCY } from '@/pages/room/constants'
-import { useRemoteCursors } from './useRemoteCursors'
+import { useCursorPresence } from '@/pages/room/hooks'
 import { useCanvasCommands } from './useCanvasCommands'
 import { useCanvasTelemetry } from './useCanvasTelemetry'
 import { useYDocLifecycle } from './useYDocLifecycle'
@@ -44,10 +44,10 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [roomId, canvasId],
   )
   const { trackHighFreq, trackHighFreqRef } = useCanvasTelemetry({ roomId, canvasId })
+  const { applyAwareness, clearCursors } = useCursorPresence()
 
-  const { cursors, updateCursorPosition, updateCursorChatState, applyRemoteAwareness, clearCursors } = useRemoteCursors({ userName })
-  const updateCursorPositionRef = useRef(updateCursorPosition)
-  const updateCursorChatStateRef = useRef(updateCursorChatState)
+  const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
 
   const { undoManagerRef, canUndo, canRedo, undo, redo, stopCapturing, updateHistoryState } = useCanvasHistory({
     sharedTypes,
@@ -65,14 +65,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     canvasIdRef.current = canvasId
   }, [canvasId])
 
-  useEffect(() => {
-    updateCursorPositionRef.current = updateCursorPosition
-  }, [updateCursorPosition])
-
-  useEffect(() => {
-    updateCursorChatStateRef.current = updateCursorChatState
-  }, [updateCursorChatState])
-
   useCanvasTransport({
     roomId,
     canvasId,
@@ -81,7 +73,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     docRef,
     socketRef,
     trackHighFreq,
-    applyRemoteAwareness,
+    applyAwareness,
     clearCursors,
   })
 
@@ -90,7 +82,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   useEffect(() => {
     const throttled = throttle((x: number, y: number) => {
       if (!socketRef.current?.connected) return
-      const cursor = updateCursorPositionRef.current(x, y)
+      cursorPositionRef.current = { x, y }
+      const cursor = {
+        x,
+        y,
+        name: userName,
+        chatActive: cursorChatRef.current.chatActive,
+        chatMessage: cursorChatRef.current.chatMessage,
+      }
       const awarenessPayload: YjsAwarenessPayload = {
         canvasId: canvasIdRef.current,
         state: { cursor },
@@ -107,7 +106,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         updateCursorThrottledRef.current = null
       }
     }
-  }, [trackHighFreqRef])
+  }, [trackHighFreqRef, userName])
 
   const updateCursor = useCallback((x: number, y: number) => {
     updateCursorThrottledRef.current?.(x, y)
@@ -115,7 +114,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
   const sendCursorChat = useCallback(
     (chatActive: boolean, chatMessage?: string) => {
-      const cursor = updateCursorChatStateRef.current(chatActive, chatMessage)
+      cursorChatRef.current = { chatActive, chatMessage: chatMessage ?? '' }
+      const cursor = {
+        x: cursorPositionRef.current.x,
+        y: cursorPositionRef.current.y,
+        name: userName,
+        chatActive,
+        chatMessage,
+      }
       if (!socketRef.current?.connected) return
 
       const awarenessPayload: YjsAwarenessPayload = {
@@ -126,7 +132,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socketRef.current.emit('y:awareness', awarenessPayload)
       trackHighFreqRef.current('y:awareness:send')
     },
-    [trackHighFreqRef],
+    [trackHighFreqRef, userName],
   )
 
   const { addPostIt, updatePostIt, addPlaceCard, updatePlaceCard, addLine, updateLine, addTextBox, updateTextBox, deleteCanvasItem, moveToTop } =
@@ -140,7 +146,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
   return {
     isConnected,
-    cursors,
     postits,
     placeCards,
     lines,

@@ -20,7 +20,7 @@ interface UseCanvasTransportOptions {
   docRef: { current: Y.Doc | null }
   socketRef: { current: Socket | null }
   trackHighFreq: (key: string, bytes?: number) => void
-  applyRemoteAwareness: (payload: YjsAwarenessBroadcast) => void
+  applyAwareness: (payload: YjsAwarenessBroadcast) => void
   clearCursors: () => void
 }
 
@@ -32,7 +32,7 @@ export const useCanvasTransport = ({
   docRef,
   socketRef,
   trackHighFreq,
-  applyRemoteAwareness,
+  applyAwareness,
   clearCursors,
 }: UseCanvasTransportOptions) => {
   useEffect(() => {
@@ -70,7 +70,7 @@ export const useCanvasTransport = ({
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
       trackHighFreq('y:awareness:recv')
-      applyRemoteAwareness(payload)
+      applyAwareness(payload)
     }
 
     const updateHandler = (update: Uint8Array, origin: unknown) => {
@@ -116,5 +116,5 @@ export const useCanvasTransport = ({
       socket.off('y:awareness', handleAwareness)
       socketRef.current = null
     }
-  }, [roomId, canvasId, getSocket, status, docRef, socketRef, trackHighFreq, applyRemoteAwareness, clearCursors])
+  }, [roomId, canvasId, getSocket, status, docRef, socketRef, trackHighFreq, applyAwareness, clearCursors])
 }
