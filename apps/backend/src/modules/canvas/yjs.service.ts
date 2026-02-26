@@ -178,7 +178,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
   /**
    * YjsUpdateLog 버퍼 내용을 병합하여 DB에 저장 (Flush)
    */
-  private async flushBufferToDB() {
+  async flushBufferToDB() {
     if (this.updateBuffer.size === 0) return
 
     // 현재 버퍼의 스냅샷을 뜨고 맵을 비움 (동시성 이슈 방지)
