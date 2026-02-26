@@ -123,11 +123,8 @@ describe('GoogleService', () => {
       const result = await service.searchText(dtoWithoutRoom)
 
       expect(mockRoomRepository.findById).not.toHaveBeenCalled()
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        '/places:searchText',
-        expect.not.objectContaining({ locationBias: expect.anything() }) as Record<string, unknown>,
-        expect.any(Object) as unknown,
-      )
+      const callArg = (mockAxiosInstance.post.mock.calls[0] as [string, Record<string, unknown>])[1]
+      expect(callArg).not.toHaveProperty('locationBias')
       expect(result.places).toHaveLength(1)
     })
 
