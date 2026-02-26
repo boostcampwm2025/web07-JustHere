@@ -52,6 +52,18 @@ describe('GoogleController', () => {
       expect(service.searchText).toHaveBeenCalledWith(dto)
       expect(result).toEqual(expectedResult)
     })
+
+    it('roomId 없이 searchText를 호출할 수 있다', async () => {
+      const dto = { textQuery: 'test' }
+      const expectedResult = { places: [] }
+
+      service.searchText.mockResolvedValue(expectedResult)
+
+      const result = await controller.searchText(dto)
+
+      expect(service.searchText).toHaveBeenCalledWith(dto)
+      expect(result).toEqual(expectedResult)
+    })
   })
 
   describe('getPlaceDetails', () => {

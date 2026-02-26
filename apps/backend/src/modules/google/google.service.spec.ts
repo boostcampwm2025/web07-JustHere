@@ -113,6 +113,39 @@ describe('GoogleService', () => {
 
       await expect(service.searchText(dto)).rejects.toThrow(new CustomException(ErrorType.BadRequest, '잘못된 요청입니다: Bad Request'))
     })
+
+    it('roomId가 없으면 locationBias 없이 검색해야 한다', async () => {
+      const dtoWithoutRoom = { textQuery: '맛집' }
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { places: [{ id: 'place-1' }] },
+      })
+
+      const result = await service.searchText(dtoWithoutRoom)
+
+      expect(mockRoomRepository.findById).not.toHaveBeenCalled()
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/places:searchText',
+        expect.not.objectContaining({ locationBias: expect.anything() }) as Record<string, unknown>,
+        expect.any(Object) as unknown,
+      )
+      expect(result.places).toHaveLength(1)
+    })
+
+    it('pageToken이 있으면 requestBody에 포함해야 한다', async () => {
+      const dtoWithPageToken = { textQuery: '맛집', roomId: 'room-1', pageToken: 'next-page-token' }
+      mockRoomRepository.findById.mockResolvedValue({ x: 127.0, y: 37.0 })
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { places: [] },
+      })
+
+      await service.searchText(dtoWithPageToken)
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/places:searchText',
+        expect.objectContaining({ pageToken: 'next-page-token' }) as Record<string, unknown>,
+        expect.any(Object) as unknown,
+      )
+    })
   })
 
   describe('getPlaceDetails', () => {
@@ -170,6 +203,17 @@ describe('GoogleService', () => {
       mockAxiosInstance.get.mockRejectedValue(errorResponse)
 
       await expect(service.getPhoto(placeId, photoId)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
+    })
+  })
+
+  describe('handleError (non-axios error)', () => {
+    it('Axios 에러가 아닌 일반 에러는 BadGateway를 던져야 한다', async () => {
+      mockAxiosInstance.post.mockRejectedValue(new Error('unexpected'))
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(false)
+
+      await expect(service.searchText({ textQuery: '맛집' })).rejects.toThrow(
+        new CustomException(ErrorType.BadGateway, 'Google API 호출 중 오류 발생'),
+      )
     })
   })
 })
