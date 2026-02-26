@@ -11,11 +11,12 @@ export const CANVAS_ITEM_TYPE = {
 
 export type CanvasItemType = (typeof CANVAS_ITEM_TYPE)[keyof typeof CANVAS_ITEM_TYPE]
 
-export const CANVAS_ITEM_ARRAY_TYPE: Record<CanvasItemType, string> = {
+export const YJS_TYPE: Record<CanvasItemType | 'Z_RANK_BY_KEY', string> = {
   [CANVAS_ITEM_TYPE.POST_IT]: 'postits',
   [CANVAS_ITEM_TYPE.LINE]: 'lines',
   [CANVAS_ITEM_TYPE.PLACE_CARD]: 'placeCards',
   [CANVAS_ITEM_TYPE.TEXT_BOX]: 'textBoxes',
+  Z_RANK_BY_KEY: 'zRankByKey',
 }
 
 type DraggableCanvasItemType = (typeof CANVAS_ITEM_TYPE)[keyof Pick<typeof CANVAS_ITEM_TYPE, 'POST_IT' | 'PLACE_CARD' | 'TEXT_BOX'>]

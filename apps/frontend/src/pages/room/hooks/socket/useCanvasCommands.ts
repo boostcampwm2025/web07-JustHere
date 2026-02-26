@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import * as Y from 'yjs'
-import { CANVAS_ITEM_ARRAY_TYPE, CANVAS_ITEM_TYPE, type CanvasItemType, type Line, type PlaceCard, type PostIt, type TextBox } from '@/shared/types'
+import { YJS_TYPE, CANVAS_ITEM_TYPE, type CanvasItemType, type Line, type PlaceCard, type PostIt, type TextBox } from '@/shared/types'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import type { YjsRank } from '@/pages/room/types'
 import { assignNextRank, makeKey, shouldSkipMoveToTop } from '@/pages/room/utils'
@@ -21,7 +21,7 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yArray = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[canvasItemType])
+      const yArray = doc.getArray<Y.Map<unknown>>(YJS_TYPE[canvasItemType])
       const idToIndexMap = new Map<string, number>()
       yArray.forEach((yMap, index) => {
         const itemId = yMap.get('id') as string
@@ -48,8 +48,8 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yPostits = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.POST_IT])
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yPostits = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.POST_IT])
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const yMap = new Y.Map()
       yMap.set('id', postit.id)
       yMap.set('x', postit.x)
@@ -86,8 +86,8 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yPlaceCards = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yPlaceCards = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const yMap = new Y.Map()
       yMap.set('id', card.id)
       yMap.set('placeId', card.placeId)
@@ -129,8 +129,8 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yLines = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.LINE])
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yLines = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.LINE])
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const yMap = new Y.Map()
       yMap.set('id', line.id)
       yMap.set('points', line.points)
@@ -166,8 +166,8 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yTextBoxes = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yTextBoxes = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const yMap = new Y.Map()
 
       Object.entries(textBox).forEach(([key, value]) => {
@@ -199,8 +199,8 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yArray = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[canvasItemType])
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yArray = doc.getArray<Y.Map<unknown>>(YJS_TYPE[canvasItemType])
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
 
       const idToIndexMap = new Map<string, number>()
       yArray.forEach((yMap, index) => {
@@ -226,7 +226,7 @@ export const useCanvasCommands = ({ docRef, undoManagerRef, localOriginRef, loca
       const doc = docRef.current
       if (!doc) return
 
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+      const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const key = makeKey(canvasItemType, id)
 
       doc.transact(() => {

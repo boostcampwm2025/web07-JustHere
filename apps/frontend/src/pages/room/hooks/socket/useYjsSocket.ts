@@ -13,8 +13,8 @@ import {
   type CanvasAttachedPayload,
   type YjsUpdateBroadcast,
   type YjsAwarenessBroadcast,
-  CANVAS_ITEM_ARRAY_TYPE,
   CANVAS_ITEM_TYPE,
+  YJS_TYPE,
 } from '@/shared/types'
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
@@ -125,11 +125,11 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     docRef.current = doc
 
     // Yjs SharedTypes 생성
-    const yPostits = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.POST_IT])
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
-    const yLines = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.LINE])
-    const yTextBoxes = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
+    const yPostits = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.POST_IT])
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
+    const yLines = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.LINE])
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
+    const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE['Z_RANK_BY_KEY'])
 
     const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes, yZRankByKey], {
       trackedOrigins: new Set([localOriginRef.current]),
