@@ -18,14 +18,13 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
   const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [keyword, setKeyword] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const { data: results, isLoading } = useGoogleSearch({ textQuery: searchTerm })
   const { showToast } = useToast()
 
   const { mutate: updateRoom } = useUpdateRoom(slug)
 
-  const handleSearch = () => {
+  const handleSearch = (keyword: string) => {
     if (!keyword.trim()) return
     setSearchTerm(keyword.trim())
   }
@@ -45,7 +44,6 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
             place_name: room.place_name || '',
           })
           setIsOpen(false)
-          setKeyword('')
           setSearchTerm('')
         },
         onError: error => {
@@ -63,7 +61,6 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
   }
 
   const handleClear = () => {
-    setKeyword('')
     setSearchTerm('')
   }
 
@@ -88,8 +85,6 @@ export const RegionSelectorDropdown = ({ slug, onRegionChange, trigger, align = 
         <Dropdown onOpenChange={setIsOpen} align={align} className="w-72" ignoreRef={containerRef}>
           <div className="p-3">
             <SearchInput
-              value={keyword}
-              onChange={e => setKeyword(e.target.value)}
               onClear={handleClear}
               onSearch={handleSearch}
               placeholder="지역 검색..."
