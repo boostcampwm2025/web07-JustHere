@@ -147,24 +147,25 @@ describe('GoogleService', () => {
     it('API 호출이 성공하면 photoUri를 반환해야 한다', async () => {
       const mockPhotoUri = 'https://lh3.googleusercontent.com/places/...'
 
-      // getPhoto 메서드는 정적 axios.get을 사용하므로 이를 모킹
-      ;(axios.get as jest.Mock).mockResolvedValue({
+      mockAxiosInstance.get.mockResolvedValue({
         data: { photoUri: mockPhotoUri },
       })
 
       const result = await service.getPhoto(photoName)
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(axios.get as jest.Mock).toHaveBeenCalledWith(expect.stringContaining(photoName))
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        `/${photoName}/media`,
+        expect.objectContaining({
+          params: { maxWidthPx: 400, maxHeightPx: 400, skipHttpRedirect: true },
+        }),
+      )
 
-      expect(result).toEqual({
-        photoUri: mockPhotoUri,
-      })
+      expect(result).toEqual({ photoUri: mockPhotoUri })
     })
 
     it('API 호출 실패 시 예외를 처리해야 한다', async () => {
       const errorResponse = { response: { status: 403 } }
-      ;(axios.get as jest.Mock).mockRejectedValue(errorResponse)
+      mockAxiosInstance.get.mockRejectedValue(errorResponse)
 
       await expect(service.getPhoto(photoName)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
     })
