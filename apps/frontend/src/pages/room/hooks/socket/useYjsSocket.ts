@@ -1,42 +1,37 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { Socket } from 'socket.io-client'
 import * as Y from 'yjs'
-import type {
-  PostIt,
-  Line,
-  PlaceCard,
-  TextBox,
-  CanvasAttachPayload,
-  CanvasDetachPayload,
-  YjsUpdatePayload,
-  YjsAwarenessPayload,
-  CanvasAttachedPayload,
-  YjsUpdateBroadcast,
-  YjsAwarenessBroadcast,
+import {
+  type PostIt,
+  type Line,
+  type PlaceCard,
+  type TextBox,
+  type CanvasAttachPayload,
+  type CanvasDetachPayload,
+  type YjsUpdatePayload,
+  type YjsAwarenessPayload,
+  type CanvasAttachedPayload,
+  type YjsUpdateBroadcast,
+  type YjsAwarenessBroadcast,
+  CANVAS_ITEM_ARRAY_TYPE,
+  CANVAS_ITEM_TYPE,
 } from '@/shared/types'
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
-import type { CanvasItemType } from '@/shared/types'
-import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH, SUMMARY_FREQUENCY } from '@/pages/room/constants'
+import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, SUMMARY_FREQUENCY } from '@/pages/room/constants'
 import type { YjsItemType, YjsRank } from '@/pages/room/types'
-import { makeKey, assignNextRank, resolveZIndexState, shouldSkipMoveToTop } from '@/pages/room/utils'
+import { resolveZIndexState } from '@/pages/room/utils'
 import { canvasSyncHandlers } from './canvasSyncHandlers'
 import { useRemoteCursors } from './useRemoteCursors'
+import { useCanvasCommands } from './useCanvasCommands'
 
 interface UseYjsSocketOptions {
   roomId: string
   canvasId: string
   serverUrl?: string
   userName: string
-}
-
-const typeToArrayName: Record<CanvasItemType, string> = {
-  postit: 'postits',
-  line: 'lines',
-  placeCard: 'placeCards',
-  textBox: 'textBoxes',
 }
 
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
@@ -130,10 +125,10 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     docRef.current = doc
 
     // Yjs SharedTypes 생성
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
+    const yPostits = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.POST_IT])
+    const yPlaceCards = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
+    const yLines = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.LINE])
+    const yTextBoxes = doc.getArray<Y.Map<unknown>>(CANVAS_ITEM_ARRAY_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
     const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
 
     const undoManager = new Y.UndoManager([yPostits, yPlaceCards, yLines, yTextBoxes, yZRankByKey], {
@@ -321,32 +316,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [updateCursorThrottled],
   )
 
-  // 공통 업데이트 헬퍼 함수
-  const updateItem = useCallback((arrayName: string, id: string, updates: Record<string, unknown>) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-
-    const idToIndexMap = new Map<string, number>()
-    yArray.forEach((yMap, index) => {
-      const itemId = yMap.get('id') as string
-      if (itemId) {
-        idToIndexMap.set(itemId, index)
-      }
-    })
-
-    const index = idToIndexMap.get(id)
-    if (index === undefined) return
-
-    doc.transact(() => {
-      const yMap = yArray.get(index)
-      Object.entries(updates).forEach(([key, value]) => {
-        yMap.set(key, value)
-      })
-    }, localOriginRef.current)
-  }, [])
-
   const sendCursorChat = useCallback(
     (chatActive: boolean, chatMessage?: string) => {
       const cursor = updateCursorChatState(chatActive, chatMessage)
@@ -384,171 +353,14 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     updateHistoryState()
   }, [updateHistoryState])
 
-  // 포스트잇 추가 함수
-  const addPostIt = (postit: PostIt) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPostits = doc.getArray<Y.Map<unknown>>('postits')
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-    const yMap = new Y.Map()
-    yMap.set('id', postit.id)
-    yMap.set('x', postit.x)
-    yMap.set('y', postit.y)
-    yMap.set('width', postit.width)
-    yMap.set('height', postit.height)
-    yMap.set('scale', postit.scale)
-    yMap.set('fill', postit.fill)
-    yMap.set('text', postit.text)
-    yMap.set('authorName', postit.authorName)
-
-    doc.transact(() => {
-      yPostits.push([yMap])
-      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('postit', postit.id), localMaxTimestampRef.current, doc.clientID)
-    }, localOriginRef.current)
-  }
-
-  // 포스트잇 업데이트 함수 (위치, 텍스트 등)
-  const updatePostIt = (id: string, updates: Partial<Omit<PostIt, 'id'>>) => {
-    updateItem('postits', id, updates)
-  }
-
-  // 장소 카드 추가 함수
-  const addPlaceCard = (card: PlaceCard) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yPlaceCards = doc.getArray<Y.Map<unknown>>('placeCards')
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-    const yMap = new Y.Map()
-    yMap.set('id', card.id)
-    yMap.set('placeId', card.placeId)
-    yMap.set('name', card.name)
-    yMap.set('address', card.address)
-    yMap.set('x', card.x)
-    yMap.set('y', card.y)
-    yMap.set('width', card.width ?? PLACE_CARD_WIDTH)
-    yMap.set('height', card.height ?? PLACE_CARD_HEIGHT)
-    yMap.set('scale', card.scale ?? 1)
-    yMap.set('createdAt', card.createdAt)
-    yMap.set('image', card.image ?? null)
-    yMap.set('category', card.category ?? '')
-    if (card.rating !== undefined) yMap.set('rating', card.rating)
-    if (card.userRatingCount !== undefined) yMap.set('userRatingCount', card.userRatingCount)
-
-    doc.transact(() => {
-      yPlaceCards.push([yMap])
-      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('placeCard', card.id), localMaxTimestampRef.current, doc.clientID)
-    }, localOriginRef.current)
-  }
-
-  // 장소 카드 업데이트 함수
-  const updatePlaceCard = (id: string, updates: Partial<Omit<PlaceCard, 'id'>>) => {
-    updateItem('placeCards', id, updates)
-  }
-
-  // 선 추가 함수
-  const addLine = (line: Line) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yLines = doc.getArray<Y.Map<unknown>>('lines')
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-    const yMap = new Y.Map()
-    yMap.set('id', line.id)
-    yMap.set('points', line.points)
-    yMap.set('stroke', line.stroke)
-    yMap.set('strokeWidth', line.strokeWidth)
-    yMap.set('tension', line.tension)
-    yMap.set('lineCap', line.lineCap)
-    yMap.set('lineJoin', line.lineJoin)
-    yMap.set('tool', line.tool)
-
-    doc.transact(() => {
-      yLines.push([yMap])
-      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('line', line.id), localMaxTimestampRef.current, doc.clientID)
-    }, localOriginRef.current)
-  }
-
-  // 선 업데이트 함수 (주로 points 배열 업데이트)
-  const updateLine = (id: string, updates: Partial<Omit<Line, 'id'>>) => {
-    updateItem('lines', id, updates)
-  }
-
-  const deleteCanvasItem = (type: CanvasItemType, id: string) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const arrayName = typeToArrayName[type]
-    const yArray = doc.getArray<Y.Map<unknown>>(arrayName)
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-
-    const idToIndexMap = new Map<string, number>()
-    yArray.forEach((yMap, index) => {
-      const itemId = yMap.get('id') as string
-      if (itemId) {
-        idToIndexMap.set(itemId, index)
-      }
+  const { addPostIt, updatePostIt, addPlaceCard, updatePlaceCard, addLine, updateLine, addTextBox, updateTextBox, deleteCanvasItem, moveToTop } =
+    useCanvasCommands({
+      docRef,
+      undoManagerRef,
+      localOriginRef,
+      localMaxTimestampRef,
+      updateHistoryState,
     })
-
-    const index = idToIndexMap.get(id)
-    if (index === undefined) return
-
-    doc.transact(() => {
-      yArray.delete(index, 1)
-      yZRankByKey.delete(makeKey(type, id))
-    }, localOriginRef.current)
-  }
-
-  // 텍스트박스 추가 함수
-  const addTextBox = (textBox: TextBox) => {
-    const doc = docRef.current
-    if (!doc) return
-
-    const yTextBoxes = doc.getArray<Y.Map<unknown>>('textBoxes')
-    const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-    const yMap = new Y.Map()
-
-    Object.entries(textBox).forEach(([key, value]) => {
-      yMap.set(key, value)
-    })
-
-    doc.transact(() => {
-      yTextBoxes.push([yMap])
-      localMaxTimestampRef.current = assignNextRank(yZRankByKey, makeKey('textBox', textBox.id), localMaxTimestampRef.current, doc.clientID)
-    }, localOriginRef.current)
-  }
-
-  // 텍스트박스 업데이트 함수
-  const updateTextBox = (id: string, updates: Partial<Omit<TextBox, 'id'>>) => {
-    updateItem('textBoxes', id, updates)
-  }
-
-  // 요소를 배열의 맨 위로 이동하는 함수
-  const moveToTop = useCallback(
-    (type: CanvasItemType, id: string) => {
-      const doc = docRef.current
-      if (!doc) return
-
-      const yZRankByKey = doc.getMap<YjsRank>('zRankByKey')
-      const key = makeKey(type, id)
-
-      doc.transact(() => {
-        const current = yZRankByKey.get(key)
-        if (shouldSkipMoveToTop(yZRankByKey, current, localMaxTimestampRef.current)) {
-          return
-        }
-        localMaxTimestampRef.current = assignNextRank(yZRankByKey, key, localMaxTimestampRef.current, doc.clientID)
-      }, localOriginRef.current)
-
-      const undoManager = undoManagerRef.current
-      if (undoManager) {
-        undoManager.stopCapturing()
-        updateHistoryState()
-      }
-    },
-    [updateHistoryState],
-  )
 
   return {
     isConnected,
