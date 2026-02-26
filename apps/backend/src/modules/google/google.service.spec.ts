@@ -142,7 +142,9 @@ describe('GoogleService', () => {
   })
 
   describe('getPhoto', () => {
-    const photoName = 'places/place-1/photos/photo-1'
+    const placeId = 'place-1'
+    const photoId = 'photo-1'
+    const photoName = `places/${placeId}/photos/${photoId}`
 
     it('API 호출이 성공하면 photoUri를 반환해야 한다', async () => {
       const mockPhotoUri = 'https://lh3.googleusercontent.com/places/...'
@@ -151,7 +153,7 @@ describe('GoogleService', () => {
         data: { photoUri: mockPhotoUri },
       })
 
-      const result = await service.getPhoto(photoName)
+      const result = await service.getPhoto(placeId, photoId)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         `/${photoName}/media`,
@@ -167,7 +169,7 @@ describe('GoogleService', () => {
       const errorResponse = { response: { status: 403 } }
       mockAxiosInstance.get.mockRejectedValue(errorResponse)
 
-      await expect(service.getPhoto(photoName)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
+      await expect(service.getPhoto(placeId, photoId)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
     })
   })
 })

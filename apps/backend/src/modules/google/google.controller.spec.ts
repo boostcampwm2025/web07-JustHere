@@ -78,7 +78,7 @@ describe('GoogleController', () => {
 
       const result = await controller.getPhoto(placeId, photoId)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, 400, 400)
+      expect(service.getPhoto).toHaveBeenCalledWith(placeId, photoId, undefined, undefined)
       expect(result).toEqual(expectedResult)
     })
 
@@ -93,7 +93,7 @@ describe('GoogleController', () => {
 
       await controller.getPhoto(placeId, photoId, maxWidth, maxHeight)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, maxWidth, maxHeight)
+      expect(service.getPhoto).toHaveBeenCalledWith(placeId, photoId, maxWidth, maxHeight)
     })
   })
 })
