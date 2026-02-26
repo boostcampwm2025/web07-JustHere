@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import axios, { AxiosInstance } from 'axios'
 import { SearchTextDto, PlaceDetailsDto, GoogleSearchResponseDto, GooglePlaceDto } from './dto'
 import { RoomRepository } from '@/modules/room/room.repository'
-import { GOOGLE_PLACES_API, GOOGLE_PLACE_FIELD_MASKS, GOOGLE_PHOTO_DEFAULTS } from './google.constants'
+import { GOOGLE_PLACES_API, GOOGLE_PLACE_FIELD_MASKS, GOOGLE_PHOTO_DEFAULTS, GOOGLE_SEARCH_DEFAULTS } from './google.constants'
 
 @Injectable()
 export class GoogleService {
@@ -20,7 +20,7 @@ export class GoogleService {
 
     this.axiosInstance = axios.create({
       baseURL: GOOGLE_PLACES_API.BASE_URL,
-      timeout: 10000,
+      timeout: GOOGLE_PLACES_API.TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': this.apiKey,
@@ -44,15 +44,15 @@ export class GoogleService {
 
       const requestBody: Record<string, unknown> = {
         textQuery: dto.textQuery,
-        languageCode: 'ko',
-        maxResultCount: dto.maxResultCount ?? 20,
+        languageCode: GOOGLE_PLACES_API.LANGUAGE_CODE,
+        maxResultCount: dto.maxResultCount ?? GOOGLE_SEARCH_DEFAULTS.MAX_RESULT_COUNT,
       }
 
       if (latitude !== undefined && longitude !== undefined) {
         requestBody.locationBias = {
           circle: {
             center: { latitude, longitude },
-            radius: dto.radius ?? 2000,
+            radius: dto.radius ?? GOOGLE_SEARCH_DEFAULTS.RADIUS_METERS,
           },
         }
       }
@@ -87,7 +87,7 @@ export class GoogleService {
           'X-Goog-FieldMask': fieldMask,
         },
         params: {
-          languageCode: 'ko',
+          languageCode: GOOGLE_PLACES_API.LANGUAGE_CODE,
         },
       })
 
@@ -97,8 +97,14 @@ export class GoogleService {
     }
   }
 
-  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ photoUri: string }> {
+  async getPhoto(
+    placeId: string,
+    photoId: string,
+    maxWidthPx: number = GOOGLE_PHOTO_DEFAULTS.MAX_WIDTH_PX,
+    maxHeightPx: number = GOOGLE_PHOTO_DEFAULTS.MAX_HEIGHT_PX,
+  ): Promise<{ photoUri: string }> {
     try {
+      const photoName = `places/${placeId}/photos/${photoId}`
       const { data } = await this.axiosInstance.get<{ photoUri: string }>(`/${photoName}/media`, {
         params: {
           maxWidthPx,
