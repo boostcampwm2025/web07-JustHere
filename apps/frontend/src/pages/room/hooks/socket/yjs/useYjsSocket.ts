@@ -8,10 +8,10 @@ import { reportError } from '@/shared/utils'
 import { CURSOR_FREQUENCY } from '@/pages/room/constants'
 import { useCursorPresence } from '@/pages/room/hooks'
 import { useCanvasCommands } from './useCanvasCommands'
-import { useCanvasTelemetry } from './useCanvasTelemetry'
-import { useYDocLifecycle } from './useYDocLifecycle'
 import { useCanvasHistory } from './useCanvasHistory'
+import { useCanvasTelemetry } from './useCanvasTelemetry'
 import { useCanvasTransport } from './useCanvasTransport'
+import { useYDocLifecycle } from './useYDocLifecycle'
 
 interface UseYjsSocketOptions {
   roomId: string
