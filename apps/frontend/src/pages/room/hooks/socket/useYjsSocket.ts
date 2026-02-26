@@ -13,7 +13,6 @@ import type {
   CanvasAttachedPayload,
   YjsUpdateBroadcast,
   YjsAwarenessBroadcast,
-  CursorInfoWithId,
 } from '@/shared/types'
 import { throttle } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
@@ -24,6 +23,7 @@ import { CAPTURE_FREQUENCY, CURSOR_FREQUENCY, PLACE_CARD_HEIGHT, PLACE_CARD_WIDT
 import type { YjsItemType, YjsRank } from '@/pages/room/types'
 import { makeKey, assignNextRank, resolveZIndexState, shouldSkipMoveToTop } from '@/pages/room/utils'
 import { canvasSyncHandlers } from './canvasSyncHandlers'
+import { useRemoteCursors } from './useRemoteCursors'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -41,7 +41,6 @@ const typeToArrayName: Record<CanvasItemType, string> = {
 
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const localMaxTimestampRef = useRef(0)
-  const [cursors, setCursors] = useState<Map<string, CursorInfoWithId>>(new Map())
   const [postits, setPostits] = useState<PostIt[]>([])
   const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
   const [lines, setLines] = useState<Line[]>([])
@@ -58,10 +57,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const summaryTimerRef = useRef<number | null>(null)
   const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
   const migrationExecutedRef = useRef(false)
-  // 현재 커서 위치 저장 (커서챗 전송 시 사용)
-  const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
-  // 현재 커서챗 상태 저장 (커서 이동 시에도 커서챗 정보 유지)
-  const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
+
   const handleSocketError = useCallback(
     (error: Error) => {
       reportError({
@@ -110,6 +106,9 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   useEffect(() => {
     trackHighFreqRef.current = trackHighFreq
   }, [trackHighFreq])
+
+  const { cursors, updateCursorPosition, updateCursorChatState, applyRemoteAwareness, clearCursors } = useRemoteCursors({ userName })
+
   const updateHistoryState = useCallback(() => {
     const undoManager = undoManagerRef.current
     if (!undoManager) return
@@ -248,29 +247,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
       trackHighFreq('y:awareness:recv')
-      const cursor = payload.state.cursor
-      if (cursor) {
-        setCursors(prev => {
-          const next = new Map(prev)
-          next.set(payload.socketId, {
-            x: cursor.x,
-            y: cursor.y,
-            name: cursor.name,
-            chatActive: cursor.chatActive,
-            chatMessage: cursor.chatMessage,
-            socketId: payload.socketId,
-          })
-          return next
-        })
-        return
-      }
-
-      // 커서가 없으면 제거 (사용자가 나간 경우)
-      setCursors(prev => {
-        const next = new Map(prev)
-        next.delete(payload.socketId)
-        return next
-      })
+      applyRemoteAwareness(payload)
     }
 
     // Yjs 문서 변경 시 서버로 전송
@@ -312,7 +289,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socket.emit('canvas:detach', detachPayload)
 
       // UI에서 타 사람들의 커서 정리
-      setCursors(new Map())
+      clearCursors()
 
       doc.off('update', updateHandler)
       socket.off('connect', handleConnect)
@@ -322,49 +299,26 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       socket.off('y:awareness', handleAwareness)
       socketRef.current = null
     }
-  }, [roomId, canvasId, getSocket, status, trackHighFreq])
+  }, [roomId, canvasId, getSocket, status, trackHighFreq, applyRemoteAwareness, clearCursors])
 
-  // 커서 위치 업데이트 함수 (쓰로틀링 적용: 100ms마다 최대 1회)
-  // 커서 이동 시에도 현재 커서챗 상태를 함께 전송
   const updateCursorThrottled = useRef(
-    throttle(
-      (
-        canvasId: string,
-        socketRef: React.MutableRefObject<Socket | null>,
-        x: number,
-        y: number,
-        name: string,
-        cursorChatRef: React.MutableRefObject<{ chatActive: boolean; chatMessage: string }>,
-      ) => {
-        if (socketRef.current?.connected) {
-          const chatState = cursorChatRef.current
-          const awarenessPayload: YjsAwarenessPayload = {
-            canvasId,
-            state: {
-              cursor: {
-                x,
-                y,
-                name,
-                chatActive: chatState.chatActive,
-                chatMessage: chatState.chatMessage,
-              },
-            },
-          }
-          socketRef.current.emit('y:awareness', awarenessPayload)
-          trackHighFreqRef.current('y:awareness:send')
-        }
-      },
-      CURSOR_FREQUENCY,
-    ),
+    throttle((x: number, y: number) => {
+      if (!socketRef.current?.connected) return
+      const cursor = updateCursorPosition(x, y)
+      const awarenessPayload: YjsAwarenessPayload = {
+        canvasId,
+        state: { cursor },
+      }
+      socketRef.current.emit('y:awareness', awarenessPayload)
+      trackHighFreqRef.current('y:awareness:send')
+    }, CURSOR_FREQUENCY),
   ).current
 
   const updateCursor = useCallback(
     (x: number, y: number) => {
-      // 현재 위치 저장 (커서챗 전송 시 사용)
-      cursorPositionRef.current = { x, y }
-      updateCursorThrottled(canvasId, socketRef, x, y, userName, cursorChatRef)
+      updateCursorThrottled(x, y)
     },
-    [canvasId, updateCursorThrottled, userName],
+    [updateCursorThrottled],
   )
 
   // 공통 업데이트 헬퍼 함수
@@ -393,25 +347,20 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     }, localOriginRef.current)
   }, [])
 
-  // 커서챗 전송 함수 (쓰로틀링 없이 즉시 전송)
   const sendCursorChat = useCallback(
     (chatActive: boolean, chatMessage?: string) => {
-      // 커서챗 상태 저장 (커서 이동 시에도 상태 유지를 위해)
-      cursorChatRef.current = { chatActive, chatMessage: chatMessage ?? '' }
-
+      const cursor = updateCursorChatState(chatActive, chatMessage)
       if (!socketRef.current?.connected) return
 
-      const { x, y } = cursorPositionRef.current
       const awarenessPayload: YjsAwarenessPayload = {
         canvasId,
-        state: {
-          cursor: { x, y, name: userName, chatActive, chatMessage },
-        },
+        state: { cursor },
       }
+
       socketRef.current.emit('y:awareness', awarenessPayload)
       trackHighFreqRef.current('y:awareness:send')
     },
-    [canvasId, userName],
+    [canvasId, updateCursorChatState],
   )
 
   const undo = useCallback(() => {
