@@ -59,8 +59,14 @@ export class CategoryRepository {
         throw new CustomException(ErrorType.BadRequest, `최소 ${minLimit}개의 카테고리는 유지해야 합니다.`)
       }
 
+      const target = await tx.category.findFirst({
+        where: { id, roomId },
+      })
+      if (!target) {
+        throw new CustomException(ErrorType.NotFound, '삭제할 카테고리를 찾을 수 없습니다.')
+      }
       return tx.category.delete({
-        where: { id },
+        where: { id: target.id },
       })
     })
   }
