@@ -64,7 +64,6 @@ export class GoogleController {
     @Query('maxWidthPx') maxWidthPx?: number,
     @Query('maxHeightPx') maxHeightPx?: number,
   ): Promise<{ photoUri: string }> {
-    const photoName = `places/${placeId}/photos/${photoId}`
-    return this.googleService.getPhoto(photoName, maxWidthPx || 400, maxHeightPx || 400)
+    return this.googleService.getPhoto(placeId, photoId, maxWidthPx, maxHeightPx)
   }
 }

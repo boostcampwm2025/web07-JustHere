@@ -15,7 +15,7 @@ import { SocketModule } from '@/modules/socket/socket.module'
 import { UserModule } from '@/modules/user/user.module'
 import { CategoryModule } from '@/modules/category/category.module'
 import { RoomModule } from '@/modules/room/room.module'
-import { YjsModule } from '@/modules/canvas/yjs.module'
+import { CanvasModule } from '@/modules/canvas/canvas.module'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
 
 @Module({
@@ -28,7 +28,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core'
     UserModule,
     CategoryModule,
     RoomModule,
-    YjsModule,
+    CanvasModule,
     VoteModule,
     SwaggerConfigModule,
     PrometheusModule.register({

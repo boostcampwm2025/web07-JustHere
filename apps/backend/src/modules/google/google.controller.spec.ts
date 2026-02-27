@@ -52,6 +52,18 @@ describe('GoogleController', () => {
       expect(service.searchText).toHaveBeenCalledWith(dto)
       expect(result).toEqual(expectedResult)
     })
+
+    it('roomId 없이 searchText를 호출할 수 있다', async () => {
+      const dto = { textQuery: 'test' }
+      const expectedResult = { places: [] }
+
+      service.searchText.mockResolvedValue(expectedResult)
+
+      const result = await controller.searchText(dto)
+
+      expect(service.searchText).toHaveBeenCalledWith(dto)
+      expect(result).toEqual(expectedResult)
+    })
   })
 
   describe('getPlaceDetails', () => {
@@ -78,7 +90,7 @@ describe('GoogleController', () => {
 
       const result = await controller.getPhoto(placeId, photoId)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, 400, 400)
+      expect(service.getPhoto).toHaveBeenCalledWith(placeId, photoId, undefined, undefined)
       expect(result).toEqual(expectedResult)
     })
 
@@ -93,7 +105,7 @@ describe('GoogleController', () => {
 
       await controller.getPhoto(placeId, photoId, maxWidth, maxHeight)
 
-      expect(service.getPhoto).toHaveBeenCalledWith(`places/${placeId}/photos/${photoId}`, maxWidth, maxHeight)
+      expect(service.getPhoto).toHaveBeenCalledWith(placeId, photoId, maxWidth, maxHeight)
     })
   })
 })

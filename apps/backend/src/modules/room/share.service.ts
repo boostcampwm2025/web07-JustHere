@@ -74,7 +74,7 @@ export class ShareService {
           if (winners.length > 1) {
             winnerName += ` 외 ${winners.length - 1}곳`
           }
-          winnerImage = winner.imageUrl || ''
+          winnerImage = winner.imageUrl ?? ''
           break
         }
       }
@@ -85,10 +85,10 @@ export class ShareService {
 
       return { title, description, imageUrl, redirectUrl }
     } catch (error) {
-      this.logger.error(`Error generating result metadata for slug ${slug}`, error)
       if (error instanceof CustomException) {
         throw error
       }
+      this.logger.error(`Error generating result metadata for slug ${slug}`, error)
       return defaultMeta
     }
   }
