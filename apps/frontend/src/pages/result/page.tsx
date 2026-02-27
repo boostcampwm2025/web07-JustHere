@@ -40,7 +40,13 @@ export const ResultPage = () => {
   const ownerId = roomMeta?.ownerId
   const isOwner = !!user && ownerId === user.userId
 
-  const roomLink = `${socketBaseUrl}/result/${slug}`
+  const ogv = useMemo(() => {
+    if (!voteResults || voteResults.length === 0) return ''
+    const snapshot = voteResults.flatMap(item => item.result.map(c => `${c.placeId}:${c.name}:${c.createdAt}`)).join(',')
+    return btoa(encodeURIComponent(snapshot)).slice(0, 12)
+  }, [voteResults])
+
+  const roomLink = `${socketBaseUrl}/result/${slug}${ogv ? `?ogv=${ogv}` : ''}`
 
   const handleGoBack = () => {
     navigate(`/room/${slug}`)
