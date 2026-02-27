@@ -12,6 +12,7 @@ import {
   TEXT_BOX_WIDTH,
   TEXT_BOX_HEIGHT,
 } from '@/pages/room/constants'
+import { useCanvasStore } from '@/pages/room/stores'
 
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -96,10 +97,10 @@ export const useCanvasMouse = ({
   onPlaceCardPlaced,
   userName,
 }: UseCanvasMouseProps) => {
+  const setCursorPos = useCanvasStore(state => state.setCursorPos)
+  const setPlaceCardCursorPos = useCanvasStore(state => state.setPlaceCardCursorPos)
   const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -203,7 +204,19 @@ export const useCanvasMouse = ({
         }
       }
     }
-  }, [stageRef, updateCursor, effectiveTool, pendingPlaceCard, isSelecting, getIsDrawing, continueDrawing, isChatActive, setChatInputPosition])
+  }, [
+    stageRef,
+    updateCursor,
+    effectiveTool,
+    pendingPlaceCard,
+    isSelecting,
+    getIsDrawing,
+    isChatActive,
+    setCursorPos,
+    setPlaceCardCursorPos,
+    continueDrawing,
+    setChatInputPosition,
+  ])
 
   const handleMouseLeave = useCallback(() => {
     if (effectiveTool === 'postIt') {
@@ -215,7 +228,7 @@ export const useCanvasMouse = ({
     if (getIsDrawing()) {
       cancelDrawing('mouse-leave')
     }
-  }, [effectiveTool, pendingPlaceCard, getIsDrawing, cancelDrawing])
+  }, [effectiveTool, pendingPlaceCard, getIsDrawing, setCursorPos, setPlaceCardCursorPos, cancelDrawing])
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -308,23 +321,24 @@ export const useCanvasMouse = ({
       }
     },
     [
+      isChatActive,
       stageRef,
       pendingPlaceCard,
+      effectiveTool,
+      deactivateCursorChat,
       addPlaceCard,
       roomId,
       canvasId,
       onPlaceCardPlaced,
-      effectiveTool,
       setSelectedItems,
       stopCapturing,
       userName,
       addPostIt,
-      startDrawing,
-      currentDrawingLineRef,
-      addTextBox,
       setActiveTool,
-      isChatActive,
-      deactivateCursorChat,
+      setCursorPos,
+      currentDrawingLineRef,
+      startDrawing,
+      addTextBox,
     ],
   )
 
@@ -428,9 +442,6 @@ export const useCanvasMouse = ({
     // State
     selectionBox,
     isSelecting,
-    cursorPos,
-    setCursorPos,
-    placeCardCursorPos,
 
     // Handlers
     handleMouseMove,
