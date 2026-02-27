@@ -9,7 +9,7 @@ interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string
 }
 
-export const SearchInput = ({ onSearch, onClear, onKeyDown, className, containerClassName, ...props }: SearchInputProps) => {
+export const SearchInput = ({ onSearch, onClear, onKeyDown, className, containerClassName }: SearchInputProps) => {
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -41,7 +41,6 @@ export const SearchInput = ({ onSearch, onClear, onKeyDown, className, container
           'w-full h-12 pl-12 pr-12 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary',
           className,
         )}
-        {...props}
       />
       {searchQuery && (
         <Button

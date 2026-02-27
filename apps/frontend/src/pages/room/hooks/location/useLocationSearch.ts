@@ -6,7 +6,6 @@ const DEFAULT_MAX_RESULT_COUNT = 20
 const DEFAULT_RADIUS = 2000
 
 interface CategorySearchState {
-  searchQuery: string
   searchTerm: string
 }
 
@@ -28,9 +27,7 @@ export function useLocationSearch({
   const cacheRef = useRef<Record<string, CategorySearchState>>({})
   const prevCategoryKeyRef = useRef(categoryId)
 
-  const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const searchQueryRef = useRef(searchQuery)
   const searchTermRef = useRef(searchTerm)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const onSearchCompleteRef = useRef(onSearchComplete)
@@ -43,20 +40,15 @@ export function useLocationSearch({
     if (prevCategoryKeyRef.current === categoryId) return
 
     cacheRef.current[prevCategoryKeyRef.current] = {
-      searchQuery: searchQueryRef.current,
       searchTerm: searchTermRef.current,
     }
     prevCategoryKeyRef.current = categoryId
 
     const restored = cacheRef.current[categoryId]
     if (restored) {
-      setSearchQuery(restored.searchQuery)
-      searchQueryRef.current = restored.searchQuery
       setSearchTerm(restored.searchTerm)
       searchTermRef.current = restored.searchTerm
     } else {
-      setSearchQuery('')
-      searchQueryRef.current = ''
       setSearchTerm('')
       searchTermRef.current = ''
     }
@@ -104,8 +96,8 @@ export function useLocationSearch({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  const handleSearch = () => {
-    const trimmed = searchQueryRef.current.trim()
+  const handleSearch = (searchQuery: string) => {
+    const trimmed = searchQuery.trim()
     if (!trimmed) {
       setSearchTerm('')
       searchTermRef.current = ''
@@ -120,22 +112,13 @@ export function useLocationSearch({
     }
   }
 
-  const updateSearchQuery = (value: string) => {
-    setSearchQuery(value)
-    searchQueryRef.current = value
-  }
-
   const clearSearch = () => {
-    setSearchQuery('')
-    searchQueryRef.current = ''
     setSearchTerm('')
     searchTermRef.current = ''
     onSearchCompleteRef.current?.([])
   }
 
   return {
-    searchQuery,
-    setSearchQuery: updateSearchQuery,
     searchResults,
     isLoading: isLoading && !!searchTerm,
     isFetchingMore: isFetchingNextPage,
