@@ -206,13 +206,13 @@ jobs:
             docker login ${{ secrets.NCP_CR_ENDPOINT }} -u ${{ secrets.NCP_ACCESS_KEY }} -p ${{ secrets.NCP_SECRET_KEY }}
 
             # 이미지 Pull
-            docker-compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml pull
 
             # 마이그레이션 실행 (컨테이너 시작 전)
-            docker-compose -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy --config prisma.config.ts
+            docker compose -f docker-compose.prod.yml run --rm backend npx prisma migrate deploy --config prisma.config.ts
 
             # 컨테이너 실행
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # 이미지 정리
             docker image prune -f
