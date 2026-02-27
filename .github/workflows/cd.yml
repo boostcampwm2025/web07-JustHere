@@ -3,7 +3,8 @@ name: cd.yml
 on:
   push:
     branches:
-      - main
+      #     - main
+      - hotfix/cd
 
 jobs:
   build-and-push:
