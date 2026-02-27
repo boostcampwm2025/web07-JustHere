@@ -137,6 +137,7 @@ describe('CategoryRepository', () => {
       }
 
       prisma.category.count.mockResolvedValue(2)
+      prisma.category.findFirst.mockResolvedValue(deletedCategory)
       prisma.category.delete.mockResolvedValue(deletedCategory)
 
       const result = await repository.deleteWithLimit(categoryId, roomId, minLimit)
