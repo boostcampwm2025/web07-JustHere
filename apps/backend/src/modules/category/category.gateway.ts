@@ -6,6 +6,7 @@ import { Server, Socket } from 'socket.io'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { CategoryService } from './category.service'
 import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s.dto'
+import { CategoryCreatedPayload, CategoryDeletedPayload } from './dto/category.s2c.dto'
 
 @WebSocketGateway({
   namespace: '/room',
@@ -28,11 +29,24 @@ export class CategoryGateway implements OnGatewayInit {
 
   @SubscribeMessage('category:create')
   async onCreateCategory(@ConnectedSocket() client: Socket, @MessageBody() payload: CreateCategoryPayload) {
-    await this.categoryService.createCategory(client, payload.name)
+    const { category, roomId } = await this.categoryService.createCategory(client.id, payload.name)
+
+    const response: CategoryCreatedPayload = {
+      categoryId: category.id,
+      name: category.title,
+    }
+
+    this.broadcaster.emitToRoom(roomId, 'category:created', response)
   }
 
   @SubscribeMessage('category:delete')
   async onDeleteCategory(@ConnectedSocket() client: Socket, @MessageBody() payload: DeleteCategoryPayload) {
-    await this.categoryService.deleteCategory(client, payload.categoryId)
+    const { roomId, categoryId } = await this.categoryService.deleteCategory(client.id, payload.categoryId)
+
+    const response: CategoryDeletedPayload = {
+      categoryId,
+    }
+
+    this.broadcaster.emitToRoom(roomId, 'category:deleted', response)
   }
 }

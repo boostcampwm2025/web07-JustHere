@@ -8,65 +8,86 @@ import { CreateCategoryPayload, DeleteCategoryPayload } from './dto/category.c2s
 describe('CategoryGateway', () => {
   let gateway: CategoryGateway
 
-  const categoryService = {
+  // Mock 객체 정의 (useValue용)
+  const mockCategoryService = {
     createCategory: jest.fn(),
     deleteCategory: jest.fn(),
   }
 
-  const broadcaster = {
+  const mockBroadcaster = {
     setServer: jest.fn(),
+    emitToRoom: jest.fn(),
   }
+
+  // Socket & Server Mock
+  const mockSocket = {
+    id: 'socket-1',
+  } as unknown as Socket
+
+  const mockServer = {} as unknown as Server
+
+  const roomId = 'room-1'
+  const categoryId = 'cat-1'
 
   beforeEach(async () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CategoryGateway, { provide: CategoryService, useValue: categoryService }, { provide: RoomBroadcaster, useValue: broadcaster }],
+      providers: [
+        CategoryGateway,
+        { provide: CategoryService, useValue: mockCategoryService },
+        { provide: RoomBroadcaster, useValue: mockBroadcaster },
+      ],
     }).compile()
 
-    gateway = module.get(CategoryGateway)
+    gateway = module.get<CategoryGateway>(CategoryGateway)
+
+    // Gateway에 Server 주입 (필요한 경우)
+    gateway.server = mockServer
   })
 
   describe('afterInit', () => {
     it('Gateway 초기화 시 SocketBroadcaster에 서버를 주입한다', () => {
-      const server = {} as Server
-
-      gateway.afterInit(server)
-
-      expect(broadcaster.setServer).toHaveBeenCalledTimes(1)
-      expect(broadcaster.setServer).toHaveBeenCalledWith(server)
+      gateway.afterInit(mockServer)
+      expect(mockBroadcaster.setServer).toHaveBeenCalledWith(mockServer)
     })
   })
 
   describe('onCreateCategory', () => {
-    it('CategoryService.createCategory를 올바른 인자와 함께 호출한다', async () => {
-      const client = {} as Socket
-      const payload: CreateCategoryPayload = {
-        name: '카페',
-      }
+    it('CategoryService를 호출하고 결과를 브로드캐스트한다', async () => {
+      const payload: CreateCategoryPayload = { name: '카페' }
+      const mockCategory = { id: categoryId, title: '카페' }
 
-      // Act
-      await gateway.onCreateCategory(client, payload)
+      mockCategoryService.createCategory.mockResolvedValue({
+        category: mockCategory,
+        roomId,
+      })
 
-      // Assert
-      expect(categoryService.createCategory).toHaveBeenCalledTimes(1)
-      expect(categoryService.createCategory).toHaveBeenCalledWith(client, payload.name)
+      await gateway.onCreateCategory(mockSocket, payload)
+
+      expect(mockCategoryService.createCategory).toHaveBeenCalledWith(mockSocket.id, payload.name)
+      expect(mockBroadcaster.emitToRoom).toHaveBeenCalledWith(roomId, 'category:created', {
+        categoryId: mockCategory.id,
+        name: mockCategory.title,
+      })
     })
   })
 
   describe('onDeleteCategory', () => {
-    it('CategoryService.deleteCategory를 올바른 인자와 함께 호출한다', async () => {
-      const client = {} as Socket
-      const payload: DeleteCategoryPayload = {
-        categoryId: 'c1d2e3f4-a5b6-7890-cdef-0123456789ab',
-      }
+    it('CategoryService를 호출하고 결과를 브로드캐스트한다', async () => {
+      const payload: DeleteCategoryPayload = { categoryId }
 
-      // Act
-      await gateway.onDeleteCategory(client, payload)
+      mockCategoryService.deleteCategory.mockResolvedValue({
+        roomId,
+        categoryId,
+      })
 
-      // Assert
-      expect(categoryService.deleteCategory).toHaveBeenCalledTimes(1)
-      expect(categoryService.deleteCategory).toHaveBeenCalledWith(client, payload.categoryId)
+      await gateway.onDeleteCategory(mockSocket, payload)
+
+      expect(mockCategoryService.deleteCategory).toHaveBeenCalledWith(mockSocket.id, payload.categoryId)
+      expect(mockBroadcaster.emitToRoom).toHaveBeenCalledWith(roomId, 'category:deleted', {
+        categoryId,
+      })
     })
   })
 })
