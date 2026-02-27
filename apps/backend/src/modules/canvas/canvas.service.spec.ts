@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { YjsService } from './yjs.service'
+import { CanvasService } from './canvas.service'
 import { CanvasRepository } from './canvas.repository'
 import { Logger } from '@nestjs/common'
 import * as Y from 'yjs'
@@ -7,7 +7,7 @@ import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
 
 describe('YjsService', () => {
-  let service: YjsService
+  let service: CanvasService
 
   // Manual Mock 객체 정의
   let mockRepository: {
@@ -27,7 +27,7 @@ describe('YjsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        YjsService,
+        CanvasService,
         {
           provide: CanvasRepository,
           useValue: mockRepository, // Manual Mock 주입
@@ -35,7 +35,7 @@ describe('YjsService', () => {
       ],
     }).compile()
 
-    service = module.get<YjsService>(YjsService)
+    service = module.get<CanvasService>(CanvasService)
 
     // Logger 모킹
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)

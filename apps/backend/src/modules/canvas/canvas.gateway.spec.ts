@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { CanvasGateway } from './canvas.gateway'
-import { YjsService } from './yjs.service'
+import { CanvasService } from './canvas.service'
 import { CanvasBroadcaster } from '@/modules/socket/canvas.broadcaster'
 import { Socket, Server } from 'socket.io'
 import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenessPayload } from './dto/yjs.dto'
@@ -36,7 +36,7 @@ describe('CanvasGateway', () => {
     jest.clearAllMocks()
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CanvasGateway, { provide: YjsService, useValue: mockYjsService }, { provide: CanvasBroadcaster, useValue: mockBroadcaster }],
+      providers: [CanvasGateway, { provide: CanvasService, useValue: mockYjsService }, { provide: CanvasBroadcaster, useValue: mockBroadcaster }],
     }).compile()
 
     gateway = module.get(CanvasGateway)

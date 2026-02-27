@@ -12,8 +12,8 @@ interface YjsDocument {
 }
 
 @Injectable()
-export class YjsService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(YjsService.name)
+export class CanvasService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(CanvasService.name)
 
   constructor(private readonly canvasRepository: CanvasRepository) {}
 
