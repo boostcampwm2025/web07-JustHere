@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import type { ToolType, PostIt, PlaceCard, TextBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
@@ -101,6 +101,7 @@ export const useCanvasMouse = ({
   const setPlaceCardCursorPos = useCanvasStore(state => state.setPlaceCardCursorPos)
   const setSelectionBox = useCanvasStore(state => state.setSelectionBox)
   const [isSelecting, setIsSelecting] = useState(false)
+  const wasDragSelectingRef = useRef(false)
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -159,6 +160,10 @@ export const useCanvasMouse = ({
       }
 
       if (e.target === e.target.getStage()) {
+        if (wasDragSelectingRef.current) {
+          wasDragSelectingRef.current = false
+          return
+        }
         setSelectedItems([])
         setContextMenu(null)
       }
@@ -350,9 +355,9 @@ export const useCanvasMouse = ({
     }
 
     if (effectiveTool === 'cursor' && isSelecting) {
-      setSelectionBox(currentSelectionBox => {
-        if (!currentSelectionBox) return null
-
+      const currentSelectionBox = useCanvasStore.getState().selectionBox
+      if (currentSelectionBox) {
+        wasDragSelectingRef.current = true
         const newSelectedItems: SelectedItem[] = []
 
         postIts.forEach(postIt => {
@@ -394,8 +399,9 @@ export const useCanvasMouse = ({
         })
 
         setSelectedItems(newSelectedItems)
-        return null
-      })
+      }
+
+      setSelectionBox(null)
       setIsSelecting(false)
     }
   }, [effectiveTool, getIsDrawing, isSelecting, endDrawing, setSelectionBox, postIts, placeCards, lines, textBoxes, setSelectedItems])
