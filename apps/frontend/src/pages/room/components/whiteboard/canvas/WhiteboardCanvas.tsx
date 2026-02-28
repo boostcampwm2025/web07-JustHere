@@ -24,6 +24,7 @@ import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
 import { GhostLayer } from './ghost-layer'
+import { SelectionBoxLayer } from './selection-box-layer'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -230,7 +231,6 @@ export const WhiteboardCanvas = ({
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
   const {
-    selectionBox,
     isSelecting,
     handleMouseMove,
     handleMouseLeave,
@@ -532,20 +532,6 @@ export const WhiteboardCanvas = ({
             return null
           })}
 
-          {isSelecting && selectionBox && (
-            <Rect
-              x={Math.min(selectionBox.startX, selectionBox.endX)}
-              y={Math.min(selectionBox.startY, selectionBox.endY)}
-              width={Math.abs(selectionBox.endX - selectionBox.startX)}
-              height={Math.abs(selectionBox.endY - selectionBox.startY)}
-              fill="rgba(59, 130, 246, 0.1)"
-              stroke="#3b82f6"
-              strokeWidth={1}
-              dash={[4, 4]}
-              listening={false}
-            />
-          )}
-
           {/* 현재 드로잉 중인 라인 */}
           <CurrentDrawingLine ref={currentDrawingLineRef} />
 
@@ -562,6 +548,7 @@ export const WhiteboardCanvas = ({
             <AnimatedCursor key={cursor.socketId} cursor={cursor} />
           ))}
         </Layer>
+        <SelectionBoxLayer isSelecting={isSelecting} />
         <GhostLayer effectiveTool={effectiveTool} pendingPlaceCard={pendingPlaceCard} />
       </Stage>
     </div>

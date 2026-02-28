@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
-import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
+import type { ToolType, PostIt, PlaceCard, TextBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
 import {
   DEFAULT_POST_IT_COLOR,
@@ -99,7 +99,7 @@ export const useCanvasMouse = ({
 }: UseCanvasMouseProps) => {
   const setCursorPos = useCanvasStore(state => state.setCursorPos)
   const setPlaceCardCursorPos = useCanvasStore(state => state.setPlaceCardCursorPos)
-  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const setSelectionBox = useCanvasStore(state => state.setSelectionBox)
   const [isSelecting, setIsSelecting] = useState(false)
 
   const handleObjectMouseDown = useCallback(
@@ -214,6 +214,7 @@ export const useCanvasMouse = ({
     isChatActive,
     setCursorPos,
     setPlaceCardCursorPos,
+    setSelectionBox,
     continueDrawing,
     setChatInputPosition,
   ])
@@ -330,6 +331,7 @@ export const useCanvasMouse = ({
       roomId,
       canvasId,
       onPlaceCardPlaced,
+      setSelectionBox,
       setSelectedItems,
       stopCapturing,
       userName,
@@ -396,7 +398,7 @@ export const useCanvasMouse = ({
       })
       setIsSelecting(false)
     }
-  }, [effectiveTool, getIsDrawing, endDrawing, isSelecting, postIts, placeCards, lines, textBoxes, setSelectedItems])
+  }, [effectiveTool, getIsDrawing, isSelecting, endDrawing, setSelectionBox, postIts, placeCards, lines, textBoxes, setSelectedItems])
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -440,7 +442,6 @@ export const useCanvasMouse = ({
 
   return {
     // State
-    selectionBox,
     isSelecting,
 
     // Handlers
