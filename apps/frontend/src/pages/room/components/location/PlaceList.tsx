@@ -1,24 +1,20 @@
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, type Ref } from 'react'
+import { useCallback, useMemo } from 'react'
 import { getPhotoUrl as getGooglePhotoUrl } from '@/shared/api'
 import { useGooglePhotos } from '@/shared/hooks/queries/useGoogleQueries'
 import type { GooglePlace, PlaceCard } from '@/shared/types'
 import { reportError } from '@/shared/utils'
-import { useLocationSearch } from '@/pages/room/hooks'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
 import type { VoteCandidateAddPayload } from '@/pages/room/types/vote/types'
 import { PlaceItem } from './PlaceItem'
 import { PlaceItemSkeleton } from './PlaceItemSkeleton'
 
-export interface PlaceListHandle {
-  handleSearch: (query: string) => void
-  clearSearch: () => void
-}
-
 interface PlaceListProps {
-  ref?: Ref<PlaceListHandle>
-  roomId: string
-  categoryId: string
-  onSearchComplete?: (results: GooglePlace[]) => void
+  searchResults: GooglePlace[]
+  isLoading: boolean
+  isFetchingMore: boolean
+  hasMore: boolean
+  hasSearched: boolean
+  loadMoreRef: React.RefObject<HTMLDivElement | null>
   pendingPlaceCard: Omit<PlaceCard, 'x' | 'y'> | null
   onStartPlaceCard: (card: Omit<PlaceCard, 'x' | 'y'>) => void
   onCancelPlaceCard: () => void
@@ -30,10 +26,12 @@ interface PlaceListProps {
 }
 
 export const PlaceList = ({
-  ref,
-  roomId,
-  categoryId,
-  onSearchComplete,
+  searchResults,
+  isLoading,
+  isFetchingMore,
+  hasMore,
+  hasSearched,
+  loadMoreRef,
   pendingPlaceCard,
   onStartPlaceCard,
   onCancelPlaceCard,
@@ -43,29 +41,6 @@ export const PlaceList = ({
   onAddCandidate,
   onRemoveCandidate,
 }: PlaceListProps) => {
-  const { searchResults, isLoading, isFetchingMore, hasMore, hasSearched, handleSearch, clearSearch, loadMoreRef } = useLocationSearch({
-    roomId,
-    categoryId,
-    onSearchComplete,
-  })
-
-  const handleSearchRef = useRef(handleSearch)
-  const clearSearchRef = useRef(clearSearch)
-
-  useEffect(() => {
-    handleSearchRef.current = handleSearch
-    clearSearchRef.current = clearSearch
-  }, [handleSearch, clearSearch])
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      handleSearch: (query: string) => handleSearchRef.current(query),
-      clearSearch: () => clearSearchRef.current(),
-    }),
-    [],
-  )
-
   const photoNames = useMemo(() => searchResults.map(place => place.photos?.[0]?.name), [searchResults])
   const photoQueries = useGooglePhotos(photoNames, 200, 200)
 

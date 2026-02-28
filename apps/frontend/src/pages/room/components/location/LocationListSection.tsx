@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { ListBoxOutlineIcon, VoteIcon } from '@/shared/assets'
 import { ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
-import { useVoteSocket } from '@/pages/room/hooks'
+import { useVoteSocket, useLocationSearch } from '@/pages/room/hooks'
 import { VoteListSection } from './VoteListSection'
 import { CandidateListSection } from './CandidateListSection'
 import { PlaceItemSkeleton } from './PlaceItemSkeleton'
-import { PlaceList, type PlaceListHandle } from './PlaceList'
+import { PlaceList } from './PlaceList'
 import { useToast } from '@/shared/hooks'
 import type { TabType } from '@/pages/room/types/location'
 
@@ -99,8 +99,22 @@ export const LocationListSection = ({
     enabled: Boolean(roomId && userId),
   })
 
+  const {
+    searchResults,
+    isLoading: isSearchLoading,
+    isFetchingMore,
+    hasMore,
+    hasSearched,
+    handleSearch,
+    clearSearch,
+    loadMoreRef,
+  } = useLocationSearch({
+    roomId,
+    categoryId: activeCategoryId,
+    onSearchComplete,
+  })
+
   const lastErrorKeyRef = useRef<string | null>(null)
-  const placeListRef = useRef<PlaceListHandle>(null)
   const joinRef = useRef(join)
   const leaveRef = useRef(leave)
   const currentParticipant = useMemo<Participant>(() => {
@@ -232,13 +246,9 @@ export const LocationListSection = ({
 
   const candidatePlaceIds = useMemo(() => voteCandidates.map(c => c.placeId), [voteCandidates])
 
-  const handleSearch = useCallback((query: string) => {
-    placeListRef.current?.handleSearch(query)
-  }, [])
-
   const handleClear = useCallback(() => {
-    placeListRef.current?.clearSearch()
-  }, [])
+    clearSearch()
+  }, [clearSearch])
 
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
 
@@ -285,10 +295,12 @@ export const LocationListSection = ({
       ) : (
         activeTab === 'locations' && (
           <PlaceList
-            ref={placeListRef}
-            roomId={roomId}
-            categoryId={activeCategoryId}
-            onSearchComplete={onSearchComplete}
+            searchResults={searchResults}
+            isLoading={isSearchLoading}
+            isFetchingMore={isFetchingMore}
+            hasMore={hasMore}
+            hasSearched={hasSearched}
+            loadMoreRef={loadMoreRef}
             pendingPlaceCard={pendingPlaceCard}
             onStartPlaceCard={onStartPlaceCard}
             onCancelPlaceCard={onCancelPlaceCard}
