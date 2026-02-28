@@ -1,1 +1,1 @@
-export { SearchInput } from './SearchInput'
+export { SearchInput, type SearchInputHandle } from './SearchInput'

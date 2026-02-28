@@ -1,16 +1,34 @@
-import { useState, type InputHTMLAttributes, type KeyboardEvent } from 'react'
+import { useState, useImperativeHandle, type InputHTMLAttributes, type KeyboardEvent, type Ref } from 'react'
 import { MagnifyIcon, CloseIcon } from '@/shared/assets'
 import { Button } from '@/shared/components'
 import { cn } from '@/shared/utils'
 
+export interface SearchInputHandle {
+  setValue: (value: string) => void
+}
+
 interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> {
+  ref?: Ref<SearchInputHandle>
   onSearch: (searchValue: string) => void
   onClear: () => void
+  onInputChange?: (value: string) => void
   containerClassName?: string
 }
 
-export const SearchInput = ({ onSearch, onClear, onKeyDown, className, containerClassName }: SearchInputProps) => {
+export const SearchInput = ({ ref, onSearch, onClear, onInputChange, onKeyDown, className, containerClassName }: SearchInputProps) => {
   const [searchQuery, setSearchQuery] = useState('')
+
+  useImperativeHandle(ref, () => ({
+    setValue: (value: string) => {
+      setSearchQuery(value)
+    },
+  }))
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    onInputChange?.(value)
+  }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event)
@@ -35,7 +53,7 @@ export const SearchInput = ({ onSearch, onClear, onKeyDown, className, container
       <input
         type="text"
         value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         className={cn(
           'w-full h-12 pl-12 pr-12 bg-gray-bg border border-gray-300 rounded-xl text-sm text-black placeholder:text-gray-disable focus:outline-none focus:border-primary',

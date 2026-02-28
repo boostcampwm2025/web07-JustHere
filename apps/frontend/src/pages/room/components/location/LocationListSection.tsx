@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { ListBoxOutlineIcon, VoteIcon } from '@/shared/assets'
-import { ChipButton, Divider, SearchInput, PlaceDetailContent, Modal } from '@/shared/components'
+import { ChipButton, Divider, SearchInput, PlaceDetailContent, Modal, type SearchInputHandle } from '@/shared/components'
 import type { GooglePlace, Participant, PlaceCard } from '@/shared/types'
 import { useVoteSocket, useLocationSearch } from '@/pages/room/hooks'
 import { VoteListSection } from './VoteListSection'
@@ -114,6 +114,11 @@ export const LocationListSection = ({
     onSearchComplete,
   })
 
+  const searchInputRef = useRef<SearchInputHandle>(null)
+  const inputCacheRef = useRef<Record<string, string>>({})
+  const prevCategoryIdRef = useRef(activeCategoryId)
+  const activeCategoryIdRef = useRef(activeCategoryId)
+
   const lastErrorKeyRef = useRef<string | null>(null)
   const joinRef = useRef(join)
   const leaveRef = useRef(leave)
@@ -123,6 +128,17 @@ export const LocationListSection = ({
 
     return { socketId: '', userId, name: userName }
   }, [participants, userId, userName])
+
+  useEffect(() => {
+    activeCategoryIdRef.current = activeCategoryId
+  }, [activeCategoryId])
+
+  useEffect(() => {
+    if (prevCategoryIdRef.current === activeCategoryId) return
+    prevCategoryIdRef.current = activeCategoryId
+    const restored = inputCacheRef.current[activeCategoryId] ?? ''
+    searchInputRef.current?.setValue(restored)
+  }, [activeCategoryId])
 
   useEffect(() => {
     joinRef.current = join
@@ -246,8 +262,13 @@ export const LocationListSection = ({
 
   const candidatePlaceIds = useMemo(() => voteCandidates.map(c => c.placeId), [voteCandidates])
 
+  const handleInputChange = useCallback((value: string) => {
+    inputCacheRef.current[activeCategoryIdRef.current] = value
+  }, [])
+
   const handleClear = useCallback(() => {
     clearSearch()
+    inputCacheRef.current[activeCategoryIdRef.current] = ''
   }, [clearSearch])
 
   const canRegisterCandidate = voteStatus === 'WAITING' && Boolean(activeCategoryId)
@@ -277,7 +298,9 @@ export const LocationListSection = ({
             </ChipButton>
           ))}
         </div>
-        {activeTab === 'locations' && <SearchInput onClear={handleClear} onSearch={handleSearch} placeholder="검색" />}
+        {activeTab === 'locations' && (
+          <SearchInput ref={searchInputRef} onClear={handleClear} onSearch={handleSearch} onInputChange={handleInputChange} placeholder="검색" />
+        )}
       </div>
 
       <Divider />
