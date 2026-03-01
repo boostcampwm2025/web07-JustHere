@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient, useToast } from '@/shared/hooks'
-import { addSocketBreadcrumb } from '@/shared/utils'
+import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
 import type {
   VoteCandidate,
@@ -59,16 +59,24 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
   // 임시 후보자 ID 추적 (optimistic update용)
   const tempCandidateIdsRef = useRef<Set<string>>(new Set())
 
-  const handleSocketError = useCallback((error: Error) => {
-    setError({
-      status: 'ERROR',
-      statusCode: 0,
-      errorType: 'SOCKET_ERROR',
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    })
-    pendingJoinRef.current = false
-  }, [])
+  const handleSocketError = useCallback(
+    (error: Error) => {
+      reportError({
+        error,
+        code: 'SOCKET_ERROR',
+        context: { namespace: 'vote', roomId, categoryId },
+      })
+      setError({
+        status: 'ERROR',
+        statusCode: 0,
+        errorType: 'SOCKET_ERROR',
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      })
+      pendingJoinRef.current = false
+    },
+    [roomId, categoryId],
+  )
 
   const {
     getSocket,
