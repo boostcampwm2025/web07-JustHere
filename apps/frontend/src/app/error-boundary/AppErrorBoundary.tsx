@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+import * as Sentry from '@sentry/react'
 
 type Props = { children: ReactNode }
 type State = { hasError: boolean }
@@ -11,6 +12,12 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(): State {
     return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    Sentry.captureException(error, {
+      extra: { componentStack: info.componentStack },
+    })
   }
 
   render() {
