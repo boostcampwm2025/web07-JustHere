@@ -586,34 +586,9 @@ export class VoteService {
 
     for (const category of categories) {
       const voteRoomId = `${roomId}:${category.id}`
-      const session = this.sessions.get(voteRoomId)
+      const winners = this.getWinnerCandidates(voteRoomId)
 
-      if (!session || session.status !== VoteStatus.COMPLETED) continue
-      if (session.candidates.size === 0) continue
-
-      const { candidates, totalCounts, selectedCandidateId } = session
-
-      if (selectedCandidateId) {
-        const selected = candidates.get(selectedCandidateId)
-        if (selected) {
-          results.push({ category: category.title, result: [selected] })
-          continue
-        }
-      }
-
-      let maxVotes = 0
-      for (const count of totalCounts.values()) {
-        if (count >= maxVotes) maxVotes = count
-      }
-
-      if (maxVotes === 0) continue
-
-      const winners: Candidate[] = []
-      for (const candidate of candidates.values()) {
-        if ((totalCounts.get(candidate.placeId) ?? 0) === maxVotes) {
-          winners.push(candidate)
-        }
-      }
+      if (winners.length === 0) continue
 
       results.push({ category: category.title, result: winners })
     }
