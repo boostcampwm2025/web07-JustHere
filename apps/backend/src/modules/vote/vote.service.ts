@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
+import { Candidate, PlaceData, VoteCandidate, VoteSession, VoteStatus } from './vote.types'
 import { VoteSessionStore } from './vote-session.store'
+import { CategoryService } from '@/modules/category/category.service'
 import {
   VoteCandidateAddedPayload,
   VoteCandidateRemovedPayload,
@@ -20,7 +21,10 @@ import {
 @Injectable()
 export class VoteService {
   // categoryId : 투표 세션
-  constructor(private readonly sessions: VoteSessionStore) {}
+  constructor(
+    private readonly sessions: VoteSessionStore,
+    private readonly categoryService: CategoryService,
+  ) {}
 
   /**
    * 세션 생성 또는 조회 (vote:join)
@@ -573,14 +577,56 @@ export class VoteService {
   }
 
   /**
+   * 카테고리별 투표 최종 결과 조회 (GET /vote/results/:roomId)
+   * @param roomId 방 ID
+   */
+  async getVoteResults(roomId: string): Promise<VoteCandidate[]> {
+    const categories = await this.categoryService.findByRoomId(roomId)
+    const results: VoteCandidate[] = []
+
+    for (const category of categories) {
+      const voteRoomId = `${roomId}:${category.id}`
+      const session = this.sessions.get(voteRoomId)
+
+      if (!session || session.status !== VoteStatus.COMPLETED) continue
+      if (session.candidates.size === 0) continue
+
+      const { candidates, totalCounts, selectedCandidateId } = session
+
+      if (selectedCandidateId) {
+        const selected = candidates.get(selectedCandidateId)
+        if (selected) {
+          results.push({ category: category.title, result: [selected] })
+          continue
+        }
+      }
+
+      let maxVotes = 0
+      for (const count of totalCounts.values()) {
+        if (count >= maxVotes) maxVotes = count
+      }
+
+      if (maxVotes === 0) continue
+
+      const winners: Candidate[] = []
+      for (const candidate of candidates.values()) {
+        if ((totalCounts.get(candidate.placeId) ?? 0) === maxVotes) {
+          winners.push(candidate)
+        }
+      }
+
+      results.push({ category: category.title, result: winners })
+    }
+
+    return results
+  }
+
+  /**
    * 특정 방의 모든 카테고리에서 사용자의 투표를 취소
    * - room 연결 해제 시 호출됨
-   * - voteRoomId 규칙: `${roomId}:${categoryId}`
    * @param roomId 방 ID
    * @param userId 사용자 ID
-   * @returns voteRoomId별 변경된 투표 정보 (브로드캐스트용)
    */
-
   revokeAllVotesForUser(roomId: string, userId: string): Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> {
     const results: Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> = []
     const prefix = `${roomId}:`

@@ -4,6 +4,7 @@ import { ErrorType } from '@/lib/types/response.type'
 import { VoteService } from './vote.service'
 import { VoteSessionStore } from './vote-session.store'
 import { VoteStatus, PlaceData } from './vote.types'
+import { CategoryService } from '@/modules/category/category.service'
 
 // 테스트용 더미 데이터
 const mockPlaceData: PlaceData = {
@@ -22,7 +23,7 @@ describe('VoteService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [VoteService, VoteSessionStore],
+      providers: [VoteService, VoteSessionStore, { provide: CategoryService, useValue: { findByRoomId: jest.fn() } }],
     }).compile()
 
     service = module.get<VoteService>(VoteService)
