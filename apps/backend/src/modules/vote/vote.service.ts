@@ -505,11 +505,9 @@ export class VoteService {
 
     for (const [userId, userVotes] of session.userVotes.entries()) {
       for (const candidateId of userVotes) {
-        if (!session.candidates.has(candidateId)) continue
-        if (!voters[candidateId]) {
-          voters[candidateId] = []
+        if (voters[candidateId]) {
+          voters[candidateId].push(userId)
         }
-        voters[candidateId].push(userId)
       }
     }
 
@@ -517,18 +515,8 @@ export class VoteService {
   }
 
   private getVoterIdsForCandidate(session: VoteSession, candidateId: string): string[] {
-    if (!session.candidates.has(candidateId)) {
-      return []
-    }
-
-    const voters: string[] = []
-    for (const [userId, userVotes] of session.userVotes.entries()) {
-      if (userVotes.has(candidateId)) {
-        voters.push(userId)
-      }
-    }
-
-    return voters
+    const voterMap = this.getVoterIdsByCandidate(session)
+    return voterMap[candidateId] ?? []
   }
 
   // TODO: 승자를 세션에 넣어 불필요한 계산을 개선할 여지가 있다.
