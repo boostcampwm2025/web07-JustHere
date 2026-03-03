@@ -42,7 +42,8 @@ export const useYjsSocketEvents = ({
       addSocketBreadcrumb('canvas:detached', { roomId, canvasId })
     }
 
-    const handleYjsUpdate = ({ update }: YjsUpdateBroadcast) => {
+    const handleYjsUpdate = ({ canvasId: payloadCanvasId, update }: YjsUpdateBroadcast) => {
+      if (payloadCanvasId !== canvasId) return
       const updateArray = new Uint8Array(update)
       YapplyUpdate(doc, updateArray, socket)
       trackHighFreq('y:update:recv', updateArray.byteLength)
