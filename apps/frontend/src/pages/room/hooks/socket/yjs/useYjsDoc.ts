@@ -26,6 +26,7 @@ export const useYjsDoc = ({ roomId, canvasId }: UseYjsDocProps) => {
   useEffect(() => {
     const doc = new YDoc()
     docRef.current = doc
+    localMaxTimestampRef.current = 0
 
     const yPostits = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.POST_IT])
     const yPlaceCards = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
@@ -130,6 +131,7 @@ export const useYjsDoc = ({ roomId, canvasId }: UseYjsDocProps) => {
       yTextBoxes.unobserveDeep(syncTextBoxesToState)
       yZRankByKey.unobserve(syncZIndexOrderToState)
       setSharedTypes(null)
+      localMaxTimestampRef.current = 0
       doc.destroy()
       docRef.current = null
     }
