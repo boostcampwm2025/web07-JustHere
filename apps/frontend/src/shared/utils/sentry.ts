@@ -20,6 +20,7 @@ export function initSentry(options: { dsn: string; environment: string; release?
         try {
           const url = new URL(event.request.url)
           url.search = ''
+          url.hash = ''
           event.request.url = url.toString()
         } catch {
           // ignore invalid URL parsing
