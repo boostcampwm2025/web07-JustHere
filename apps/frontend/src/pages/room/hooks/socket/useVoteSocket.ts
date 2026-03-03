@@ -123,7 +123,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
     socket.emit(VOTE_EVENTS.leave, { roomId: joinedRoomId, categoryId: joinedCategoryId, userId })
     addSocketBreadcrumb('vote:leave', { roomId: joinedRoomId, categoryId: joinedCategoryId })
     joinRef.current = { ...initialJoinState }
-  }, [enabled, roomId, categoryId, userId, resolveSocket])
+    resetState()
+  }, [enabled, roomId, categoryId, userId, resolveSocket, resetState])
 
   // connect/disconnect — 재연결 시 자동 rejoin
   useEffect(() => {
@@ -353,6 +354,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
       if (!socket) return
 
       if (stateRef.current.status !== 'IN_PROGRESS') return
+      if (stateRef.current.singleVote && stateRef.current.myVotes.length > 0) return
 
       dispatch({ type: 'OPTIMISTIC_CAST', candidateId, userId })
       socket.emit(VOTE_EVENTS.cast, { roomId, categoryId, candidateId })

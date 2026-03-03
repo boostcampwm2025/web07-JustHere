@@ -79,6 +79,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
         votersByCandidate: action.payload.voters ?? {},
         round: action.payload.round,
         singleVote: action.payload.singleVote,
+        selectedCandidateId: null,
         error: null,
       }
 
@@ -121,7 +122,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
       return { ...state, myVotes: action.myVotes, error: null }
 
     case 'STARTED':
-      return { ...state, status: action.status, error: null }
+      return { ...state, status: action.status, selectedCandidateId: null, error: null }
 
     case 'ENDED':
       return {
@@ -150,6 +151,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
         myVotes: [],
         counts: resetCounts,
         votersByCandidate: resetVoters,
+        selectedCandidateId: null,
         error: null,
       }
     }
@@ -159,6 +161,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
         ...state,
         status: action.payload.status,
         candidates: action.payload.tiedCandidates,
+        selectedCandidateId: null,
         error: null,
       }
 
@@ -170,6 +173,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
         counts: action.payload.counts,
         myVotes: [],
         votersByCandidate: action.payload.voters,
+        selectedCandidateId: null,
         error: null,
       }
 
@@ -184,7 +188,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
       return { ...state, error: action.error }
 
     case 'ROLLBACK_TO_WAITING':
-      return { ...state, status: state.status === 'IN_PROGRESS' ? 'WAITING' : state.status }
+      return { ...state, status: state.status === 'IN_PROGRESS' ? 'WAITING' : state.status, selectedCandidateId: null }
 
     case 'CLEAR_ERROR':
       return { ...state, error: null }
@@ -218,7 +222,7 @@ export function voteReducer(state: VoteReducerState, action: VoteAction): VoteRe
     }
 
     case 'OPTIMISTIC_START':
-      return { ...state, status: 'IN_PROGRESS', error: null }
+      return { ...state, status: 'IN_PROGRESS', selectedCandidateId: null, error: null }
 
     case 'OPTIMISTIC_CAST': {
       const { candidateId, userId } = action
