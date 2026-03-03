@@ -228,14 +228,18 @@ export const useYjsCommands = ({ docRef, undoManagerRef, localOriginRef, localMa
 
       const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
       const key = makeKey(canvasItemType, id)
+      let changed = false
 
       doc.transact(() => {
         const current = yZRankByKey.get(key)
+        if (!current) return
         if (shouldSkipMoveToTop(yZRankByKey, current, localMaxTimestampRef.current)) {
           return
         }
         localMaxTimestampRef.current = assignNextRank(yZRankByKey, key, localMaxTimestampRef.current, doc.clientID)
+        changed = true
       }, localOriginRef.current)
+      if (!changed) return
 
       const undoManager = undoManagerRef.current
       if (!undoManager) return
