@@ -6,7 +6,7 @@ import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import { CURSOR_FREQUENCY } from '@/pages/room/constants'
-import { useCursorPresence } from '@/pages/room/hooks'
+import { useCursorPresenceStore } from '@/pages/room/stores'
 import { useYjsDoc, useYjsHistory, useYjsSocketEvents, useYjsTelemetry, useYjsCommands } from './yjs'
 
 interface UseYjsSocketOptions {
@@ -19,6 +19,9 @@ interface UseYjsSocketOptions {
 export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions) {
   const canvasIdRef = useRef(canvasId)
   const socketRef = useRef<Socket | null>(null)
+
+  const applyAwareness = useCursorPresenceStore(state => state.applyAwareness)
+  const clearCursors = useCursorPresenceStore(state => state.clearCursors)
 
   const { docRef, localOriginRef, localMaxTimestampRef, sharedTypes, postits, placeCards, lines, textBoxes, zIndexOrder } = useYjsDoc({
     roomId,
@@ -40,7 +43,6 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [roomId, canvasId],
   )
   const { trackHighFreq, trackHighFreqRef } = useYjsTelemetry({ roomId, canvasId })
-  const { applyAwareness, clearCursors } = useCursorPresence()
 
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
@@ -144,7 +146,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         socketRef.current = null
       }
     }
-  }, [roomId, canvasId, getSocket, status, docRef, socketRef, trackHighFreq, clearCursors, emitAwareness])
+  }, [roomId, canvasId, getSocket, status, docRef, socketRef, trackHighFreq, emitAwareness])
 
   useEffect(() => {
     const throttled = throttle((x: number, y: number) => {
