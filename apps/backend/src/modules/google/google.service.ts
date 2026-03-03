@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import axios, { AxiosInstance } from 'axios'
 import { SearchTextDto, PlaceDetailsDto, GoogleSearchResponseDto, GooglePlaceDto } from './dto'
 import { RoomRepository } from '@/modules/room/room.repository'
+import { GOOGLE_PLACES_API, GOOGLE_PLACE_FIELD_MASKS, GOOGLE_PHOTO_DEFAULTS, GOOGLE_SEARCH_DEFAULTS } from './google.constants'
 
 @Injectable()
 export class GoogleService {
@@ -18,8 +19,8 @@ export class GoogleService {
     this.apiKey = this.configService.getOrThrow<string>('GOOGLE_MAPS_API_KEY')
 
     this.axiosInstance = axios.create({
-      baseURL: 'https://places.googleapis.com/v1',
-      timeout: 10000,
+      baseURL: GOOGLE_PLACES_API.BASE_URL,
+      timeout: GOOGLE_PLACES_API.TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': this.apiKey,
@@ -43,15 +44,15 @@ export class GoogleService {
 
       const requestBody: Record<string, unknown> = {
         textQuery: dto.textQuery,
-        languageCode: 'ko',
-        maxResultCount: dto.maxResultCount ?? 20,
+        languageCode: GOOGLE_PLACES_API.LANGUAGE_CODE,
+        maxResultCount: dto.maxResultCount ?? GOOGLE_SEARCH_DEFAULTS.MAX_RESULT_COUNT,
       }
 
       if (latitude !== undefined && longitude !== undefined) {
         requestBody.locationBias = {
           circle: {
             center: { latitude, longitude },
-            radius: dto.radius ?? 2000,
+            radius: dto.radius ?? GOOGLE_SEARCH_DEFAULTS.RADIUS_METERS,
           },
         }
       }
@@ -60,28 +61,7 @@ export class GoogleService {
         requestBody.pageToken = dto.pageToken
       }
 
-      const fieldMask = [
-        'places.id',
-        'places.displayName',
-        'places.formattedAddress',
-        'places.location',
-        'places.rating',
-        'places.userRatingCount',
-        'places.photos',
-        'places.reviews',
-        'places.regularOpeningHours',
-        'places.priceLevel',
-        'places.priceRange',
-        'places.nationalPhoneNumber',
-        'places.websiteUri',
-        'places.types',
-        'places.primaryType',
-        'places.primaryTypeDisplayName',
-        'places.parkingOptions',
-        'places.reservable',
-        'places.allowsDogs',
-        'nextPageToken',
-      ].join(',')
+      const fieldMask = GOOGLE_PLACE_FIELD_MASKS.SEARCH
 
       const { data } = await this.axiosInstance.post<GoogleSearchResponseDto>('/places:searchText', requestBody, {
         headers: {
@@ -100,33 +80,14 @@ export class GoogleService {
 
   async getPlaceDetails(dto: PlaceDetailsDto): Promise<GooglePlaceDto> {
     try {
-      const fieldMask = [
-        'id',
-        'displayName',
-        'formattedAddress',
-        'location',
-        'rating',
-        'userRatingCount',
-        'photos',
-        'reviews',
-        'regularOpeningHours',
-        'priceRange',
-        'nationalPhoneNumber',
-        'websiteUri',
-        'types',
-        'primaryType',
-        'primaryTypeDisplayName',
-        'parkingOptions',
-        'reservable',
-        'allowsDogs',
-      ].join(',')
+      const fieldMask = GOOGLE_PLACE_FIELD_MASKS.DETAILS
 
       const { data } = await this.axiosInstance.get<GooglePlaceDto>(`/places/${dto.placeId}`, {
         headers: {
           'X-Goog-FieldMask': fieldMask,
         },
         params: {
-          languageCode: 'ko',
+          languageCode: GOOGLE_PLACES_API.LANGUAGE_CODE,
         },
       })
 
@@ -136,14 +97,24 @@ export class GoogleService {
     }
   }
 
-  async getPhoto(photoName: string, maxWidthPx = 400, maxHeightPx = 400): Promise<{ photoUri: string }> {
+  async getPhoto(
+    placeId: string,
+    photoId: string,
+    maxWidthPx: number = GOOGLE_PHOTO_DEFAULTS.MAX_WIDTH_PX,
+    maxHeightPx: number = GOOGLE_PHOTO_DEFAULTS.MAX_HEIGHT_PX,
+  ): Promise<{ photoUri: string }> {
     try {
-      const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&maxHeightPx=${maxHeightPx}&skipHttpRedirect=true&key=${this.apiKey}`
-
-      const response = await axios.get<{ photoUri: string }>(url)
+      const photoName = `places/${placeId}/photos/${photoId}`
+      const { data } = await this.axiosInstance.get<{ photoUri: string }>(`/${photoName}/media`, {
+        params: {
+          maxWidthPx,
+          maxHeightPx,
+          skipHttpRedirect: true,
+        },
+      })
 
       return {
-        photoUri: response.data.photoUri,
+        photoUri: data.photoUri,
       }
     } catch (error) {
       this.handleError(error)

@@ -1,19 +1,27 @@
 import { CustomException } from '@/lib/exceptions/custom.exception'
-import { PrismaService } from '@/lib/prisma/prisma.service'
 import { ErrorType } from '@/lib/types/response.type'
-import { YjsDocument } from './yjs.type'
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import * as Y from 'yjs'
 import { encodeStateAsUpdate, applyUpdate } from 'yjs'
+import { CanvasRepository } from './canvas.repository'
+
+interface YjsDocument {
+  doc: Y.Doc
+  roomId: string
+  categoryId: string
+}
 
 @Injectable()
-export class YjsService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(YjsService.name)
+export class CanvasService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(CanvasService.name)
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly canvasRepository: CanvasRepository) {}
 
   // categoryId -> YjsDocument 매핑
   private documents = new Map<string, YjsDocument>()
+
+  // socketId -> Set<categoryId> 매핑 (역방향 인덱스)
+  private clientConnections = new Map<string, Set<string>>()
 
   // 업데이트 버퍼: categoryId -> 업데이트 바이너리 배열
   private updateBuffer = new Map<string, Uint8Array[]>()
@@ -50,7 +58,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
 
     try {
       // DB에서 기존 데이터 불러와서 병합
-      const initialUpdate = await this.getMergedUpdate(categoryId)
+      const initialUpdate = await this.canvasRepository.getMergedUpdate(categoryId)
       if (initialUpdate.byteLength > 0) {
         Y.applyUpdate(doc, initialUpdate)
       }
@@ -63,7 +71,6 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
       doc,
       roomId,
       categoryId,
-      connections: new Set(),
     })
 
     return doc
@@ -73,24 +80,36 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
    * 클라이언트를 문서에 연결
    */
   connectClient(categoryId: string, socketId: string) {
-    const yjsDoc = this.documents.get(categoryId)
-    if (yjsDoc) yjsDoc.connections.add(socketId)
+    // 문서가 존재하는지 확인
+    if (this.documents.has(categoryId)) {
+      // 역방향 매핑 업데이트
+      if (!this.clientConnections.has(socketId)) {
+        this.clientConnections.set(socketId, new Set())
+      }
+      this.clientConnections.get(socketId)!.add(categoryId)
+    }
   }
 
   /**
    * 클라이언트 연결 해제
    */
   disconnectClient(socketId: string): string[] {
-    const canvasIds: string[] = []
+    const categoryIds = this.clientConnections.get(socketId)
+    if (!categoryIds) return []
 
-    for (const [, yjsDoc] of this.documents.entries()) {
-      if (yjsDoc.connections.has(socketId)) {
-        yjsDoc.connections.delete(socketId)
-        canvasIds.push(yjsDoc.categoryId)
+    const disconnectedCategories: string[] = []
+
+    for (const categoryId of categoryIds) {
+      // 문서가 메모리에 존재하는지 확인
+      if (this.documents.has(categoryId)) {
+        disconnectedCategories.push(categoryId)
       }
     }
 
-    return canvasIds
+    // 역방향 매핑 제거
+    this.clientConnections.delete(socketId)
+
+    return disconnectedCategories
   }
 
   /**
@@ -159,7 +178,7 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
   /**
    * YjsUpdateLog 버퍼 내용을 병합하여 DB에 저장 (Flush)
    */
-  private async flushBufferToDB() {
+  async flushBufferToDB() {
     if (this.updateBuffer.size === 0) return
 
     // 현재 버퍼의 스냅샷을 뜨고 맵을 비움 (동시성 이슈 방지)
@@ -174,36 +193,19 @@ export class YjsService implements OnModuleInit, OnModuleDestroy {
         const mergedUpdate = Y.mergeUpdates(updates)
 
         // 병합된 하나만 DB에 저장
-        await this.saveUpdateLog(categoryId, mergedUpdate)
+        await this.canvasRepository.saveUpdateLog(categoryId, mergedUpdate)
 
         this.logger.log(`[Yjs] Flushed ${updates.length} updates for category ${categoryId}`)
       } catch (err) {
-        this.logger.error(`[Yjs] Failed to flush buffer for ${categoryId}`, err)
-        // TODO: 만약 flush 실패 시 다시 버퍼에 넣거나, 재시도 큐에 넣는 로직 필요
+        this.logger.error(`Flush failed for ${categoryId}, restoring buffer...`, err)
+
+        // [DB Flush 실패 시 업데이트 로그 복구 로직]
+        // 1. 현재 버퍼에 쌓인 데이터 가져오기 (Flush 도중 새로 들어온 데이터)
+        const newUpdates = this.updateBuffer.get(categoryId) || []
+
+        // 2. 실패한 데이터(updates)를 앞에, 새 데이터(newUpdates)를 뒤에 붙여서 복구 (순서: 실패한 과거 데이터 -> 새로 들어온 최신 데이터)
+        this.updateBuffer.set(categoryId, [...updates, ...newUpdates])
       }
     }
-  }
-
-  // 초기 데이터 로드 (DB -> Merged Uint8Array)
-  private async getMergedUpdate(categoryId: string): Promise<Uint8Array> {
-    const logs = await this.prisma.categoryUpdateLog.findMany({
-      where: { categoryId },
-      orderBy: { createdAt: 'asc' },
-    })
-
-    if (logs.length === 0) return new Uint8Array()
-
-    const updates = logs.map(log => new Uint8Array(log.updateData))
-    return Y.mergeUpdates(updates)
-  }
-
-  // 업데이트 로그 저장 (Uint8Array -> DB)
-  private async saveUpdateLog(canvasId: string, update: Uint8Array) {
-    await this.prisma.categoryUpdateLog.create({
-      data: {
-        categoryId: canvasId,
-        updateData: Buffer.from(update),
-      },
-    })
   }
 }

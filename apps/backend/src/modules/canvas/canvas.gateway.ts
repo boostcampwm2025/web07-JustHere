@@ -10,7 +10,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
-import { YjsService } from './yjs.service'
+import { CanvasService } from './canvas.service'
 import { CanvasBroadcaster } from '@/modules/socket/canvas.broadcaster'
 import { CanvasAttachPayload, CanvasDetachPayload, YjsUpdatePayload, YjsAwarenessPayload } from './dto/yjs.dto'
 
@@ -24,7 +24,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   server: Server
 
   constructor(
-    private readonly yjsService: YjsService,
+    private readonly canvasService: CanvasService,
     private readonly broadcaster: CanvasBroadcaster,
   ) {}
 
@@ -33,7 +33,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    const canvasIds = this.yjsService.disconnectClient(client.id)
+    const canvasIds = this.canvasService.disconnectClient(client.id)
 
     // 참여 중이던 캔버스들에 커서 삭제 브로드캐스트
     for (const canvasId of canvasIds) {
@@ -52,7 +52,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     const { roomId, canvasId } = payload
 
     // 서비스 초기화
-    const response = await this.yjsService.initializeConnection(roomId, canvasId, client.id)
+    const response = await this.canvasService.initializeConnection(roomId, canvasId, client.id)
 
     // Socket.io room에 참여
     await client.join(`canvas:${canvasId}`)
@@ -74,7 +74,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     })
 
     await client.leave(`canvas:${canvasId}`)
-    this.yjsService.disconnectClient(client.id)
+    this.canvasService.disconnectClient(client.id)
 
     client.emit('canvas:detached', {})
   }
@@ -90,7 +90,7 @@ export class CanvasGateway implements OnGatewayInit, OnGatewayDisconnect {
     const updateArray = new Uint8Array(update)
 
     // Yjs 문서에 업데이트 적용 & 버퍼링
-    this.yjsService.processUpdate(canvasId, updateArray)
+    this.canvasService.processUpdate(canvasId, updateArray)
 
     // 다른 클라이언트들에게 업데이트 브로드캐스트
     this.broadcaster.emitToCanvas(canvasId, 'y:update', payload, { exceptSocketId: client.id })

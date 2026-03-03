@@ -31,6 +31,7 @@ interface WhiteboardCanvasProps {
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
   canvasTransformRef?: React.MutableRefObject<{ x: number; y: number; scale: number }>
+  onShowDetail: (placeId: string) => void
 }
 
 interface CurrentDrawingLineProps {
@@ -60,6 +61,7 @@ export const WhiteboardCanvas = ({
   onPlaceCardPlaced,
   onPlaceCardCanceled,
   canvasTransformRef,
+  onShowDetail,
 }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
@@ -489,6 +491,7 @@ export const WhiteboardCanvas = ({
                   }}
                   onMouseDown={e => handleObjectMouseDown(card.id, CANVAS_ITEM_TYPE.PLACE_CARD, e)}
                   onClick={e => handleObjectClick(e)}
+                  onShowDetail={() => onShowDetail(card.placeId)}
                   onContextMenu={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {

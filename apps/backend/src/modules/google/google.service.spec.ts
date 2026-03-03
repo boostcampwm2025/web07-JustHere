@@ -113,6 +113,36 @@ describe('GoogleService', () => {
 
       await expect(service.searchText(dto)).rejects.toThrow(new CustomException(ErrorType.BadRequest, '잘못된 요청입니다: Bad Request'))
     })
+
+    it('roomId가 없으면 locationBias 없이 검색해야 한다', async () => {
+      const dtoWithoutRoom = { textQuery: '맛집' }
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { places: [{ id: 'place-1' }] },
+      })
+
+      const result = await service.searchText(dtoWithoutRoom)
+
+      expect(mockRoomRepository.findById).not.toHaveBeenCalled()
+      const callArg = (mockAxiosInstance.post.mock.calls[0] as [string, Record<string, unknown>])[1]
+      expect(callArg).not.toHaveProperty('locationBias')
+      expect(result.places).toHaveLength(1)
+    })
+
+    it('pageToken이 있으면 requestBody에 포함해야 한다', async () => {
+      const dtoWithPageToken = { textQuery: '맛집', roomId: 'room-1', pageToken: 'next-page-token' }
+      mockRoomRepository.findById.mockResolvedValue({ x: 127.0, y: 37.0 })
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { places: [] },
+      })
+
+      await service.searchText(dtoWithPageToken)
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/places:searchText',
+        expect.objectContaining({ pageToken: 'next-page-token' }) as Record<string, unknown>,
+        expect.any(Object) as unknown,
+      )
+    })
   })
 
   describe('getPlaceDetails', () => {
@@ -142,31 +172,45 @@ describe('GoogleService', () => {
   })
 
   describe('getPhoto', () => {
-    const photoName = 'places/place-1/photos/photo-1'
+    const placeId = 'place-1'
+    const photoId = 'photo-1'
+    const photoName = `places/${placeId}/photos/${photoId}`
 
     it('API 호출이 성공하면 photoUri를 반환해야 한다', async () => {
       const mockPhotoUri = 'https://lh3.googleusercontent.com/places/...'
 
-      // getPhoto 메서드는 정적 axios.get을 사용하므로 이를 모킹
-      ;(axios.get as jest.Mock).mockResolvedValue({
+      mockAxiosInstance.get.mockResolvedValue({
         data: { photoUri: mockPhotoUri },
       })
 
-      const result = await service.getPhoto(photoName)
+      const result = await service.getPhoto(placeId, photoId)
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(axios.get as jest.Mock).toHaveBeenCalledWith(expect.stringContaining(photoName))
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        `/${photoName}/media`,
+        expect.objectContaining({
+          params: { maxWidthPx: 400, maxHeightPx: 400, skipHttpRedirect: true },
+        }),
+      )
 
-      expect(result).toEqual({
-        photoUri: mockPhotoUri,
-      })
+      expect(result).toEqual({ photoUri: mockPhotoUri })
     })
 
     it('API 호출 실패 시 예외를 처리해야 한다', async () => {
       const errorResponse = { response: { status: 403 } }
-      ;(axios.get as jest.Mock).mockRejectedValue(errorResponse)
+      mockAxiosInstance.get.mockRejectedValue(errorResponse)
 
-      await expect(service.getPhoto(photoName)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
+      await expect(service.getPhoto(placeId, photoId)).rejects.toThrow(new CustomException(ErrorType.Unauthorized, 'Google API 인증 실패'))
+    })
+  })
+
+  describe('handleError (non-axios error)', () => {
+    it('Axios 에러가 아닌 일반 에러는 BadGateway를 던져야 한다', async () => {
+      mockAxiosInstance.post.mockRejectedValue(new Error('unexpected'))
+      ;(axios.isAxiosError as unknown as jest.Mock).mockReturnValue(false)
+
+      await expect(service.searchText({ textQuery: '맛집' })).rejects.toThrow(
+        new CustomException(ErrorType.BadGateway, 'Google API 호출 중 오류 발생'),
+      )
     })
   })
 })

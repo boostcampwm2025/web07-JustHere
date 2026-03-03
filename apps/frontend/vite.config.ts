@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react-swc'
 import tailwindcss from '@tailwindcss/vite'
 import svgr from 'vite-plugin-svgr'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig(() => {
@@ -23,10 +24,30 @@ export default defineConfig(() => {
     }),
   )
 
+  if (process.env.ANALYZE) {
+    plugins.push(
+      visualizer({
+        open: true,
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+      }),
+    )
+  }
+
   return {
     plugins,
     build: {
-      sourcemap: true,
+      sourcemap: 'hidden' as const,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-canvas': ['konva', 'react-konva', 'react-konva-utils'],
+            'vendor-collab': ['yjs', 'socket.io-client'],
+            'vendor-map': ['@vis.gl/react-google-maps'],
+          },
+        },
+      },
     },
     resolve: {
       alias: {

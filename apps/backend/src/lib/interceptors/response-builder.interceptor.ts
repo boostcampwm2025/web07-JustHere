@@ -13,7 +13,8 @@ export class ResponseBuilderInterceptor<T> implements NestInterceptor<T, Respons
     if (context.getType() === 'http') {
       const ctx = context.switchToHttp()
       const request = ctx.getRequest<Request>()
-      if (request.originalUrl?.startsWith('/metrics')) {
+      const originalUrl = request.originalUrl ?? ''
+      if (originalUrl.startsWith('/metrics') || originalUrl.startsWith('/api/share')) {
         return next.handle()
       }
 
