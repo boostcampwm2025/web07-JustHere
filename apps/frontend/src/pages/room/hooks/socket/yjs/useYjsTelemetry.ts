@@ -31,9 +31,10 @@ export const useYjsTelemetry = ({ roomId, canvasId }: UseYjsTelemetryOptions) =>
   const trackHighFreq = useCallback(
     (key: string, bytes = 0) => {
       const current = summaryRef.current.get(key) ?? { count: 0, bytes: 0 }
-      current.count += 1
-      current.bytes += bytes
-      summaryRef.current.set(key, current)
+      summaryRef.current.set(key, {
+        count: current.count + 1,
+        bytes: current.bytes + bytes,
+      })
 
       if (summaryTimerRef.current == null) {
         summaryTimerRef.current = window.setTimeout(flushSummary, SUMMARY_FREQUENCY)
