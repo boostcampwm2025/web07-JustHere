@@ -3,6 +3,7 @@ import { Doc as YDoc, applyUpdate as YapplyUpdate } from 'yjs'
 import type { Socket } from 'socket.io-client'
 import type { CanvasAttachedPayload, YjsAwarenessBroadcast, YjsUpdateBroadcast } from '@/shared/types'
 import { addSocketBreadcrumb } from '@/shared/utils'
+import { CANVAS_EVENTS, YJS_EVENTS } from '@/pages/room/constants'
 
 interface UseYjsSocketEventsOptions {
   resolveSocket: () => Socket | null
@@ -35,35 +36,35 @@ export const useYjsSocketEvents = ({
 
       const updateArray = new Uint8Array(update)
       YapplyUpdate(doc, updateArray, socket)
-      addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
+      addSocketBreadcrumb(CANVAS_EVENTS.attach, { roomId, canvasId, bytes: updateArray.byteLength })
     }
 
     const handleCanvasDetached = () => {
-      addSocketBreadcrumb('canvas:detached', { roomId, canvasId })
+      addSocketBreadcrumb(CANVAS_EVENTS.detach, { roomId, canvasId })
     }
 
     const handleYjsUpdate = ({ canvasId: payloadCanvasId, update }: YjsUpdateBroadcast) => {
       if (payloadCanvasId !== canvasId) return
       const updateArray = new Uint8Array(update)
       YapplyUpdate(doc, updateArray, socket)
-      trackHighFreq('y:update:recv', updateArray.byteLength)
+      trackHighFreq(YJS_EVENTS.updateRecv, updateArray.byteLength)
     }
 
     const handleAwareness = (payload: YjsAwarenessBroadcast) => {
-      trackHighFreq('y:awareness:recv')
+      trackHighFreq(YJS_EVENTS.awarenessRecv)
       applyAwareness(payload)
     }
 
-    socket.on('canvas:attached', handleCanvasAttached)
-    socket.on('canvas:detached', handleCanvasDetached)
-    socket.on('y:update', handleYjsUpdate)
-    socket.on('y:awareness', handleAwareness)
+    socket.on(CANVAS_EVENTS.attach, handleCanvasAttached)
+    socket.on(CANVAS_EVENTS.detach, handleCanvasDetached)
+    socket.on(YJS_EVENTS.update, handleYjsUpdate)
+    socket.on(YJS_EVENTS.awareness, handleAwareness)
 
     return () => {
-      socket.off('canvas:attached', handleCanvasAttached)
-      socket.off('canvas:detached', handleCanvasDetached)
-      socket.off('y:update', handleYjsUpdate)
-      socket.off('y:awareness', handleAwareness)
+      socket.off(CANVAS_EVENTS.attach, handleCanvasAttached)
+      socket.off(CANVAS_EVENTS.detach, handleCanvasDetached)
+      socket.off(YJS_EVENTS.update, handleYjsUpdate)
+      socket.off(YJS_EVENTS.awareness, handleAwareness)
     }
   }, [resolveSocket, enabled, roomId, canvasId, docRef, applyAwareness, trackHighFreq])
 }

@@ -5,7 +5,7 @@ import { throttle, type ThrottledFunction } from '@/shared/utils'
 import { useSocketClient } from '@/shared/hooks'
 import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
-import { CURSOR_FREQUENCY } from '@/pages/room/constants'
+import { CANVAS_EVENTS, CURSOR_FREQUENCY, YJS_EVENTS } from '@/pages/room/constants'
 import { useCursorPresenceStore } from '@/pages/room/stores'
 import { useYjsDoc, useYjsHistory, useYjsSocketEvents, useYjsTelemetry, useYjsCommands } from './yjs'
 
@@ -79,10 +79,10 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         canvasId: options?.canvasId ?? canvasIdRef.current,
         state,
       }
-      targetSocket.emit('y:awareness', awarenessPayload)
+      targetSocket.emit(YJS_EVENTS.awareness, awarenessPayload)
 
       if (options?.track !== false) {
-        trackHighFreqRef.current('y:awareness:send')
+        trackHighFreqRef.current(YJS_EVENTS.awarenessSend)
       }
     },
     [trackHighFreqRef],
@@ -111,18 +111,18 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
 
     const handleConnect = () => {
       const attachPayload: CanvasAttachPayload = { roomId, canvasId }
-      socket.emit('canvas:attach', attachPayload)
-      addSocketBreadcrumb('canvas:attach', { roomId, canvasId })
+      socket.emit(CANVAS_EVENTS.attach, attachPayload)
+      addSocketBreadcrumb(CANVAS_EVENTS.attach, { roomId, canvasId })
     }
 
     const handleUpdate = (update: Uint8Array, origin: unknown) => {
       if (origin !== socket) {
-        trackHighFreq('y:update:send', update.byteLength)
+        trackHighFreq(YJS_EVENTS.updateSend, update.byteLength)
         const updatePayload: YjsUpdatePayload = {
           canvasId,
           update: Array.from(update),
         }
-        socket.emit('y:update', updatePayload)
+        socket.emit(YJS_EVENTS.update, updatePayload)
       }
     }
 
@@ -137,7 +137,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
       emitAwareness({}, { socket, canvasId, track: false })
 
       const detachPayload: CanvasDetachPayload = { canvasId }
-      socket.emit('canvas:detach', detachPayload)
+      socket.emit(CANVAS_EVENTS.detach, detachPayload)
       clearCursors()
 
       doc.off('update', handleUpdate)
@@ -146,7 +146,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
         socketRef.current = null
       }
     }
-  }, [roomId, canvasId, getSocket, status, docRef, socketRef, trackHighFreq, emitAwareness])
+  }, [roomId, canvasId, getSocket, clearCursors, status, docRef, socketRef, trackHighFreq, emitAwareness])
 
   useEffect(() => {
     const throttled = throttle((x: number, y: number) => {
