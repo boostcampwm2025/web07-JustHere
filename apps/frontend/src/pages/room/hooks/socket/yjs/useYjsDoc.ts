@@ -1,51 +1,47 @@
-import type { Array as YArray, Map as YMap } from 'yjs'
-import type { Dispatch, RefObject, SetStateAction } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Doc as YDoc, Map as YMap } from 'yjs'
 import type { Line, PlaceCard, PostIt, TextBox } from '@/shared/types'
+import { CANVAS_ITEM_TYPE, YJS_TYPE } from '@/shared/types'
 import { PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
-import type { YjsItemType, YjsRank } from '@/pages/room/types'
+import { resolveZIndexState } from '@/pages/room/utils'
+import type { YjsItemType, YjsRank, YjsSharedTypes } from '@/pages/room/types'
 
-interface SyncBindings {
-  yPostits: YArray<YMap<unknown>>
-  yPlaceCards: YArray<YMap<unknown>>
-  yLines: YArray<YMap<unknown>>
-  yTextBoxes: YArray<YMap<unknown>>
-  yZRankByKey: YMap<YjsRank>
+interface UseYjsDocProps {
+  roomId: string
+  canvasId: string
 }
 
-interface SyncHandlers {
-  syncPostitsToState: () => void
-  syncPlaceCardsToState: () => void
-  syncLinesToState: () => void
-  syncTextBoxesToState: () => void
-  syncZIndexOrderToState: () => void
-}
+export const useYjsDoc = ({ roomId, canvasId }: UseYjsDocProps) => {
+  const docRef = useRef<YDoc | null>(null)
+  const localOriginRef = useRef(Symbol('canvas-local'))
+  const localMaxTimestampRef = useRef(0)
+  const [sharedTypes, setSharedTypes] = useState<YjsSharedTypes | null>(null)
 
-interface CanvasSyncHandlersOptions {
-  localMaxTimestampRef: RefObject<number>
-  setPostits: Dispatch<SetStateAction<PostIt[]>>
-  setPlaceCards: Dispatch<SetStateAction<PlaceCard[]>>
-  setLines: Dispatch<SetStateAction<Line[]>>
-  setTextBoxes: Dispatch<SetStateAction<TextBox[]>>
-  setZIndexOrder: Dispatch<SetStateAction<YjsItemType[]>>
-  resolveZIndexState: (
-    rankByKey: YMap<YjsRank>,
-    currentMaxTimestamp: number,
-  ) => {
-    items: YjsItemType[]
-    maxTimestamp: number
-  }
-}
+  const [postits, setPostits] = useState<PostIt[]>([])
+  const [placeCards, setPlaceCards] = useState<PlaceCard[]>([])
+  const [lines, setLines] = useState<Line[]>([])
+  const [textBoxes, setTextBoxes] = useState<TextBox[]>([])
+  const [zIndexOrder, setZIndexOrder] = useState<Array<YjsItemType>>([])
 
-export const canvasSyncHandlers = ({
-  localMaxTimestampRef,
-  setPostits,
-  setPlaceCards,
-  setLines,
-  setTextBoxes,
-  setZIndexOrder,
-  resolveZIndexState,
-}: CanvasSyncHandlersOptions) => {
-  return ({ yPostits, yPlaceCards, yLines, yTextBoxes, yZRankByKey }: SyncBindings): SyncHandlers => {
+  useEffect(() => {
+    const doc = new YDoc()
+    docRef.current = doc
+
+    const yPostits = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.POST_IT])
+    const yPlaceCards = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.PLACE_CARD])
+    const yLines = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.LINE])
+    const yTextBoxes = doc.getArray<YMap<unknown>>(YJS_TYPE[CANVAS_ITEM_TYPE.TEXT_BOX])
+    const yZRankByKey = doc.getMap<YjsRank>(YJS_TYPE.Z_RANK_BY_KEY)
+
+    const nextSharedTypes: YjsSharedTypes = {
+      yPostits,
+      yPlaceCards,
+      yLines,
+      yTextBoxes,
+      yZRankByKey,
+    }
+    setSharedTypes(nextSharedTypes)
+
     const syncPostitsToState = () => {
       const items: PostIt[] = yPostits.toArray().map(yMap => ({
         id: yMap.get('id') as string,
@@ -115,12 +111,39 @@ export const canvasSyncHandlers = ({
       setZIndexOrder(items)
     }
 
-    return {
-      syncPostitsToState,
-      syncPlaceCardsToState,
-      syncLinesToState,
-      syncTextBoxesToState,
-      syncZIndexOrderToState,
+    yPostits.observeDeep(syncPostitsToState)
+    yPlaceCards.observeDeep(syncPlaceCardsToState)
+    yLines.observeDeep(syncLinesToState)
+    yTextBoxes.observeDeep(syncTextBoxesToState)
+    yZRankByKey.observe(syncZIndexOrderToState)
+
+    syncPostitsToState()
+    syncPlaceCardsToState()
+    syncLinesToState()
+    syncTextBoxesToState()
+    syncZIndexOrderToState()
+
+    return () => {
+      yPostits.unobserveDeep(syncPostitsToState)
+      yPlaceCards.unobserveDeep(syncPlaceCardsToState)
+      yLines.unobserveDeep(syncLinesToState)
+      yTextBoxes.unobserveDeep(syncTextBoxesToState)
+      yZRankByKey.unobserve(syncZIndexOrderToState)
+      setSharedTypes(null)
+      doc.destroy()
+      docRef.current = null
     }
+  }, [roomId, canvasId])
+
+  return {
+    docRef,
+    localOriginRef,
+    localMaxTimestampRef,
+    sharedTypes,
+    postits,
+    placeCards,
+    lines,
+    textBoxes,
+    zIndexOrder,
   }
 }

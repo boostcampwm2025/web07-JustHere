@@ -7,11 +7,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import { CURSOR_FREQUENCY } from '@/pages/room/constants'
 import { useCursorPresence } from '@/pages/room/hooks'
-import { useCanvasCommands } from './useCanvasCommands'
-import { useCanvasHistory } from './useCanvasHistory'
-import { useCanvasSocketEvents } from './useCanvasSocketEvents'
-import { useCanvasTelemetry } from './useCanvasTelemetry'
-import { useYDocLifecycle } from './useYDocLifecycle'
+import { useYjsDoc, useYjsHistory, useYjsSocketEvents, useYjsTelemetry, useYjsCommands } from './yjs'
 
 interface UseYjsSocketOptions {
   roomId: string
@@ -24,7 +20,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   const canvasIdRef = useRef(canvasId)
   const socketRef = useRef<Socket | null>(null)
 
-  const { docRef, localOriginRef, localMaxTimestampRef, sharedTypes, postits, placeCards, lines, textBoxes, zIndexOrder } = useYDocLifecycle({
+  const { docRef, localOriginRef, localMaxTimestampRef, sharedTypes, postits, placeCards, lines, textBoxes, zIndexOrder } = useYjsDoc({
     roomId,
     canvasId,
   })
@@ -43,13 +39,13 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     },
     [roomId, canvasId],
   )
-  const { trackHighFreq, trackHighFreqRef } = useCanvasTelemetry({ roomId, canvasId })
+  const { trackHighFreq, trackHighFreqRef } = useYjsTelemetry({ roomId, canvasId })
   const { applyAwareness, clearCursors } = useCursorPresence()
 
   const cursorPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const cursorChatRef = useRef<{ chatActive: boolean; chatMessage: string }>({ chatActive: false, chatMessage: '' })
 
-  const { undoManagerRef, canUndo, canRedo, undo, redo, stopCapturing, updateHistoryState } = useCanvasHistory({
+  const { undoManagerRef, canUndo, canRedo, undo, redo, stopCapturing, updateHistoryState } = useYjsHistory({
     sharedTypes,
     localOriginRef,
   })
@@ -90,7 +86,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
     [trackHighFreqRef],
   )
 
-  useCanvasSocketEvents({
+  useYjsSocketEvents({
     resolveSocket: getSocket,
     enabled: status !== 'disconnected',
     roomId,
@@ -196,7 +192,7 @@ export function useYjsSocket({ roomId, canvasId, userName }: UseYjsSocketOptions
   )
 
   const { addPostIt, updatePostIt, addPlaceCard, updatePlaceCard, addLine, updateLine, addTextBox, updateTextBox, deleteCanvasItem, moveToTop } =
-    useCanvasCommands({
+    useYjsCommands({
       docRef,
       undoManagerRef,
       localOriginRef,

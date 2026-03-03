@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import * as Y from 'yjs'
+import { UndoManager as YUndoManager } from 'yjs'
 import { CAPTURE_FREQUENCY } from '@/pages/room/constants'
-import type { YjsSharedTypes } from './useYDocLifecycle'
+import type { YjsSharedTypes } from '@/pages/room/types'
 
-interface UseCanvasHistoryOptions {
+interface UseYjsHistoryProps {
   sharedTypes: YjsSharedTypes | null
   localOriginRef: { current: unknown }
 }
 
-export const useCanvasHistory = ({ sharedTypes, localOriginRef }: UseCanvasHistoryOptions) => {
-  const undoManagerRef = useRef<Y.UndoManager | null>(null)
+export const useYjsHistory = ({ sharedTypes, localOriginRef }: UseYjsHistoryProps) => {
+  const undoManagerRef = useRef<YUndoManager | null>(null)
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
@@ -26,7 +26,7 @@ export const useCanvasHistory = ({ sharedTypes, localOriginRef }: UseCanvasHisto
       return
     }
 
-    const undoManager = new Y.UndoManager(
+    const undoManager = new YUndoManager(
       [sharedTypes.yPostits, sharedTypes.yPlaceCards, sharedTypes.yLines, sharedTypes.yTextBoxes, sharedTypes.yZRankByKey],
       {
         trackedOrigins: new Set([localOriginRef.current]),

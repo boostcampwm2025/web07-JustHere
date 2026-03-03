@@ -1,20 +1,20 @@
 import { useEffect } from 'react'
-import * as Y from 'yjs'
+import { Doc as YDoc, applyUpdate as YapplyUpdate } from 'yjs'
 import type { Socket } from 'socket.io-client'
 import type { CanvasAttachedPayload, YjsAwarenessBroadcast, YjsUpdateBroadcast } from '@/shared/types'
 import { addSocketBreadcrumb } from '@/shared/utils'
 
-interface UseCanvasSocketEventsOptions {
+interface UseYjsSocketEventsOptions {
   resolveSocket: () => Socket | null
   enabled?: boolean
   roomId: string
   canvasId: string
-  docRef: { current: Y.Doc | null }
+  docRef: { current: YDoc | null }
   applyAwareness: (payload: YjsAwarenessBroadcast) => void
   trackHighFreq: (key: string, bytes?: number) => void
 }
 
-export const useCanvasSocketEvents = ({
+export const useYjsSocketEvents = ({
   resolveSocket,
   enabled = true,
   roomId,
@@ -22,7 +22,7 @@ export const useCanvasSocketEvents = ({
   docRef,
   applyAwareness,
   trackHighFreq,
-}: UseCanvasSocketEventsOptions) => {
+}: UseYjsSocketEventsOptions) => {
   useEffect(() => {
     if (!enabled) return
 
@@ -34,7 +34,7 @@ export const useCanvasSocketEvents = ({
       if (!update) return
 
       const updateArray = new Uint8Array(update)
-      Y.applyUpdate(doc, updateArray, socket)
+      YapplyUpdate(doc, updateArray, socket)
       addSocketBreadcrumb('canvas:attached', { roomId, canvasId, bytes: updateArray.byteLength })
     }
 
@@ -44,7 +44,7 @@ export const useCanvasSocketEvents = ({
 
     const handleYjsUpdate = ({ update }: YjsUpdateBroadcast) => {
       const updateArray = new Uint8Array(update)
-      Y.applyUpdate(doc, updateArray, socket)
+      YapplyUpdate(doc, updateArray, socket)
       trackHighFreq('y:update:recv', updateArray.byteLength)
     }
 

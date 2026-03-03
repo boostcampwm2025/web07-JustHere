@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef } from 'react'
 import { addSocketBreadcrumb } from '@/shared/utils'
 import { SUMMARY_FREQUENCY } from '@/pages/room/constants'
 
-interface UseCanvasTelemetryOptions {
+interface UseYjsTelemetryOptions {
   roomId: string
   canvasId: string
 }
 
-export const useCanvasTelemetry = ({ roomId, canvasId }: UseCanvasTelemetryOptions) => {
+export const useYjsTelemetry = ({ roomId, canvasId }: UseYjsTelemetryOptions) => {
   const summaryRef = useRef<Map<string, { count: number; bytes: number }>>(new Map())
   const summaryTimerRef = useRef<number | null>(null)
   const trackHighFreqRef = useRef<(key: string, bytes?: number) => void>(() => {})
