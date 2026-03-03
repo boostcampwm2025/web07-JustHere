@@ -288,7 +288,7 @@ export default function RoomPage() {
           size="icon"
           onClick={() => setIsLocationListCollapsed(prev => !prev)}
           className={cn(
-            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg hover:bg-gray-50 transition-[left] duration-300 ease-in-out',
+            'absolute top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-white border border-l-0 border-gray-200 rounded-r-lg rounded-l-none hover:bg-gray-50 transition-[left] duration-300 ease-in-out',
             isLocationListCollapsed ? 'left-0' : `left-[${LOCATION_PANEL_WIDTH}px]`,
           )}
           aria-label={isLocationListCollapsed ? '패널 열기' : '패널 접기'}
