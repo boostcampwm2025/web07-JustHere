@@ -61,7 +61,9 @@ export class UserSessionStore {
 
     // 불일치 데이터 정리
     if (toRemove.length > 0) {
-      toRemove.forEach(id => socketIds.delete(id))
+      toRemove.forEach(id => {
+        socketIds.delete(id)
+      })
     }
 
     return sessions
