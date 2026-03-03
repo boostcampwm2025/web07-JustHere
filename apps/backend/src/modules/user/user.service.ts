@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { UserSessionStore } from './user-session.store'
-import { CreateSessionParams, UserSession } from './user.type'
+import { CreateSessionParams } from './user.type'
+import { UserSession } from './user'
 
 @Injectable()
 export class UserService {
@@ -12,15 +13,7 @@ export class UserService {
   createSession(params: CreateSessionParams): UserSession {
     const isFirstInRoom = this.sessions.listByRoom(params.roomId).length === 0
 
-    const session: UserSession = {
-      socketId: params.socketId,
-      userId: params.userId,
-      name: params.name,
-      color: this.generateColor(params.userId),
-      roomId: params.roomId,
-      joinedAt: new Date(),
-      isOwner: isFirstInRoom,
-    }
+    const session = new UserSession(params, isFirstInRoom)
 
     this.sessions.set(params.socketId, session)
     return session
@@ -49,19 +42,6 @@ export class UserService {
    */
   getSessionsByRoom(roomId: string): UserSession[] {
     return this.sessions.listByRoom(roomId)
-  }
-
-  /**
-   * userId를 기반으로 일관된 컬러를 생성
-   * 같은 userId는 항상 같은 컬러를 반환
-   */
-  private generateColor(userId: string): string {
-    let hash = 0
-    for (let i = 0; i < userId.length; i++) {
-      hash = userId.charCodeAt(i) + ((hash << 5) - hash)
-    }
-    const hue = Math.abs(hash % 360)
-    return `hsl(${hue}, 70%, 50%)`
   }
 
   /**

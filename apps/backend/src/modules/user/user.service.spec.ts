@@ -1,11 +1,11 @@
+import { Test, TestingModule } from '@nestjs/testing'
 import { UserService } from './user.service'
 import { UserSessionStore } from './user-session.store'
-import type { CreateSessionParams, UserSession } from './user.type'
+import { CreateSessionParams } from './user.type'
 
 describe('UserService', () => {
   let service: UserService
   let store: UserSessionStore
-  const now = new Date()
 
   const createParams: CreateSessionParams = {
     socketId: 'socket-1',
@@ -14,19 +14,13 @@ describe('UserService', () => {
     roomId: 'room-1',
   }
 
-  const existingSession: UserSession = {
-    socketId: 'socket-1',
-    userId: 'user-1',
-    name: 'user1',
-    roomId: 'room-1',
-    color: 'hsl(100, 70%, 50%)',
-    joinedAt: now,
-    isOwner: true,
-  }
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UserService, UserSessionStore],
+    }).compile()
 
-  beforeEach(() => {
-    store = new UserSessionStore()
-    service = new UserService(store)
+    service = module.get<UserService>(UserService)
+    store = module.get<UserSessionStore>(UserSessionStore)
   })
 
   describe('createSession', () => {
@@ -86,11 +80,11 @@ describe('UserService', () => {
 
   describe('getSession', () => {
     it('socketId로 세션을 조회한다', () => {
-      store.set(existingSession.socketId, existingSession)
+      const session = service.createSession(createParams)
 
-      const result = service.getSession(existingSession.socketId)
+      const result = service.getSession(session.socketId)
 
-      expect(result).toEqual(existingSession)
+      expect(result).toEqual(session)
     })
 
     it('존재하지 않는 socketId로 조회하면 undefined를 반환한다', () => {
@@ -102,12 +96,12 @@ describe('UserService', () => {
 
   describe('removeSession', () => {
     it('세션을 삭제하고 삭제된 세션을 반환한다', () => {
-      store.set(existingSession.socketId, existingSession)
+      const session = service.createSession(createParams)
 
-      const result = service.removeSession(existingSession.socketId)
+      const result = service.removeSession(session.socketId)
 
-      expect(result).toEqual(existingSession)
-      expect(store.get(existingSession.socketId)).toBeUndefined()
+      expect(result).toEqual(session)
+      expect(store.get(session.socketId)).toBeUndefined()
     })
 
     it('존재하지 않는 socketId를 삭제하면 undefined를 반환한다', () => {
@@ -119,36 +113,31 @@ describe('UserService', () => {
 
   describe('getSessionsByRoom', () => {
     it('특정 roomId의 모든 세션을 반환한다', () => {
-      const sessionA: UserSession = {
-        ...existingSession,
+      const sessionA = service.createSession({
+        ...createParams,
         socketId: 'socket-1',
+        userId: 'user-1',
         roomId: 'room-1',
-        isOwner: true,
-      }
-      const sessionB: UserSession = {
-        ...existingSession,
+      })
+      const sessionB = service.createSession({
+        ...createParams,
         socketId: 'socket-2',
         userId: 'user-2',
         roomId: 'room-1',
-        isOwner: false,
-      }
-      const sessionC: UserSession = {
-        ...existingSession,
+      })
+      const sessionC = service.createSession({
+        ...createParams,
         socketId: 'socket-3',
         userId: 'user-3',
         roomId: 'room-2',
-        isOwner: true,
-      }
-
-      store.set(sessionA.socketId, sessionA)
-      store.set(sessionB.socketId, sessionB)
-      store.set(sessionC.socketId, sessionC)
+      })
 
       const result = service.getSessionsByRoom('room-1')
 
       expect(result).toHaveLength(2)
       expect(result).toContainEqual(sessionA)
       expect(result).toContainEqual(sessionB)
+      expect(result).not.toContainEqual(sessionC)
     })
 
     it('해당 roomId에 세션이 없으면 빈 배열을 반환한다', () => {
@@ -160,13 +149,13 @@ describe('UserService', () => {
 
   describe('updateSessionName', () => {
     it('세션 이름을 업데이트하고 업데이트된 세션을 반환한다', () => {
-      store.set(existingSession.socketId, existingSession)
+      const session = service.createSession(createParams)
 
-      const result = service.updateSessionName(existingSession.socketId, 'newName')
+      const result = service.updateSessionName(session.socketId, 'newName')
 
       expect(result).toBeDefined()
       expect(result!.name).toBe('newName')
-      expect(store.get(existingSession.socketId)!.name).toBe('newName')
+      expect(store.get(session.socketId)!.name).toBe('newName')
     })
 
     it('존재하지 않는 socketId로 업데이트하면 undefined를 반환한다', () => {
@@ -177,24 +166,19 @@ describe('UserService', () => {
   })
 
   describe('transferOwnership', () => {
-    const ownerSession: UserSession = {
-      ...existingSession,
-      socketId: 'socket-1',
-      userId: 'user-1',
-      isOwner: true,
-    }
-
-    const memberSession: UserSession = {
-      ...existingSession,
-      socketId: 'socket-2',
-      userId: 'user-2',
-      isOwner: false,
-    }
-
     it('방장 권한을 다른 유저에게 이전한다', () => {
-      store.set(ownerSession.socketId, ownerSession)
-      store.set(memberSession.socketId, memberSession)
-
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-1',
+        userId: 'user-1',
+        roomId: 'room-1',
+      })
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-2',
+        userId: 'user-2',
+        roomId: 'room-1',
+      })
       const result = service.transferOwnership('room-1', 'user-1', 'user-2')
 
       expect(result).toBe(true)
@@ -203,17 +187,33 @@ describe('UserService', () => {
     })
 
     it('현재 방장이 아니면 false를 반환한다', () => {
-      const notOwner = { ...ownerSession, isOwner: false }
-      store.set(notOwner.socketId, notOwner)
-      store.set(memberSession.socketId, memberSession)
+      // 먼저 입장한 사람이 방장
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-1',
+        userId: 'user-1',
+        roomId: 'room-1',
+      })
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-2',
+        userId: 'user-2',
+        roomId: 'room-1',
+      })
 
-      const result = service.transferOwnership('room-1', 'user-1', 'user-2')
+      // user-2(멤버)가 user-1(방장)에게 권한을 주려고 시도
+      const result = service.transferOwnership('room-1', 'user-2', 'user-1')
 
       expect(result).toBe(false)
     })
 
     it('현재 방장 세션이 없으면 false를 반환한다', () => {
-      store.set(memberSession.socketId, memberSession)
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-2',
+        userId: 'user-2',
+        roomId: 'room-1',
+      })
 
       const result = service.transferOwnership('room-1', 'user-1', 'user-2')
 
@@ -221,7 +221,12 @@ describe('UserService', () => {
     })
 
     it('새 방장 세션이 없으면 false를 반환한다', () => {
-      store.set(ownerSession.socketId, ownerSession)
+      service.createSession({
+        ...createParams,
+        socketId: 'socket-1',
+        userId: 'user-1',
+        roomId: 'room-1',
+      })
 
       const result = service.transferOwnership('room-1', 'user-1', 'user-2')
 
@@ -231,11 +236,11 @@ describe('UserService', () => {
 
   describe('getSessionByUserIdInRoom', () => {
     it('특정 방에서 userId로 세션을 조회한다', () => {
-      store.set(existingSession.socketId, existingSession)
+      const session = service.createSession(createParams)
 
       const result = service.getSessionByUserIdInRoom('room-1', 'user-1')
 
-      expect(result).toEqual(existingSession)
+      expect(result).toEqual(session)
     })
 
     it('해당 유저가 없으면 undefined를 반환한다', () => {

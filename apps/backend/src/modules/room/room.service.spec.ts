@@ -9,7 +9,7 @@ import { RoomRepository } from './room.repository'
 import { CategoryService } from '@/modules/category/category.service'
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { UserService } from '@/modules/user/user.service'
-import type { UserSession } from '@/modules/user/user.type'
+import { UserSession } from '@/modules/user/user'
 import {
   ParticipantConnectedPayload,
   ParticipantDisconnectedPayload,
@@ -49,25 +49,27 @@ describe('RoomService', () => {
   const now = new Date()
   const laterDate = new Date(now.getTime() + 1000)
 
-  const sessionA: UserSession = {
-    socketId: 'socket-1',
-    userId: 'user-1',
-    name: 'ajin',
-    roomId,
-    color: 'red',
-    joinedAt: now,
-    isOwner: true,
-  }
+  const sessionA = new UserSession(
+    {
+      socketId: 'socket-1',
+      userId: 'user-1',
+      name: 'ajin',
+      roomId,
+    },
+    true,
+  )
+  sessionA.joinedAt = now
 
-  const sessionB: UserSession = {
-    socketId: 'socket-2',
-    userId: 'user-2',
-    name: 'kim',
-    roomId,
-    color: 'blue',
-    joinedAt: laterDate,
-    isOwner: false,
-  }
+  const sessionB = new UserSession(
+    {
+      socketId: 'socket-2',
+      userId: 'user-2',
+      name: 'kim',
+      roomId,
+    },
+    false,
+  )
+  sessionB.joinedAt = laterDate
 
   const users = {
     getSession: jest.fn(),
