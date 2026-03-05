@@ -1,7 +1,18 @@
 import React, { useState, useCallback } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
-import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
+import {
+  type ToolType,
+  type PostIt,
+  type PlaceCard,
+  type TextBox,
+  type SelectionBox,
+  type SelectedItem,
+  type CanvasItemType,
+  type BoundingBox,
+  type Line as LineType,
+  CANVAS_ITEM_TYPE,
+} from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
 import {
   DEFAULT_POST_IT_COLOR,
@@ -347,7 +358,7 @@ export const useCanvasMouse = ({
             height: postIt.height,
           }
           if (isBoxIntersecting(currentSelectionBox, postItBox)) {
-            newSelectedItems.push({ id: postIt.id, type: 'postit' })
+            newSelectedItems.push({ id: postIt.id, type: CANVAS_ITEM_TYPE.POST_IT })
           }
         })
 
@@ -359,21 +370,21 @@ export const useCanvasMouse = ({
             height: PLACE_CARD_HEIGHT,
           }
           if (isBoxIntersecting(currentSelectionBox, cardBox)) {
-            newSelectedItems.push({ id: card.id, type: 'placeCard' })
+            newSelectedItems.push({ id: card.id, type: CANVAS_ITEM_TYPE.PLACE_CARD })
           }
         })
 
         lines.forEach(line => {
           const lineBox = getLineBoundingBox(line.points)
           if (isBoxIntersecting(currentSelectionBox, lineBox)) {
-            newSelectedItems.push({ id: line.id, type: 'line' })
+            newSelectedItems.push({ id: line.id, type: CANVAS_ITEM_TYPE.LINE })
           }
         })
 
         textBoxes.forEach(tb => {
           const bound = { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
           if (isBoxIntersecting(currentSelectionBox, bound)) {
-            newSelectedItems.push({ id: tb.id, type: 'textBox' })
+            newSelectedItems.push({ id: tb.id, type: CANVAS_ITEM_TYPE.TEXT_BOX })
           }
         })
 

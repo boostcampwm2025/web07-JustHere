@@ -122,7 +122,7 @@ describe('RoomService', () => {
         {
           provide: VoteBroadcaster,
           useValue: {
-            broadcastVote: jest.fn(),
+            emitToVote: jest.fn(),
           },
         },
       ],
