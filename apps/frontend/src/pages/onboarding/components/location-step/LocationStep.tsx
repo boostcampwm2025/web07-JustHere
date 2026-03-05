@@ -10,7 +10,6 @@ interface LocationStepProps {
 }
 
 export const LocationStep = ({ onNext }: LocationStepProps) => {
-  const [searchQuery, setSearchQuery] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedPlace, setSelectedPlace] = useState<GooglePlace | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)
@@ -27,11 +26,10 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
     return defaultCenter
   }
 
-  const handleSearch = () => {
-    const trimmedQuery = searchQuery.trim()
+  const handleSearch = (searchValue: string) => {
+    const trimmedQuery = searchValue.trim()
     if (!trimmedQuery) {
       setSearchTerm('')
-      setSearchQuery('')
       setSelectedPlace(null)
       return
     }
@@ -83,14 +81,11 @@ export const LocationStep = ({ onNext }: LocationStepProps) => {
       </div>
 
       <SearchInput
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
+        onSearch={handleSearch}
         onClear={() => {
-          setSearchQuery('')
           setSearchTerm('')
           setSelectedPlace(null)
         }}
-        onSearch={handleSearch}
         placeholder="장소를 검색하세요"
         containerClassName="mb-4"
       />
