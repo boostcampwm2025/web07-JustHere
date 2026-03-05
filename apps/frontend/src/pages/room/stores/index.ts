@@ -1,1 +1,2 @@
-export { useCanvasStore } from './canvasStore'
+export * from './canvasStore'
+export * from './useCursorPresenceStore'

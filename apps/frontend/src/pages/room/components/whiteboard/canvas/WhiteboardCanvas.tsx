@@ -3,7 +3,7 @@ import { Stage, Layer, Rect, Group, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
-import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
+import { CANVAS_ITEM_TYPE, type PlaceCard, type SelectedItem, type ToolType } from '@/shared/types'
 import { getLineBoundingBox, makeKey, createSelectedItemsSet } from '@/pages/room/utils'
 import { DEFAULT_LINE } from '@/pages/room/constants'
 import {
@@ -15,9 +15,9 @@ import {
   useYjsSocket,
   useCanvasStageTransform,
 } from '@/pages/room/hooks'
-import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
+import { CursorLayer } from './cursor-layer'
 import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
@@ -80,7 +80,6 @@ export const WhiteboardCanvas = ({
   const userName = user ? user.name : 'Unknown User'
 
   const {
-    cursors,
     postits: postIts,
     placeCards,
     lines,
@@ -161,10 +160,10 @@ export const WhiteboardCanvas = ({
     })
 
     // sentry를 위한 로그 남기기
-    const lineCount = selectedItems.filter(item => item.type === 'line').length
-    const postItCount = selectedItems.filter(item => item.type === 'postit').length
-    const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
-    const textBoxCount = selectedItems.filter(item => item.type === 'textBox').length
+    const lineCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.LINE).length
+    const postItCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.POST_IT).length
+    const placeCardCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.PLACE_CARD).length
+    const textBoxCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.TEXT_BOX).length
     if (lineCount > 0) {
       addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
     }
@@ -184,7 +183,7 @@ export const WhiteboardCanvas = ({
 
   // 선택된 포스트잇 ID Set
   const selectedPostItIdsSet = useMemo(
-    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === 'postit', keyFn: item => item.id }),
+    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === CANVAS_ITEM_TYPE.POST_IT, keyFn: item => item.id }),
     [selectedItems],
   )
 
@@ -371,7 +370,7 @@ export const WhiteboardCanvas = ({
       >
         <Layer>
           {zIndexOrder.map(({ type, id }) => {
-            if (type === 'line') {
+            if (type === CANVAS_ITEM_TYPE.LINE) {
               const line = linesMap.get(id)
               if (!line) return null
 
@@ -379,7 +378,7 @@ export const WhiteboardCanvas = ({
 
               return (
                 <Group
-                  key={makeKey('line', line.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.LINE, line.id)}
                   x={box.x}
                   y={box.y}
                   width={box.width}
@@ -387,12 +386,12 @@ export const WhiteboardCanvas = ({
                   draggable={canDrag}
                   ref={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('line', line.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.LINE, line.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('line', line.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.LINE, line.id))
                     }
                   }}
-                  onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
+                  onMouseDown={e => handleObjectMouseDown(line.id, CANVAS_ITEM_TYPE.LINE, e)}
                   onClick={e => handleObjectClick(e)}
                   onContextMenu={e => handleObjectClick(e)}
                   onDragEnd={e => {
@@ -437,13 +436,13 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'postit') {
+            if (type === CANVAS_ITEM_TYPE.POST_IT) {
               const postIt = postItsMap.get(id)
               if (!postIt) return null
 
               return (
                 <EditablePostIt
-                  key={makeKey('postit', postIt.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id)}
                   postIt={postIt}
                   draggable={canDrag}
                   onEditStart={stopCapturing}
@@ -454,13 +453,13 @@ export const WhiteboardCanvas = ({
                   onChange={updates => {
                     updatePostIt(postIt.id, updates)
                   }}
-                  onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
+                  onMouseDown={e => handleObjectMouseDown(postIt.id, CANVAS_ITEM_TYPE.POST_IT, e)}
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('postit', postIt.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('postit', postIt.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id))
                     }
                   }}
                   onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
@@ -468,27 +467,27 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'placeCard') {
+            if (type === CANVAS_ITEM_TYPE.PLACE_CARD) {
               const card = placeCardsMap.get(id)
               if (!card) return null
 
               return (
                 <PlaceCardItem
-                  key={makeKey('placeCard', card.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id)}
                   card={card}
                   draggable={canDrag}
                   onDragEnd={(x, y) => {
                     updatePlaceCard(card.id, { x, y })
                   }}
-                  onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
+                  onMouseDown={e => handleObjectMouseDown(card.id, CANVAS_ITEM_TYPE.PLACE_CARD, e)}
                   onClick={e => handleObjectClick(e)}
                   onShowDetail={() => onShowDetail(card.placeId)}
                   onContextMenu={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('placeCard', card.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('placeCard', card.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id))
                     }
                   }}
                   onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
@@ -496,14 +495,14 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'textBox') {
+            if (type === CANVAS_ITEM_TYPE.TEXT_BOX) {
               const textBox = textBoxesMap.get(id)
               if (!textBox) return null
 
-              const isSelected = selectedItemsSet.has(makeKey('textBox', textBox.id))
+              const isSelected = selectedItemsSet.has(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id))
               return (
                 <EditableTextBox
-                  key={makeKey('textBox', textBox.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id)}
                   textBox={textBox}
                   draggable={canDrag}
                   isSelected={isSelected}
@@ -515,13 +514,13 @@ export const WhiteboardCanvas = ({
                   onChange={updates => {
                     updateTextBox(textBox.id, updates)
                   }}
-                  onMouseDown={e => handleObjectMouseDown(textBox.id, 'textBox', e)}
+                  onMouseDown={e => handleObjectMouseDown(textBox.id, CANVAS_ITEM_TYPE.TEXT_BOX, e)}
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('textBox', textBox.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('textBox', textBox.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id))
                     }
                   }}
                   onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
@@ -543,13 +542,11 @@ export const WhiteboardCanvas = ({
             onDragStart={handleTransformerDragStart}
             onDragEnd={handleTransformerDragEnd}
           />
-
-          {Array.from(cursors.values()).map(cursor => (
-            <AnimatedCursor key={cursor.socketId} cursor={cursor} />
-          ))}
         </Layer>
         <SelectionBoxLayer isSelecting={isSelecting} />
         <GhostLayer effectiveTool={effectiveTool} pendingPlaceCard={pendingPlaceCard} />
+
+        <CursorLayer />
       </Stage>
     </div>
   )

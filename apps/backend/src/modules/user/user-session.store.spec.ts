@@ -1,39 +1,38 @@
 import { UserSessionStore } from './user-session.store'
-import type { UserSession } from './user.type'
+import { UserSession } from './user'
 
 describe('UserSessionStore', () => {
   let store: UserSessionStore
-  const now = new Date()
 
-  const sessionA: UserSession = {
-    socketId: 'socket-1',
-    userId: 'user-1',
-    name: 'ajin',
-    roomId: 'room-1',
-    color: 'hsl(0, 70%, 50%)',
-    joinedAt: now,
-    isOwner: true,
-  }
+  const sessionA = new UserSession(
+    {
+      socketId: 'socket-1',
+      userId: 'user-1',
+      name: 'ajin',
+      roomId: 'room-1',
+    },
+    true,
+  )
 
-  const sessionB: UserSession = {
-    socketId: 'socket-2',
-    userId: 'user-2',
-    name: 'kim',
-    roomId: 'room-1',
-    color: 'hsl(120, 70%, 50%)',
-    joinedAt: now,
-    isOwner: false,
-  }
+  const sessionB = new UserSession(
+    {
+      socketId: 'socket-2',
+      userId: 'user-2',
+      name: 'kim',
+      roomId: 'room-1',
+    },
+    false,
+  )
 
-  const sessionC: UserSession = {
-    socketId: 'socket-3',
-    userId: 'user-3',
-    name: 'lee',
-    roomId: 'room-2',
-    color: 'hsl(240, 70%, 50%)',
-    joinedAt: now,
-    isOwner: false,
-  }
+  const sessionC = new UserSession(
+    {
+      socketId: 'socket-3',
+      userId: 'user-3',
+      name: 'lee',
+      roomId: 'room-2',
+    },
+    false,
+  )
 
   beforeEach(() => {
     store = new UserSessionStore()
@@ -59,7 +58,15 @@ describe('UserSessionStore', () => {
     it('동일한 socketId로 저장하면 세션이 덮어씌워진다', () => {
       store.set(sessionA.socketId, sessionA)
 
-      const updatedSession = { ...sessionA, name: 'updated' }
+      const updatedSession = new UserSession(
+        {
+          socketId: 'socket-1',
+          userId: 'user-1',
+          name: 'updated',
+          roomId: 'room-1',
+        },
+        true,
+      )
       store.set(sessionA.socketId, updatedSession)
 
       expect(store.get(sessionA.socketId)).toEqual(updatedSession)
