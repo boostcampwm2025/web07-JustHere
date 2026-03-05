@@ -5,7 +5,7 @@ import { RoomActivitySchedulerService } from '@/modules/room/room-activity-sched
 import { RoomBroadcaster } from '@/modules/socket/room.broadcaster'
 import { VoteBroadcaster } from '@/modules/socket/vote.broadcaster'
 import { UserService } from '@/modules/user/user.service'
-import { UserSession } from '@/modules/user/user.type'
+import { UserSession } from '@/modules/user/user'
 import { VoteService } from '@/modules/vote/vote.service'
 import { Injectable } from '@nestjs/common'
 import { Room } from '@prisma/client'
