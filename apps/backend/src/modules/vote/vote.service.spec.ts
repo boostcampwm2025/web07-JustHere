@@ -4,6 +4,10 @@ import { ErrorType } from '@/lib/types/response.type'
 import { VoteService } from './vote.service'
 import { VoteSessionStore } from './vote-session.store'
 import { VoteStatus, PlaceData } from './vote.types'
+import { CategoryService } from '@/modules/category/category.service'
+
+// CategoryService mock 객체 (getVoteResults 테스트에서 재사용)
+let mockCategoryService: { findByRoomId: jest.Mock }
 
 // 테스트용 더미 데이터
 const mockPlaceData: PlaceData = {
@@ -21,8 +25,10 @@ describe('VoteService', () => {
   const userId2 = 'user-2'
 
   beforeEach(async () => {
+    mockCategoryService = { findByRoomId: jest.fn() }
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [VoteService, VoteSessionStore],
+      providers: [VoteService, VoteSessionStore, { provide: CategoryService, useValue: mockCategoryService }],
     }).compile()
 
     service = module.get<VoteService>(VoteService)
@@ -53,6 +59,31 @@ describe('VoteService', () => {
 
       // getSessionOrThrow 호출 시 예외 발생해야 함
       expect(() => service.getSessionOrThrow(roomId)).toThrow(CustomException)
+    })
+  })
+
+  describe('deleteSessionsByRoom', () => {
+    it('해당 방의 모든 카테고리 세션을 삭제한다', () => {
+      const baseRoomId = 'room-1'
+      service.getOrCreateSession(`${baseRoomId}:cat-1`, userId)
+      service.getOrCreateSession(`${baseRoomId}:cat-2`, userId)
+      service.getOrCreateSession('room-2:cat-1', userId) // 다른 방
+
+      service.deleteSessionsByRoom(baseRoomId)
+
+      expect(() => service.getSessionOrThrow(`${baseRoomId}:cat-1`)).toThrow(CustomException)
+      expect(() => service.getSessionOrThrow(`${baseRoomId}:cat-2`)).toThrow(CustomException)
+      // 다른 방의 세션은 유지
+      expect(() => service.getSessionOrThrow('room-2:cat-1')).not.toThrow()
+    })
+
+    it('해당하는 세션이 없으면 아무것도 삭제하지 않는다', () => {
+      service.getOrCreateSession('room-2:cat-1', userId)
+
+      service.deleteSessionsByRoom('room-1')
+
+      // room-2의 세션은 유지
+      expect(() => service.getSessionOrThrow('room-2:cat-1')).not.toThrow()
     })
   })
 
@@ -524,6 +555,132 @@ describe('VoteService', () => {
       expect(() => {
         service.resetVote(roomId)
       }).toThrow(CustomException)
+    })
+
+    it('OWNER_PICK 상태에서는 리셋할 수 없다', () => {
+      // OWNER_PICK은 COMPLETED가 아니므로 리셋 불가
+      expect(() => {
+        service.resetVote(roomId)
+      }).toThrow(CustomException)
+
+      try {
+        service.resetVote(roomId)
+      } catch (e) {
+        expect((e as CustomException).type).toBe(ErrorType.BadRequest)
+      }
+    })
+  })
+
+  describe('getWinnerCandidates', () => {
+    const voteRoomId = 'room-1:cat-1'
+
+    beforeEach(() => {
+      service.getOrCreateSession(voteRoomId, userId)
+      service.addCandidatePlace(voteRoomId, userId, mockPlaceData)
+    })
+
+    it('세션이 없으면 빈 배열을 반환한다', () => {
+      const result = service.getWinnerCandidates('non-existent')
+      expect(result).toEqual([])
+    })
+
+    it('COMPLETED 상태가 아니면 빈 배열을 반환한다', () => {
+      // WAITING 상태
+      const result = service.getWinnerCandidates(voteRoomId)
+      expect(result).toEqual([])
+    })
+
+    it('득표수가 0이면 빈 배열을 반환한다 (투표 없이 종료)', () => {
+      const session = service.getSessionOrThrow(voteRoomId)
+      session.status = VoteStatus.COMPLETED
+
+      const result = service.getWinnerCandidates(voteRoomId)
+      expect(result).toEqual([])
+    })
+
+    it('selectedCandidateId가 있으면 해당 후보만 반환한다', () => {
+      const session = service.getSessionOrThrow(voteRoomId)
+      session.status = VoteStatus.COMPLETED
+      session.selectedCandidateId = mockPlaceData.placeId
+
+      const result = service.getWinnerCandidates(voteRoomId)
+      expect(result).toHaveLength(1)
+      expect(result[0].placeId).toBe(mockPlaceData.placeId)
+    })
+
+    it('최다 득표 후보를 반환한다', () => {
+      const place2: PlaceData = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(voteRoomId, userId, place2)
+      service.startVote(voteRoomId)
+
+      service.castVote(voteRoomId, userId, mockPlaceData.placeId)
+      service.castVote(voteRoomId, userId2, mockPlaceData.placeId)
+      service.castVote(voteRoomId, userId2, place2.placeId)
+      service.endVote(voteRoomId)
+
+      const result = service.getWinnerCandidates(voteRoomId)
+      expect(result).toHaveLength(1)
+      expect(result[0].placeId).toBe(mockPlaceData.placeId)
+    })
+
+    it('동점자가 있으면 모두 반환한다', () => {
+      const place2: PlaceData = { ...mockPlaceData, placeId: 'place-456' }
+      service.addCandidatePlace(voteRoomId, userId, place2)
+      service.startVote(voteRoomId)
+
+      // 1표씩 동점
+      service.castVote(voteRoomId, userId, mockPlaceData.placeId)
+      service.castVote(voteRoomId, userId2, place2.placeId)
+
+      const session = service.getSessionOrThrow(voteRoomId)
+      session.status = VoteStatus.COMPLETED
+
+      const result = service.getWinnerCandidates(voteRoomId)
+      expect(result).toHaveLength(2)
+    })
+  })
+
+  describe('getVoteResults', () => {
+    it('카테고리별 투표 결과를 반환한다', async () => {
+      const baseRoomId = 'room-1'
+      const categoryId = 'cat-1'
+      const voteRoomId = `${baseRoomId}:${categoryId}`
+
+      // 투표 세션 설정 및 투표 종료
+      service.getOrCreateSession(voteRoomId, userId)
+      service.addCandidatePlace(voteRoomId, userId, mockPlaceData)
+      service.startVote(voteRoomId)
+      service.castVote(voteRoomId, userId, mockPlaceData.placeId)
+      service.endVote(voteRoomId)
+
+      mockCategoryService.findByRoomId.mockResolvedValue([{ id: categoryId, title: '음식점' }])
+
+      const result = await service.getVoteResults(baseRoomId)
+
+      expect(mockCategoryService.findByRoomId).toHaveBeenCalledWith(baseRoomId)
+      expect(result).toHaveLength(1)
+      expect(result[0].category).toBe('음식점')
+      expect(result[0].result).toHaveLength(1)
+      expect(result[0].result[0].placeId).toBe(mockPlaceData.placeId)
+    })
+
+    it('승자가 없는 카테고리는 결과에서 제외된다', async () => {
+      const baseRoomId = 'room-1'
+
+      mockCategoryService.findByRoomId.mockResolvedValue([{ id: 'cat-1', title: '음식점' }])
+      // 해당 카테고리의 세션 없음 (getWinnerCandidates → [])
+
+      const result = await service.getVoteResults(baseRoomId)
+
+      expect(result).toEqual([])
+    })
+
+    it('카테고리가 없으면 빈 배열을 반환한다', async () => {
+      mockCategoryService.findByRoomId.mockResolvedValue([])
+
+      const result = await service.getVoteResults('room-1')
+
+      expect(result).toEqual([])
     })
   })
 
