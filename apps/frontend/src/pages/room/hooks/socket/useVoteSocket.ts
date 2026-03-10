@@ -3,7 +3,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient, useToast } from '@/shared/hooks'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
-import type { VoteCandidate, VoteCandidateAddPayload, VoteErrorPayload, VoteSocketLike } from '@/pages/room/types'
+import type { VoteCandidate, VoteCandidateAddPayload, VoteSocketLike } from '@/pages/room/types'
 import { voteReducer, initialVoteState } from './voteReducer'
 import { useVoteSocketEvents } from './useVoteSocketEvents'
 
@@ -44,6 +44,10 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
   // optimistic add 중복 방지
   const tempCandidateIdsRef = useRef<Set<string>>(new Set())
 
+  const joinRef = useRef<JoinState>({ ...initialJoinState })
+  const prevRoomIdRef = useRef<string>(roomId)
+  const prevCategoryIdRef = useRef<string>(categoryId)
+
   const handleSocketError = useCallback(
     (error: Error) => {
       reportError({
@@ -51,14 +55,17 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
         code: 'SOCKET_ERROR',
         context: { namespace: 'vote', roomId, categoryId },
       })
-      setError({
-        status: 'ERROR',
-        statusCode: 0,
-        errorType: 'SOCKET_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
+      dispatch({
+        type: 'SET_ERROR',
+        error: {
+          status: 'ERROR',
+          statusCode: 0,
+          errorType: 'SOCKET_ERROR',
+          message: error.message,
+          timestamp: new Date().toISOString(),
+        },
       })
-      pendingJoinRef.current = false
+      joinRef.current.isPending = false
     },
     [roomId, categoryId],
   )
