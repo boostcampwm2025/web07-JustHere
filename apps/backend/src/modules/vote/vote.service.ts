@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { CustomException } from '@/lib/exceptions/custom.exception'
 import { ErrorType } from '@/lib/types/response.type'
-import { Candidate, PlaceData, VoteSession, VoteStatus } from './vote.types'
+import { Candidate, PlaceData, VoteCandidate, VoteSession, VoteStatus } from './vote.types'
 import { VoteSessionStore } from './vote-session.store'
+import { CategoryService } from '@/modules/category/category.service'
 import {
   VoteCandidateAddedPayload,
   VoteCandidateRemovedPayload,
@@ -20,7 +21,10 @@ import {
 @Injectable()
 export class VoteService {
   // categoryId : 투표 세션
-  constructor(private readonly sessions: VoteSessionStore) {}
+  constructor(
+    private readonly sessions: VoteSessionStore,
+    private readonly categoryService: CategoryService,
+  ) {}
 
   /**
    * 세션 생성 또는 조회 (vote:join)
@@ -501,11 +505,9 @@ export class VoteService {
 
     for (const [userId, userVotes] of session.userVotes.entries()) {
       for (const candidateId of userVotes) {
-        if (!session.candidates.has(candidateId)) continue
-        if (!voters[candidateId]) {
-          voters[candidateId] = []
+        if (voters[candidateId]) {
+          voters[candidateId].push(userId)
         }
-        voters[candidateId].push(userId)
       }
     }
 
@@ -513,18 +515,8 @@ export class VoteService {
   }
 
   private getVoterIdsForCandidate(session: VoteSession, candidateId: string): string[] {
-    if (!session.candidates.has(candidateId)) {
-      return []
-    }
-
-    const voters: string[] = []
-    for (const [userId, userVotes] of session.userVotes.entries()) {
-      if (userVotes.has(candidateId)) {
-        voters.push(userId)
-      }
-    }
-
-    return voters
+    const voterMap = this.getVoterIdsByCandidate(session)
+    return voterMap[candidateId] ?? []
   }
 
   // TODO: 승자를 세션에 넣어 불필요한 계산을 개선할 여지가 있다.
@@ -573,14 +565,31 @@ export class VoteService {
   }
 
   /**
+   * 카테고리별 투표 최종 결과 조회 (GET /vote/results/:roomId)
+   * @param roomId 방 ID
+   */
+  async getVoteResults(roomId: string): Promise<VoteCandidate[]> {
+    const categories = await this.categoryService.findByRoomId(roomId)
+    const results: VoteCandidate[] = []
+
+    for (const category of categories) {
+      const voteRoomId = `${roomId}:${category.id}`
+      const winners = this.getWinnerCandidates(voteRoomId)
+
+      if (winners.length === 0) continue
+
+      results.push({ category: category.title, result: winners })
+    }
+
+    return results
+  }
+
+  /**
    * 특정 방의 모든 카테고리에서 사용자의 투표를 취소
    * - room 연결 해제 시 호출됨
-   * - voteRoomId 규칙: `${roomId}:${categoryId}`
    * @param roomId 방 ID
    * @param userId 사용자 ID
-   * @returns voteRoomId별 변경된 투표 정보 (브로드캐스트용)
    */
-
   revokeAllVotesForUser(roomId: string, userId: string): Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> {
     const results: Array<{ voteRoomId: string; payload: VoteParticipantLeftPayload }> = []
     const prefix = `${roomId}:`

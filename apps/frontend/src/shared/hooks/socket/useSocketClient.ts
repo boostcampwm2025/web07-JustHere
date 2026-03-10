@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket, type ManagerOptions, type SocketOptions } from 'socket.io-client'
-import { addSocketBreadcrumb } from '@/shared/utils'
+import { addSocketBreadcrumb, captureError } from '@/shared/utils'
 
 type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
@@ -94,7 +94,9 @@ export function useSocketClient({ namespace, baseUrl, autoConnect = true, autoRe
 
       if (attemptNumber >= SOCKET_RECONNECTION_CONFIG.maxAttempts) {
         setStatus('disconnected')
-        onError?.(new Error(`연결 실패: 최대 재연결 시도 횟수(${SOCKET_RECONNECTION_CONFIG.maxAttempts})를 초과했습니다.`))
+        const maxRetriesError = new Error(`연결 실패: 최대 재연결 시도 횟수(${SOCKET_RECONNECTION_CONFIG.maxAttempts})를 초과했습니다.`)
+        captureError(maxRetriesError, { namespace: namespace ?? 'root' })
+        onError?.(maxRetriesError)
       }
     }
 

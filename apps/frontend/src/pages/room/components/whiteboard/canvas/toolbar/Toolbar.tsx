@@ -3,6 +3,7 @@ import type { ToolType } from '@/shared/types'
 import { Button, Divider, Tooltip } from '@/shared/components'
 import { cn } from '@/shared/utils'
 import { KeyboardShortcutsDropdown } from './keyboard-shortcuts'
+import { useCanvasStore } from '@/pages/room/stores'
 
 type Tool = ToolType
 
@@ -47,14 +48,14 @@ const TOOLBAR_TOOLS: ToolConfig[] = [
 interface ToolbarProps {
   effectiveTool: Tool
   setActiveTool: (tool: Tool) => void
-  setCursorPos: (pos: { x: number; y: number } | null) => void
   undo: () => void
   redo: () => void
   canUndo: boolean
   canRedo: boolean
 }
 
-export const Toolbar = ({ effectiveTool, setActiveTool, setCursorPos, undo, redo, canUndo, canRedo }: ToolbarProps) => {
+export const Toolbar = ({ effectiveTool, setActiveTool, undo, redo, canUndo, canRedo }: ToolbarProps) => {
+  const setCursorPos = useCanvasStore(state => state.setCursorPos)
   const onClickTool = (tool: Tool, resetCursor: boolean) => {
     setActiveTool(tool)
     if (resetCursor) {

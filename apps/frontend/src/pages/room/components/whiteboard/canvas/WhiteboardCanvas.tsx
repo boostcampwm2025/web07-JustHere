@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect, useCallback, useMemo, memo } from 'react'
-import { Stage, Layer, Rect, Group, Line, Text, Transformer } from 'react-konva'
+import { Stage, Layer, Rect, Group, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useParams } from 'react-router-dom'
 import { addSocketBreadcrumb, cn, getOrCreateStoredUser } from '@/shared/utils'
-import type { PlaceCard, SelectedItem, ToolType } from '@/shared/types'
+import { CANVAS_ITEM_TYPE, type PlaceCard, type SelectedItem, type ToolType } from '@/shared/types'
 import { getLineBoundingBox, makeKey, createSelectedItemsSet } from '@/pages/room/utils'
-import { DEFAULT_LINE, DEFAULT_POST_IT_COLOR, PLACE_CARD_HEIGHT, PLACE_CARD_WIDTH } from '@/pages/room/constants'
+import { DEFAULT_LINE } from '@/pages/room/constants'
 import {
   useCanvasTransform,
   useCursorChat,
@@ -15,14 +15,16 @@ import {
   useYjsSocket,
   useCanvasStageTransform,
 } from '@/pages/room/hooks'
-import { AnimatedCursor } from './animated-cursor'
 import { CanvasContextMenu } from './canvas-context-menu'
 import { CursorChatInput } from './cursor-chat-input'
+import { CursorLayer } from './cursor-layer'
 import { EditablePostIt } from './editable-postit'
 import { PlaceCardItem } from './place-card'
 import { PostItColorPicker } from './postit-color-picker'
 import { EditableTextBox } from './editable-textbox'
 import { Toolbar } from './toolbar'
+import { GhostLayer } from './ghost-layer'
+import { SelectionBoxLayer } from './selection-box-layer'
 
 interface WhiteboardCanvasProps {
   roomId: string
@@ -31,6 +33,7 @@ interface WhiteboardCanvasProps {
   onPlaceCardPlaced: () => void
   onPlaceCardCanceled: () => void
   canvasTransformRef?: React.MutableRefObject<{ x: number; y: number; scale: number }>
+  onShowDetail: (placeId: string) => void
 }
 
 interface CurrentDrawingLineProps {
@@ -60,6 +63,7 @@ export const WhiteboardCanvas = ({
   onPlaceCardPlaced,
   onPlaceCardCanceled,
   canvasTransformRef,
+  onShowDetail,
 }: WhiteboardCanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
@@ -76,7 +80,6 @@ export const WhiteboardCanvas = ({
   const userName = user ? user.name : 'Unknown User'
 
   const {
-    cursors,
     postits: postIts,
     placeCards,
     lines,
@@ -157,10 +160,10 @@ export const WhiteboardCanvas = ({
     })
 
     // sentry를 위한 로그 남기기
-    const lineCount = selectedItems.filter(item => item.type === 'line').length
-    const postItCount = selectedItems.filter(item => item.type === 'postit').length
-    const placeCardCount = selectedItems.filter(item => item.type === 'placeCard').length
-    const textBoxCount = selectedItems.filter(item => item.type === 'textBox').length
+    const lineCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.LINE).length
+    const postItCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.POST_IT).length
+    const placeCardCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.PLACE_CARD).length
+    const textBoxCount = selectedItems.filter(item => item.type === CANVAS_ITEM_TYPE.TEXT_BOX).length
     if (lineCount > 0) {
       addSocketBreadcrumb('line:delete', { roomId, canvasId, count: lineCount })
     }
@@ -180,7 +183,7 @@ export const WhiteboardCanvas = ({
 
   // 선택된 포스트잇 ID Set
   const selectedPostItIdsSet = useMemo(
-    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === 'postit', keyFn: item => item.id }),
+    () => createSelectedItemsSet(selectedItems, { filter: item => item.type === CANVAS_ITEM_TYPE.POST_IT, keyFn: item => item.id }),
     [selectedItems],
   )
 
@@ -227,11 +230,7 @@ export const WhiteboardCanvas = ({
   const effectiveTool = useMemo(() => (isSpacePressed ? 'hand' : activeTool), [isSpacePressed, activeTool])
 
   const {
-    selectionBox,
     isSelecting,
-    cursorPos,
-    setCursorPos,
-    placeCardCursorPos,
     handleMouseMove,
     handleMouseLeave,
     handleMouseDown,
@@ -327,15 +326,7 @@ export const WhiteboardCanvas = ({
 
   return (
     <div className={cn('relative w-full h-full bg-slate-50', cursorStyle)} onContextMenu={e => e.preventDefault()} role="presentation">
-      <Toolbar
-        effectiveTool={effectiveTool}
-        setActiveTool={handleToolChange}
-        setCursorPos={setCursorPos}
-        undo={undo}
-        redo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
+      <Toolbar effectiveTool={effectiveTool} setActiveTool={handleToolChange} undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo} />
 
       {selectedPostItIds.length > 0 && (
         <PostItColorPicker selectedPostItIds={selectedPostItIds} currentFill={selectedPostItCurrentFill} onColorChange={handlePostItColorChange} />
@@ -379,7 +370,7 @@ export const WhiteboardCanvas = ({
       >
         <Layer>
           {zIndexOrder.map(({ type, id }) => {
-            if (type === 'line') {
+            if (type === CANVAS_ITEM_TYPE.LINE) {
               const line = linesMap.get(id)
               if (!line) return null
 
@@ -387,7 +378,7 @@ export const WhiteboardCanvas = ({
 
               return (
                 <Group
-                  key={makeKey('line', line.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.LINE, line.id)}
                   x={box.x}
                   y={box.y}
                   width={box.width}
@@ -395,12 +386,12 @@ export const WhiteboardCanvas = ({
                   draggable={canDrag}
                   ref={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('line', line.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.LINE, line.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('line', line.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.LINE, line.id))
                     }
                   }}
-                  onMouseDown={e => handleObjectMouseDown(line.id, 'line', e)}
+                  onMouseDown={e => handleObjectMouseDown(line.id, CANVAS_ITEM_TYPE.LINE, e)}
                   onClick={e => handleObjectClick(e)}
                   onContextMenu={e => handleObjectClick(e)}
                   onDragEnd={e => {
@@ -445,13 +436,13 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'postit') {
+            if (type === CANVAS_ITEM_TYPE.POST_IT) {
               const postIt = postItsMap.get(id)
               if (!postIt) return null
 
               return (
                 <EditablePostIt
-                  key={makeKey('postit', postIt.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id)}
                   postIt={postIt}
                   draggable={canDrag}
                   onEditStart={stopCapturing}
@@ -462,13 +453,13 @@ export const WhiteboardCanvas = ({
                   onChange={updates => {
                     updatePostIt(postIt.id, updates)
                   }}
-                  onMouseDown={e => handleObjectMouseDown(postIt.id, 'postit', e)}
+                  onMouseDown={e => handleObjectMouseDown(postIt.id, CANVAS_ITEM_TYPE.POST_IT, e)}
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('postit', postIt.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('postit', postIt.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.POST_IT, postIt.id))
                     }
                   }}
                   onTransformEnd={e => handlePostItTransformEnd(postIt, e)}
@@ -476,26 +467,27 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'placeCard') {
+            if (type === CANVAS_ITEM_TYPE.PLACE_CARD) {
               const card = placeCardsMap.get(id)
               if (!card) return null
 
               return (
                 <PlaceCardItem
-                  key={makeKey('placeCard', card.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id)}
                   card={card}
                   draggable={canDrag}
                   onDragEnd={(x, y) => {
                     updatePlaceCard(card.id, { x, y })
                   }}
-                  onMouseDown={e => handleObjectMouseDown(card.id, 'placeCard', e)}
+                  onMouseDown={e => handleObjectMouseDown(card.id, CANVAS_ITEM_TYPE.PLACE_CARD, e)}
                   onClick={e => handleObjectClick(e)}
+                  onShowDetail={() => onShowDetail(card.placeId)}
                   onContextMenu={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('placeCard', card.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('placeCard', card.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.PLACE_CARD, card.id))
                     }
                   }}
                   onTransformEnd={e => handlePlaceCardTransformEnd(card, e)}
@@ -503,14 +495,14 @@ export const WhiteboardCanvas = ({
               )
             }
 
-            if (type === 'textBox') {
+            if (type === CANVAS_ITEM_TYPE.TEXT_BOX) {
               const textBox = textBoxesMap.get(id)
               if (!textBox) return null
 
-              const isSelected = selectedItemsSet.has(makeKey('textBox', textBox.id))
+              const isSelected = selectedItemsSet.has(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id))
               return (
                 <EditableTextBox
-                  key={makeKey('textBox', textBox.id)}
+                  key={makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id)}
                   textBox={textBox}
                   draggable={canDrag}
                   isSelected={isSelected}
@@ -522,13 +514,13 @@ export const WhiteboardCanvas = ({
                   onChange={updates => {
                     updateTextBox(textBox.id, updates)
                   }}
-                  onMouseDown={e => handleObjectMouseDown(textBox.id, 'textBox', e)}
+                  onMouseDown={e => handleObjectMouseDown(textBox.id, CANVAS_ITEM_TYPE.TEXT_BOX, e)}
                   onSelect={e => handleObjectClick(e)}
                   shapeRef={node => {
                     if (node) {
-                      shapeRefs.current.set(makeKey('textBox', textBox.id), node)
+                      shapeRefs.current.set(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id), node)
                     } else {
-                      shapeRefs.current.delete(makeKey('textBox', textBox.id))
+                      shapeRefs.current.delete(makeKey(CANVAS_ITEM_TYPE.TEXT_BOX, textBox.id))
                     }
                   }}
                   onTransformEnd={e => handleTextBoxTransformEnd(textBox, e)}
@@ -538,105 +530,6 @@ export const WhiteboardCanvas = ({
 
             return null
           })}
-
-          {effectiveTool === 'postIt' && !pendingPlaceCard && cursorPos && (
-            <Group x={cursorPos.x - 75} y={cursorPos.y - 75} listening={false}>
-              <Rect
-                width={150}
-                height={150}
-                fill={DEFAULT_POST_IT_COLOR}
-                opacity={0.6}
-                cornerRadius={8}
-                stroke="#9CA3AF"
-                strokeWidth={2}
-                dash={[5, 5]}
-              />
-              <Text x={0} y={65} width={150} text="클릭해서 추가하기" align="center" fill="#6B7280" fontSize={14} />
-            </Group>
-          )}
-
-          {effectiveTool === 'textBox' && !pendingPlaceCard && cursorPos && (
-            <Group x={cursorPos.x - 100} y={cursorPos.y - 25} listening={false}>
-              <Rect width={200} height={50} fill="transparent" opacity={0.6} stroke="#9CA3AF" strokeWidth={1} dash={[5, 5]} />
-              <Text x={0} y={17} width={200} text="클릭해서 추가하기" align="center" fill="#6B7280" fontSize={14} />
-            </Group>
-          )}
-
-          {pendingPlaceCard && placeCardCursorPos && placeCardCursorPos.cardId === pendingPlaceCard.id && (
-            <Group x={placeCardCursorPos.x - PLACE_CARD_WIDTH / 2} y={placeCardCursorPos.y - PLACE_CARD_HEIGHT / 2} listening={false}>
-              <Rect
-                width={PLACE_CARD_WIDTH}
-                height={PLACE_CARD_HEIGHT}
-                fill="#FFFFFF"
-                opacity={0.8}
-                cornerRadius={10}
-                stroke="#9CA3AF"
-                strokeWidth={2}
-                dash={[6, 6]}
-                shadowBlur={15}
-                shadowOffsetY={4}
-                shadowOpacity={0.1}
-              />
-              <Rect width={PLACE_CARD_WIDTH} height={100} fill="#E5E7EB" opacity={0.8} cornerRadius={[10, 10, 0, 0]} />
-              <Text
-                text={pendingPlaceCard.name}
-                x={12}
-                y={110}
-                width={PLACE_CARD_WIDTH - 24}
-                fontSize={14}
-                fontFamily="Arial, sans-serif"
-                fontStyle="bold"
-                fill="#374151"
-                ellipsis={true}
-                wrap="none"
-              />
-              {pendingPlaceCard.rating != null && (
-                <>
-                  <Text text="★" x={12} y={130} fontSize={11} fill="#FACC15" />
-                  <Text
-                    text={`${pendingPlaceCard.rating.toFixed(1)}${pendingPlaceCard.userRatingCount ? ` (${pendingPlaceCard.userRatingCount.toLocaleString()})` : ''}`}
-                    x={26}
-                    y={130}
-                    width={PLACE_CARD_WIDTH - 38}
-                    fontSize={11}
-                    fill="#6B7280"
-                  />
-                </>
-              )}
-              <Text
-                text={pendingPlaceCard.category || ''}
-                x={12}
-                y={pendingPlaceCard.rating != null ? 146 : 130}
-                width={PLACE_CARD_WIDTH - 24}
-                fontSize={11}
-                fill="#6B7280"
-              />
-              <Text
-                text={pendingPlaceCard.address}
-                x={12}
-                y={pendingPlaceCard.rating != null ? 162 : 146}
-                width={PLACE_CARD_WIDTH - 24}
-                fontSize={11}
-                fontFamily="Arial, sans-serif"
-                fill="#6B7280"
-                wrap="char"
-              />
-            </Group>
-          )}
-
-          {isSelecting && selectionBox && (
-            <Rect
-              x={Math.min(selectionBox.startX, selectionBox.endX)}
-              y={Math.min(selectionBox.startY, selectionBox.endY)}
-              width={Math.abs(selectionBox.endX - selectionBox.startX)}
-              height={Math.abs(selectionBox.endY - selectionBox.startY)}
-              fill="rgba(59, 130, 246, 0.1)"
-              stroke="#3b82f6"
-              strokeWidth={1}
-              dash={[4, 4]}
-              listening={false}
-            />
-          )}
 
           {/* 현재 드로잉 중인 라인 */}
           <CurrentDrawingLine ref={currentDrawingLineRef} />
@@ -649,11 +542,11 @@ export const WhiteboardCanvas = ({
             onDragStart={handleTransformerDragStart}
             onDragEnd={handleTransformerDragEnd}
           />
-
-          {Array.from(cursors.values()).map(cursor => (
-            <AnimatedCursor key={cursor.socketId} cursor={cursor} />
-          ))}
         </Layer>
+        <SelectionBoxLayer isSelecting={isSelecting} />
+        <GhostLayer effectiveTool={effectiveTool} pendingPlaceCard={pendingPlaceCard} />
+
+        <CursorLayer />
       </Stage>
     </div>
   )

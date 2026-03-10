@@ -54,3 +54,8 @@ export const DEFAULT_LINE = {
 
 /** 커서 채팅 최대 글자수 */
 export const MAX_CURSOR_CHAT_LENGTH = 50
+
+export const CANVAS_EVENTS = {
+  attach: 'canvas:attach',
+  detach: 'canvas:detach',
+}
