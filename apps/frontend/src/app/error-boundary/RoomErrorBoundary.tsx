@@ -1,8 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
-import * as Sentry from '@sentry/react'
 import { RoomErrorPage } from '@/pages'
 import { ERROR_TYPE, type ErrorType } from '@/shared/types'
-import { reportError, isAppError } from '@/shared/utils'
+import { reportError, isAppError, captureError } from '@/shared/utils'
 
 type Props = {
   children: ReactNode
@@ -21,9 +20,7 @@ export class RoomErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    Sentry.captureException(error, {
-      extra: { componentStack: info.componentStack },
-    })
+    captureError(error, undefined, { componentStack: info.componentStack })
   }
 
   handleReset = async () => {

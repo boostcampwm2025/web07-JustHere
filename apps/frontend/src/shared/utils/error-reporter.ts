@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/react'
 import type { ErrorType as RoomErrorType, ApiErrorType, SocketErrorType } from '@/shared/types'
+import { addBreadcrumb, captureError } from './sentry'
 
 export type ClientErrorCode =
   | 'CLIENT_UNKNOWN'
@@ -96,26 +96,7 @@ export function reportError(params: {
   const source = isAppError(params.error) ? params.error.source : undefined
   const data = isAppError(params.error) ? params.error.data : undefined
 
-  Sentry.addBreadcrumb({
-    category: 'client',
-    message: 'client:error',
-    level,
-    data: {
-      code,
-      source,
-      ...params.context,
-    },
-  })
+  addBreadcrumb('client', 'client:error', { code, source, ...params.context }, level)
 
-  Sentry.captureException(error, {
-    tags: {
-      code,
-      ...(source ? { source } : {}),
-    },
-    extra: {
-      ...params.context,
-      data,
-      originalError,
-    },
-  })
+  captureError(error, { code, ...(source ? { source } : {}) }, { ...params.context, data, originalError })
 }

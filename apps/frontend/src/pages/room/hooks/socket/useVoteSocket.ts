@@ -3,7 +3,7 @@ import { socketBaseUrl } from '@/shared/config/socket'
 import { useSocketClient, useToast } from '@/shared/hooks'
 import { addSocketBreadcrumb, reportError } from '@/shared/utils'
 import { VOTE_EVENTS } from '@/pages/room/constants'
-import type { VoteCandidate, VoteCandidateAddPayload, VoteErrorPayload, VoteSocketLike } from '@/pages/room/types'
+import type { VoteCandidate, VoteCandidateAddPayload, VoteSocketLike } from '@/pages/room/types'
 import { voteReducer, initialVoteState } from './voteReducer'
 import { useVoteSocketEvents } from './useVoteSocketEvents'
 
@@ -45,8 +45,8 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
   const tempCandidateIdsRef = useRef<Set<string>>(new Set())
 
   const joinRef = useRef<JoinState>({ ...initialJoinState })
-  const prevRoomIdRef = useRef(roomId)
-  const prevCategoryIdRef = useRef(categoryId)
+  const prevRoomIdRef = useRef<string>(roomId)
+  const prevCategoryIdRef = useRef<string>(categoryId)
 
   const handleSocketError = useCallback(
     (error: Error) => {
@@ -63,7 +63,7 @@ export function useVoteSocket({ roomId, categoryId, userId, enabled = true }: Us
           errorType: 'SOCKET_ERROR',
           message: error.message,
           timestamp: new Date().toISOString(),
-        } as VoteErrorPayload,
+        },
       })
       joinRef.current.isPending = false
     },
