@@ -4,8 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastContainer } from '@/shared/components'
 import { ToastProvider } from '@/shared/providers'
-import { App } from '@/app'
 import { initSentry } from '@/shared/utils'
+import { App, MobileGuard } from '@/app'
 import './index.css'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN
@@ -33,7 +33,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
-          <App />
+          <MobileGuard>
+            <App />
+          </MobileGuard>
           <ToastContainer />
         </ToastProvider>
       </BrowserRouter>

@@ -1,7 +1,17 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import type Konva from 'konva'
 import { addSocketBreadcrumb } from '@/shared/utils'
-import type { ToolType, PostIt, PlaceCard, TextBox, SelectionBox, SelectedItem, CanvasItemType, BoundingBox, Line as LineType } from '@/shared/types'
+import {
+  type ToolType,
+  type PostIt,
+  type PlaceCard,
+  type TextBox,
+  type SelectedItem,
+  type CanvasItemType,
+  type BoundingBox,
+  type Line as LineType,
+  CANVAS_ITEM_TYPE,
+} from '@/shared/types'
 import { getLineBoundingBox, isBoxIntersecting } from '@/pages/room/utils'
 import {
   DEFAULT_POST_IT_COLOR,
@@ -12,6 +22,7 @@ import {
   TEXT_BOX_WIDTH,
   TEXT_BOX_HEIGHT,
 } from '@/pages/room/constants'
+import { useCanvasStore } from '@/pages/room/stores'
 
 interface UseCanvasMouseProps {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -96,10 +107,11 @@ export const useCanvasMouse = ({
   onPlaceCardPlaced,
   userName,
 }: UseCanvasMouseProps) => {
-  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null)
+  const setCursorPos = useCanvasStore(state => state.setCursorPos)
+  const setPlaceCardCursorPos = useCanvasStore(state => state.setPlaceCardCursorPos)
+  const setSelectionBox = useCanvasStore(state => state.setSelectionBox)
   const [isSelecting, setIsSelecting] = useState(false)
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
-  const [placeCardCursorPos, setPlaceCardCursorPos] = useState<{ x: number; y: number; cardId: string } | null>(null)
+  const wasDragSelectingRef = useRef(false)
 
   const handleObjectMouseDown = useCallback(
     (id: string, type: CanvasItemType, e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -158,6 +170,10 @@ export const useCanvasMouse = ({
       }
 
       if (e.target === e.target.getStage()) {
+        if (wasDragSelectingRef.current) {
+          wasDragSelectingRef.current = false
+          return
+        }
         setSelectedItems([])
         setContextMenu(null)
       }
@@ -203,7 +219,20 @@ export const useCanvasMouse = ({
         }
       }
     }
-  }, [stageRef, updateCursor, effectiveTool, pendingPlaceCard, isSelecting, getIsDrawing, continueDrawing, isChatActive, setChatInputPosition])
+  }, [
+    stageRef,
+    updateCursor,
+    effectiveTool,
+    pendingPlaceCard,
+    isSelecting,
+    getIsDrawing,
+    isChatActive,
+    setCursorPos,
+    setPlaceCardCursorPos,
+    setSelectionBox,
+    continueDrawing,
+    setChatInputPosition,
+  ])
 
   const handleMouseLeave = useCallback(() => {
     if (effectiveTool === 'postIt') {
@@ -215,7 +244,7 @@ export const useCanvasMouse = ({
     if (getIsDrawing()) {
       cancelDrawing('mouse-leave')
     }
-  }, [effectiveTool, pendingPlaceCard, getIsDrawing, cancelDrawing])
+  }, [effectiveTool, pendingPlaceCard, getIsDrawing, setCursorPos, setPlaceCardCursorPos, cancelDrawing])
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -308,23 +337,25 @@ export const useCanvasMouse = ({
       }
     },
     [
+      isChatActive,
       stageRef,
       pendingPlaceCard,
+      effectiveTool,
+      deactivateCursorChat,
       addPlaceCard,
       roomId,
       canvasId,
       onPlaceCardPlaced,
-      effectiveTool,
+      setSelectionBox,
       setSelectedItems,
       stopCapturing,
       userName,
       addPostIt,
-      startDrawing,
-      currentDrawingLineRef,
-      addTextBox,
       setActiveTool,
-      isChatActive,
-      deactivateCursorChat,
+      setCursorPos,
+      currentDrawingLineRef,
+      startDrawing,
+      addTextBox,
     ],
   )
 
@@ -334,9 +365,9 @@ export const useCanvasMouse = ({
     }
 
     if (effectiveTool === 'cursor' && isSelecting) {
-      setSelectionBox(currentSelectionBox => {
-        if (!currentSelectionBox) return null
-
+      const currentSelectionBox = useCanvasStore.getState().selectionBox
+      if (currentSelectionBox) {
+        wasDragSelectingRef.current = true
         const newSelectedItems: SelectedItem[] = []
 
         postIts.forEach(postIt => {
@@ -347,7 +378,7 @@ export const useCanvasMouse = ({
             height: postIt.height,
           }
           if (isBoxIntersecting(currentSelectionBox, postItBox)) {
-            newSelectedItems.push({ id: postIt.id, type: 'postit' })
+            newSelectedItems.push({ id: postIt.id, type: CANVAS_ITEM_TYPE.POST_IT })
           }
         })
 
@@ -359,30 +390,31 @@ export const useCanvasMouse = ({
             height: PLACE_CARD_HEIGHT,
           }
           if (isBoxIntersecting(currentSelectionBox, cardBox)) {
-            newSelectedItems.push({ id: card.id, type: 'placeCard' })
+            newSelectedItems.push({ id: card.id, type: CANVAS_ITEM_TYPE.PLACE_CARD })
           }
         })
 
         lines.forEach(line => {
           const lineBox = getLineBoundingBox(line.points)
           if (isBoxIntersecting(currentSelectionBox, lineBox)) {
-            newSelectedItems.push({ id: line.id, type: 'line' })
+            newSelectedItems.push({ id: line.id, type: CANVAS_ITEM_TYPE.LINE })
           }
         })
 
         textBoxes.forEach(tb => {
           const bound = { x: tb.x, y: tb.y, width: tb.width, height: tb.height }
           if (isBoxIntersecting(currentSelectionBox, bound)) {
-            newSelectedItems.push({ id: tb.id, type: 'textBox' })
+            newSelectedItems.push({ id: tb.id, type: CANVAS_ITEM_TYPE.TEXT_BOX })
           }
         })
 
         setSelectedItems(newSelectedItems)
-        return null
-      })
+      }
+
+      setSelectionBox(null)
       setIsSelecting(false)
     }
-  }, [effectiveTool, getIsDrawing, endDrawing, isSelecting, postIts, placeCards, lines, textBoxes, setSelectedItems])
+  }, [effectiveTool, getIsDrawing, isSelecting, endDrawing, setSelectionBox, postIts, placeCards, lines, textBoxes, setSelectedItems])
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -426,11 +458,7 @@ export const useCanvasMouse = ({
 
   return {
     // State
-    selectionBox,
     isSelecting,
-    cursorPos,
-    setCursorPos,
-    placeCardCursorPos,
 
     // Handlers
     handleMouseMove,

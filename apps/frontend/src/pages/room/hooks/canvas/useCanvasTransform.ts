@@ -1,4 +1,4 @@
-import type { DragInitialState, Line, PlaceCard, PostIt, TextBox } from '@/shared/types'
+import { CANVAS_ITEM_TYPE, type DragInitialState, type Line, type PlaceCard, type PostIt, type TextBox } from '@/shared/types'
 import type Konva from 'konva'
 import { useCallback, useRef } from 'react'
 
@@ -92,16 +92,16 @@ export const useCanvasTransform = ({
     itemStatesBeforeDrag.current.clear()
 
     selectedItems.forEach(({ id, type }) => {
-      if (type === 'postit') {
+      if (type === CANVAS_ITEM_TYPE.POST_IT) {
         const item = postIts.find(p => p.id === id)
         if (item) itemStatesBeforeDrag.current.set(id, { type, x: item.x, y: item.y })
-      } else if (type === 'placeCard') {
+      } else if (type === CANVAS_ITEM_TYPE.PLACE_CARD) {
         const item = placeCards.find(c => c.id === id)
         if (item) itemStatesBeforeDrag.current.set(id, { type, x: item.x, y: item.y })
-      } else if (type === 'textBox') {
+      } else if (type === CANVAS_ITEM_TYPE.TEXT_BOX) {
         const item = textBoxes.find(t => t.id === id)
         if (item) itemStatesBeforeDrag.current.set(id, { type, x: item.x, y: item.y })
-      } else if (type === 'line') {
+      } else if (type === CANVAS_ITEM_TYPE.LINE) {
         const item = lines.find(l => l.id === id)
         if (item) itemStatesBeforeDrag.current.set(id, { type, points: [...item.points] })
       }
@@ -122,10 +122,19 @@ export const useCanvasTransform = ({
       const isSelected = selectedItems.some(i => i.id === id)
       if (!isSelected) return
 
-      if (originalState.type === 'postit' || originalState.type === 'placeCard' || originalState.type === 'textBox') {
-        const updater = originalState.type === 'postit' ? updatePostIt : originalState.type === 'placeCard' ? updatePlaceCard : updateTextBox
+      if (
+        originalState.type === CANVAS_ITEM_TYPE.POST_IT ||
+        originalState.type === CANVAS_ITEM_TYPE.PLACE_CARD ||
+        originalState.type === CANVAS_ITEM_TYPE.TEXT_BOX
+      ) {
+        const updater =
+          originalState.type === CANVAS_ITEM_TYPE.POST_IT
+            ? updatePostIt
+            : originalState.type === CANVAS_ITEM_TYPE.PLACE_CARD
+              ? updatePlaceCard
+              : updateTextBox
         updater(id, { x: originalState.x + dx, y: originalState.y + dy })
-      } else if (originalState.type === 'line') {
+      } else if (originalState.type === CANVAS_ITEM_TYPE.LINE) {
         const newPoints = originalState.points.map((p, i) => (i % 2 === 0 ? p + dx : p + dy))
         updateLine(id, { points: newPoints })
       }

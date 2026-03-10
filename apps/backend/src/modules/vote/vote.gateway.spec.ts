@@ -206,6 +206,37 @@ describe('VoteGateway', () => {
     })
   })
 
+  describe('onVoteJoin (error cases)', () => {
+    it('user가 없으면 예외를 던진다', async () => {
+      const client = {
+        join: jest.fn(),
+        emit: jest.fn(),
+        data: {},
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteJoinPayload = { roomId: 'room-1', categoryId: 'category-1' }
+
+      userService.getSession.mockReturnValue(null)
+
+      await expect(gateway.onVoteJoin(client, payload)).rejects.toThrow(CustomException)
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', async () => {
+      const client = {
+        join: jest.fn(),
+        emit: jest.fn(),
+        data: {},
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteJoinPayload = { roomId: 'room-1', categoryId: 'category-1' }
+      const wrongRoomUser = { userId: 'user-1', name: 'user', socketId: 'socket-1', roomId: 'room-2', isOwner: false }
+
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      await expect(gateway.onVoteJoin(client, payload)).rejects.toThrow(CustomException)
+    })
+  })
+
   describe('onVoteLeave', () => {
     it('클라이언트를 투표 룸에서 떠나게 한다', async () => {
       const leaveMock = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
@@ -233,9 +264,50 @@ describe('VoteGateway', () => {
       expect(leaveMock).toHaveBeenCalledTimes(1)
       expect(leaveMock).toHaveBeenCalledWith(`vote:${voteRoomId}`)
     })
+
+    it('user가 없으면 예외를 던진다', async () => {
+      const client = {
+        leave: jest.fn(),
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteLeavePayload = { roomId: 'room-1', categoryId: 'category-1' }
+
+      userService.getSession.mockReturnValue(null)
+
+      await expect(gateway.onVoteLeave(client, payload)).rejects.toThrow(CustomException)
+    })
+
+    it('user.roomId가 payload.roomId와 다르면 예외를 던진다', async () => {
+      const client = {
+        leave: jest.fn(),
+        id: 'socket-1',
+      } as unknown as Socket
+      const payload: VoteLeavePayload = { roomId: 'room-1', categoryId: 'category-1' }
+      const wrongRoomUser = { userId: 'user-1', name: 'user', socketId: 'socket-1', roomId: 'room-2', isOwner: false }
+
+      userService.getSession.mockReturnValue(wrongRoomUser)
+
+      await expect(gateway.onVoteLeave(client, payload)).rejects.toThrow(CustomException)
+    })
   })
 
   describe('onCandidateAdd', () => {
+    it('user가 없으면 예외를 던진다', () => {
+      const client = { id: 'socket-1' } as Socket
+      const payload: VoteCandidateAddPayload = {
+        roomId: 'room-1',
+        categoryId: 'category-1',
+        placeId: 'place-1',
+        name: '카페',
+        address: '서울시 강남구',
+      }
+
+      userService.getSession.mockReturnValue(null)
+
+      expect(() => gateway.onCandidateAdd(client, payload)).toThrow(CustomException)
+      expect(voteService.addCandidatePlace).not.toHaveBeenCalled()
+    })
+
     it('후보를 추가하고 브로드캐스터로 업데이트를 전송한다', () => {
       const client = {
         id: 'socket-1',
@@ -278,6 +350,20 @@ describe('VoteGateway', () => {
   })
 
   describe('onCandidateRemove', () => {
+    it('user가 없으면 예외를 던진다', () => {
+      const client = { id: 'socket-1' } as Socket
+      const payload: VoteCandidateRemovePayload = {
+        roomId: 'room-1',
+        categoryId: 'category-1',
+        candidateId: 'candidate-1',
+      }
+
+      userService.getSession.mockReturnValue(null)
+
+      expect(() => gateway.onCandidateRemove(client, payload)).toThrow(CustomException)
+      expect(voteService.removeCandidatePlace).not.toHaveBeenCalled()
+    })
+
     it('후보를 제거하고 브로드캐스터로 업데이트를 전송한다', () => {
       const client = {
         id: 'socket-1',
@@ -288,10 +374,18 @@ describe('VoteGateway', () => {
         candidateId: 'candidate-1',
       }
       const voteRoomId = 'room-1:category-1'
+      const mockUser = {
+        userId: 'user-1',
+        name: 'user',
+        socketId: 'socket-1',
+        roomId: 'room-1',
+        isOwner: false,
+      }
       const mockRemovedPayload = {
         candidate: { placeId: 'candidate-1', name: '카페', address: '서울', createdBy: 'user-1', createdAt: new Date() },
       }
 
+      userService.getSession.mockReturnValue(mockUser)
       voteService.removeCandidatePlace.mockReturnValue(mockRemovedPayload)
 
       gateway.onCandidateRemove(client, payload)
