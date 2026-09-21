@@ -57,5 +57,7 @@ export const MAX_CURSOR_CHAT_LENGTH = 50
 
 export const CANVAS_EVENTS = {
   attach: 'canvas:attach',
+  attached: 'canvas:attached',
   detach: 'canvas:detach',
+  detached: 'canvas:detached',
 }

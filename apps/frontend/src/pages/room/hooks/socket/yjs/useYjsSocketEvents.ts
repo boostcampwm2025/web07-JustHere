@@ -36,11 +36,11 @@ export const useYjsSocketEvents = ({
 
       const updateArray = new Uint8Array(update)
       YapplyUpdate(doc, updateArray, socket)
-      addSocketBreadcrumb(CANVAS_EVENTS.attach, { roomId, canvasId, bytes: updateArray.byteLength })
+      addSocketBreadcrumb(CANVAS_EVENTS.attached, { roomId, canvasId, bytes: updateArray.byteLength })
     }
 
     const handleCanvasDetached = () => {
-      addSocketBreadcrumb(CANVAS_EVENTS.detach, { roomId, canvasId })
+      addSocketBreadcrumb(CANVAS_EVENTS.detached, { roomId, canvasId })
     }
 
     const handleYjsUpdate = ({ canvasId: payloadCanvasId, update }: YjsUpdateBroadcast) => {
@@ -55,14 +55,14 @@ export const useYjsSocketEvents = ({
       applyAwareness(payload)
     }
 
-    socket.on(CANVAS_EVENTS.attach, handleCanvasAttached)
-    socket.on(CANVAS_EVENTS.detach, handleCanvasDetached)
+    socket.on(CANVAS_EVENTS.attached, handleCanvasAttached)
+    socket.on(CANVAS_EVENTS.detached, handleCanvasDetached)
     socket.on(YJS_EVENTS.update, handleYjsUpdate)
     socket.on(YJS_EVENTS.awareness, handleAwareness)
 
     return () => {
-      socket.off(CANVAS_EVENTS.attach, handleCanvasAttached)
-      socket.off(CANVAS_EVENTS.detach, handleCanvasDetached)
+      socket.off(CANVAS_EVENTS.attached, handleCanvasAttached)
+      socket.off(CANVAS_EVENTS.detached, handleCanvasDetached)
       socket.off(YJS_EVENTS.update, handleYjsUpdate)
       socket.off(YJS_EVENTS.awareness, handleAwareness)
     }
